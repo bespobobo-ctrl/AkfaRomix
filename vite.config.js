@@ -1,0 +1,21 @@
+import { defineConfig } from 'vite';
+import { resolve } from 'path';
+
+export default defineConfig({
+    build: {
+        rollupOptions: {
+            input: {
+                main: resolve(__dirname, 'index.html'),
+                admin: resolve(__dirname, 'admin_dashboard.html'),
+                hr: resolve(__dirname, 'hr_dashboard.html'),
+                sales: resolve(__dirname, 'sales_dashboard.html'),
+                warehouse: resolve(__dirname, 'warehouse_dashboard.html'),
+                production: resolve(__dirname, 'production_dashboard.html'),
+                showroom: resolve(__dirname, 'showroom_dashboard.html'),
+                generic: resolve(__dirname, 'generic_dashboard.html'),
+                employee: resolve(__dirname, 'employee_dashboard.html'),
+                scanner: resolve(__dirname, 'scanner.html'),
+            },
+        },
+    },
+});
