@@ -1,0 +1,4 @@
+﻿--- START TEST ---
+EMPLOYEES_OK: Data exists
+ATTENDANCE_ERROR: Could not find the table 'public.attendance' in the schema cache
+--- END TEST ---

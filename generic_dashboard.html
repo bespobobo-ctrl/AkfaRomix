@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AKFA Romix - Bo'lim Paneli</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body style="background:var(--adm-bg); display:flex; align-items:center; justify-content:center; height:100vh;">
+    <div class="bento-card" style="width:500px; text-align:center; padding:50px;">
+        <span style="font-size:4rem;">🏗️</span>
+        <h1 id="roleTitle" style="color:var(--adm-text); margin-top:20px;">Xush kelibsiz!</h1>
+        <p style="color:var(--adm-text-sec); margin-top:10px;">ushbu bo'lim paneli hozirda ishlab chiqish (Development)
+            bosqichida.</p>
+        <button onclick="location.href='/'"
+            style="margin-top:30px; padding:12px 30px; background:var(--adm-accent); color:#fff; border:none; border-radius:12px; cursor:pointer;">Chiqish</button>
+    </div>
+
+    <script>
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        if (user) {
+            const roleNames = {
+                'moliya': 'Moliya va Buxgalteriya',
+                'sotuv': 'Sotuv va Marketing',
+                'ishlab_chiqarish': 'Ishlab Chiqarish Bo\'limi'
+            };
+            document.getElementById('roleTitle').textContent = (roleNames[user.role] || user.role.toUpperCase()) + " Paneli";
+        }
+    </script>
+</body>
+
+</html>

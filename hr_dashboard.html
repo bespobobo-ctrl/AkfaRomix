@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AKFA Romix - Kadrlar Bo'limi</title>
+    <!-- Google Fonts: Outfit -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css" />
+</head>
+
+<body>
+    <!-- Background Elements -->
+    <div class="smoke-container">
+        <div class="smoke smoke-1"></div>
+        <div class="smoke smoke-2"></div>
+    </div>
+    <div class="bg-glow"></div>
+    <div class="bg-glow bg-glow-secondary"></div>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar glass-panel">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="24" height="24" rx="4" fill="#00D2FF" />
+                    <path d="M7 17L12 7L17 17" stroke="#001830" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+                <span>HR Panel</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" id="tabEmployees">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        style="margin-right:15px">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z">
+                        </path>
+                    </svg>
+                    <span>Ishchilar Bazasi</span>
+                </a>
+                <a href="#" class="nav-item" id="tabAttendance">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        style="margin-right:15px">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span>Davomat</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        style="margin-right:15px">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+                        </path>
+                    </svg>
+                    <span>Maoshlar</span>
+                </a>
+                <a href="/scanner.html" target="_blank" class="nav-item">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        style="margin-right:15px">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z">
+                        </path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    <span>Skayner Oy...</span>
+                </a>
+            </nav>
+            <div class="user-profile">
+                <div class="avatar"><img src="https://ui-avatars.com/api/?name=HR&background=00ff88&color=001830"
+                        alt="HR"></div>
+                <div class="user-info">
+                    <p class="name" id="userNameLabel">KADRLAR B.</p>
+                    <p class="role">HR Manager</p>
+                </div>
+                <button id="logoutBtn"
+                    style="background: none; border: none; color: #ff4d4f; cursor: pointer; padding: 5px;">🚪</button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="top-header glass-panel">
+                <div>
+                    <h2 style="font-size: 1.2rem; font-weight: 500;">Kadrlar Bo'limi - Xodimlarni Boshqarish</h2>
+                </div>
+                <div class="header-actions">
+                    <button id="addWorkerBtn" class="primary-btn">+ Yangi Xodim Qo'shish</button>
+                </div>
+            </header>
+
+            <div class="dashboard-grid" id="mainDashboardGrid">
+
+                <div class="stat-card glass-panel" style="grid-column: span 1;" id="payrollStatCard">
+                    <div class="stat-header">
+                        <h3>Tayyor Oylik Fon</h3><i class="icon">💰</i>
+                    </div>
+                    <div class="stat-value">65,000,000 <span>UZS</span></div>
+                    <div class="stat-trend neutral">Joriy oy uchun</div>
+                </div>
+
+                <div class="stat-card glass-panel" style="grid-column: span 1;">
+                    <div class="stat-header">
+                        <h3>Jami Ishchilar</h3><i class="icon">👥</i>
+                    </div>
+                    <div class="stat-value" id="totalEmployeesCount">0</div>
+                    <div class="stat-trend positive">Faol baza</div>
+                </div>
+
+                <div class="stat-card glass-panel" style="grid-column: span 1;">
+                    <div class="stat-header">
+                        <h3>Bugun Kelganlar</h3><i class="icon">✅</i>
+                    </div>
+                    <div class="stat-value" id="todayArrivedCount">0</div>
+                    <div class="stat-trend positive">Hozirda binoda</div>
+                </div>
+
+                <div class="stat-card glass-panel" style="grid-column: span 1;">
+                    <div class="stat-header">
+                        <h3>Kech Qolganlar</h3><i class="icon">⏰</i>
+                    </div>
+                    <div class="stat-value" id="todayLateCount" style="color: #ff4d4f;">0</div>
+                    <div class="stat-trend negative">Bugungi holat</div>
+                </div>
+
+                <!-- Yillik Ish Samaradorligi Grafigi (Now at Top) -->
+                <div class="glass-panel" id="yearlyChartContainer"
+                    style="grid-column: span 4; padding: 25px; min-height: 300px;">
+                    <div class="section-header">
+                        <h2>Yillik Ish Samaradorligi Grafigi</h2>
+                        <div class="chart-labels">
+                            <span>
+                                <div class="dot" style="background:#00d2ff"></div> Ish soatlari
+                            </span>
+                            <span>
+                                <div class="dot" style="background:#00ff88"></div> KPI
+                            </span>
+                        </div>
+                    </div>
+                    <div class="chart-container"
+                        style="height: 250px; align-items: flex-end; display: flex; gap: 20px; padding: 20px 0;">
+                        <div class="chart-bar" style="height: 40%; flex: 1; border-radius: 8px 8px 0 0;">
+                            <div class="glow-point"></div>
+                        </div>
+                        <div class="chart-bar" style="height: 60%; flex: 1; border-radius: 8px 8px 0 0;">
+                            <div class="glow-point"></div>
+                        </div>
+                        <div class="chart-bar active" style="height: 85%; flex: 1; border-radius: 8px 8px 0 0;">
+                            <div class="glow-point"></div>
+                        </div>
+                        <div class="chart-bar" style="height: 55%; flex: 1; border-radius: 8px 8px 0 0;">
+                            <div class="glow-point"></div>
+                        </div>
+                        <div class="chart-bar" style="height: 70%; flex: 1; border-radius: 8px 8px 0 0;">
+                            <div class="glow-point"></div>
+                        </div>
+                        <div class="chart-bar" style="height: 90%; flex: 1; border-radius: 8px 8px 0 0;">
+                            <div class="glow-point"></div>
+                        </div>
+                        <div class="chart-bar" style="height: 45%; flex: 1; border-radius: 8px 8px 0 0;">
+                            <div class="glow-point"></div>
+                        </div>
+                        <div class="chart-bar" style="height: 65%; flex: 1; border-radius: 8px 8px 0 0;">
+                            <div class="glow-point"></div>
+                        </div>
+                        <div class="chart-bar" style="height: 80%; flex: 1; border-radius: 8px 8px 0 0;">
+                            <div class="glow-point"></div>
+                        </div>
+                        <div class="chart-bar" style="height: 95%; flex: 1; border-radius: 8px 8px 0 0;">
+                            <div class="glow-point"></div>
+                        </div>
+                    </div>
+                    <div
+                        style="display: flex; justify-content: space-between; color: var(--text-secondary); font-size: 0.8rem; padding-top: 10px;">
+                        <span>Yan</span><span>Fev</span><span>Mar</span><span>Apr</span><span>May</span><span>Iyun</span><span>Iyul</span><span>Avg</span><span>Sen</span><span>Okt</span>
+                    </div>
+                </div>
+
+                <!-- EMPLOYEES TABLE (Now at Bottom) -->
+                <div class="recent-orders glass-panel" style="grid-column: span 4;" id="employeesSection">
+                    <div class="section-header">
+                        <h2>Ishchilar Va Oylik Hisoboti</h2>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>To'liq Ism</th>
+                                <th>Kasbi (Lavozimi)</th>
+                                <th>Ishga Qabul qilingan sana</th>
+                                <th>Belgilangan Oylik (yoki KPI)</th>
+                                <th>Holat</th>
+                                <th>Harakat</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employeeList">
+                            <!-- Jonli baza malumotlari -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- ATTENDANCE TABLE (Davomat) -->
+                <div class="recent-orders glass-panel" style="grid-column: span 4; display: none;"
+                    id="attendanceSection">
+                    <div class="section-header" style="flex-wrap: wrap; gap: 20px;">
+                        <div>
+                            <h2>Ishchilar Davomati</h2>
+                            <p style="font-size: 0.8rem; color: var(--text-secondary);">Skaynerdan o'tgan barcha
+                                xodimlar jurnali</p>
+                        </div>
+                        <div style="display: flex; gap: 15px; align-items: center;">
+                            <input type="date" id="attendanceDatePicker" class="auth-input"
+                                style="padding: 8px; font-size: 0.9rem;">
+                            <div class="stat-trend positive" id="attPresentStat">0 Kelgan</div>
+                            <div class="stat-trend negative" id="attLateStat">0 Kechiqqan</div>
+                        </div>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Xodim</th>
+                                <th>Kelgan vaqti (In)</th>
+                                <th>Ketgan vaqti (Out)</th>
+                                <th>Davomiylik (Soat)</th>
+                                <th>Holat</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceList">
+                            <!-- Jonli davomat tushadi -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- EMPLOYEE PROFILE VIEW (Bento-box Dashboard) -->
+                <div style="grid-column: span 3; display: none;" id="profileViewSection">
+                    <div style="margin-bottom: 20px;">
+                        <button id="backToEmployees" class="btn-cancel" style="padding: 8px 15px;">← Orqaga
+                            Qaytish</button>
+                    </div>
+
+                    <div class="profile-dashboard-grid">
+                        <!-- Left Column: Identity -->
+                        <div class="profile-identity glass-panel">
+                            <div class="profile-avatar-box">
+                                <img src="" id="profImage" class="prof-img">
+                                <div class="salary-badge" id="profSalary"></div>
+                            </div>
+                            <h2 class="prof-name" id="profName"></h2>
+                            <p class="prof-role" id="profRole"></p>
+
+                            <div class="prof-accordion">
+                                <div class="prof-acc-item">
+                                    <span>Telefon:</span>
+                                    <strong>+998 90 123 45 67</strong>
+                                </div>
+                                <div class="prof-acc-item">
+                                    <span>Bo'lim:</span>
+                                    <strong>Ishlab chiqarish</strong>
+                                </div>
+                                <div class="prof-acc-item">
+                                    <span>Tizimga qo'shilgan vaqti (Staj):</span>
+                                    <strong id="profJoinedDate">Yil, Oy, Kun</strong>
+                                </div>
+                                <div class="prof-acc-item">
+                                    <span>Asosiy Qurilmasi:</span>
+                                    <strong><i class="icon">📷</i> AKFA Skayner</strong>
+                                </div>
+                            </div>
+                            <div class="info-tag">#IshonchliXodim</div>
+                            <div class="info-tag">#Malyar</div>
+                        </div>
+
+                        <!-- Middle Column: Time & Progress -->
+                        <div class="profile-time glass-panel">
+                            <div class="section-header" style="margin-bottom: 30px;">
+                                <h3 style="font-size: 1.2rem; font-weight: 500;">Ish Vaqti Trekeri (Bugun)</h3>
+                            </div>
+                            <div class="tracker-circle">
+                                <div class="tracker-inner">
+                                    <h1 id="profHoursToday">00:00</h1>
+                                    <span>Soat Ishladi</span>
+                                </div>
+                            </div>
+                            <!-- Small chart bars decoration -->
+                            <div class="mini-chart">
+                                <div class="bar h-60"></div>
+                                <div class="bar h-80"></div>
+                                <div class="bar h-100 active-bar"></div>
+                                <div class="bar h-40"></div>
+                                <div class="bar h-90"></div>
+                            </div>
+                            <div class="chart-labels" id="profWeeklyLabels">
+                                <span>Du</span><span>Se</span><span>Ch</span><span>Pa</span><span>Ju</span>
+                            </div>
+
+                            <div class="day-details-grid">
+                                <div class="detail-mini-card">
+                                    <span class="label">Kelgan vaqti</span>
+                                    <span class="value" id="profCheckIn">--:--</span>
+                                </div>
+                                <div class="detail-mini-card">
+                                    <span class="label">Ketgan vaqti</span>
+                                    <span class="value" id="profCheckOut">--:--</span>
+                                </div>
+                                <div class="detail-mini-card" style="grid-column: span 2;">
+                                    <span class="label">Haftalik O'rtacha</span>
+                                    <span class="value" id="profWeeklyAvg">00:00 Soat</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Goals & Tasks -->
+                        <div class="profile-tasks glass-panel">
+                            <div class="section-header">
+                                <h3 style="font-size: 1.2rem; font-weight: 500;">Menejment reytingi</h3>
+                                <span style="color:var(--accent-color); font-weight:bold;" id="profKpiValue">98%
+                                    KPI</span>
+                            </div>
+
+                            <div class="kpi-container">
+                                <div class="kpi-bar-bg">
+                                    <div class="kpi-bar-fill" id="profKpiBar"></div>
+                                </div>
+                            </div>
+
+                            <div class="task-list" style="margin-top: 30px;">
+                                <div class="task-item checked">
+                                    <div class="fake-check">✓</div>
+                                    <div class="task-info">
+                                        <h4>Intizom va Odob</h4>
+                                        <span>Me'yorida</span>
+                                    </div>
+                                </div>
+                                <div class="task-item">
+                                    <div class="fake-check empty"></div>
+                                    <div class="task-info">
+                                        <h4>Soat 08:00 dan oldin kelish</h4>
+                                        <span id="profEntryStatus">Kutilmoqda</span>
+                                    </div>
+                                </div>
+                                <div class="task-item">
+                                    <div class="fake-check empty"></div>
+                                    <div class="task-info">
+                                        <h4>To'liq 10 soatlik norma (18:00)</h4>
+                                        <span id="profNormStatus">Jarayonda...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- NEW: Calendar / Timeline -->
+                    <div class="profile-calendar glass-panel" style="margin-top: 20px;">
+                        <div class="section-header">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <button id="prevMonth" class="text-btn"
+                                    style="font-size: 1.5rem; padding: 5px;">◀</button>
+                                <h3 style="font-size: 1.2rem; font-weight: 500; min-width: 250px; text-align: center;"
+                                    id="profCalendarTitle">Oylik Davomat Taqvimi</h3>
+                                <button id="nextMonth" class="text-btn"
+                                    style="font-size: 1.5rem; padding: 5px;">▶</button>
+                            </div>
+                            <div class="chart-labels">
+                                <span>
+                                    <div class="dot" style="background:#00ff88"></div> Kelgan
+                                </span>
+                                <span>
+                                    <div class="dot" style="background:#ffb800"></div> Kech qolgan
+                                </span>
+                                <span>
+                                    <div class="dot" style="background:#ff4d4f"></div> Kelmagan
+                                </span>
+                            </div>
+                        </div>
+                        <div class="calendar-grid" id="profCalendar">
+                            <!-- JS will populate: 1, 2... 31 with status markers -->
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="addWorkerModalOverlay">
+        <div class="modal-content">
+            <h3 class="modal-header">Yangi Xodim Qo'shish</h3>
+            <div class="photo-upload-container">
+                <label for="empPhotoFile" class="photo-preview-circle" id="photoPreviewBox">
+                    <span class="plus-icon">+</span>
+                    <img id="modalPhotoPreview" src="">
+                </label>
+                <span class="upload-label">Rasmini tanlang (JPG/PNG)</span>
+                <input type="file" id="empPhotoFile" accept="image/png, image/jpeg" class="file-input-hidden">
+            </div>
+            <div style="display: flex; gap: 15px;">
+                <div class="form-group" style="flex: 1;">
+                    <label>Ismi</label>
+                    <input type="text" id="empFirstName" placeholder="Jahongir">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label>Familiyasi</label>
+                    <input type="text" id="empLastName" placeholder="Berdiyev">
+                </div>
+            </div>
+            <div style="display: flex; gap: 15px;">
+                <div class="form-group" style="flex: 1;">
+                    <label>Tug'ilgan yili</label>
+                    <input type="number" id="empBirthYear" placeholder="2000">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label>Telefon raqami</label>
+                    <input type="text" id="empPhone" placeholder="+998 90 123 45 67">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Kasbi / Lavozimi</label>
+                <input type="text" id="empRole" placeholder="Malyar">
+            </div>
+            <div class="form-group">
+                <label>Belgilangan Oyligi</label>
+                <input type="text" id="empSalary" placeholder="8,000,000 UZS yoki Ishbay">
+            </div>
+            <div class="btn-group">
+                <button class="btn-cancel" id="closeAddWorkerBtn" style="padding: 10px;">Bekor qilish</button>
+                <button class="primary-btn" id="saveWorkerBtn">Saqlash</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Badge Preview Modal -->
+    <div class="modal-overlay" id="badgeModalOverlay">
+        <div class="modal-content" style="background: transparent; border: none; box-shadow: none; width: 650px;">
+            <h3 class="modal-header" style="text-align: center; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">
+                Bejik (Badge) Tayyor!</h3>
+            <div class="badge-presentation"
+                style="display: flex; gap: 40px; justify-content: center; margin-top: 20px;">
+                <div class="id-badge badge-front">
+                    <div class="badge-lanyard">
+                        <div class="clip"></div>
+                    </div>
+                    <div class="badge-header">
+                        <div class="logo-box">AKFA<br><span>ROMIX</span></div>
+                        <div class="header-text">XODIMLAR<br>TIZIMI 2026</div>
+                    </div>
+                    <div class="badge-photo-container">
+                        <img src="" alt="Photo" class="badge-photo" id="badgePreviewPhoto">
+                    </div>
+                    <div class="badge-bottom-box">
+                        <div class="badge-surname" id="badgePreviewSurname">FAMILIYA</div>
+                        <div class="badge-name" id="badgePreviewName">ISM</div>
+                        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 3px;">
+                            <div class="badge-role" id="badgePreviewRole" style="margin-bottom: 0;">LAVOZIMI</div>
+                            <div id="badgePreviewAge"
+                                style="font-size: 0.7rem; color: #fff; background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px;">
+                                25 YOSH</div>
+                        </div>
+                    </div>
+                    <div class="badge-very-bottom-text">AKFA ROMIX AUTOMATION SYSTEM</div>
+                </div>
+
+                <div class="id-badge badge-back">
+                    <div class="badge-lanyard">
+                        <div class="clip"></div>
+                    </div>
+                    <div class="badge-header">
+                        <div class="logo-box">AKFA<br><span>ROMIX</span></div>
+                        <div class="header-text">XODIMLAR<br>TIZIMI 2026</div>
+                    </div>
+                    <div class="badge-qr-container">
+                        <div class="scan-me-text">SCAN ME</div>
+                        <img src="" alt="QR" class="badge-qr-large" id="badgePreviewQR">
+                    </div>
+                    <div class="badge-bottom-box">
+                        <div class="badge-name" style="font-size:1.8rem; margin-top: 5px;">CONNECT</div>
+                        <div class="badge-role">AKFA SYSTEM</div>
+                    </div>
+                    <div class="badge-very-bottom-text">AKFA ROMIX AUTOMATION SYSTEM</div>
+                </div>
+            </div>
+            <div class="btn-group" style="margin-top: 30px; justify-content: center;">
+                <button class="btn-cancel" id="closeBadgeBtn"
+                    style="padding: 12px 25px; background: rgba(0,0,0,0.5);">Yopish</button>
+                <button class="primary-btn" style="padding: 12px 25px;">Yuklab olish (Print)</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/hr.js"></script>
+</body>
+
+</html>
