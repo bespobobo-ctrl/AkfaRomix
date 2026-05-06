@@ -205,35 +205,49 @@ document.addEventListener('DOMContentLoaded', async () => {
         setupStaffActions();
     }
 
-    function renderStaffList(emps) {
-        const listContainer = document.getElementById('staff-list-container');
-        if (!listContainer) return;
+    function renderStaffList(staff) {
+        const container = document.getElementById('staff-list-container');
+        if (!container) return;
+        container.innerHTML = '';
 
-        listContainer.innerHTML = emps.map(emp => `
-            <div class="bento-card staff-list-row" style="cursor:pointer; display:flex; align-items:center; gap:15px; padding:12px; border: 1px solid var(--adm-border); margin-bottom:5px;" data-id="${emp.id}">
-                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=random" style="width:40px; height:40px; border-radius:10px;">
-                <div style="flex:1;">
-                    <div style="font-weight:700; font-size:0.9rem;">${emp.full_name}</div>
-                    <div style="font-size:0.75rem; color:var(--adm-text-sec);">${emp.role}</div>
-                </div>
-                <div style="text-align:right;">
-                    <div style="font-weight:600; font-size:0.8rem; color:var(--adm-accent);">${emp.salary_info || '---'}</div>
-                    <div style="font-size:0.65rem; color:${emp.status === 'Ishlamoqda' ? '#00ff88' : '#ff4d4f'};">${emp.status}</div>
-                </div>
-            </div>
-        `).join('');
+        staff.forEach(emp => {
+            const div = document.createElement('div');
+            div.className = 'staff-mini-card';
+            div.style.cssText = `
+                display: flex; align-items: center; gap: 15px; padding: 15px;
+                background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);
+                border-radius: 18px; cursor: pointer; transition: 0.3s; margin-bottom: 1px;
+            `;
 
-        listContainer.querySelectorAll('.staff-list-row').forEach(row => {
-            row.onclick = () => {
-                const emp = emps.find(x => x.id === row.dataset.id);
-                if (emp) {
-                    selectedWorkerId = emp.id;
-                    updateStaffProfileCard(emp);
-                }
-                document.querySelectorAll('.staff-list-row').forEach(r => r.style.borderColor = 'var(--adm-border)');
-                row.style.borderColor = 'var(--adm-accent)';
+            div.innerHTML = `
+                <div style="width: 45px; height: 45px; border-radius: 12px; background: rgba(0,210,255,0.1); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #00d2ff; font-size: 0.8rem;">
+                    ${emp.full_name.split(' ').map(n => n[0]).join('')}
+                </div>
+                <div style="flex: 1;">
+                    <div style="font-size: 0.9rem; font-weight: 600;">${emp.full_name}</div>
+                    <div style="font-size: 0.7rem; opacity: 0.5;">${emp.role}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 0.8rem; font-weight: 700; color: #00ff88;">${emp.salary_info || '---'}</div>
+                    <div style="font-size: 0.6rem; opacity: 0.4;">Ishlamoqda</div>
+                </div>
+            `;
+
+            div.onclick = () => {
+                document.querySelectorAll('.staff-mini-card').forEach(c => c.style.borderColor = 'rgba(255,255,255,0.05)');
+                div.style.borderColor = '#00ff88';
+                selectedWorkerId = emp.id;
+                updateStaffProfileCard(emp);
             };
+
+            container.appendChild(div);
         });
+
+        // Auto-select first
+        if (staff.length > 0) {
+            selectedWorkerId = staff[0].id;
+            updateStaffProfileCard(staff[0]);
+        }
     }
 
     function setupStaffActions() {
