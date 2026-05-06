@@ -418,46 +418,12 @@
                         </div>
 
                         <div id="staff-list-container"
-                            style="display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; padding-right: 5px; margin-bottom: 20px;">
+                            style="display: flex; flex-direction: column; gap: 8px; height: calc(100vh - 350px); overflow-y: auto; padding-right: 5px; margin-bottom: 20px;">
                             <!-- JS will populate individual horizontal list items here -->
-                        </div>
-
-                        <div class="modern-calendar">
-                            <div class="cal-header">
-                                <h2 id="current-month-name">Sentyabr</h2>
-                                <div style="display:flex; gap:10px;">
-                                    <button class="icon-small-btn" id="cal-prev">‹</button>
-                                    <button class="icon-small-btn" id="cal-next">›</button>
-                                </div>
-                            </div>
-                            <div class="cal-grid">
-                                <div class="cal-day-label">Du</div>
-                                <div class="cal-day-label">Se</div>
-                                <div class="cal-day-label">Ch</div>
-                                <div class="cal-day-label">Pa</div>
-                                <div class="cal-day-label">Ju</div>
-                                <div class="cal-day-label">Sh</div>
-                                <div class="cal-day-label">Ya</div>
-                                <!-- Calendar days populated by JS -->
-                                <div class="cal-day-num disabled">28</div>
-                                <div class="cal-day-num disabled">29</div>
-                                <div class="cal-day-num disabled">30</div>
-                                <div class="cal-day-num disabled">31</div>
-                                <div class="cal-day-num">1</div>
-                                <div class="cal-day-num">2</div>
-                                <div class="cal-day-num">3</div>
-                                <div class="cal-day-num has-event">4</div>
-                                <div class="cal-day-num">5</div>
-                                <div class="cal-day-num">6</div>
-                                <div class="cal-day-num">7</div>
-                                <div class="cal-day-num">8</div>
-                                <div class="cal-day-num active">21</div>
-                                <!-- ... more -->
-                            </div>
                         </div>
                     </div>
 
-                    <div class="staff-sidebar">
+                    <div class="staff-sidebar" style="max-height: calc(100vh - 120px); overflow-y: auto;">
                         <div class="staff-profile-card">
                             <img src="https://ui-avatars.com/api/?name=Ashley+Black&background=007c52&color=fff"
                                 class="profile-img-lg" id="selected-staff-img">
@@ -496,6 +462,27 @@
                                 <div id="daily-att-details" class="bento-card"
                                     style="padding:20px; border: 1px dashed var(--adm-accent);">
                                     <p style="color:var(--adm-text-sec); font-size:0.9rem;">Kunni tanlang...</p>
+                                </div>
+                            </div>
+
+                            <div class="modern-calendar"
+                                style="margin-top:20px; background: rgba(0,0,0,0.02); padding:15px; border-radius:20px;">
+                                <div class="cal-header">
+                                    <h2 id="current-month-name" style="font-size:1.1rem;">Sentyabr</h2>
+                                    <div style="display:flex; gap:10px;">
+                                        <button class="icon-small-btn" id="cal-prev">‹</button>
+                                        <button class="icon-small-btn" id="cal-next">›</button>
+                                    </div>
+                                </div>
+                                <div class="cal-grid">
+                                    <div class="cal-day-label">Du</div>
+                                    <div class="cal-day-label">Se</div>
+                                    <div class="cal-day-label">Ch</div>
+                                    <div class="cal-day-label">Pa</div>
+                                    <div class="cal-day-label">Ju</div>
+                                    <div class="cal-day-label">Sh</div>
+                                    <div class="cal-day-label">Ya</div>
+                                    <!-- Calendar days populated by JS -->
                                 </div>
                             </div>
                         </div>
