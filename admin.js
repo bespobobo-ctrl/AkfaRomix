@@ -299,7 +299,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('st-kpi').textContent = 85 + Math.floor(Math.random() * 14) + '%';
     }
 
-    function renderModernCalendar(month, year) {
+    async function renderModernCalendar(month, year) {
         const monthNames = ["Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun", "Iyul", "Avgust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr"];
         const monthHeader = document.getElementById('current-month-name');
         if (monthHeader) monthHeader.textContent = monthNames[month] + " " + year;
@@ -307,38 +307,60 @@ document.addEventListener('DOMContentLoaded', async () => {
         const calGrid = document.querySelector('.cal-grid');
         if (!calGrid) return;
 
+        // Clear only dates, keep labels
         const labels = Array.from(calGrid.querySelectorAll('.cal-day-label'));
         calGrid.innerHTML = '';
         labels.forEach(l => calGrid.appendChild(l));
 
         const firstDay = new Date(year, month, 1).getDay();
-        const offset = (firstDay === 0 ? 7 : firstDay) - 1;
+        const adjustedFirstDay = (firstDay === 0) ? 6 : firstDay - 1;
         const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const prevMonthLastDay = new Date(year, month, 0).getDate();
+        const today = new Date();
 
-        for (let i = offset; i > 0; i--) {
-            const div = document.createElement('div');
-            div.className = 'cal-day-num disabled';
-            div.textContent = prevMonthLastDay - i + 1;
-            calGrid.appendChild(div);
+        // Fetch attendance for this month for selectedWorkerId
+        let monthAtt = [];
+        if (selectedWorkerId) {
+            const startMonth = `${year}-${(month + 1).toString().padStart(2, '0')}-01`;
+            const endMonth = `${year}-${(month + 1).toString().padStart(2, '0')}-${daysInMonth}`;
+            const { data } = await supabase.from('attendance')
+                .select('date, status')
+                .eq('employee_id', selectedWorkerId)
+                .gte('date', startMonth)
+                .lte('date', endMonth);
+            monthAtt = data || [];
         }
 
-        const today = new Date().getDate();
-        const thisMonth = new Date().getMonth();
-        const thisYear = new Date().getFullYear();
+        // Pad start
+        for (let i = 0; i < adjustedFirstDay; i++) {
+            const div = document.createElement('div');
+            div.className = 'cal-day-num disabled';
+            calGrid.appendChild(div);
+        }
 
         for (let d = 1; d <= daysInMonth; d++) {
             const div = document.createElement('div');
             div.className = 'cal-day-num';
-            if (d === today && month === thisMonth && year === thisYear) div.classList.add('active');
-
             div.textContent = d;
+
+            const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
+
+            // Check status for this specific day
+            const dayStatus = monthAtt.find(a => a.date === dateStr);
+            if (dayStatus) {
+                if (dayStatus.status === 'Vaqtida keldi') div.classList.add('has-present');
+                if (dayStatus.status === 'Kech qoldi') div.classList.add('has-late');
+            }
+
+            if (year === today.getFullYear() && month === today.getMonth() && d === today.getDate()) {
+                div.classList.add('today');
+            }
+
             div.onclick = () => {
-                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                document.querySelectorAll('.cal-day-num').forEach(x => x.classList.remove('active'));
+                document.querySelectorAll('.cal-day-num').forEach(n => n.classList.remove('active'));
                 div.classList.add('active');
                 showDailyAttendance(dateStr);
             };
+
             calGrid.appendChild(div);
         }
     }
