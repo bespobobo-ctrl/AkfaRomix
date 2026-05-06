@@ -63,7 +63,36 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (sec.id === `section-${target}`) sec.classList.add('active');
             });
 
+            // Show/Hide Top Nav based on section
+            const topNav = document.querySelector('.nav-links-v2');
+            if (target === 'dashboard') {
+                topNav.style.display = 'flex';
+            } else {
+                topNav.style.display = 'none';
+            }
+
             if (target === 'users') loadSystemUsers();
+        });
+    });
+
+    // --- ROMIX SUB-SECTION SWITCHING (TOP NAV) ---
+    const topNavLinks = document.querySelectorAll('.nav-link-item[data-tab]');
+    const romixSubSections = document.querySelectorAll('.romix-sub-section');
+
+    topNavLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const tab = link.getAttribute('data-tab');
+
+            topNavLinks.forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
+
+            romixSubSections.forEach(sec => {
+                sec.classList.remove('active');
+                if (sec.id === `section-${tab}`) sec.classList.add('active');
+            });
+
+            if (tab === 'logins') loadSystemUsers();
         });
     });
 
