@@ -141,43 +141,43 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let currentCalMonth = new Date().getMonth();
     let currentCalYear = new Date().getFullYear();
-
-    // --- ROMIX HR DATA (MODERN) ---
     let selectedWorkerId = null;
+    let allEmployees = [];
 
     // --- ROMIX HR DATA (MODERN) ---
     async function loadRomixHRData() {
         const { data: emps, error } = await supabase.from('employees').select('*').order('full_name', { ascending: true });
         if (error) return;
+        allEmployees = emps;
 
-        const listContainer = document.getElementById('staff-list-container');
-        if (listContainer) {
-            listContainer.innerHTML = emps.map(emp => `
-                <div class="bento-card staff-list-row" style="cursor:pointer; display:flex; align-items:center; gap:15px; padding:12px; border: 1px solid var(--adm-border);" data-id="${emp.id}">
-                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=random" style="width:40px; height:40px; border-radius:10px;">
-                    <div style="flex:1;">
-                        <div style="font-weight:700; font-size:0.9rem;">${emp.full_name}</div>
-                        <div style="font-size:0.75rem; color:var(--adm-text-sec);">${emp.role}</div>
-                    </div>
-                    <div style="text-align:right;">
-                        <div style="font-weight:600; font-size:0.8rem; color:var(--adm-accent);">${emp.salary_info || '---'}</div>
-                        <div style="font-size:0.65rem; color:${emp.status === 'Ishlamoqda' ? '#00ff88' : '#ff4d4f'};">${emp.status}</div>
-                    </div>
-                </div>
-            `).join('');
+        renderStaffList(allEmployees);
 
-            listContainer.querySelectorAll('.staff-list-row').forEach(row => {
-                row.onclick = () => {
-                    const emp = emps.find(x => x.id === row.dataset.id);
-                    if (emp) {
-                        selectedWorkerId = emp.id;
-                        updateStaffProfileCard(emp);
-                    }
-                    document.querySelectorAll('.staff-list-row').forEach(r => r.style.borderColor = 'var(--adm-border)');
-                    row.style.borderColor = 'var(--adm-accent)';
-                };
-            });
-        }
+        // Pill Filtering
+        const pills = document.querySelectorAll('.pills-container .pill');
+        pills.forEach(pill => {
+            if (pill.dataset.init) return;
+            pill.dataset.init = "true";
+
+            pill.onclick = () => {
+                pills.forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+                const cat = pill.textContent.trim();
+
+                if (cat === 'Barchasi') {
+                    renderStaffList(allEmployees);
+                } else if (cat === 'Ustalar') {
+                    renderStaffList(allEmployees.filter(e => e.role.toLowerCase().includes('usta') || e.role.toLowerCase().includes('brigada')));
+                } else if (cat === 'Omborchilar') {
+                    renderStaffList(allEmployees.filter(e => e.role.toLowerCase().includes('ombor')));
+                } else if (cat === 'Sotuvchilar') {
+                    renderStaffList(allEmployees.filter(e => e.role.toLowerCase().includes('sotuv') || e.role.toLowerCase().includes('menejer')));
+                } else if (cat === 'Ofis') {
+                    renderStaffList(allEmployees.filter(e => e.role.toLowerCase().includes('ofis') || e.role.toLowerCase().includes('bugalter') || e.role.toLowerCase().includes('hr') || e.role.toLowerCase().includes('admin')));
+                } else if (cat === 'Xo\'jalik') {
+                    renderStaffList(allEmployees.filter(e => e.role.toLowerCase().includes('xo\'jalik') || e.role.toLowerCase().includes('tozalik') || e.role.toLowerCase().includes('oshxona') || e.role.toLowerCase().includes('qorovul')));
+                }
+            };
+        });
 
         if (emps && emps.length > 0) {
             selectedWorkerId = emps[0].id;
@@ -186,11 +186,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         renderModernCalendar(currentCalMonth, currentCalYear);
 
-        // Attach Nav Events (once)
         const prevBtn = document.getElementById('cal-prev');
         const nextBtn = document.getElementById('cal-next');
-        if (prevBtn && !prevBtn.dataset.init) {
-            prevBtn.dataset.init = "true";
+        if (prevBtn && !prevBtn.dataset.navInit) {
+            prevBtn.dataset.navInit = "true";
             prevBtn.onclick = () => {
                 currentCalMonth--;
                 if (currentCalMonth < 0) { currentCalMonth = 11; currentCalYear--; }
@@ -204,6 +203,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         setupStaffActions();
+    }
+
+    function renderStaffList(emps) {
+        const listContainer = document.getElementById('staff-list-container');
+        if (!listContainer) return;
+
+        listContainer.innerHTML = emps.map(emp => `
+            <div class="bento-card staff-list-row" style="cursor:pointer; display:flex; align-items:center; gap:15px; padding:12px; border: 1px solid var(--adm-border); margin-bottom:5px;" data-id="${emp.id}">
+                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=random" style="width:40px; height:40px; border-radius:10px;">
+                <div style="flex:1;">
+                    <div style="font-weight:700; font-size:0.9rem;">${emp.full_name}</div>
+                    <div style="font-size:0.75rem; color:var(--adm-text-sec);">${emp.role}</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-weight:600; font-size:0.8rem; color:var(--adm-accent);">${emp.salary_info || '---'}</div>
+                    <div style="font-size:0.65rem; color:${emp.status === 'Ishlamoqda' ? '#00ff88' : '#ff4d4f'};">${emp.status}</div>
+                </div>
+            </div>
+        `).join('');
+
+        listContainer.querySelectorAll('.staff-list-row').forEach(row => {
+            row.onclick = () => {
+                const emp = emps.find(x => x.id === row.dataset.id);
+                if (emp) {
+                    selectedWorkerId = emp.id;
+                    updateStaffProfileCard(emp);
+                }
+                document.querySelectorAll('.staff-list-row').forEach(r => r.style.borderColor = 'var(--adm-border)');
+                row.style.borderColor = 'var(--adm-accent)';
+            };
+        });
     }
 
     function setupStaffActions() {
