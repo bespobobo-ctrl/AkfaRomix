@@ -1,7 +1,7 @@
 import { supabase } from './supabase.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('AKFA Admin Panel v2 Logic Loaded');
+    console.log('AKFA Rahbar Paneli v2 Logic Loaded');
     let editingUserId = null;
 
     // Auth Check
@@ -10,11 +10,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = '/';
     }
 
-    // Update Admin Profile Info
+    // Update Rahbar Profile Info
     const adminNameDisplay = document.getElementById('adminName');
     const adminAvatar = document.getElementById('adminAvatar');
-    if (adminNameDisplay) adminNameDisplay.textContent = user.username.toUpperCase();
-    if (adminAvatar) adminAvatar.src = `https://ui-avatars.com/api/?name=${user.username}&background=007c52&color=fff&size=100`;
+    const displayName = user.username.toLowerCase() === 'admin' ? 'RAHBAR' : user.username.toUpperCase();
+    if (adminNameDisplay) adminNameDisplay.textContent = displayName;
+    if (adminAvatar) adminAvatar.src = `https://ui-avatars.com/api/?name=${displayName}&background=007c52&color=fff&size=100`;
 
     // Theme Toggle Logic
     const themeBtn = document.getElementById('themeToggle');
@@ -93,7 +94,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <strong>${user.full_name}</strong>
                     </div>
                 </td>
-                <td><span class="status-badge" style="background:rgba(0,124,82,0.1); color:#007c52; padding:4px 10px; border-radius:30px;">${user.role.toUpperCase()}</span></td>
+                <td><span class="status-badge" style="background:rgba(0,124,82,0.1); color:#007c52; padding:4px 10px; border-radius:30px;">${user.role === 'admin' ? 'RAHBAR' : user.role.toUpperCase()}</span></td>
                 <td><code style="background:rgba(0,0,0,0.05); padding:2px 5px; border-radius:4px;">${user.username}</code> / ***</td>
                 <td>Online</td>
                 <td>
