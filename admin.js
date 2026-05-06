@@ -139,13 +139,66 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    let currentCalMonth = new Date().getMonth();
+    let currentCalYear = new Date().getFullYear();
+
     // --- ROMIX HR DATA (MODERN) ---
     async function loadRomixHRData() {
         // Load staff into the profile card (default first person)
         const { data: emps } = await supabase.from('employees').select('*').limit(1).single();
         if (emps) updateStaffProfileCard(emps);
 
-        renderModernCalendar(new Date().getMonth(), new Date().getFullYear());
+        renderModernCalendar(currentCalMonth, currentCalYear);
+
+        // Attach Nav Events (once)
+        const prevBtn = document.getElementById('cal-prev');
+        const nextBtn = document.getElementById('cal-next');
+        if (prevBtn && !prevBtn.dataset.init) {
+            prevBtn.dataset.init = "true";
+            prevBtn.onclick = () => {
+                currentCalMonth--;
+                if (currentCalMonth < 0) { currentCalMonth = 11; currentCalYear--; }
+                renderModernCalendar(currentCalMonth, currentCalYear);
+            };
+            nextBtn.onclick = () => {
+                currentCalMonth++;
+                if (currentCalMonth > 11) { currentCalMonth = 0; currentCalYear++; }
+                renderModernCalendar(currentCalMonth, currentCalYear);
+            };
+        }
+    }
+
+    async function showDailyAttendance(dateStr) {
+        const detailBox = document.getElementById('daily-att-details');
+        if (!detailBox) return;
+
+        detailBox.innerHTML = '<h4>Yuklanmoqda...</h4>';
+
+        const { data: att, error } = await supabase.from('attendance')
+            .select('*, employees(full_name, role)')
+            .eq('date', dateStr);
+
+        if (error || !att || att.length === 0) {
+            detailBox.innerHTML = `<h4 style="margin-bottom:10px;">${dateStr}</h4><p style="color:var(--adm-text-sec);">Bu kunda davomat qayd etilmagan.</p>`;
+            return;
+        }
+
+        let html = `<h4 style="margin-bottom:15px;">${dateStr} Tafsilotlari</h4>`;
+        html += `<div style="display:flex; flex-direction:column; gap:8px;">`;
+        att.forEach(a => {
+            const statusColor = a.status === 'Vaqtida keldi' ? '#00ff88' : (a.status === 'Ruxsat so\'ralgan' ? '#ffb800' : '#ff4d4f');
+            html += `
+                <div class="bento-card" style="padding:10px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-weight:600; font-size:0.85rem;">${a.employees?.full_name || 'Noma\'lum'}</div>
+                        <div style="font-size:0.7rem; color:var(--adm-text-sec);">${a.employees?.role || ''}</div>
+                    </div>
+                    <span style="font-size:0.75rem; font-weight:700; color:${statusColor};">${a.status}</span>
+                </div>
+            `;
+        });
+        html += `</div>`;
+        detailBox.innerHTML = html;
     }
 
     function updateStaffProfileCard(emp) {
@@ -171,17 +224,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         const calGrid = document.querySelector('.cal-grid');
         if (!calGrid) return;
 
-        // Keep day labels
         const labels = Array.from(calGrid.querySelectorAll('.cal-day-label'));
         calGrid.innerHTML = '';
         labels.forEach(l => calGrid.appendChild(l));
 
-        const firstDay = new Date(year, month, 1).getDay(); // 0 is Sun, we need Mon as 1
+        const firstDay = new Date(year, month, 1).getDay();
         const offset = (firstDay === 0 ? 7 : firstDay) - 1;
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         const prevMonthLastDay = new Date(year, month, 0).getDate();
 
-        // Prev month days
         for (let i = offset; i > 0; i--) {
             const div = document.createElement('div');
             div.className = 'cal-day-num disabled';
@@ -191,14 +242,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const today = new Date().getDate();
         const thisMonth = new Date().getMonth();
+        const thisYear = new Date().getFullYear();
 
-        // Current month days
         for (let d = 1; d <= daysInMonth; d++) {
             const div = document.createElement('div');
             div.className = 'cal-day-num';
-            if (d === today && month === thisMonth) div.classList.add('active');
-            if (d % 4 === 0) div.classList.add('has-event'); // random dots
+            if (d === today && month === thisMonth && year === thisYear) div.classList.add('active');
+
             div.textContent = d;
+            div.onclick = () => {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                document.querySelectorAll('.cal-day-num').forEach(x => x.classList.remove('active'));
+                div.classList.add('active');
+                showDailyAttendance(dateStr);
+            };
             calGrid.appendChild(div);
         }
     }

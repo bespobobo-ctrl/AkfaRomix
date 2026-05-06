@@ -419,8 +419,8 @@
                             <div class="cal-header">
                                 <h2 id="current-month-name">Sentyabr</h2>
                                 <div style="display:flex; gap:10px;">
-                                    <button class="icon-small-btn">‹</button>
-                                    <button class="icon-small-btn">›</button>
+                                    <button class="icon-small-btn" id="cal-prev">‹</button>
+                                    <button class="icon-small-btn" id="cal-next">›</button>
                                 </div>
                             </div>
                             <div class="cal-grid">
@@ -474,20 +474,9 @@
                             </div>
 
                             <div style="width:100%; margin-top:30px;">
-                                <h3>Eslatmalar</h3>
-                                <div style="margin-top:15px; display:flex; flex-direction:column; gap:10px;">
-                                    <div class="bento-card"
-                                        style="padding:15px; display:flex; gap:10px; align-items:center;">
-                                        <span>📅</span>
-                                        <div style="font-size: 0.8rem;"><b>Dushanba</b><br><small>Oylik hisoboti
-                                                kuni</small></div>
-                                    </div>
-                                    <div class="bento-card"
-                                        style="padding:15px; display:flex; gap:10px; align-items:center;">
-                                        <span>📞</span>
-                                        <div style="font-size: 0.8rem;"><b>Yangi brigada</b><br><small>Suhbat soat
-                                                14:00</small></div>
-                                    </div>
+                                <div id="daily-att-details" class="bento-card"
+                                    style="padding:20px; border: 1px dashed var(--adm-accent);">
+                                    <p style="color:var(--adm-text-sec); font-size:0.9rem;">Kunni tanlang...</p>
                                 </div>
                             </div>
                         </div>
