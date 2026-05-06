@@ -144,9 +144,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- ROMIX HR DATA (MODERN) ---
     async function loadRomixHRData() {
-        // Load staff into the profile card (default first person)
-        const { data: emps } = await supabase.from('employees').select('*').limit(1).single();
-        if (emps) updateStaffProfileCard(emps);
+        const { data: emps, error } = await supabase.from('employees').select('*').order('full_name', { ascending: true });
+        if (error) return;
+
+        const listContainer = document.getElementById('staff-list-container');
+        if (listContainer) {
+            listContainer.innerHTML = emps.map(emp => `
+                <div class="bento-card staff-mini-card" style="min-width:140px; cursor:pointer; text-align:center; padding:15px; border: 1px solid var(--adm-border); flex-shrink:0;" data-id="${emp.id}">
+                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=random" style="width:50px; height:50px; border-radius:15px; margin-bottom:8px;">
+                    <div style="font-weight:700; font-size:0.8rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${emp.full_name}</div>
+                    <div style="font-size:0.7rem; color:var(--adm-text-sec);">${emp.role}</div>
+                </div>
+            `).join('');
+
+            // Add click events
+            listContainer.querySelectorAll('.staff-mini-card').forEach(card => {
+                card.onclick = () => {
+                    const emp = emps.find(x => x.id === card.dataset.id);
+                    if (emp) updateStaffProfileCard(emp);
+
+                    document.querySelectorAll('.staff-mini-card').forEach(c => c.style.borderColor = 'var(--adm-border)');
+                    card.style.borderColor = 'var(--adm-accent)';
+                };
+            });
+        }
+
+        if (emps && emps.length > 0) updateStaffProfileCard(emps[0]);
 
         renderModernCalendar(currentCalMonth, currentCalYear);
 
