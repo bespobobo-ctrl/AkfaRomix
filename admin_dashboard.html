@@ -349,220 +349,437 @@
                 </div>
             </section>
 
-            <!-- Section: Xodimlar (Modern Redesign) -->
+            <!-- Section: Xodimlar (Premium HR Command Center) -->
             <section id="section-xodimlar" class="admin-section romix-sub-section">
                 <style>
-                    .staff-layout {
-                        display: grid;
-                        grid-template-columns: 1fr 350px;
-                        gap: 20px;
-                    }
-
-                    .staff-main-col {
+                    /* ═══ HR Layout System ═══ */
+                    .hr-layout {
                         display: flex;
-                        flex-direction: column;
-                        gap: 20px;
+                        gap: 30px;
+                        height: calc(100vh - 160px);
                     }
 
-                    .welcome-banner {
-                        background: linear-gradient(135deg, var(--adm-accent) 0%, #00a870 100%);
-                        border-radius: 24px;
-                        padding: 30px;
-                        position: relative;
-                        overflow: hidden;
-                        color: #fff;
-                    }
-
-                    .welcome-banner img {
-                        position: absolute;
-                        right: 20px;
-                        bottom: 0;
-                        height: 120%;
-                        opacity: 0.8;
-                        pointer-events: none;
-                    }
-
-                    .pills-container {
-                        display: flex;
-                        gap: 10px;
-                        margin: 10px 0;
-                    }
-
-                    .pill {
-                        padding: 10px 20px;
-                        border-radius: 50px;
-                        background: rgba(255, 255, 255, 0.05);
-                        border: 1px solid var(--adm-border);
-                        cursor: pointer;
-                        transition: 0.3s;
-                        font-size: 0.9rem;
-                    }
-
-                    .staff-layout {
-                        display: flex;
-                        gap: 25px;
-                        height: calc(100vh - 180px);
-                    }
-
-                    .staff-main-col {
-                        width: 400px;
+                    .hr-directory {
+                        width: 380px;
                         flex-shrink: 0;
                         display: flex;
                         flex-direction: column;
-                        gap: 20px;
+                        gap: 18px;
                         height: 100%;
                     }
 
-                    .staff-analytics-panel {
+                    .hr-detail-panel {
                         flex: 1;
                         overflow-y: auto;
                         display: flex;
                         flex-direction: column;
-                        gap: 25px;
-                        padding-right: 10px;
+                        gap: 22px;
+                        padding-right: 5px;
                     }
 
-                    .analytics-top-row {
-                        display: grid;
-                        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                        gap: 20px;
+                    .hr-detail-panel::-webkit-scrollbar {
+                        width: 4px;
                     }
 
-                    .action-header-row {
+                    .hr-detail-panel::-webkit-scrollbar-track {
+                        background: transparent;
+                    }
+
+                    .hr-detail-panel::-webkit-scrollbar-thumb {
+                        background: rgba(255, 255, 255, 0.08);
+                        border-radius: 4px;
+                    }
+
+                    /* ═══ Category Pills ═══ */
+                    .pills-container {
                         display: flex;
+                        gap: 8px;
+                        flex-wrap: wrap;
+                    }
+
+                    .pill {
+                        padding: 8px 18px;
+                        border-radius: 50px;
+                        background: rgba(255, 255, 255, 0.04);
+                        border: 1px solid rgba(255, 255, 255, 0.08);
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        font-size: 0.82rem;
+                        font-weight: 500;
+                        color: rgba(255, 255, 255, 0.6);
+                    }
+
+                    .pill:hover {
+                        background: rgba(0, 124, 82, 0.15);
+                        border-color: rgba(0, 124, 82, 0.3);
+                        color: #fff;
+                    }
+
+                    .pill.active {
+                        background: var(--adm-accent);
+                        color: #fff;
+                        border-color: var(--adm-accent);
+                        box-shadow: 0 4px 15px rgba(0, 124, 82, 0.3);
+                    }
+
+                    /* ═══ Staff List ═══ */
+                    #staff-list-container {
+                        flex: 1;
+                        overflow-y: auto;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 6px;
+                        padding-right: 5px;
+                    }
+
+                    #staff-list-container::-webkit-scrollbar {
+                        width: 4px;
+                    }
+
+                    #staff-list-container::-webkit-scrollbar-track {
+                        background: transparent;
+                    }
+
+                    #staff-list-container::-webkit-scrollbar-thumb {
+                        background: rgba(255, 255, 255, 0.08);
+                        border-radius: 4px;
+                    }
+
+                    /* ═══ Analytics Cards ═══ */
+                    .hr-analytics-grid {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr 1fr;
                         gap: 20px;
-                        background: rgba(255, 255, 255, 0.02);
-                        padding: 15px;
-                        border-radius: 24px;
-                        border: 1px solid rgba(255, 255, 255, 0.05);
+                    }
+
+                    .hr-card {
+                        background: rgba(255, 255, 255, 0.03);
+                        border: 1px solid rgba(255, 255, 255, 0.06);
+                        border-radius: 20px;
+                        padding: 24px;
+                        backdrop-filter: blur(10px);
+                        transition: all 0.3s ease;
+                    }
+
+                    .hr-card:hover {
+                        border-color: rgba(0, 210, 255, 0.15);
+                        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+                    }
+
+                    /* ═══ Action Bar ═══ */
+                    .hr-action-bar {
+                        display: flex;
+                        gap: 14px;
+                    }
+
+                    .hr-action-btn {
+                        flex: 1;
+                        height: 48px;
+                        border: none;
+                        border-radius: 14px;
+                        font-weight: 700;
+                        font-size: 0.85rem;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 8px;
+                    }
+
+                    .hr-action-btn:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+                    }
+
+                    /* ═══ Calendar ═══ */
+                    .modern-calendar {
+                        background: rgba(255, 255, 255, 0.03);
+                        border: 1px solid rgba(255, 255, 255, 0.06);
+                        border-radius: 20px;
+                        padding: 22px;
+                        backdrop-filter: blur(10px);
+                    }
+
+                    .cal-header {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 18px;
+                    }
+
+                    .cal-header h2 {
+                        font-size: 1rem;
+                        font-weight: 700;
+                    }
+
+                    .cal-nav-group {
+                        display: flex;
+                        gap: 6px;
+                    }
+
+                    .cal-nav-btn {
+                        width: 32px;
+                        height: 32px;
+                        border-radius: 10px;
+                        border: 1px solid rgba(255, 255, 255, 0.1);
+                        background: rgba(255, 255, 255, 0.04);
+                        color: #fff;
+                        font-size: 1rem;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        transition: 0.2s;
+                    }
+
+                    .cal-nav-btn:hover {
+                        background: var(--adm-accent);
+                        border-color: var(--adm-accent);
+                    }
+
+                    .cal-grid {
+                        display: grid;
+                        grid-template-columns: repeat(7, 1fr);
+                        gap: 6px;
+                    }
+
+                    .cal-day-label {
+                        text-align: center;
+                        font-size: 0.7rem;
+                        color: rgba(255, 255, 255, 0.35);
+                        font-weight: 600;
+                        text-transform: uppercase;
+                        padding-bottom: 8px;
+                    }
+
+                    .cal-day-num {
+                        aspect-ratio: 1;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        border-radius: 10px;
+                        font-weight: 600;
+                        font-size: 0.8rem;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        position: relative;
+                        color: rgba(255, 255, 255, 0.7);
+                    }
+
+                    .cal-day-num:hover {
+                        background: rgba(0, 210, 255, 0.1);
+                        color: #00d2ff;
+                    }
+
+                    .cal-day-num.today {
+                        background: var(--adm-accent);
+                        color: #fff;
+                        box-shadow: 0 4px 12px rgba(0, 124, 82, 0.4);
+                    }
+
+                    .cal-day-num.active {
+                        background: #00d2ff;
+                        color: #000;
+                        box-shadow: 0 4px 12px rgba(0, 210, 255, 0.4);
+                    }
+
+                    .cal-day-num.disabled {
+                        opacity: 0.15;
+                        pointer-events: none;
+                    }
+
+                    .cal-day-num.has-present::after {
+                        content: '';
+                        position: absolute;
+                        bottom: 3px;
+                        width: 4px;
+                        height: 4px;
+                        background: #00ff88;
+                        border-radius: 50%;
+                        box-shadow: 0 0 6px #00ff88;
+                    }
+
+                    .cal-day-num.has-late::after {
+                        content: '';
+                        position: absolute;
+                        bottom: 3px;
+                        width: 4px;
+                        height: 4px;
+                        background: #ffb800;
+                        border-radius: 50%;
+                        box-shadow: 0 0 6px #ffb800;
+                    }
+
+                    /* ═══ Bottom Grid ═══ */
+                    .hr-bottom-grid {
+                        display: grid;
+                        grid-template-columns: 1fr 350px;
+                        gap: 20px;
                     }
                 </style>
-                </style>
 
-                <div class="staff-layout">
-                    <div class="staff-main-col">
+                <!-- HR LAYOUT -->
+                <div class="hr-layout">
+
+                    <!-- LEFT: Staff Directory -->
+                    <div class="hr-directory">
                         <div class="pills-container">
                             <div class="pill active">Barchasi</div>
                             <div class="pill">Ustalar</div>
-                            <div class="pill">Omborchilar</div>
-                            <div class="pill">Sotuvchilar</div>
                             <div class="pill">Ofis</div>
                             <div class="pill">Xo'jalik</div>
                         </div>
-                        <div id="staff-list-container" style="flex: 1; overflow-y: auto;">
-                            <!-- JS will populate rows -->
+                        <div id="staff-list-container">
+                            <!-- JS renders staff rows here -->
                         </div>
                     </div>
 
-                    <div class="staff-analytics-panel">
-                        <!-- Stat Row -->
-                        <div class="analytics-top-row">
-                            <!-- Block 1: Profile -->
-                            <div class="bento-card" style="padding:25px;">
-                                <div style="position:relative; width:90px; height:90px; margin:0 auto 15px;">
-                                    <img id="selected-staff-img" src=""
-                                        style="width:100%; height:100%; border-radius:24px; object-fit:cover;">
+                    <!-- RIGHT: Analytics & Detail -->
+                    <div class="hr-detail-panel">
+
+                        <!-- Row 1: Three Info Cards -->
+                        <div class="hr-analytics-grid">
+
+                            <!-- Card: Profile -->
+                            <div class="hr-card" style="display:flex; flex-direction:column; align-items:center;">
+                                <div style="position:relative; width:80px; height:80px; margin-bottom:14px;">
+                                    <img id="selected-staff-img"
+                                        src="https://ui-avatars.com/api/?name=?&background=0a1628&color=555&size=160"
+                                        style="width:100%; height:100%; border-radius:20px; object-fit:cover; border:2px solid rgba(255,255,255,0.08);">
                                     <div id="st-salary-badge"
-                                        style="position:absolute; bottom:-5px; right:-10px; background:#00d2ff; color:#000; padding:3px 8px; border-radius:10px; font-size:0.7rem; font-weight:700;">
+                                        style="position:absolute; bottom:-6px; right:-12px; background:linear-gradient(135deg,#00d2ff,#007aff); color:#fff; padding:3px 10px; border-radius:8px; font-size:0.65rem; font-weight:700; box-shadow:0 4px 12px rgba(0,122,255,0.4);">
                                         ---</div>
                                 </div>
                                 <h3 id="selected-staff-name"
-                                    style="text-align:center; font-size:1.2rem; margin-bottom:2px;">---</h3>
+                                    style="font-size:1.1rem; font-weight:700; margin-bottom:2px;">Xodim tanlang</h3>
                                 <p id="selected-staff-role"
-                                    style="text-align:center; color:var(--adm-accent); font-size:0.8rem; margin-bottom:15px;">
-                                    ---</p>
-                                <div style="font-size:0.8rem; display:flex; flex-direction:column; gap:8px;">
-                                    <div style="display:flex; justify-content:space-between; opacity:0.7;">
-                                        <span>Tel:</span><span id="st-phone">---</span></div>
-                                    <div style="display:flex; justify-content:space-between; opacity:0.7;">
-                                        <span>Bo'lim:</span><span id="st-dept">---</span></div>
-                                    <div style="display:flex; justify-content:space-between; opacity:0.7;">
-                                        <span>Staj:</span><span id="st-exp">---</span></div>
+                                    style="color:#00d2ff; font-size:0.75rem; margin-bottom:18px;">---</p>
+                                <div
+                                    style="width:100%; display:flex; flex-direction:column; gap:8px; font-size:0.78rem;">
+                                    <div
+                                        style="display:flex; justify-content:space-between; padding:8px 12px; background:rgba(255,255,255,0.03); border-radius:10px;">
+                                        <span style="opacity:0.5;">Telefon</span>
+                                        <span id="st-phone" style="font-weight:600;">---</span>
+                                    </div>
+                                    <div
+                                        style="display:flex; justify-content:space-between; padding:8px 12px; background:rgba(255,255,255,0.03); border-radius:10px;">
+                                        <span style="opacity:0.5;">Bo'lim</span>
+                                        <span id="st-dept" style="font-weight:600;">---</span>
+                                    </div>
+                                    <div
+                                        style="display:flex; justify-content:space-between; padding:8px 12px; background:rgba(255,255,255,0.03); border-radius:10px;">
+                                        <span style="opacity:0.5;">Staj</span>
+                                        <span id="st-exp" style="font-weight:600;">---</span>
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Block 2: Time -->
-                            <div class="bento-card"
-                                style="padding:25px; display:flex; flex-direction:column; align-items:center;">
-                                <h3 style="font-size:0.9rem; margin-bottom:15px;">Ish Vaqti <span
-                                        style="opacity:0.5;">(Bugun)</span></h3>
+                            <!-- Card: Time Tracker -->
+                            <div class="hr-card"
+                                style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                                <h4 style="font-size:0.85rem; font-weight:600; margin-bottom:18px; opacity:0.8;">Ish
+                                    Vaqti Trekeri <span style="opacity:0.4;">(Bugun)</span></h4>
                                 <div
-                                    style="position:relative; width:120px; height:120px; display:flex; align-items:center; justify-content:center;">
-                                    <svg width="120" height="120" viewBox="0 0 120 120">
-                                        <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.05)"
+                                    style="position:relative; width:130px; height:130px; display:flex; align-items:center; justify-content:center;">
+                                    <svg width="130" height="130" viewBox="0 0 130 130">
+                                        <circle cx="65" cy="65" r="55" fill="none" stroke="rgba(255,255,255,0.04)"
                                             stroke-width="8" />
-                                        <circle cx="60" cy="60" r="50" fill="none" stroke="#00d2ff" stroke-width="8"
-                                            stroke-dasharray="314" stroke-dashoffset="80" stroke-linecap="round" />
+                                        <circle cx="65" cy="65" r="55" fill="none" stroke="url(#timeGrad)"
+                                            stroke-width="8" stroke-dasharray="345" stroke-dashoffset="86"
+                                            stroke-linecap="round" transform="rotate(-90 65 65)" />
+                                        <defs>
+                                            <linearGradient id="timeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="0%" stop-color="#00d2ff" />
+                                                <stop offset="100%" stop-color="#00ff88" />
+                                            </linearGradient>
+                                        </defs>
                                     </svg>
                                     <div style="position:absolute; text-align:center;">
-                                        <div id="worked-hours" style="font-size:1.4rem; font-weight:700;">08:30</div>
-                                        <div style="font-size:0.6rem; opacity:0.5;">SOAT</div>
+                                        <div id="worked-hours"
+                                            style="font-size:1.6rem; font-weight:800; letter-spacing:-0.5px;">00:00
+                                        </div>
+                                        <div
+                                            style="font-size:0.6rem; opacity:0.4; text-transform:uppercase; letter-spacing:1px;">
+                                            soat</div>
                                     </div>
                                 </div>
                                 <div
-                                    style="display:grid; grid-template-columns:1fr 1fr; gap:10px; width:100%; margin-top:15px;">
+                                    style="display:grid; grid-template-columns:1fr 1fr; gap:10px; width:100%; margin-top:18px;">
                                     <div
-                                        style="text-align:center; background:rgba(0,0,0,0.1); padding:8px; border-radius:12px;">
-                                        <div style="font-size:0.6rem; opacity:0.5;">KELDI</div>
-                                        <div id="st-time-in" style="font-size:0.8rem; font-weight:700; color:#00ff88;">
-                                            08:12</div>
+                                        style="text-align:center; background:rgba(0,255,136,0.05); padding:10px; border-radius:12px; border:1px solid rgba(0,255,136,0.1);">
+                                        <div
+                                            style="font-size:0.6rem; opacity:0.4; text-transform:uppercase; letter-spacing:0.5px;">
+                                            Keldi</div>
+                                        <div id="st-time-in" style="font-size:0.85rem; font-weight:700; color:#00ff88;">
+                                            --:--</div>
                                     </div>
                                     <div
-                                        style="text-align:center; background:rgba(0,0,0,0.1); padding:8px; border-radius:12px;">
-                                        <div style="font-size:0.6rem; opacity:0.5;">KETDI</div>
-                                        <div id="st-time-out" style="font-size:0.8rem; font-weight:700; color:#ffb800;">
-                                            --:--</div>
+                                        style="text-align:center; background:rgba(255,184,0,0.05); padding:10px; border-radius:12px; border:1px solid rgba(255,184,0,0.1);">
+                                        <div
+                                            style="font-size:0.6rem; opacity:0.4; text-transform:uppercase; letter-spacing:0.5px;">
+                                            Ketdi</div>
+                                        <div id="st-time-out"
+                                            style="font-size:0.85rem; font-weight:700; color:#ffb800;">--:--</div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Block 3: KPI -->
-                            <div class="bento-card" style="padding:25px;">
+                            <!-- Card: KPI -->
+                            <div class="hr-card">
                                 <div
-                                    style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                                    <h3 style="font-size:0.9rem;">KPI Reyting</h3>
+                                    style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                                    <h4 style="font-size:0.85rem; font-weight:600; opacity:0.8;">Menejment Reytingi</h4>
                                     <span id="st-kpi-val"
-                                        style="color:#00ff88; font-weight:700; font-size:0.9rem;">98%</span>
+                                        style="color:#00ff88; font-weight:800; font-size:0.9rem;">0%</span>
                                 </div>
                                 <div
-                                    style="height:6px; background:rgba(255,255,255,0.05); border-radius:3px; margin-bottom:20px;">
+                                    style="height:5px; background:rgba(255,255,255,0.04); border-radius:3px; margin-bottom:22px; overflow:hidden;">
                                     <div id="kpi-bar"
-                                        style="height:100%; width:98%; background:linear-gradient(90deg, #00d2ff, #00ff88); border-radius:3px; box-shadow:0 0 10px rgba(0,255,136,0.3);">
+                                        style="height:100%; width:0%; background:linear-gradient(90deg,#00d2ff,#00ff88); border-radius:3px; box-shadow:0 0 12px rgba(0,255,136,0.3); transition:width 0.6s ease;">
                                     </div>
                                 </div>
                                 <div style="display:flex; flex-direction:column; gap:10px;">
                                     <div
-                                        style="display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.02); padding:10px; border-radius:12px; border:1px solid rgba(255,255,255,0.05);">
+                                        style="display:flex; align-items:center; gap:10px; padding:10px 14px; background:rgba(255,255,255,0.02); border-radius:12px; border:1px solid rgba(255,255,255,0.05);">
                                         <div
                                             style="width:6px; height:6px; border-radius:50%; background:#00ff88; box-shadow:0 0 8px #00ff88;">
                                         </div>
-                                        <span style="font-size:0.75rem;">Intizom: Me'yorida</span>
+                                        <span style="font-size:0.75rem; opacity:0.8;">Intizom va Odob — Me'yorida</span>
                                     </div>
                                     <div
-                                        style="display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.02); padding:10px; border-radius:12px; border:1px solid rgba(255,255,255,0.05);">
+                                        style="display:flex; align-items:center; gap:10px; padding:10px 14px; background:rgba(255,255,255,0.02); border-radius:12px; border:1px solid rgba(255,255,255,0.05);">
                                         <div
-                                            style="width:6px; height:6px; border-radius:50%; background:#00ff88; box-shadow:0 0 8px #00ff88;">
+                                            style="width:6px; height:6px; border-radius:50%; background:#00d2ff; box-shadow:0 0 8px #00d2ff;">
                                         </div>
-                                        <span style="font-size:0.75rem;">Vaqtida kelish: 100%</span>
+                                        <span style="font-size:0.75rem; opacity:0.8;">Vaqtida kelish — 100%</span>
+                                    </div>
+                                    <div
+                                        style="display:flex; align-items:center; gap:10px; padding:10px 14px; background:rgba(255,255,255,0.02); border-radius:12px; border:1px solid rgba(255,255,255,0.05);">
+                                        <div
+                                            style="width:6px; height:6px; border-radius:50%; background:#ffb800; box-shadow:0 0 8px #ffb800;">
+                                        </div>
+                                        <span style="font-size:0.75rem; opacity:0.8;">Ish normasiga mosligi — 85%</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Action Row -->
-                        <div class="action-header-row">
-                            <button class="primary-btn" id="btn-bonus"
-                                style="flex:1; height:50px; background:linear-gradient(135deg, #ffb800, #ff8a00); color:#000; font-weight:700;">💰
-                                Premya</button>
-                            <button class="primary-btn" id="btn-raise"
-                                style="flex:1; height:50px; background:linear-gradient(135deg, #00d2ff, #007aff); color:#fff; font-weight:700;">📈
-                                Oylik Ni Ozgartirish</button>
-                            <button class="primary-btn" id="btn-leave"
-                                style="flex:1; height:50px; background:rgba(255,255,255,0.05); color:#fff; border:1px solid rgba(255,255,255,0.1); font-weight:700;">🏝️
-                                Ruxsat berish</button>
+                        <!-- Row 2: Action Buttons -->
+                        <div class="hr-action-bar">
+                            <button class="hr-action-btn" id="btn-bonus"
+                                style="background:linear-gradient(135deg,#ffb800,#ff8a00); color:#000;">💰 Premya
+                                belgilash</button>
+                            <button class="hr-action-btn" id="btn-raise"
+                                style="background:linear-gradient(135deg,#00d2ff,#007aff); color:#fff;">📈 Oylikni
+                                o'zgartirish</button>
+                            <button class="hr-action-btn" id="btn-leave"
+                                style="background:rgba(255,255,255,0.05); color:#fff; border:1px solid rgba(255,255,255,0.1);">🏝️
+                                Dam berish / Tasdiqlash</button>
                         </div>
 
-                        <div style="display:grid; grid-template-columns: 1fr 380px; gap:20px;">
+                        <!-- Row 3: Calendar + Day Details -->
+                        <div class="hr-bottom-grid">
                             <div class="modern-calendar">
                                 <div class="cal-header">
                                     <h2 id="current-month-name">---</h2>
@@ -581,9 +798,10 @@
                                     <div class="cal-day-label">Ya</div>
                                 </div>
                             </div>
-                            <div class="bento-card" id="daily-att-details" style="padding:25px;">
-                                <p style="text-align:center; color:#8892b0; margin-top:80px;">Ma'lumotlar bu yerda
-                                    chiqadi.</p>
+                            <div class="hr-card" id="daily-att-details"
+                                style="display:flex; align-items:center; justify-content:center; min-height:280px;">
+                                <p style="text-align:center; color:rgba(255,255,255,0.25); font-size:0.85rem;">📅 Kunni
+                                    tanlang</p>
                             </div>
                         </div>
                     </div>
