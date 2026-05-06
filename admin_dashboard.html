@@ -416,8 +416,8 @@
                         </div>
 
                         <div id="staff-list-container"
-                            style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 15px; margin-bottom: 5px;">
-                            <!-- JS will populate individual small cards here -->
+                            style="display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; padding-right: 5px; margin-bottom: 20px;">
+                            <!-- JS will populate individual horizontal list items here -->
                         </div>
 
                         <div class="modern-calendar">
@@ -473,9 +473,21 @@
                                     <div class="mini-stat-lab">STAJ</div>
                                 </div>
                                 <div class="mini-stat-item">
-                                    <div class="mini-stat-val" id="st-tasks">57</div>
-                                    <div class="mini-stat-lab">ZAKAZ</div>
+                                    <div class="mini-stat-val" id="st-salary">---</div>
+                                    <div class="mini-stat-lab">OYLIK</div>
                                 </div>
+                            </div>
+
+                            <div style="width:100%; margin-top:20px; display:flex; flex-direction:column; gap:10px;">
+                                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                                    <button class="primary-btn" id="btn-bonus"
+                                        style="font-size:0.8rem; background:#ffb800; padding:10px;">💰 Premya</button>
+                                    <button class="primary-btn" id="btn-raise"
+                                        style="font-size:0.8rem; padding:10px;">📈 Oylik +</button>
+                                </div>
+                                <button class="primary-btn" id="btn-leave"
+                                    style="width:100%; font-size:0.8rem; background:rgba(255,255,255,0.05); color:var(--adm-text); border:1px solid var(--adm-border); padding:10px;">🏝️
+                                    Dam berish / Tasdiqlash</button>
                             </div>
 
                             <div style="width:100%; margin-top:30px;">

@@ -143,6 +143,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentCalYear = new Date().getFullYear();
 
     // --- ROMIX HR DATA (MODERN) ---
+    let selectedWorkerId = null;
+
+    // --- ROMIX HR DATA (MODERN) ---
     async function loadRomixHRData() {
         const { data: emps, error } = await supabase.from('employees').select('*').order('full_name', { ascending: true });
         if (error) return;
@@ -150,26 +153,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         const listContainer = document.getElementById('staff-list-container');
         if (listContainer) {
             listContainer.innerHTML = emps.map(emp => `
-                <div class="bento-card staff-mini-card" style="min-width:140px; cursor:pointer; text-align:center; padding:15px; border: 1px solid var(--adm-border); flex-shrink:0;" data-id="${emp.id}">
-                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=random" style="width:50px; height:50px; border-radius:15px; margin-bottom:8px;">
-                    <div style="font-weight:700; font-size:0.8rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${emp.full_name}</div>
-                    <div style="font-size:0.7rem; color:var(--adm-text-sec);">${emp.role}</div>
+                <div class="bento-card staff-list-row" style="cursor:pointer; display:flex; align-items:center; gap:15px; padding:12px; border: 1px solid var(--adm-border);" data-id="${emp.id}">
+                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=random" style="width:40px; height:40px; border-radius:10px;">
+                    <div style="flex:1;">
+                        <div style="font-weight:700; font-size:0.9rem;">${emp.full_name}</div>
+                        <div style="font-size:0.75rem; color:var(--adm-text-sec);">${emp.role}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-weight:600; font-size:0.8rem; color:var(--adm-accent);">${emp.salary_info || '---'}</div>
+                        <div style="font-size:0.65rem; color:${emp.status === 'Ishlamoqda' ? '#00ff88' : '#ff4d4f'};">${emp.status}</div>
+                    </div>
                 </div>
             `).join('');
 
-            // Add click events
-            listContainer.querySelectorAll('.staff-mini-card').forEach(card => {
-                card.onclick = () => {
-                    const emp = emps.find(x => x.id === card.dataset.id);
-                    if (emp) updateStaffProfileCard(emp);
-
-                    document.querySelectorAll('.staff-mini-card').forEach(c => c.style.borderColor = 'var(--adm-border)');
-                    card.style.borderColor = 'var(--adm-accent)';
+            listContainer.querySelectorAll('.staff-list-row').forEach(row => {
+                row.onclick = () => {
+                    const emp = emps.find(x => x.id === row.dataset.id);
+                    if (emp) {
+                        selectedWorkerId = emp.id;
+                        updateStaffProfileCard(emp);
+                    }
+                    document.querySelectorAll('.staff-list-row').forEach(r => r.style.borderColor = 'var(--adm-border)');
+                    row.style.borderColor = 'var(--adm-accent)';
                 };
             });
         }
 
-        if (emps && emps.length > 0) updateStaffProfileCard(emps[0]);
+        if (emps && emps.length > 0) {
+            selectedWorkerId = emps[0].id;
+            updateStaffProfileCard(emps[0]);
+        }
 
         renderModernCalendar(currentCalMonth, currentCalYear);
 
@@ -189,66 +202,71 @@ document.addEventListener('DOMContentLoaded', async () => {
                 renderModernCalendar(currentCalMonth, currentCalYear);
             };
         }
+
+        setupStaffActions();
     }
 
-    async function showDailyAttendance(dateStr) {
-        const detailBox = document.getElementById('daily-att-details');
-        if (!detailBox) return;
+    function setupStaffActions() {
+        const btnBonus = document.getElementById('btn-bonus');
+        const btnRaise = document.getElementById('btn-raise');
+        const btnLeave = document.getElementById('btn-leave');
 
-        detailBox.innerHTML = '<h4>Yuklanmoqda...</h4>';
+        if (btnBonus && !btnBonus.dataset.init) {
+            btnBonus.dataset.init = "true";
+            btnBonus.onclick = async () => {
+                if (!selectedWorkerId) return;
+                const amount = prompt("Premya miqdorini kiriting (masalan: 500,000):");
+                if (amount) {
+                    alert(`Xodimga ${amount} premya belgilandi.`);
+                    // Logic to store bonus could go here
+                }
+            };
+            btnRaise.onclick = async () => {
+                if (!selectedWorkerId) return;
+                const newSalary = prompt("Yangi oylik miqdorini kiriting:");
+                if (newSalary) {
+                    const { error } = await supabase.from('employees').update({ salary_info: newSalary }).eq('id', selectedWorkerId);
+                    if (!error) {
+                        alert("Oylik muvaffaqiyatli o'zgartirildi.");
+                        loadRomixHRData();
+                    }
+                }
+            };
+            btnLeave.onclick = async () => {
+                if (!selectedWorkerId) return;
+                const { data: reqs } = await supabase.from('attendance')
+                    .select('*')
+                    .eq('employee_id', selectedWorkerId)
+                    .eq('status', 'Tasdiqlash kutilmoqda');
 
-        const { data: att, error } = await supabase.from('attendance')
-            .select('*, employees(full_name, role)')
-            .eq('date', dateStr);
-
-        const bannerTitle = document.getElementById('banner-title');
-        const bannerDesc = document.getElementById('banner-desc');
-
-        if (error || !att || att.length === 0) {
-            detailBox.innerHTML = `<h4 style="margin-bottom:10px;">${dateStr}</h4><p style="color:var(--adm-text-sec);">Bu kunda davomat qayd etilmagan.</p>`;
-            if (bannerTitle) bannerTitle.textContent = `${dateStr} Hisoboti`;
-            if (bannerDesc) bannerDesc.textContent = "Ushbu kunda hech qanday davomat qayd etilmadi.";
-            return;
+                if (reqs && reqs.length > 0) {
+                    const choice = confirm("Xodim dam olish uchun ruxsat so'ragan. Tasdiqlaysizmi?\n\n'OK' - Ruxsat berish, 'Cancel' - Rad etish");
+                    const newStatus = choice ? 'Ruxsat berildi' : 'Ruxsat berilmadi';
+                    await supabase.from('attendance').update({ status: newStatus }).eq('id', reqs[0].id);
+                    alert(`Javob yuborildi: ${newStatus}`);
+                } else {
+                    const choice = confirm("Xodimga dam olish (otpusk) bermoqchimisiz?");
+                    if (choice) {
+                        await supabase.from('employees').update({ status: 'Dam olmoqda' }).eq('id', selectedWorkerId);
+                        alert("Xodim 'Dam olmoqda' holatiga o'tkazildi.");
+                    }
+                }
+                loadRomixHRData();
+            };
         }
-
-        const arrived = att.length;
-        const late = att.filter(a => a.status === 'Kech qoldi').length;
-        const permission = att.filter(a => a.status === 'Ruxsat so\'ralgan').length;
-
-        if (bannerTitle) bannerTitle.textContent = `${dateStr} Hisoboti`;
-        if (bannerDesc) bannerDesc.textContent = `Ushbu kunda jami ${arrived} ta xodim ishga keldi. Shundan ${late} tasi kech qolgan, ${permission} tasi esa ruxsat so'ragan.`;
-
-        let html = `<h4 style="margin-bottom:15px;">${dateStr} Tafsilotlari</h4>`;
-        html += `<div style="display:flex; flex-direction:column; gap:8px;">`;
-        att.forEach(a => {
-            const statusColor = a.status === 'Vaqtida keldi' ? '#00ff88' : (a.status === 'Ruxsat so\'ralgan' ? '#ffb800' : '#ff4d4f');
-            html += `
-                <div class="bento-card" style="padding:10px; display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <div style="font-weight:600; font-size:0.85rem;">${a.employees?.full_name || 'Noma\'lum'}</div>
-                        <div style="font-size:0.7rem; color:var(--adm-text-sec);">${a.employees?.role || ''}</div>
-                    </div>
-                    <span style="font-size:0.75rem; font-weight:700; color:${statusColor};">${a.status}</span>
-                </div>
-            `;
-        });
-        html += `</div>`;
-        detailBox.innerHTML = html;
     }
 
     function updateStaffProfileCard(emp) {
         document.getElementById('selected-staff-name').textContent = emp.full_name;
         document.getElementById('selected-staff-role').textContent = emp.role;
         document.getElementById('selected-staff-img').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=007c52&color=fff&size=200`;
+        const salaryEl = document.getElementById('st-salary');
+        if (salaryEl) salaryEl.textContent = emp.salary_info || '---';
 
-        // Calculate Staj
-        const joined = new Date(emp.created_at);
+        const joined = new Date(emp.created_at || new Date());
         const diff = Math.floor((new Date() - joined) / (1000 * 60 * 60 * 24));
         document.getElementById('st-exp').textContent = diff;
-
-        // Mocking KPI and Tasks for visual
         document.getElementById('st-kpi').textContent = 85 + Math.floor(Math.random() * 14) + '%';
-        document.getElementById('st-tasks').textContent = 10 + Math.floor(Math.random() * 50);
     }
 
     function renderModernCalendar(month, year) {
