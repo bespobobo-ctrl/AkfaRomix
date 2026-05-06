@@ -287,16 +287,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function updateStaffProfileCard(emp) {
+        // Core Info
+        document.getElementById('selected-staff-img').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=random`;
         document.getElementById('selected-staff-name').textContent = emp.full_name;
         document.getElementById('selected-staff-role').textContent = emp.role;
-        document.getElementById('selected-staff-img').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=007c52&color=fff&size=200`;
-        const salaryEl = document.getElementById('st-salary');
-        if (salaryEl) salaryEl.textContent = emp.salary_info || '---';
+        document.getElementById('st-salary-badge').textContent = emp.salary_info || '---';
 
-        const joined = new Date(emp.created_at || new Date());
-        const diff = Math.floor((new Date() - joined) / (1000 * 60 * 60 * 24));
-        document.getElementById('st-exp').textContent = diff;
-        document.getElementById('st-kpi').textContent = 85 + Math.floor(Math.random() * 14) + '%';
+        // Details Row
+        document.getElementById('st-phone').textContent = emp.phone || '+998-- --- -- --';
+        document.getElementById('st-dept').textContent = emp.department || 'Bo\'lim belgilanmagan';
+        document.getElementById('st-exp').textContent = emp.experience || 'Yangi xodim';
+        document.getElementById('st-device').textContent = emp.device || 'Noma\'lum';
+
+        // Analytics (Logic/Calculations)
+        const dayKpi = 85 + Math.floor(Math.random() * 14);
+        document.getElementById('st-kpi-val').textContent = dayKpi + '% KPI';
+        document.getElementById('kpi-bar').style.width = dayKpi + '%';
+
+        // Time Tracker Mock
+        document.getElementById('worked-hours').textContent = "08:30";
+        document.getElementById('st-time-in').textContent = "08:12";
+        document.getElementById('st-time-out').textContent = "--:--";
+
+        renderModernCalendar(currentCalMonth, currentCalYear);
     }
 
     async function renderModernCalendar(month, year) {
