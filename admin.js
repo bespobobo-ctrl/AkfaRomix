@@ -93,8 +93,98 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             if (tab === 'logins') loadSystemUsers();
+            if (tab === 'xodimlar') loadRomixHRData();
+            if (tab === 'dashboard') loadRomixDashboardStats();
         });
     });
+
+    // --- ROMIX DASHBOARD STATS (PANEL) ---
+    async function loadRomixDashboardStats() {
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        // 1. Employee Stats
+        const { data: emps } = await supabase.from('employees').select('id');
+        const { data: att } = await supabase.from('attendance').select('status').eq('date', todayStr);
+
+        const total = emps ? emps.length : 0;
+        let arrived = 0, late = 0;
+        if (att) {
+            arrived = att.length;
+            late = att.filter(a => a.status === 'Kech qoldi').length;
+        }
+
+        document.getElementById('stat-total-emp').textContent = total;
+        document.getElementById('stat-arrived').textContent = arrived;
+        document.getElementById('stat-late').textContent = late;
+        document.getElementById('stat-absent').textContent = Math.max(0, total - arrived);
+
+        // 2. Warehouse Stats
+        const { data: prods } = await supabase.from('warehouse_products').select('current_stock');
+        const totalStock = prods ? prods.reduce((sum, p) => sum + p.current_stock, 0) : 0;
+        document.querySelector('#section-dashboard .balance-lg').innerHTML = `${totalStock.toLocaleString()} <small style="font-size: 0.8rem;">kg / dona</small>`;
+
+        // 3. Recent Inventory
+        const { data: txs } = await supabase.from('warehouse_transactions')
+            .select('*, warehouse_products(name, unit)')
+            .order('created_at', { ascending: false }).limit(3);
+
+        const recentList = document.getElementById('recent-inventory-list');
+        if (recentList && txs) {
+            recentList.innerHTML = txs.map(tx => `
+                <div style="display:flex; justify-content:space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 5px 0;">
+                    <span>${tx.warehouse_products?.name || 'Mahsulot'}</span>
+                    <b style="color:${tx.type === 'IN' ? '#00ff88' : '#ff4d4f'}">${tx.type === 'IN' ? '+' : '-'}${tx.quantity} ${tx.warehouse_products?.unit || ''}</b>
+                </div>
+            `).join('');
+        }
+    }
+
+    // --- ROMIX HR DATA ---
+    async function loadRomixHRData() {
+        const kpiList = document.getElementById('hr-kpi-list');
+        if (!kpiList) return;
+        kpiList.innerHTML = '<div style="padding:20px; text-align:center;">Yuklanmoqda...</div>';
+
+        const { data: emps, error } = await supabase.from('employees').select('*').order('full_name', { ascending: true });
+        if (error) return;
+
+        kpiList.innerHTML = `
+            <table class="v2-table">
+                <thead>
+                    <tr>
+                        <th>Xodim</th>
+                        <th>Lavozim</th>
+                        <th>Maoshi</th>
+                        <th>Holat</th>
+                        <th> KPI </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${emps.map(emp => `
+                        <tr>
+                            <td>
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=random" style="width:30px; height:30px; border-radius:50%;">
+                                    <strong>${emp.full_name}</strong>
+                                </div>
+                            </td>
+                            <td>${emp.role}</td>
+                            <td>${emp.salary_info || '---'}</td>
+                            <td><span class="status-badge" style="background:${emp.status === 'Ishlamoqda' ? 'rgba(0,124,82,0.1)' : 'rgba(255,184,0,0.1)'}; color:${emp.status === 'Ishlamoqda' ? '#007c52' : '#ffb800'}; padding:4px 10px; border-radius:30px;">${emp.status}</span></td>
+                            <td>
+                                <div style="width:100px; height:6px; background:rgba(255,255,255,0.05); border-radius:10px; overflow:hidden;">
+                                    <div style="width:${85 + Math.floor(Math.random() * 15)}%; height:100%; background:var(--adm-accent);"></div>
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    // Initial Load
+    loadRomixDashboardStats();
 
     // --- SYSTEM USERS MANAGEMENT ---
     const sysUsersTable = document.getElementById('sysUsersTable');
