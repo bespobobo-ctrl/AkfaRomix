@@ -178,10 +178,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             .select('*, employees(full_name, role)')
             .eq('date', dateStr);
 
+        const bannerTitle = document.getElementById('banner-title');
+        const bannerDesc = document.getElementById('banner-desc');
+
         if (error || !att || att.length === 0) {
             detailBox.innerHTML = `<h4 style="margin-bottom:10px;">${dateStr}</h4><p style="color:var(--adm-text-sec);">Bu kunda davomat qayd etilmagan.</p>`;
+            if (bannerTitle) bannerTitle.textContent = `${dateStr} Hisoboti`;
+            if (bannerDesc) bannerDesc.textContent = "Ushbu kunda hech qanday davomat qayd etilmadi.";
             return;
         }
+
+        const arrived = att.length;
+        const late = att.filter(a => a.status === 'Kech qoldi').length;
+        const permission = att.filter(a => a.status === 'Ruxsat so\'ralgan').length;
+
+        if (bannerTitle) bannerTitle.textContent = `${dateStr} Hisoboti`;
+        if (bannerDesc) bannerDesc.textContent = `Ushbu kunda jami ${arrived} ta xodim ishga keldi. Shundan ${late} tasi kech qolgan, ${permission} tasi esa ruxsat so'ragan.`;
 
         let html = `<h4 style="margin-bottom:15px;">${dateStr} Tafsilotlari</h4>`;
         html += `<div style="display:flex; flex-direction:column; gap:8px;">`;
