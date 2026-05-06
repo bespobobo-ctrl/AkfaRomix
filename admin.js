@@ -139,48 +139,68 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // --- ROMIX HR DATA ---
+    // --- ROMIX HR DATA (MODERN) ---
     async function loadRomixHRData() {
-        const kpiList = document.getElementById('hr-kpi-list');
-        if (!kpiList) return;
-        kpiList.innerHTML = '<div style="padding:20px; text-align:center;">Yuklanmoqda...</div>';
+        // Load staff into the profile card (default first person)
+        const { data: emps } = await supabase.from('employees').select('*').limit(1).single();
+        if (emps) updateStaffProfileCard(emps);
 
-        const { data: emps, error } = await supabase.from('employees').select('*').order('full_name', { ascending: true });
-        if (error) return;
+        renderModernCalendar(new Date().getMonth(), new Date().getFullYear());
+    }
 
-        kpiList.innerHTML = `
-            <table class="v2-table">
-                <thead>
-                    <tr>
-                        <th>Xodim</th>
-                        <th>Lavozim</th>
-                        <th>Maoshi</th>
-                        <th>Holat</th>
-                        <th> KPI </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${emps.map(emp => `
-                        <tr>
-                            <td>
-                                <div style="display:flex; align-items:center; gap:10px;">
-                                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=random" style="width:30px; height:30px; border-radius:50%;">
-                                    <strong>${emp.full_name}</strong>
-                                </div>
-                            </td>
-                            <td>${emp.role}</td>
-                            <td>${emp.salary_info || '---'}</td>
-                            <td><span class="status-badge" style="background:${emp.status === 'Ishlamoqda' ? 'rgba(0,124,82,0.1)' : 'rgba(255,184,0,0.1)'}; color:${emp.status === 'Ishlamoqda' ? '#007c52' : '#ffb800'}; padding:4px 10px; border-radius:30px;">${emp.status}</span></td>
-                            <td>
-                                <div style="width:100px; height:6px; background:rgba(255,255,255,0.05); border-radius:10px; overflow:hidden;">
-                                    <div style="width:${85 + Math.floor(Math.random() * 15)}%; height:100%; background:var(--adm-accent);"></div>
-                                </div>
-                            </td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `;
+    function updateStaffProfileCard(emp) {
+        document.getElementById('selected-staff-name').textContent = emp.full_name;
+        document.getElementById('selected-staff-role').textContent = emp.role;
+        document.getElementById('selected-staff-img').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=007c52&color=fff&size=200`;
+
+        // Calculate Staj
+        const joined = new Date(emp.created_at);
+        const diff = Math.floor((new Date() - joined) / (1000 * 60 * 60 * 24));
+        document.getElementById('st-exp').textContent = diff;
+
+        // Mocking KPI and Tasks for visual
+        document.getElementById('st-kpi').textContent = 85 + Math.floor(Math.random() * 14) + '%';
+        document.getElementById('st-tasks').textContent = 10 + Math.floor(Math.random() * 50);
+    }
+
+    function renderModernCalendar(month, year) {
+        const monthNames = ["Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun", "Iyul", "Avgust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr"];
+        const monthHeader = document.getElementById('current-month-name');
+        if (monthHeader) monthHeader.textContent = monthNames[month] + " " + year;
+
+        const calGrid = document.querySelector('.cal-grid');
+        if (!calGrid) return;
+
+        // Keep day labels
+        const labels = Array.from(calGrid.querySelectorAll('.cal-day-label'));
+        calGrid.innerHTML = '';
+        labels.forEach(l => calGrid.appendChild(l));
+
+        const firstDay = new Date(year, month, 1).getDay(); // 0 is Sun, we need Mon as 1
+        const offset = (firstDay === 0 ? 7 : firstDay) - 1;
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const prevMonthLastDay = new Date(year, month, 0).getDate();
+
+        // Prev month days
+        for (let i = offset; i > 0; i--) {
+            const div = document.createElement('div');
+            div.className = 'cal-day-num disabled';
+            div.textContent = prevMonthLastDay - i + 1;
+            calGrid.appendChild(div);
+        }
+
+        const today = new Date().getDate();
+        const thisMonth = new Date().getMonth();
+
+        // Current month days
+        for (let d = 1; d <= daysInMonth; d++) {
+            const div = document.createElement('div');
+            div.className = 'cal-day-num';
+            if (d === today && month === thisMonth) div.classList.add('active');
+            if (d % 4 === 0) div.classList.add('has-event'); // random dots
+            div.textContent = d;
+            calGrid.appendChild(div);
+        }
     }
 
     // Initial Load

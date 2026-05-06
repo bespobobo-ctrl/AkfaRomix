@@ -236,13 +236,261 @@
                 </div>
             </section>
 
-            <!-- Section: Xodimlar -->
+            <!-- Section: Xodimlar (Modern Redesign) -->
             <section id="section-xodimlar" class="admin-section romix-sub-section">
-                <h1>Xodimlar Managementi</h1>
-                <div class="bento-grid">
-                    <div class="bento-card" style="grid-column: span 4;">
-                        <h3>KPI va Samaradorlik</h3>
-                        <div id="hr-kpi-list"></div>
+                <style>
+                    .staff-layout {
+                        display: grid;
+                        grid-template-columns: 1fr 350px;
+                        gap: 20px;
+                    }
+
+                    .staff-main-col {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 20px;
+                    }
+
+                    .welcome-banner {
+                        background: linear-gradient(135deg, var(--adm-accent) 0%, #00a870 100%);
+                        border-radius: 24px;
+                        padding: 30px;
+                        position: relative;
+                        overflow: hidden;
+                        color: #fff;
+                    }
+
+                    .welcome-banner img {
+                        position: absolute;
+                        right: 20px;
+                        bottom: 0;
+                        height: 120%;
+                        opacity: 0.8;
+                        pointer-events: none;
+                    }
+
+                    .pills-container {
+                        display: flex;
+                        gap: 10px;
+                        margin: 10px 0;
+                    }
+
+                    .pill {
+                        padding: 10px 20px;
+                        border-radius: 50px;
+                        background: rgba(255, 255, 255, 0.05);
+                        border: 1px solid var(--adm-border);
+                        cursor: pointer;
+                        transition: 0.3s;
+                        font-size: 0.9rem;
+                    }
+
+                    .pill.active {
+                        background: var(--adm-accent);
+                        color: #fff;
+                        border-color: var(--adm-accent);
+                    }
+
+                    /* Modern Calendar */
+                    .modern-calendar {
+                        background: var(--adm-surface);
+                        border-radius: 24px;
+                        padding: 25px;
+                        border: 1px solid var(--adm-border);
+                    }
+
+                    .cal-header {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 20px;
+                    }
+
+                    .cal-grid {
+                        display: grid;
+                        grid-template-columns: repeat(7, 1fr);
+                        gap: 10px;
+                    }
+
+                    .cal-day-label {
+                        text-align: center;
+                        font-size: 0.75rem;
+                        color: var(--adm-text-sec);
+                        font-weight: 600;
+                        text-transform: uppercase;
+                    }
+
+                    .cal-day-num {
+                        aspect-ratio: 1;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        border-radius: 12px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: 0.2s;
+                        position: relative;
+                    }
+
+                    .cal-day-num:hover {
+                        background: rgba(0, 124, 82, 0.1);
+                        color: var(--adm-accent);
+                    }
+
+                    .cal-day-num.active {
+                        background: var(--adm-accent);
+                        color: #fff;
+                    }
+
+                    .cal-day-num.has-event::after {
+                        content: '';
+                        position: absolute;
+                        bottom: 5px;
+                        width: 4px;
+                        height: 4px;
+                        background: #ffb800;
+                        border-radius: 50%;
+                    }
+
+                    /* Right Profile Card */
+                    .staff-profile-card {
+                        background: var(--adm-surface);
+                        border-radius: 24px;
+                        padding: 30px;
+                        border: 1px solid var(--adm-border);
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                    }
+
+                    .profile-img-lg {
+                        width: 100px;
+                        height: 100px;
+                        border-radius: 30px;
+                        object-fit: cover;
+                        margin-bottom: 15px;
+                    }
+
+                    .mini-stats-grid {
+                        display: grid;
+                        grid-template-columns: repeat(3, 1fr);
+                        gap: 10px;
+                        width: 100%;
+                        margin-top: 20px;
+                    }
+
+                    .mini-stat-item {
+                        text-align: center;
+                        padding: 10px;
+                        background: rgba(0, 0, 0, 0.02);
+                        border-radius: 12px;
+                    }
+
+                    .mini-stat-val {
+                        font-weight: 700;
+                        font-size: 1.1rem;
+                    }
+
+                    .mini-stat-lab {
+                        font-size: 0.65rem;
+                        color: var(--adm-text-sec);
+                        text-transform: uppercase;
+                    }
+                </style>
+
+                <div class="staff-layout">
+                    <div class="staff-main-col">
+                        <div class="welcome-banner">
+                            <h2 style="font-size: 2rem; margin-bottom: 10px;">Xush kelibsiz!</h2>
+                            <p style="opacity: 0.9; max-width: 300px;">Bugungi ish kuni unumli o'tsin. Xodimlar davomati
+                                va KPI ko'rsatkichlarini nazorat qiling.</p>
+                            <img src="https://ouch-cdn2.icons8.com/mOIdqV5bA_S7C8Z2S8Ym4vXnX64YVzZkS_V5X-w5Y_E/rs:fit:368:368/czM6Ly9pY29uczgu/b3VjaC1wcm9kLmFz/c2V0cy9zdmcvMjU0/LzVlZjYzZjY4LWM4/YzQtNDUyZi04Yzhj/LTkyN2FmYzRkNGZm/Ny5zdmc.png"
+                                alt="staff-illu">
+                        </div>
+
+                        <div class="pills-container">
+                            <div class="pill active">Barchasi</div>
+                            <div class="pill">Brigadalar</div>
+                            <div class="pill">Omborchilar</div>
+                            <div class="pill">Sotuvchilar</div>
+                        </div>
+
+                        <div class="modern-calendar">
+                            <div class="cal-header">
+                                <h2 id="current-month-name">Sentyabr</h2>
+                                <div style="display:flex; gap:10px;">
+                                    <button class="icon-small-btn">‹</button>
+                                    <button class="icon-small-btn">›</button>
+                                </div>
+                            </div>
+                            <div class="cal-grid">
+                                <div class="cal-day-label">Du</div>
+                                <div class="cal-day-label">Se</div>
+                                <div class="cal-day-label">Ch</div>
+                                <div class="cal-day-label">Pa</div>
+                                <div class="cal-day-label">Ju</div>
+                                <div class="cal-day-label">Sh</div>
+                                <div class="cal-day-label">Ya</div>
+                                <!-- Calendar days populated by JS -->
+                                <div class="cal-day-num disabled">28</div>
+                                <div class="cal-day-num disabled">29</div>
+                                <div class="cal-day-num disabled">30</div>
+                                <div class="cal-day-num disabled">31</div>
+                                <div class="cal-day-num">1</div>
+                                <div class="cal-day-num">2</div>
+                                <div class="cal-day-num">3</div>
+                                <div class="cal-day-num has-event">4</div>
+                                <div class="cal-day-num">5</div>
+                                <div class="cal-day-num">6</div>
+                                <div class="cal-day-num">7</div>
+                                <div class="cal-day-num">8</div>
+                                <div class="cal-day-num active">21</div>
+                                <!-- ... more -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="staff-sidebar">
+                        <div class="staff-profile-card">
+                            <img src="https://ui-avatars.com/api/?name=Ashley+Black&background=007c52&color=fff"
+                                class="profile-img-lg" id="selected-staff-img">
+                            <h2 style="font-size: 1.4rem;" id="selected-staff-name">Ashley Black</h2>
+                            <p style="color: var(--adm-text-sec); font-size: 0.9rem;" id="selected-staff-role">Bosh
+                                Menejer</p>
+
+                            <div class="mini-stats-grid">
+                                <div class="mini-stat-item">
+                                    <div class="mini-stat-val" id="st-kpi">A+</div>
+                                    <div class="mini-stat-lab">KPI</div>
+                                </div>
+                                <div class="mini-stat-item">
+                                    <div class="mini-stat-val" id="st-exp">164</div>
+                                    <div class="mini-stat-lab">STAJ</div>
+                                </div>
+                                <div class="mini-stat-item">
+                                    <div class="mini-stat-val" id="st-tasks">57</div>
+                                    <div class="mini-stat-lab">ZAKAZ</div>
+                                </div>
+                            </div>
+
+                            <div style="width:100%; margin-top:30px;">
+                                <h3>Eslatmalar</h3>
+                                <div style="margin-top:15px; display:flex; flex-direction:column; gap:10px;">
+                                    <div class="bento-card"
+                                        style="padding:15px; display:flex; gap:10px; align-items:center;">
+                                        <span>📅</span>
+                                        <div style="font-size: 0.8rem;"><b>Dushanba</b><br><small>Oylik hisoboti
+                                                kuni</small></div>
+                                    </div>
+                                    <div class="bento-card"
+                                        style="padding:15px; display:flex; gap:10px; align-items:center;">
+                                        <span>📞</span>
+                                        <div style="font-size: 0.8rem;"><b>Yangi brigada</b><br><small>Suhbat soat
+                                                14:00</small></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
