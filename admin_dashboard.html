@@ -1029,9 +1029,11 @@
 
             <!-- Section: Logins (Settings) -->
             <section id="section-logins" class="admin-section romix-sub-section">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-                    <h1>Login va Parol Berish</h1>
-                    <button id="openAddUserModal" class="primary-btn">+ Yangi Login</button>
+                <div style="display: flex; justify-content: space-between; align-items:center; margin-bottom: 20px;">
+                    <h2 style="font-size: 1.2rem; font-weight: 700; opacity: 0.9;">Xavfsizlik: Login va Parol</h2>
+                    <button id="openAddUserModal" class="primary-btn"
+                        style="background:linear-gradient(135deg, #00d2ff, #007aff); border:none; padding:10px 20px; border-radius:12px; color:#fff; font-weight:600; cursor:pointer;">+
+                        Yangi Login</button>
                 </div>
                 <div class="bento-card" style="padding: 0; overflow: hidden;">
                     <table class="v2-table">
@@ -1051,7 +1053,8 @@
 
             <!-- Section: Tarix -->
             <section id="section-tarix" class="admin-section romix-sub-section">
-                <h1>O'zgarishlar Tarixi (Audit)</h1>
+                <h2 style="font-size: 1.2rem; font-weight: 700; opacity: 0.9; margin-bottom: 20px;">O'zgarishlar Tarixi
+                    (Audit)</h2>
                 <div class="bento-card" style="padding: 0; overflow: hidden;">
                     <table class="v2-table">
                         <thead>
@@ -1066,13 +1069,13 @@
                             <!-- Mock rows with Edit/Delete buttons -->
                             <tr>
                                 <td>22:40 06.05</td>
-                                <td>rahbar</td>
+                                <td>Rahbar</td>
                                 <td>"Romix Plast" yangilandi</td>
                                 <td>
-                                    <button style="background:none; border:none; cursor:pointer;"
-                                        title="Tahrirlash">✏️</button>
-                                    <button style="background:none; border:none; cursor:pointer; color:#ff4d4f;"
-                                        title="O'chirish">🗑️</button>
+                                    <button
+                                        style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:4px 10px; border-radius:6px; color:#fff; font-size:0.65rem; cursor:pointer; font-weight:700;">Tahrirlash</button>
+                                    <button
+                                        style="background:rgba(255,77,79,0.03); border:1px solid rgba(255,77,79,0.08); padding:4px 10px; border-radius:6px; color:#ff4d4f; font-size:0.65rem; cursor:pointer; font-weight:700; margin-left:5px;">O'chirish</button>
                                 </td>
                             </tr>
                         </tbody>
