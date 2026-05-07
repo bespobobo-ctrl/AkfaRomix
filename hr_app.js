@@ -171,6 +171,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const full_name = document.getElementById('addStaffName').value.trim();
             const department = document.getElementById('addStaffDept').value;
             const role = document.getElementById('addStaffRole').value.trim();
+            const birth_year = document.getElementById('addStaffBirthYear').value.trim();
+            const joined_year = document.getElementById('addStaffJoinedYear').value.trim();
 
             if (!full_name || !role) {
                 alert("Iltimos barcha maydonlarni to'ldiring!");
@@ -184,8 +186,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 full_name,
                 department,
                 role,
-                salary_info: '---', // Default for new admin adding
-                experience: 'Yangi'
+                salary_info: '---',
+                experience: joined_year ? joined_year + "-yildan beri" : "Yangi",
+                birth_year: birth_year || null
             }]);
 
             submitBtn.textContent = "Xodimni Saqlash";
@@ -199,6 +202,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     // Clear inputs
                     document.getElementById('addStaffName').value = '';
                     document.getElementById('addStaffRole').value = '';
+                    document.getElementById('addStaffBirthYear').value = '';
+                    document.getElementById('addStaffJoinedYear').value = '';
                 }, 400);
             } else {
                 alert("Xatolik: " + error.message);

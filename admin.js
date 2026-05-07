@@ -563,6 +563,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const role = document.getElementById('staffRole').value.trim();
                 const phone = document.getElementById('staffPhone').value.trim();
                 const salary = document.getElementById('staffSalary').value.trim();
+                const birth_year = document.getElementById('staffBirthYear').value.trim();
                 const joined_year = document.getElementById('staffJoinedYear').value.trim();
 
                 if (!full_name || !role || !salary) {
@@ -577,7 +578,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     role,
                     phone,
                     salary_info: salary.includes("so'm") ? salary : salary + " so'm",
-                    experience: joined_year ? joined_year + "-yildan beri" : "Yangi"
+                    experience: joined_year ? joined_year + "-yildan beri" : "Yangi",
+                    birth_year: birth_year || null
                 };
 
                 let result;
@@ -626,6 +628,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('staffSalary').value = salaryVal;
         const yearVal = emp.experience ? emp.experience.toString().replace(/[^0-9]/g, '') : '';
         document.getElementById('staffJoinedYear').value = yearVal;
+        document.getElementById('staffBirthYear').value = emp.birth_year || '';
 
         const delBtn = document.getElementById('deleteStaffBtn');
         if (delBtn) delBtn.style.display = 'block';
