@@ -270,41 +270,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderStaffList(staff) {
         const container = document.getElementById('staff-list-container');
         if (!container) return;
-        container.innerHTML = staff.length ? '' : '<tr><td colspan="4" style="text-align:center; opacity:0.3; padding:40px;">Xodimlar topilmadi</td></tr>';
 
+        if (!staff.length) {
+            container.innerHTML = '<div style="text-align:center; opacity:0.3; padding:40px; font-size:0.8rem;">Xodimlar topilmadi</div>';
+            return;
+        }
+
+        container.innerHTML = '';
         staff.forEach(emp => {
-            const tr = document.createElement('tr');
-            if (emp.id === selectedWorkerId) tr.classList.add('active');
+            const div = document.createElement('div');
+            div.className = `staff-row-v2 ${emp.id === selectedWorkerId ? 'active' : ''}`;
 
             const initials = emp.full_name.split(' ').map(n => n?.[0]).join('').substring(0, 2).toUpperCase() || '?';
             const salary = emp.salary_info || '---';
 
-            tr.innerHTML = `
-                <td>
-                    <div style="display:flex; align-items:center; gap:12px;">
-                        <div class="staff-ava-v2">${initials}</div>
-                        <strong style="color:#fff;">${emp.full_name}</strong>
+            div.innerHTML = `
+                <div class="staff-avatar-mini">${initials}</div>
+                <div style="flex:1;">
+                    <div style="font-weight:600; color:#fff; font-size:0.9rem;">${emp.full_name}</div>
+                    <div style="font-size:0.7rem; color:rgba(255,255,255,0.4); margin-top:2px;">
+                        ${emp.role || 'Xodim'} • <span style="color:var(--adm-accent); font-weight:700;">${salary}</span>
                     </div>
-                </td>
-                <td><span style="opacity:0.6; font-size:0.8rem;">${emp.role || 'Xodim'}</span></td>
-                <td><b style="color:var(--adm-accent);">${salary}</b></td>
-                <td><span style="font-size:0.7rem; color:#00ff88;">● Online</span></td>
+                </div>
+                <div style="width:8px; height:8px; border-radius:50%; background:#00ff88; box-shadow:0 0 8px #00ff88;"></div>
             `;
 
-            tr.onclick = () => {
-                document.querySelectorAll('#staff-list-container tr').forEach(r => r.classList.remove('active'));
-                tr.classList.add('active');
+            div.onclick = () => {
+                document.querySelectorAll('.staff-row-v2').forEach(r => r.classList.remove('active'));
+                div.classList.add('active');
                 selectedWorkerId = emp.id;
                 updateStaffProfileCard(emp);
-
-                // If in mobile (mini app), we could trigger an overlay here
-                const mobileOverlay = document.getElementById('empModalOverlay');
-                if (window.innerWidth < 768 && mobileOverlay) {
-                    mobileOverlay.classList.add('active');
-                }
             };
 
-            container.appendChild(tr);
+            container.appendChild(div);
         });
     }
 
@@ -313,14 +311,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         const img = document.getElementById('selected-staff-img');
         const name = document.getElementById('selected-staff-name');
         const role = document.getElementById('selected-staff-role');
+        const salary = document.getElementById('st-salary-badge');
 
         if (img) img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=00ff88&color=000&size=200`;
         if (name) name.textContent = emp.full_name;
         if (role) role.textContent = emp.role;
+        if (salary) salary.textContent = emp.salary_info || '---';
 
-        // Reset details
+        // Additional info details
+        document.getElementById('st-phone').textContent = emp.phone || '+998-- --- -- --';
+        document.getElementById('st-dept').textContent = emp.department || 'Bo\'limsiz';
+        document.getElementById('st-exp').textContent = emp.experience || 'Yangi xodim';
+
+        // KPI and Tracking
+        const kpi = (85 + Math.floor(Math.random() * 15));
+        document.getElementById('st-kpi-val').textContent = kpi + "%";
+        document.getElementById('kpi-bar').style.width = kpi + "%";
         document.getElementById('worked-hours').textContent = "08:30";
-        document.getElementById('st-kpi-val').textContent = (85 + Math.floor(Math.random() * 15)) + "%";
+        document.getElementById('st-time-in').textContent = "08:12";
+        document.getElementById('st-time-out').textContent = "--:--";
 
         renderModernCalendar(currentCalMonth, currentCalYear);
     }
@@ -333,7 +342,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         const monthNames = ["Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun", "Iyul", "Avgust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr"];
         if (monthHeader) monthHeader.textContent = monthNames[month] + " " + year;
 
+        // PRESERVE LABELS: Clear only day-num cells
+        const existingLabels = calGrid.querySelectorAll('.cal-day-label');
         calGrid.innerHTML = '';
+        existingLabels.forEach(l => calGrid.appendChild(l));
+
+        // If labels were missing (e.g. first load), add them
+        if (existingLabels.length === 0) {
+            const days = ["Du", "Se", "Ch", "Pa", "Ju", "Sh", "Ya"];
+            days.forEach(d => {
+                const l = document.createElement('div');
+                l.className = 'cal-day-label';
+                l.textContent = d;
+                calGrid.appendChild(l);
+            });
+        }
 
         const firstDay = new Date(year, month, 1).getDay();
         const adjustedFirstDay = (firstDay === 0) ? 6 : firstDay - 1;
@@ -352,33 +375,40 @@ document.addEventListener('DOMContentLoaded', async () => {
             monthAtt = data || [];
         }
 
-        // Pad start
+        // Add padding
         for (let i = 0; i < adjustedFirstDay; i++) {
             const div = document.createElement('div');
-            div.className = 'cal-day-cell disabled';
+            div.className = 'cal-day-num disabled';
             calGrid.appendChild(div);
         }
 
         for (let d = 1; d <= daysInMonth; d++) {
             const div = document.createElement('div');
-            div.className = 'cal-day-cell';
+            div.className = 'cal-day-num';
             div.textContent = d;
 
             const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
             const att = monthAtt.find(a => a.date === dateStr);
-            if (att) div.classList.add('has-att');
+            if (att) {
+                if (att.status === 'Vaqtida keldi') div.classList.add('has-present');
+                else if (att.status === 'Kech qoldi') div.classList.add('has-late');
+            }
 
             if (year === today.getFullYear() && month === today.getMonth() && d === today.getDate()) {
                 div.classList.add('today');
             }
 
             div.onclick = () => {
-                document.querySelectorAll('.cal-day-cell').forEach(c => c.classList.remove('active'));
+                document.querySelectorAll('.cal-day-num').forEach(c => c.classList.remove('active'));
                 div.classList.add('active');
-                // Could show detailed attendance here
                 const details = document.getElementById('daily-att-details');
                 if (details) {
-                    details.innerHTML = `<span style="color:#00ff88;">${d}-${monthNames[month]}</span>: ${att ? att.status : 'Ma\'lumot yo\'q'}`;
+                    details.innerHTML = `
+                        <div style="font-size:1.1rem; font-weight:700; color:#fff; margin-bottom:8px;">${d} ${monthNames[month]}</div>
+                        <div style="padding:10px 20px; background:rgba(0,255,136,0.1); border-radius:12px; color:#00ff88; font-weight:600; font-size:0.85rem;">
+                            ${att ? att.status : 'Ma\'lumot kiritilmagan'}
+                        </div>
+                    `;
                 }
             };
 
