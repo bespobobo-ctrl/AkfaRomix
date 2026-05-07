@@ -248,28 +248,45 @@ function renderStaffList(data) {
     }
 
     data.forEach(emp => {
+        const isArrived = todayAtt.some(a => a.employee_id === emp.id);
         const item = document.createElement('div');
-        item.className = 'staff-item';
+        item.className = 'staff-card';
         if (currentEmp && currentEmp.id === emp.id) item.classList.add('active');
-
-        const initials = emp.full_name.split(' ').map(n => n?.[0]).join('').substring(0, 2).toUpperCase();
-        const photoSrc = emp.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=0f172a&color=00ff88&size=100`;
+        item.style.opacity = '0';
+        item.style.transform = 'translateX(-20px)';
 
         item.innerHTML = `
-            <img src="${photoSrc}" class="staff-img" onerror="this.src='https://ui-avatars.com/api/?name=${initials}&background=0f172a&color=00ff88&size=100'">
-            <div style="flex:1; min-width:0;">
-                <div style="font-weight:800; font-size:0.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${emp.full_name}</div>
-                <div style="font-size:0.7rem; color:var(--text-s); font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">${emp.role || 'Xodim'}</div>
+            <div style="position:relative;">
+                <img src="${emp.avatar_url}" class="avatar-img">
+                <div class="status-dot" style="background: ${isArrived ? 'var(--accent)' : '#ff4444'}; box-shadow: 0 0 10px ${isArrived ? 'var(--accent)' : '#ff4444'}"></div>
+            </div>
+            <div class="staff-info">
+                <h4>${emp.full_name}</h4>
+                <p>${emp.role || 'HR'}</p>
+            </div>
+            <div style="margin-left:auto; opacity:0.3; font-size:0.8rem;">
+                <i data-lucide="chevron-right" size="16"></i>
             </div>
         `;
 
         item.onclick = () => {
-            document.querySelectorAll('.staff-item').forEach(r => r.classList.remove('active'));
+            document.querySelectorAll('.staff-card').forEach(r => r.classList.remove('active'));
             item.classList.add('active');
             showEmployeeDetail(emp);
         };
 
         list.appendChild(item);
+    });
+
+    lucide.createIcons();
+
+    // 🎭 STAGGER ANIMATION
+    gsap.to(".staff-card", {
+        opacity: 1,
+        x: 0,
+        duration: 0.5,
+        stagger: 0.08,
+        ease: "power2.out"
     });
 }
 

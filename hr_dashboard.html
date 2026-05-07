@@ -516,6 +516,67 @@
             /* Darker for better contrast */
             border: 1px solid rgba(255, 255, 255, 0.15);
         }
+
+        /* STAFF LIST PREMIUM 2.0 */
+        .staff-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 12px 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin-bottom: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .staff-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--accent);
+            transform: translateX(8px) scale(1.02);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .staff-card.active {
+            background: rgba(0, 255, 136, 0.1);
+            border-color: var(--accent);
+        }
+
+        .avatar-img {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            object-fit: cover;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid #05080c;
+            position: absolute;
+            bottom: 10px;
+            left: 50px;
+        }
+
+        .staff-info h4 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin: 0;
+            color: #fff;
+        }
+
+        .staff-info p {
+            font-size: 0.65rem;
+            font-weight: 800;
+            color: var(--accent);
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
     </style>
 </head>
 
