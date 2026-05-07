@@ -1,0 +1,550 @@
+﻿<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AKFA Romix | HR Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --hr-bg: #0d121b;
+            --hr-accent: #00ff88;
+            --hr-sec: #00d2ff;
+            --hr-text: #ffffff;
+            --hr-text-dim: rgba(255, 255, 255, 0.5);
+            --hr-card: rgba(255, 255, 255, 0.03);
+            --hr-border: rgba(255, 255, 255, 0.08);
+            --safe-area-top: env(safe-area-inset-top);
+            --safe-area-bottom: env(safe-area-inset-bottom);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--hr-bg);
+            color: var(--hr-text);
+            overflow-x: hidden;
+            padding-bottom: calc(85px + var(--safe-area-bottom));
+        }
+
+        /* ЁЯУ▒ APP HEADER */
+        .app-header {
+            padding: calc(20px + var(--safe-area-top)) 20px 20px;
+            background: rgba(13, 18, 27, 0.8);
+            backdrop-filter: blur(20px);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--hr-border);
+        }
+
+        .user-block {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar-circle {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, var(--hr-accent), var(--hr-sec));
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: #000;
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.2);
+        }
+
+        .greeting h1 {
+            font-size: 1.1rem;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+        }
+
+        .greeting p {
+            font-size: 0.75rem;
+            color: var(--hr-text-dim);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* ЁЯУК QUICK STATS */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            padding: 20px;
+        }
+
+        .stat-card {
+            background: var(--hr-card);
+            border: 1px solid var(--hr-border);
+            border-radius: 24px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--hr-accent);
+        }
+
+        .stat-card.blue::after {
+            background: var(--hr-sec);
+        }
+
+        .stat-card h3 {
+            font-size: 0.7rem;
+            color: var(--hr-text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            display: flex;
+            align-items: baseline;
+            gap: 5px;
+        }
+
+        .stat-card .trend {
+            font-size: 0.65rem;
+            padding: 4px 8px;
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--hr-accent);
+            border-radius: 8px;
+            font-weight: 700;
+            margin-top: 10px;
+            display: inline-block;
+        }
+
+        /* ЁЯФШ ACTION BUTTONS */
+        .action-row {
+            display: flex;
+            gap: 12px;
+            padding: 0 20px 20px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .action-row::-webkit-scrollbar {
+            display: none;
+        }
+
+        .quick-action {
+            flex: 0 0 auto;
+            background: var(--hr-card);
+            border: 1px solid var(--hr-border);
+            padding: 12px 18px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            transition: 0.3s;
+        }
+
+        .quick-action:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .quick-action.active {
+            background: var(--hr-accent);
+            color: #000;
+            border-color: var(--hr-accent);
+        }
+
+        /* ЁЯУЛ SECTION TITLES */
+        .section-header {
+            padding: 0 20px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-header h2 {
+            font-size: 1.2rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .see-all {
+            font-size: 0.8rem;
+            color: var(--hr-accent);
+            font-weight: 700;
+        }
+
+        /* ЁЯСе STAFF FEED */
+        .staff-feed {
+            padding: 0 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .staff-row {
+            background: var(--hr-card);
+            border: 1px solid var(--hr-border);
+            border-radius: 20px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .staff-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--hr-sec);
+        }
+
+        .staff-info {
+            flex: 1;
+        }
+
+        .staff-info h4 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .staff-info p {
+            font-size: 0.75rem;
+            color: var(--hr-text-dim);
+        }
+
+        .presence-tag {
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .tag-present {
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--hr-accent);
+        }
+
+        .tag-absent {
+            background: rgba(255, 77, 79, 0.1);
+            color: #ff4d4f;
+        }
+
+        /* ЁЯФН SEARCH BAR */
+        .search-container {
+            padding: 0 20px 20px;
+        }
+
+        .search-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-input {
+            width: 100%;
+            background: var(--hr-card);
+            border: 1px solid var(--hr-border);
+            padding: 14px 18px 14px 45px;
+            border-radius: 18px;
+            color: #fff;
+            font-size: 0.9rem;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        .search-input:focus {
+            border-color: var(--hr-accent);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 18px;
+            font-size: 1rem;
+            opacity: 0.5;
+        }
+
+        /* тЮХ FLOATING ACTION BUTTON */
+        .fab {
+            position: fixed;
+            bottom: calc(105px + var(--safe-area-bottom));
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--hr-accent), #00cc6a);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: #000;
+            box-shadow: 0 10px 25px rgba(0, 255, 136, 0.4);
+            z-index: 1500;
+            transition: 0.3s;
+        }
+
+        .fab:active {
+            transform: scale(0.9) rotate(90deg);
+        }
+
+        /* ЁЯЦ╝я╕П BOTTOM SHEET MODAL */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 3000;
+            display: none;
+            align-items: flex-end;
+        }
+
+        .bottom-sheet {
+            width: 100%;
+            background: #141b26;
+            border-top: 1px solid var(--hr-border);
+            border-radius: 30px 30px 0 0;
+            padding: 30px 20px calc(30px + var(--safe-area-bottom));
+            transform: translateY(100%);
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-overlay.active .bottom-sheet {
+            transform: translateY(0);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--hr-text-dim);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .hr-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--hr-border);
+            padding: 15px;
+            border-radius: 14px;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .hr-submit-btn {
+            width: 100%;
+            background: var(--hr-accent);
+            color: #000;
+            border: none;
+            padding: 16px;
+            border-radius: 16px;
+            font-weight: 800;
+            font-size: 1rem;
+            margin-top: 10px;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            color: var(--hr-text-dim);
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .nav-item.active {
+            color: var(--hr-accent);
+        }
+
+        .nav-icon {
+            font-size: 1.4rem;
+        }
+
+        .nav-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ЁЯкД PREMIUM EFFECTS */
+        .gloss-effect {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="app-header">
+        <div class="user-block">
+            <div class="avatar-circle" id="hrAvatar">HR</div>
+            <div class="greeting">
+                <p id="systemTime">Payshanba, 7-may</p>
+                <h1 id="hrName">Xush kelibsiz, HR</h1>
+            </div>
+        </div>
+        <div style="font-size: 1.5rem;" id="notif-btn">ЁЯФФ</div>
+    </header>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Xodimlar</h3>
+            <div class="value" id="totalStaffCount">0</div>
+            <div class="trend">+2 yangi</div>
+            <div class="gloss-effect"></div>
+        </div>
+        <div class="stat-card blue">
+            <h3>Bugun Kelgan</h3>
+            <div class="value" id="presentStaffCount">0</div>
+            <div class="trend" style="background:rgba(0, 210, 255, 0.1); color:var(--hr-sec);">94% davomat</div>
+            <div class="gloss-effect"></div>
+        </div>
+    </div>
+
+    <div class="search-container">
+        <div class="search-wrapper">
+            <span class="search-icon">ЁЯФН</span>
+            <input type="text" class="search-input" id="hrSearchInput" placeholder="Xodimlarni qidirish...">
+        </div>
+    </div>
+
+    <div class="action-row">
+        <div class="quick-action active">Barchasi</div>
+        <div class="quick-action">Ustalar</div>
+        <div class="quick-action">Ombor</div>
+        <div class="quick-action">Ofis</div>
+    </div>
+
+    <div class="section-header">
+        <h2>Xodimlar Ro'yxati</h2>
+        <div class="see-all">Yana...</div>
+    </div>
+
+    <div class="staff-feed" id="staffFeed">
+        <!-- Staff Rows Injected via JS -->
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="#" class="nav-item active">
+            <div class="nav-icon">ЁЯУК</div>
+            <div class="nav-label">Panel</div>
+        </a>
+        <a href="#" class="nav-item">
+            <div class="nav-icon">ЁЯСе</div>
+            <div class="nav-label">Xodimlar</div>
+        </a>
+        <a href="#" class="nav-item">
+            <div class="nav-icon">ЁЯУЕ</div>
+            <div class="nav-label">Davomat</div>
+        </a>
+        <a href="#" class="nav-item">
+            <div class="nav-icon">тЬЙя╕П</div>
+            <div class="nav-label">Arizalar</div>
+        </a>
+    </nav>
+
+    <!-- тЮХ FAB -->
+    <div class="fab" id="fabAddStaff">+</div>
+
+    <!-- ЁЯУе ADD STAFF MODAL (Bottom Sheet) -->
+    <div class="modal-overlay" id="staffModal">
+        <div class="bottom-sheet">
+            <div
+                style="width:40px; height:5px; background:rgba(255,255,255,0.1); border-radius:10px; margin:0 auto 20px;">
+            </div>
+            <h2 style="margin-bottom:20px; font-weight:800;">Yangi Xodim</h2>
+
+            <div class="form-group">
+                <label>F.I.O</label>
+                <input type="text" id="addStaffName" class="hr-input" placeholder="Ism familiya">
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                <div class="form-group">
+                    <label>Tug'ilgan Yili</label>
+                    <input type="number" id="addStaffBirthYear" class="hr-input" placeholder="2000">
+                </div>
+                <div class="form-group">
+                    <label>Ishga Kirgan</label>
+                    <input type="number" id="addStaffJoinedYear" class="hr-input" placeholder="2022">
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                <div class="form-group">
+                    <label>Bo'lim</label>
+                    <select id="addStaffDept" class="hr-input" style="background:#1d2733;">
+                        <option value="Ustalar">Ustalar</option>
+                        <option value="Ombor">Ombor</option>
+                        <option value="Ofis">Ofis</option>
+                        <option value="Xo'jalik">Xo'jalik</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Lavozim</label>
+                    <input type="text" id="addStaffRole" class="hr-input" placeholder="Usta">
+                </div>
+            </div>
+
+            <button class="hr-submit-btn" id="submitAddStaff">Xodimni Saqlash</button>
+        </div>
+    </div>
+
+    <script type="module" src="hr_app.js?v=1.0"></script>
+</body>
+
+</html>

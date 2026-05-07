@@ -49,8 +49,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const closeBadgeBtn = document.getElementById('closeBadgeBtn');
     if (closeBadgeBtn) {
         closeBadgeBtn.onclick = () => {
-            gsap.to(".badge-lux-card", {
-                scale: 0.8, opacity: 0, duration: 0.3, onComplete: () => {
+            gsap.to(".id-badge", {
+                scale: 0.8, opacity: 0, duration: 0.3, stagger: 0.1, onComplete: () => {
                     document.getElementById('badgeModalOverlay').style.display = 'none';
                 }
             });
@@ -128,8 +128,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
+    // 🎫 MANUAL BADGE PREVIEW
+    document.getElementById('genBadgeBtn').addEventListener('click', () => {
+        if (currentEmp) prepareBadge(currentEmp);
+        else alert("Iltimos, xodimni tanlang!");
+    });
+
     // 🏗️ DATA INITIALIZATION
     await loadInitialData();
+
+    // 🔄 PROFESSIONAL SYNC HEARTBEAT (Every 60s)
+    setInterval(loadInitialData, 60000);
 });
 
 async function loadInitialData() {
@@ -303,8 +312,6 @@ async function saveWorker() {
 
     const { data, error } = await supabase.from('employees').insert([{
         full_name: fullName,
-        first_name: fname,
-        last_name: lname,
         role: role,
         salary_info: salary || '0',
         phone: phone || '',
@@ -313,25 +320,38 @@ async function saveWorker() {
         status: 'Ishlamoqda'
     }]).select();
 
-    if (!error) {
+    if (!error && data && data.length > 0) {
         btn.textContent = 'MUVAFFAQIYATLI!';
+        const newEmp = data[0];
+        // Manually patch first/last names for badge if they aren't in DB
+        newEmp.first_name = fname;
+        newEmp.last_name = lname;
+
         setTimeout(async () => {
-            document.getElementById('addWorkerModalOverlay').style.display = 'none';
+            modal.style.display = 'none';
             await loadInitialData();
             clearModal();
-            prepareBadge(data[0]);
+            prepareBadge(newEmp);
             btn.textContent = 'TASDIQLASH VA SAQLASH';
             btn.disabled = false;
-        }, 1000);
+        }, 800);
     } else {
-        alert("SQL Error: " + error.message);
-        btn.textContent = 'XATOLIK!';
+        alert("Xatolik: " + (error ? error.message : "Ma'lumot qaytmadi"));
+        btn.textContent = 'TASDIQLASH VA SAQLASH';
         btn.disabled = false;
     }
 }
 
 function prepareBadge(emp) {
     const badgeModal = document.getElementById('badgeModalOverlay');
+
+    // Safety: ensure first/last names exist
+    if (!emp.first_name || !emp.last_name) {
+        const parts = emp.full_name.split(' ');
+        emp.first_name = parts[0] || '';
+        emp.last_name = parts.slice(1).join(' ') || '';
+    }
+
     document.getElementById('badgePreviewPhoto').src = emp.avatar_url;
     document.getElementById('badgePreviewSurname').textContent = (emp.last_name || '').toUpperCase();
     document.getElementById('badgePreviewName').textContent = (emp.first_name || '').toUpperCase();
@@ -347,9 +367,9 @@ function prepareBadge(emp) {
     document.getElementById('badgePreviewQR').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=AKFA-STAFF-${emp.id}`;
 
     badgeModal.style.display = 'flex';
-    gsap.fromTo(".badge-lux-card",
-        { scale: 0.5, opacity: 0, rotateY: 90 },
-        { scale: 1, opacity: 1, rotateY: 0, duration: 1.2, ease: "elastic.out(1, 0.75)" }
+    gsap.fromTo(".id-badge",
+        { scale: 0.5, opacity: 0, y: 50 },
+        { scale: 1, opacity: 1, y: 0, duration: 0.8, stagger: 0.2, ease: "back.out(1.7)" }
     );
 }
 

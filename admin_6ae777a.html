@@ -1,0 +1,216 @@
+﻿<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AKFA Admin Panel v2</title>
+    <!-- Google Fonts: Outfit -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css" />
+    <style>
+        .admin-v2-body {
+            background-color: #f8f9fa !important;
+            transition: background 0.3s ease;
+        }
+
+        .visa-icon {
+            font-weight: 800;
+            font-style: italic;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .bento-card h3 {
+            font-size: 1rem;
+            color: var(--adm-text-sec);
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .icon-small-btn {
+            width: 30px;
+            height: 30px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: var(--adm-text);
+        }
+
+        .balance-lg {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 10px 0;
+            color: var(--adm-text);
+        }
+
+        .admin-section {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .admin-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body class="admin-v2-body">
+    <div class="admin-layout">
+        <!-- Slim Sidebar -->
+        <aside class="sidebar-slim">
+            <div class="logo-icon-v2" style="font-size: 1.5rem; color: #007c52; margin-bottom: 40px; font-weight: 900;">
+                Q</div>
+            <div class="nav-icon active" data-section="dashboard" title="Panel">тКЮ</div>
+            <div class="nav-icon" data-section="reports" title="Hisobotlar">ЁЯУК</div>
+            <div class="nav-icon" data-section="orders" title="Buyurtmalar">ЁЯТ╝</div>
+            <div class="nav-icon" data-section="users" title="Foydalanuvchilar">ЁЯСе</div>
+            <div class="nav-icon" style="margin-top: auto;">тЪЩя╕П</div>
+            <div class="nav-icon" id="sidebarLogout">ЁЯЪк</div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- Top Navigation Bar -->
+            <nav class="top-nav-v2">
+                <div class="nav-links-v2">
+                    <a href="#" class="nav-link-item active">Panel</a>
+                    <a href="#" class="nav-link-item">Hisobotlar</a>
+                    <a href="#" class="nav-link-item">Hujjatlar</a>
+                    <a href="#" class="nav-link-item">Tarix</a>
+                    <a href="#" class="nav-link-item">Kontaktlar</a>
+                </div>
+                <div style="display: flex; gap: 20px; align-items: center;">
+                    <button id="themeToggle" class="theme-toggle" title="Tungi/Kunduzgi rejim">ЁЯМЩ</button>
+                    <i class="icon" style="color: #666; cursor: pointer;">ЁЯФН</i>
+                    <i class="icon" style="color: #666; cursor: pointer;">ЁЯФФ</i>
+                    <img id="adminAvatar" src="https://ui-avatars.com/api/?name=Admin&background=007c52&color=fff"
+                        style="width: 35px; height: 35px; border-radius: 50%;">
+                </div>
+            </nav>
+
+            <!-- Section: Dashboard -->
+            <section id="section-dashboard" class="admin-section active">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin: 10px 0;">
+                    <div>
+                        <h1 style="font-size: 2.5rem; font-weight: 500; color: var(--adm-text);">Xush kelibsiz, <span
+                                id="adminName">Admin</span></h1>
+                    </div>
+                </div>
+
+                <div class="bento-grid">
+                    <!-- Standard Bento Content -->
+                    <div class="bento-card" style="grid-column: span 1;">
+                        <h3>To'lov Maqsadi <span class="icon-small-btn">тЖЧ</span></h3>
+                        <div class="visa-card">
+                            <span class="visa-icon">VISA</span>
+                            <div class="balance-lg" style="color: #fff;">$ 78,989.09</div>
+                            <div
+                                style="display: flex; justify-content: space-between; font-size: 0.7rem; margin-top: 15px;">
+                                <span>**** 909090</span><span>09/26</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bento-card" style="grid-column: span 2;">
+                        <h3>Faollik Darajasi</h3>
+                        <div class="v2-bar-container">
+                            <div class="v2-bar" style="height: 40%;"></div>
+                            <div class="v2-bar" style="height: 65%;"></div>
+                            <div class="v2-bar" style="height: 50%;"></div>
+                            <div class="v2-bar active" style="height: 100%;"></div>
+                            <div class="v2-bar" style="height: 70%;"></div>
+                            <div class="v2-bar" style="height: 80%;"></div>
+                        </div>
+                    </div>
+                    <div class="bento-card">
+                        <h3>Umumiy Balans</h3>
+                        <div class="balance-lg" style="text-align: center;">$32,678.90</div>
+                        <div style="height: 50px; border-bottom: 2px solid #007c52; margin: 10px 0;"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: Users Management -->
+            <section id="section-users" class="admin-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                    <div>
+                        <h1 style="font-size: 2rem; font-weight: 600; color: var(--adm-text);">Tizim Foydalanuvchilari
+                        </h1>
+                        <p style="color: var(--adm-text-sec);">Bo'lim boshliqlari va login-parollarni boshqarish</p>
+                    </div>
+                    <button id="openAddUserModal" class="primary-btn"
+                        style="background: var(--adm-accent); color: #fff; padding: 12px 25px; border-radius: 15px; border: none; font-weight: 600; cursor: pointer;">
+                        + Yangi Foydalanuvchi
+                    </button>
+                </div>
+
+                <div class="bento-card" style="padding: 0; overflow: hidden;">
+                    <table class="v2-table">
+                        <thead>
+                            <tr>
+                                <th>Foydalanuvchi</th>
+                                <th>Roli</th>
+                                <th>Login / Parol</th>
+                                <th>Holat</th>
+                                <th>Harakat</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sysUsersTable">
+                            <!-- JS dynamic rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- User Management Modal -->
+    <div id="userModalOverlay"
+        style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(5px); z-index:1000; align-items:center; justify-content:center;">
+        <div class="user-form-modal">
+            <h2 id="modalUserTitle" style="margin-bottom:20px; color:var(--adm-text);">Yangi Foydalanuvchi</h2>
+            <input type="text" id="sysFullname" placeholder="Foydalanuvchi ismi" class="form-input-v2">
+            <input type="text" id="sysUsername" placeholder="Login nomi" class="form-input-v2">
+            <input type="password" id="sysPassword" placeholder="Maxfiy Parol" class="form-input-v2">
+            <select id="sysRole" class="form-input-v2">
+                <option value="hr">Kadirlar Bo'limi (HR)</option>
+                <option value="manager">Ombor Boshqaruvi (Xom ashyo)</option>
+                <option value="showroom">Showroom (Tayyor Mahsulotlar)</option>
+                <option value="moliya">Moliya / Buxgalteriya</option>
+                <option value="sotuv">Sotuv / Marketing</option>
+                <option value="ishlab_chiqarish">Ishlab Chiqarish</option>
+                <option value="admin">Super Admin</option>
+            </select>
+
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <button id="saveUserBtn"
+                    style="flex:1; background:var(--adm-accent); color:#fff; border:none; padding:12px; border-radius:12px; font-weight:600; cursor:pointer;">Saqlash</button>
+                <button id="closeUserModal"
+                    style="flex:1; background:rgba(0,0,0,0.05); color:var(--adm-text); border:none; padding:12px; border-radius:12px; cursor:pointer;">Bekor
+                    qilish</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/admin.js"></script>
+</body>
+
+</html>

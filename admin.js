@@ -749,8 +749,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <span style="font-size:0.75rem; color:#007c52; font-weight:700;">Faol</span>
                     </div>
                 </td>
-                <td style="text-align:right; padding-right:24px;">
-                    <button class="icon-small-btn" style="background:var(--adm-bg); border:1px solid var(--adm-border); color:var(--adm-text); width:30px; height:30px; cursor:pointer; border-radius:8px;">⋮</button>
+                <td style="text-align:right; padding-right:24px; display:flex; gap:10px; justify-content:flex-end;">
+                    <button class="icon-small-btn view-staff-btn" data-id="${emp.id}" style="background:rgba(0,210,255,0.1); border:1px solid rgba(0,210,255,0.2); color:var(--accent-sec); width:32px; height:32px; cursor:pointer; border-radius:8px;" title="Profilni ko'rish">👁️</button>
+                    <button class="icon-small-btn" style="background:var(--adm-bg); border:1px solid var(--adm-border); color:var(--adm-text); width:32px; height:32px; cursor:pointer; border-radius:8px;">⋮</button>
                 </td>
             `;
 
@@ -768,6 +769,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
 
             container.appendChild(tr);
+
+            // Eye Icon click handler
+            const viewBtn = tr.querySelector('.view-staff-btn');
+            if (viewBtn) {
+                viewBtn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Don't trigger the TR click twice
+                    selectedWorkerId = emp.id;
+                    updateStaffProfileCard(emp);
+                    // Smooth scroll to profile on mobile/small screens
+                    const detailPanel = document.querySelector('.hr-detail-panel');
+                    if (detailPanel) detailPanel.scrollIntoView({ behavior: 'smooth' });
+                });
+            }
 
             // --- Mobile Rendering (Elite Cards) ---
             if (mobileContainer) {
