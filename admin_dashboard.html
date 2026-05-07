@@ -148,8 +148,110 @@
         }
 
         .cal-day-num.active {
-            background: var(--adm-accent);
-            color: #000;
+            background: linear-gradient(135deg, #00d2ff, #007aff) !important;
+            color: #fff !important;
+            box-shadow: 0 8px 15px rgba(0, 210, 255, 0.4);
+            transform: scale(1.1);
+            z-index: 2;
+        }
+
+        /* 📱 MOBILE RESPONSIVE ENGINE (Elite Tier) */
+        @media (max-width: 992px) {
+            .sidebar-v2 {
+                display: none !important;
+            }
+
+            .admin-v2-main {
+                margin-left: 0 !important;
+                padding: 15px 15px 110px 15px !important;
+            }
+
+            .top-nav-v2 {
+                left: 0 !important;
+                padding: 10px 15px !important;
+                width: 100% !important;
+            }
+
+            .hr-main-grid {
+                grid-template-columns: 1fr !important;
+                gap: 20px !important;
+            }
+
+            .hr-situational-wing {
+                grid-template-columns: 1fr !important;
+                gap: 15px !important;
+            }
+
+            .hr-bottom-section .bento-card {
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .v2-table {
+                min-width: 750px;
+            }
+
+            h1 {
+                font-size: 1.5rem !important;
+            }
+
+            .balance-lg {
+                font-size: 1.6rem !important;
+            }
+
+            .mobile-bottom-nav {
+                display: flex !important;
+                position: fixed;
+                bottom: 20px;
+                left: 20px;
+                right: 20px;
+                height: 70px;
+                background: rgba(13, 22, 34, 0.85);
+                backdrop-filter: blur(25px);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 24px;
+                z-index: 9999;
+                padding: 0 10px;
+                justify-content: space-around;
+                align-items: center;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+                animation: slideUpNav 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            }
+
+            @keyframes slideUpNav {
+                from {
+                    transform: translateY(100px);
+                    opacity: 0;
+                }
+
+                to {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+            }
+
+            .m-nav-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
+                color: rgba(255, 255, 255, 0.3);
+                text-decoration: none;
+                font-size: 0.6rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                transition: 0.3s;
+                flex: 1;
+            }
+
+            .m-nav-item.active {
+                color: #00d2ff;
+            }
+
+            .m-nav-icon {
+                font-size: 1.3rem;
+                margin-bottom: 2px;
+            }
         }
 
         .cal-day-num.disabled {
@@ -1187,6 +1289,22 @@
                     style="flex:1; background:rgba(255,255,255,0.05); color:var(--adm-text); border:1px solid rgba(255,255,255,0.1); padding:16px; border-radius:14px; cursor:pointer; font-weight: 600; transition: 0.3s;">Bekor
                     qilish</button>
             </div>
+        </div>
+    </div>
+
+    <!-- 📱 ELITE MOBILE NAVIGATION (Only visible on small screens due to CSS) -->
+    <div class="mobile-bottom-nav" style="display:none;">
+        <div class="m-nav-item active" onclick="switchSection('section-hr')">
+            <div class="m-nav-icon">👥</div>
+            <span>Xodimlar</span>
+        </div>
+        <div class="m-nav-item" onclick="switchSection('section-logins')">
+            <div class="m-nav-icon">🔐</div>
+            <span>Kirish</span>
+        </div>
+        <div class="m-nav-item" onclick="switchSection('section-tarix')">
+            <div class="m-nav-icon">📜</div>
+            <span>Tarix</span>
         </div>
     </div>
 

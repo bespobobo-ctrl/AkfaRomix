@@ -10,12 +10,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = '/';
     }
 
+    // Initialize Telegram WebApp if available
+    const tg = window.Telegram ? window.Telegram.WebApp : null;
+    if (tg) {
+        tg.expand();
+        // Set header color for premium look
+        tg.setHeaderColor('#0d1622');
+    }
+
     // Update Rahbar Profile Info
     const adminNameDisplay = document.getElementById('adminName');
     const adminAvatar = document.getElementById('adminAvatar');
     const displayName = user.username.toLowerCase() === 'admin' ? 'RAHBAR' : user.username.toUpperCase();
     if (adminNameDisplay) adminNameDisplay.textContent = displayName;
     if (adminAvatar) adminAvatar.src = `https://ui-avatars.com/api/?name=${displayName}&background=007c52&color=fff&size=100`;
+
+    // Global switchSection refinement for mobile state
+    window.switchSection = (sectionId) => {
+        document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+        const target = document.getElementById(sectionId);
+        if (target) target.classList.add('active');
+
+        // Sidebar link active state
+        document.querySelectorAll('.nav-link-v2').forEach(l => {
+            l.classList.toggle('active', l.getAttribute('onclick')?.includes(sectionId));
+        });
+
+        // Mobile Nav active state
+        document.querySelectorAll('.m-nav-item').forEach(mi => {
+            mi.classList.toggle('active', mi.getAttribute('onclick')?.includes(sectionId));
+        });
+    };
 
     // Theme Toggle Logic
     const themeBtn = document.getElementById('themeToggle');
