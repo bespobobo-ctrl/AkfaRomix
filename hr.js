@@ -169,10 +169,12 @@ function initHomeDashboard() {
 
 async function loadInitialData() {
     const todayStr = new Date().toISOString().split('T')[0];
-    const list = document.getElementById('employeeList');
+    const tableBody = document.getElementById('employeeTableBody');
 
-    // Skeleton placeholder
-    list.innerHTML = Array(3).fill(0).map(() => `<div class="skeleton" style="height:80px; margin-bottom:10px;"></div>`).join('');
+    // Skeleton placeholder for Table
+    if (tableBody && employeesData.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:40px;"><div class="skeleton" style="height:200px;"></div></td></tr>`;
+    }
 
     const { data: staff, error: e1 } = await supabase
         .from('employees').select('*').order('created_at', { ascending: false });
