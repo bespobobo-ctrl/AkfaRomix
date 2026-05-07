@@ -1316,22 +1316,24 @@
 
 
 
-                <!-- HR LAYOUT TRANSFORMATION -->
-                <div class="hr-top-toolbar"
-                    style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <div class="pills-container">
-                        <button class="pill-btn active">Barchasi</button>
-                        <button class="pill-btn">Ustalar</button>
-                        <button class="pill-btn">Ombor</button>
-                        <button class="pill-btn">Ofis</button>
-                        <button class="pill-btn">Xo'jalik</button>
-                    </div>
-                    <div style="display:flex; gap:15px; align-items:center;">
-                        <input type="text" id="staffSearchInput" placeholder="Xodim qidirish..."
-                            style="background:rgba(0,0,0,0.03); border:1px solid var(--adm-border); border-radius:14px; padding:12px 18px 12px 40px; color:var(--adm-text); font-size:0.85rem; width:300px; outline:none; transition:0.3s; box-shadow:inset 0 2px 4px rgba(0,0,0,0.05);">
-                        <button id="openAddStaffModal" class="primary-btn"
-                            style="padding:12px 20px; font-size:0.8rem; border-radius:14px; background:linear-gradient(135deg, #00d2ff, #007aff); color:#fff;">+
-                            Ishchi qo'shish</button>
+                <!-- 💻 DESKTOP-ONLY HEADER (Hidden on Mobile) -->
+                <div class="desktop-staff-view">
+                    <div class="hr-top-toolbar"
+                        style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <div class="pills-container">
+                            <button class="pill-btn active">Barchasi</button>
+                            <button class="pill-btn">Ustalar</button>
+                            <button class="pill-btn">Ombor</button>
+                            <button class="pill-btn">Ofis</button>
+                            <button class="pill-btn">Xo'jalik</button>
+                        </div>
+                        <div style="display:flex; gap:15px; align-items:center;">
+                            <input type="text" id="staffSearchInput" placeholder="Xodim qidirish..."
+                                style="background:rgba(0,0,0,0.03); border:1px solid var(--adm-border); border-radius:14px; padding:12px 18px 12px 40px; color:var(--adm-text); font-size:0.85rem; width:300px; outline:none; transition:0.3s; box-shadow:inset 0 2px 4px rgba(0,0,0,0.05);">
+                            <button id="openAddStaffModal" class="primary-btn"
+                                style="padding:12px 20px; font-size:0.8rem; border-radius:14px; background:linear-gradient(135deg, #00d2ff, #007aff); color:#fff;">+
+                                Ishchi qo'shish</button>
+                        </div>
                     </div>
                 </div>
 
@@ -1401,19 +1403,7 @@
                     </div>
                 </div>
 
-                <!-- 🔍 STAFF INTERFACE (Professional UI/UX) -->
-                <div class="mobile-staff-header" style="display:none;">
-                    <div class="search-bar-v2">
-                        <input type="text" id="staffMobileSearch" placeholder="Xodimlarni qidirish...">
-                    </div>
-                    <div class="filter-chips">
-                        <div class="chip active">Hammasi</div>
-                        <div class="chip">HR</div>
-                        <div class="chip">Ombor</div>
-                        <div class="chip">Sotuv</div>
-                    </div>
-                </div>
-
+                <!-- Deleted Duplicate Mobile Header -->
                 <div class="hr-main-grid"
                     style="display:grid; grid-template-columns: 380px 1fr; gap:30px; margin-bottom:30px; align-items:start;">
 
