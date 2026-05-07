@@ -156,20 +156,31 @@
         }
 
         /* 📱 MOBILE RESPONSIVE ENGINE (Elite Tier) */
-        @media (max-width: 992px) {
-            .sidebar-v2 {
+        @media (max-width: 1100px) {
+
+            .sidebar-slim,
+            .hr-left-sidebar {
                 display: none !important;
             }
 
-            .admin-v2-main {
+            .admin-layout {
+                display: block !important;
+            }
+
+            .admin-main {
                 margin-left: 0 !important;
-                padding: 15px 15px 110px 15px !important;
+                padding: 10px 10px 110px 10px !important;
+                width: 100% !important;
             }
 
             .top-nav-v2 {
                 left: 0 !important;
                 padding: 10px 15px !important;
                 width: 100% !important;
+                position: sticky;
+                top: 0;
+                z-index: 1000;
+                background: var(--adm-bg);
             }
 
             .hr-main-grid {
