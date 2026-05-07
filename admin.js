@@ -166,6 +166,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const prevBtn = document.getElementById('cal-prev');
         const nextBtn = document.getElementById('cal-next');
+        const todayBtn = document.getElementById('cal-today');
+
         if (prevBtn && !prevBtn.dataset.navInit) {
             prevBtn.dataset.navInit = "true";
             prevBtn.onclick = () => {
@@ -178,6 +180,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (currentCalMonth > 11) { currentCalMonth = 0; currentCalYear++; }
                 renderModernCalendar(currentCalMonth, currentCalYear);
             };
+            if (todayBtn) {
+                todayBtn.onclick = () => {
+                    const now = new Date();
+                    currentCalMonth = now.getMonth();
+                    currentCalYear = now.getFullYear();
+                    renderModernCalendar(currentCalMonth, currentCalYear);
+                };
+            }
         }
 
         setupStaffActions();
@@ -471,40 +481,61 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!container) return;
 
         if (!staff.length) {
-            container.innerHTML = '<div style="text-align:center; opacity:0.3; padding:40px; font-size:0.8rem;">Xodimlar topilmadi</div>';
+            container.innerHTML = '<tr><td colspan="7" style="text-align:center; opacity:0.3; padding:40px;">Xodimlar topilmadi</td></tr>';
             return;
         }
 
         container.innerHTML = '';
         staff.forEach(emp => {
-            const div = document.createElement('div');
-            div.className = `staff-row-v2 ${emp.id === selectedWorkerId ? 'active' : ''}`;
+            const tr = document.createElement('tr');
+            tr.className = `table-row-staff ${emp.id === selectedWorkerId ? 'active' : ''}`;
+            tr.style.cursor = 'pointer';
+            tr.style.transition = '0.2s';
 
             const initials = emp.full_name.split(' ').map(n => n?.[0]).join('').substring(0, 2).toUpperCase() || '?';
             const salary = emp.salary_info || '---';
             const avatarHtml = emp.avatar_url
-                ? `<img src="${emp.avatar_url}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`
-                : initials;
+                ? `<img src="${emp.avatar_url}" style="width:32px; height:32px; border-radius:10px; object-fit:cover;">`
+                : `<div style="width:32px; height:32px; border-radius:10px; background:linear-gradient(135deg, #00d2ff, #007aff); display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:700; color:#fff;">${initials}</div>`;
 
-            div.innerHTML = `
-                <div class="staff-avatar-mini">${avatarHtml}</div>
-                <div style="flex:1;">
-                    <div style="font-weight:600; color:#fff; font-size:0.9rem;">${emp.full_name}</div>
-                    <div style="font-size:0.7rem; color:rgba(255,255,255,0.4); margin-top:2px;">
-                        ${emp.role || 'Xodim'} • <span style="color:var(--adm-accent); font-weight:700;">${salary}</span>
+            tr.innerHTML = `
+                <td style="padding:15px 24px;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        ${avatarHtml}
+                        <div style="font-weight:600; color:#fff;">${emp.full_name}</div>
                     </div>
-                </div>
-                <div style="width:8px; height:8px; border-radius:50%; background:#00ff88; box-shadow:0 0 8px #00ff88;"></div>
+                </td>
+                <td style="font-size:0.85rem; color:rgba(255,255,255,0.6);">${emp.role || '---'}</td>
+                <td style="font-size:0.85rem; font-weight:700; color:var(--adm-accent);">${salary}</td>
+                <td style="font-size:0.85rem; color:rgba(255,255,255,0.6);">${emp.department || '---'}</td>
+                <td style="font-size:0.85rem; color:rgba(255,255,255,0.6);">${emp.experience || '---'}</td>
+                <td>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="width:8px; height:8px; border-radius:50%; background:#00ff88; box-shadow:0 0 8px #00ff88;"></span>
+                        <span style="font-size:0.75rem; color:#00ff88;">Faol</span>
+                    </div>
+                </td>
+                <td style="text-align:right; padding-right:24px;">
+                    <button class="icon-small-btn" style="background:rgba(255,255,255,0.05); border:none; color:#fff; width:30px; height:30px; cursor:pointer;">⋮</button>
+                </td>
             `;
 
-            div.onclick = () => {
-                document.querySelectorAll('.staff-row-v2').forEach(r => r.classList.remove('active'));
-                div.classList.add('active');
+            tr.onclick = () => {
+                document.querySelectorAll('.table-row-staff').forEach(r => {
+                    r.style.background = '';
+                    r.classList.remove('active');
+                });
+                tr.style.background = 'rgba(0,210,255,0.08)';
+                tr.classList.add('active');
                 selectedWorkerId = emp.id;
                 updateStaffProfileCard(emp);
+
+                // Switch to analytics view smooth
+                const detailPanel = document.querySelector('.hr-detail-panel');
+                if (detailPanel) detailPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
             };
 
-            container.appendChild(div);
+            container.appendChild(tr);
         });
     }
 
@@ -659,68 +690,119 @@ document.addEventListener('DOMContentLoaded', async () => {
             div.onclick = () => {
                 document.querySelectorAll('.cal-day-num').forEach(c => c.classList.remove('active'));
                 div.classList.add('active');
-
-                // PAYROLL / TIME TRACKER CALCULATION
-                let workedHours = 0;
-                let isPresent = dayRecords.some(r => r.status.includes('Vaqtida') || r.status.includes('Keldi'));
-                let isLate = dayRecords.some(r => r.status.includes('Kech'));
-                let isLeaving = dayRecords.some(r => r.status.includes('Ruxsat') || r.status.includes('Dam') || r.status.includes('Tasdiqlash'));
-
-                if (isPresent) workedHours = 10;
-                else if (isLate) workedHours = 8.5; // Mock for late
-                if (isLeaving) workedHours = 0;
-
-                let salaryText = '0';
-                if (typeof allEmployees !== 'undefined' && selectedWorkerId) {
-                    const emp = allEmployees.find(e => e.id === selectedWorkerId);
-                    if (emp) salaryText = emp.salary_info || '0';
-                }
-                const monthlySalary = parseInt(String(salaryText).replace(/\\D/g, '')) || 0;
-
-                // Calculate Working days in month (assuming Sunday is off)
-                let workingDaysCount = 0;
-                for (let i = 1; i <= daysInMonth; i++) {
-                    if (new Date(year, month, i).getDay() !== 0) workingDaysCount++;
-                }
-
-                const dailyRate = workingDaysCount > 0 ? (monthlySalary / workingDaysCount) : 0;
-                const hourlyRate = dailyRate / 10; // Default 10 hours workday (08:00 - 18:00)
-                const earnedToday = Math.round(workedHours * hourlyRate);
-
-                const details = document.getElementById('daily-att-details');
-                if (details) {
-                    details.innerHTML = `
-                        <div style="width:100%;">
-                            <div style="font-size:1.15rem; font-weight:800; color:#fff; text-align:center; padding-bottom:15px; margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.06);">
-                                ${d} ${monthNames[month]}
-                            </div>
-
-                            <!-- PAYROLL CARD -->
-                            <div style="margin-bottom:15px; background:linear-gradient(135deg, rgba(0,210,255,0.1), rgba(0,0,0,0.2)); border:1px solid rgba(0,210,255,0.15); border-radius:12px; padding:15px;">
-                                <div style="display:flex; justify-content:space-between; align-items:center;">
-                                    <div style="font-size:0.8rem; color:rgba(255,255,255,0.6); font-weight:600;">🕒 Ishlandi: <span style="color:#fff;">${workedHours} soat</span></div>
-                                </div>
-                                <div style="margin-top:8px; font-size:0.75rem; color:rgba(255,255,255,0.4);">💰 Kunlik stavka: ${Math.round(dailyRate).toLocaleString()} UZS</div>
-                                <div style="margin-top:10px; font-size:1.3rem; font-weight:800; color:#00d2ff; text-shadow: 0 0 10px rgba(0,210,255,0.3);">
-                                    +${earnedToday.toLocaleString()} so'm
-                                </div>
-                            </div>
-
-                            <div style="display:flex; flex-direction:column; width:100%;">
-                                ${displayStatusHTML === 'Baza ma\'lumoti yo\'q' ?
-                            `<div style="text-align:center; padding:30px; color:rgba(255,255,255,0.25); font-size:0.85rem; font-weight:500;">Baza ma'lumoti yo'q</div>`
-                            : displayStatusHTML}
-                            </div>
-                        </div>
-                    `;
-                }
+                showDayDetails(d, month, year, dayRecords, daysInMonth, monthNames);
             };
+
+            if (year === today.getFullYear() && month === today.getMonth() && d === today.getDate()) {
+                div.classList.add('today');
+                div.classList.add('active');
+                // Auto-load today's details
+                showDayDetails(d, month, year, dayRecords, daysInMonth, monthNames);
+            }
+
             calGrid.appendChild(div);
         }
     }
 
-    // Initial Load
-    loadRomixDashboardStats();
+    function showDayDetails(d, month, year, dayRecords, daysInMonth, monthNames) {
+        // PAYROLL / TIME TRACKER CALCULATION
+        let workedHours = 0;
+        let isPresent = dayRecords.some(r => r.status.includes('Vaqtida') || r.status.includes('Keldi'));
+        let isLate = dayRecords.some(r => r.status.includes('Kech'));
+        let isLeaving = dayRecords.some(r => r.status.includes('Ruxsat') || r.status.includes('Dam') || r.status.includes('Tasdiqlash'));
+
+        if (isPresent) workedHours = 10;
+        else if (isLate) workedHours = 8.5; // Mock for late
+        if (isLeaving) workedHours = 0;
+
+        let salaryText = '0';
+        if (typeof allEmployees !== 'undefined' && selectedWorkerId) {
+            const emp = allEmployees.find(e => e.id === selectedWorkerId);
+            if (emp) salaryText = emp.salary_info || '0';
+        }
+        const monthlySalary = parseInt(String(salaryText).replace(/\D/g, '')) || 0;
+
+        // Calculate Working days in month (assuming Sunday is off)
+        let workingDaysCount = 0;
+        for (let i = 1; i <= daysInMonth; i++) {
+            if (new Date(year, month, i).getDay() !== 0) workingDaysCount++;
+        }
+
+        const dailyRate = workingDaysCount > 0 ? (monthlySalary / workingDaysCount) : 0;
+        const hourlyRate = dailyRate / 10; // Default 10 hours workday (08:00 - 18:00)
+        const earnedToday = Math.round(workedHours * hourlyRate);
+
+        // Update Top Card Stats for the selected day
+        const headHours = document.getElementById('worked-hours');
+        const headIn = document.getElementById('st-time-in');
+        const headOut = document.getElementById('st-time-out');
+        if (headHours) headHours.textContent = workedHours > 0 ? (workedHours + ":00") : "00:00";
+        if (headIn) headIn.textContent = isPresent ? "08:00" : "--:--";
+        if (headOut) headOut.textContent = isPresent ? "18:00" : "--:--";
+
+        const displayStatusHTML = dayRecords.length === 0 ?
+            `<div style="text-align:center; padding:30px; color:rgba(255,255,255,0.15); font-size:0.8rem; font-weight:500; border:1px dashed rgba(255,255,255,0.05); border-radius:15px; margin-top:10px;">📉 Baza ma'lumoti topilmadi</div>` :
+            dayRecords.map(r => {
+                let icon = '📆';
+                let color = '#fff';
+                let glow = 'rgba(255,255,255,0.1)';
+                let s = r.status;
+
+                if (s.includes('Premya')) { icon = '💰'; color = '#FFD700'; glow = 'rgba(255,215,0,0.2)'; }
+                else if (s.includes('Oylik')) { icon = '📈'; color = '#00d2ff'; glow = 'rgba(0,210,255,0.2)'; }
+                else if (s.includes('Ruxsat') || s.includes('Dam')) { icon = '🏝️'; color = '#BA68C8'; glow = 'rgba(186,104,200,0.2)'; }
+                else if (s.includes('Kech')) { icon = '🕒'; color = '#ff4d4f'; glow = 'rgba(255,77,79,0.2)'; }
+                else if (s.includes('Vaqtida') || s.includes('Keldi')) { icon = '✅'; color = '#00ff88'; glow = 'rgba(0,255,136,0.2)'; }
+
+                return `
+                    <div class="premium-event-card" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:14px; border-radius:18px; margin-bottom:12px; position:relative; overflow:hidden;">
+                        <div style="position:absolute; top:0; left:0; width:4px; height:100%; background:${color}; box-shadow:0 0 15px ${glow};"></div>
+                        <div style="display:flex; justify-content:space-between; align-items:start;">
+                            <div style="display:flex; gap:10px; align-items:center;">
+                                <div style="width:32px; height:32px; border-radius:10px; background:${glow}; display:flex; align-items:center; justify-content:center; font-size:1rem;">${icon}</div>
+                                <div style="font-weight:600; color:#fff; font-size:0.85rem; line-height:1.3;">${s}</div>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:8px; margin-top:12px; border-top:1px solid rgba(255,255,255,0.04); padding-top:10px;">
+                            <button onclick="window.editHrEvent('${r.id}', '${s}')" style="flex:1; background:rgba(255,255,255,0.03); color:rgba(255,255,255,0.4); border:1px solid rgba(255,255,255,0.06); padding:6px; border-radius:8px; cursor:pointer; font-size:0.7rem; transition:0.3s; font-weight:600;">Tahrirlash</button>
+                            <button onclick="window.deleteHrEvent('${r.id}')" style="flex:1; background:rgba(255,77,79,0.03); color:#ff4d4f; border:1px solid rgba(255,77,79,0.08); padding:6px; border-radius:8px; cursor:pointer; font-size:0.7rem; transition:0.3s; font-weight:600;">O'chirish</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+        const details = document.getElementById('daily-att-details');
+        if (details) {
+            details.innerHTML = `
+                <div style="width:100%;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:12px; margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.06);">
+                        <div style="font-size:1rem; font-weight:800; color:#fff;">${d} ${monthNames[month]} ${year}</div>
+                        <div style="background:rgba(0,210,255,0.1); color:#00d2ff; padding:4px 8px; border-radius:8px; font-size:0.65rem; font-weight:700;">TANLANGAN KUN</div>
+                    </div>
+
+                    <!-- PAYROLL CARD -->
+                    <div style="margin-bottom:18px; background:linear-gradient(135deg, rgba(0,210,255,0.1), rgba(0,0,0,0.3)); border:1px solid rgba(0,210,255,0.15); border-radius:18px; padding:15px; box-shadow:0 8px 32px rgba(0,0,0,0.1);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <div style="font-size:0.75rem; color:rgba(255,255,255,0.5); font-weight:500;">🕒 Ish vaqti</div>
+                            <div style="font-size:0.85rem; color:#fff; font-weight:700;">${workedHours} soat</div>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                            <div style="font-size:0.75rem; color:rgba(255,255,255,0.5); font-weight:500;">💰 Stavka</div>
+                            <div style="font-size:0.8rem; color:rgba(255,255,255,0.7);">${Math.round(dailyRate).toLocaleString()} UZS</div>
+                        </div>
+                        <div style="height:1px; background:rgba(255,255,255,0.05); margin-bottom:12px;"></div>
+                        <div style="font-size:1.4rem; font-weight:900; color:#00ff88; text-shadow:0 0 15px rgba(0,255,136,0.3);">
+                            +${earnedToday.toLocaleString()} <span style="font-size:0.7rem; font-weight:500; color:rgba(255,255,255,0.4);">so'm ishladi</span>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; flex-direction:column; width:100%;">
+                        ${displayStatusHTML}
+                    </div>
+                </div>
+            `;
+        }
+    }
 
     // --- SYSTEM USERS MANAGEMENT ---
     const sysUsersTable = document.getElementById('sysUsersTable');
