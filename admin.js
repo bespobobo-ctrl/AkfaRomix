@@ -14,8 +14,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     const tg = window.Telegram ? window.Telegram.WebApp : null;
     if (tg) {
         tg.expand();
-        // Set header color for premium look
         tg.setHeaderColor('#0d1622');
+    }
+
+    // --- 📏 EXECUTIVE RESIZER LOGIC ---
+    const resizer = document.getElementById('hrResizer');
+    const leftSide = document.getElementById('hrLeftColumn');
+    const container = document.getElementById('hrMainContainer');
+
+    if (resizer && leftSide) {
+        let x = 0;
+        let w = 0;
+
+        const mouseDownHandler = function (e) {
+            x = e.clientX;
+            const styles = window.getComputedStyle(leftSide);
+            w = parseInt(styles.width, 10);
+            document.addEventListener('mousemove', mouseMoveHandler);
+            document.addEventListener('mouseup', mouseUpHandler);
+            resizer.classList.add('active');
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        };
+
+        const mouseMoveHandler = function (e) {
+            const dx = e.clientX - x;
+            const newWidth = w + dx;
+            if (newWidth > 320 && newWidth < 850) {
+                leftSide.style.width = `${newWidth}px`;
+            }
+        };
+
+        const mouseUpHandler = function () {
+            document.removeEventListener('mousemove', mouseMoveHandler);
+            document.removeEventListener('mouseup', mouseUpHandler);
+            resizer.classList.remove('active');
+            document.body.style.cursor = 'default';
+            document.body.style.userSelect = '';
+        };
+
+        resizer.addEventListener('mousedown', mouseDownHandler);
     }
 
     // Update Rahbar Profile Info

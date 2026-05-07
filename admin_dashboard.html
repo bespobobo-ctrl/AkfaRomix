@@ -52,6 +52,32 @@
             display: block;
         }
 
+        /* 📏 EXECUTIVE RESIZER SYSTEM */
+        .resizer-v2 {
+            width: 4px;
+            cursor: col-resize;
+            background: rgba(0, 255, 136, 0.05);
+            /* Stealth mode */
+            height: 100%;
+            transition: 0.3s;
+            position: relative;
+            z-index: 10;
+            border-radius: 2px;
+        }
+
+        .resizer-v2:hover,
+        .resizer-v2.active {
+            background: #00ff88;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.6);
+            width: 4px;
+        }
+
+        @media (max-width: 1024px) {
+            .resizer-v2 {
+                display: none !important;
+            }
+        }
+
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -537,8 +563,7 @@
         /* 💻 DESKTOP SPECIFIC FIXES */
         @media (min-width: 1025px) {
             .hr-main-grid {
-                display: grid !important;
-                grid-template-columns: 1fr 450px !important;
+                display: flex !important;
                 gap: 25px !important;
             }
 
@@ -1570,11 +1595,12 @@
                 </div>
 
                 <!-- Deleted Duplicate Mobile Header -->
-                <div class="hr-main-grid"
-                    style="display:grid; grid-template-columns: 380px 1fr; gap:30px; margin-bottom:30px; align-items:start;">
+                <div class="hr-main-grid" id="hrMainContainer"
+                    style="display:flex; gap:20px; margin-bottom:30px; align-items:start;">
 
                     <!-- LEFT COLUMN: Executive Control Wing -->
-                    <div class="hr-left-sidebar" style="display:flex; flex-direction:column; gap:20px;">
+                    <div class="hr-left-sidebar" id="hrLeftColumn"
+                        style="width: 380px; flex-shrink: 0; display:flex; flex-direction:column; gap:20px;">
 
                         <!-- Premium Date Focus Card -->
                         <div class="hr-card"
@@ -1625,9 +1651,12 @@
                         </div>
                     </div>
 
+                    <!-- 📏 THE RESIZER -->
+                    <div class="resizer-v2" id="hrResizer"></div>
+
                     <!-- RIGHT COLUMN: Personnel Analytics & Timeline -->
-                    <div class="hr-right-content"
-                        style="display:flex; flex-direction:column; gap:20px; position:relative;">
+                    <div class="hr-right-content" id="hrRightColumn"
+                        style="flex:1; display:flex; flex-direction:column; gap:20px; position:relative;">
                         <button class="drawer-close-btn"
                             onclick="this.parentElement.classList.remove('mobile-drawer-active')">&times;</button>
 
