@@ -477,35 +477,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function renderModernCalendar(month, year) {
-        const monthHeader = document.getElementById('current-month-name');
         const calGrid = document.getElementById('calendar-grid-v2');
         if (!calGrid) return;
 
-        const monthNames = ["Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun", "Iyul", "Avgust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr"];
-        if (monthHeader) monthHeader.textContent = monthNames[month] + " " + year;
-
-        // PRESERVE LABELS: Clear only day-num cells
-        const existingLabels = calGrid.querySelectorAll('.cal-day-label');
-        calGrid.innerHTML = '';
-        existingLabels.forEach(l => calGrid.appendChild(l));
-
-        // If labels were missing (e.g. first load), add them
-        if (existingLabels.length === 0) {
-            const days = ["Du", "Se", "Ch", "Pa", "Ju", "Sh", "Ya"];
-            days.forEach(d => {
-                const l = document.createElement('div');
-                l.className = 'cal-day-label';
-                l.textContent = d;
-                calGrid.appendChild(l);
-            });
-        }
-
-        const firstDay = new Date(year, month, 1).getDay();
-        const adjustedFirstDay = (firstDay === 0) ? 6 : firstDay - 1;
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const today = new Date();
-
         let monthAtt = [];
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
         if (selectedWorkerId) {
             const startStr = `${year}-${(month + 1).toString().padStart(2, '0')}-01`;
             const endStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${daysInMonth}`;
@@ -516,6 +492,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                 .lte('date', endStr);
             monthAtt = data || [];
         }
+
+        const monthHeader = document.getElementById('current-month-name');
+        const monthNames = ["Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun", "Iyul", "Avgust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr"];
+        if (monthHeader) monthHeader.textContent = monthNames[month] + " " + year;
+
+        // Clear and completely rebuild labels to prevent duplication race condition
+        calGrid.innerHTML = '';
+        const days = ["Du", "Se", "Ch", "Pa", "Ju", "Sh", "Ya"];
+        days.forEach(d => {
+            const l = document.createElement('div');
+            l.className = 'cal-day-label';
+            l.textContent = d;
+            calGrid.appendChild(l);
+        });
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const adjustedFirstDay = (firstDay === 0) ? 6 : firstDay - 1;
+        const today = new Date();
 
         // Add padding
         for (let i = 0; i < adjustedFirstDay; i++) {
@@ -530,15 +524,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             div.textContent = d;
 
             const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
-            const att = monthAtt.find(a => a.date === dateStr);
-            if (att) {
-                if (att.status === 'Vaqtida keldi') div.classList.add('has-present');
-                else if (att.status === 'Kech qoldi') div.classList.add('has-late');
-                else if (att.status.includes('Premya') || att.status.includes('Oylik') || att.status.includes('Ruxsat')) {
+            const dayRecords = monthAtt.filter(a => a.date === dateStr);
+
+            let displayStatusHTML = 'Ma\'lumot kiritilmagan';
+
+            if (dayRecords.length > 0) {
+                const hasLate = dayRecords.some(r => r.status === 'Kech qoldi');
+                const hasPresent = dayRecords.some(r => r.status === 'Vaqtida keldi');
+                const isSpecial = dayRecords.some(r => r.status.includes('Premya') || r.status.includes('Oylik') || r.status.includes('Ruxsat'));
+
+                if (isSpecial) {
                     div.style.borderBottom = '3px solid #ffb800';
                     div.style.background = 'rgba(255,184,0,0.1)';
+                } else if (hasPresent) {
+                    div.classList.add('has-present');
+                } else if (hasLate) {
+                    div.classList.add('has-late');
+                } else {
+                    div.classList.add('has-att');
                 }
-                else div.classList.add('has-att'); // fallback
+
+                displayStatusHTML = dayRecords.map(r => r.status).join('<br/>');
             }
 
             if (year === today.getFullYear() && month === today.getMonth() && d === today.getDate()) {
@@ -552,13 +558,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (details) {
                     details.innerHTML = `
                         <div style="font-size:1.1rem; font-weight:700; color:#fff; margin-bottom:8px;">${d} ${monthNames[month]}</div>
-                        <div style="padding:10px 20px; background:rgba(0,255,136,0.1); border-radius:12px; color:#00ff88; font-weight:600; font-size:0.85rem;">
-                            ${att ? att.status : 'Ma\'lumot kiritilmagan'}
+                        <div style="padding:10px 20px; background:rgba(0,255,136,0.1); border-radius:12px; color:#00ff88; font-weight:600; font-size:0.85rem; line-height:1.6;">
+                            ${displayStatusHTML}
                         </div>
                     `;
                 }
             };
-
             calGrid.appendChild(div);
         }
     }
