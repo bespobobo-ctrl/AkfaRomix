@@ -311,28 +311,75 @@ function showEmployeeDetail(emp) {
     if (att) {
         document.getElementById('dt-arrived').textContent = att.arrival_time || '--:--';
         document.getElementById('dt-left').textContent = att.leave_time || '--:--';
-        const offset = 440 - (440 * 85) / 100;
+        const offset = 597 - (597 * 85) / 100;
         gsap.to("#timeProgress", { strokeDashoffset: offset, duration: 1.5, ease: "power2.out" });
         document.getElementById('dt-worktime').textContent = "08:15";
     } else {
         document.getElementById('dt-arrived').textContent = '--:--';
         document.getElementById('dt-left').textContent = '--:--';
-        gsap.to("#timeProgress", { strokeDashoffset: 440, duration: 1 });
+        gsap.to("#timeProgress", { strokeDashoffset: 597, duration: 1 });
         document.getElementById('dt-worktime').textContent = "00:00";
     }
 
-    // Animation Open
-    gsap.fromTo(profileView, { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(1.2)" });
+    gsap.fromTo(profileView, { scale: 0.95, opacity: 0, y: 30 }, { scale: 1, opacity: 1, y: 0, duration: 0.5, ease: "power4.out" });
+    lucide.createIcons();
 }
 
-function closeDetailModal() {
+window.closeDetailModal = function () {
     const modal = document.getElementById('detailModalOverlay');
     gsap.to("#profileDetail", {
-        scale: 0.9, opacity: 0, duration: 0.3, onComplete: () => {
+        scale: 0.95, opacity: 0, y: 20, duration: 0.3, onComplete: () => {
             modal.style.display = 'none';
+            currentEmp = null;
         }
     });
-}
+};
+
+window.handlePremya = () => {
+    const amount = prompt(`${currentEmp.full_name} uchun premya miqdorini kiriting (UZS):`, "500000");
+    if (amount) alert(`Muvaffaqiyatli: ${amount} UZS premya tasdiqlandi!`);
+};
+
+window.handleOylik = () => {
+    alert(`${currentEmp.full_name} ning joriy oyligi: ${currentEmp.salary_info || 'Noma\'lum'}`);
+};
+
+window.handleEdit = () => {
+    alert("Tahrirlash moduli tez kunda ishga tushadi.");
+};
+
+window.handleDelete = async () => {
+    if (!confirm(`${currentEmp.full_name} ni tizimdan butkul o'chirishni tasdiqlaysizmi?`)) return;
+    const { error } = await supabase.from('employees').delete().eq('id', currentEmp.id);
+    if (!error) {
+        alert("Xodim muvaffaqiyatli o'chirildi.");
+        window.closeDetailModal();
+        loadInitialData();
+    } else {
+        alert("Xatolik: " + error.message);
+    }
+};
+
+window.handleReport = () => {
+    alert("Xodim ish faoliyati hisoboti (PDF) tayyorlanmoqda...");
+};
+
+window.prepareBadge = (emp) => {
+    if (!emp) return;
+    const parts = (emp.full_name || '').split(' ');
+    const f = parts[0] || '';
+    const l = parts.slice(1).join(' ') || '';
+
+    document.getElementById('badgeModalOverlay').style.display = 'flex';
+    document.getElementById('badgePreviewPhoto').src = emp.avatar_url;
+    document.getElementById('badgePreviewName').textContent = f.toUpperCase();
+    document.getElementById('badgePreviewSurname').textContent = l.toUpperCase();
+    document.getElementById('badgePreviewRole').textContent = (emp.role || 'XODIM').toUpperCase();
+    document.getElementById('badgePreviewID').textContent = 'AKFA-' + emp.id.split('-')[0].toUpperCase();
+    document.getElementById('badgePreviewQR').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(emp.id)}`;
+
+    gsap.from(".id-badge", { scale: 0.8, opacity: 0, duration: 0.5, ease: "back.out(1.7)" });
+};
 
 
 function initActivityChart() {
