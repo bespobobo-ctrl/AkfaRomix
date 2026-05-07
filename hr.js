@@ -337,12 +337,12 @@ async function saveWorker() {
     if (!error && data && data.length > 0) {
         btn.textContent = 'MUVAFFAQIYATLI!';
         const newEmp = data[0];
-        // Manually patch first/last names for badge if they aren't in DB
+        // Manually patch names for badge
         newEmp.first_name = fname;
         newEmp.last_name = lname;
 
         setTimeout(async () => {
-            modal.style.display = 'none';
+            document.getElementById('addWorkerModalOverlay').style.display = 'none';
             await loadInitialData();
             clearModal();
             prepareBadge(newEmp);
