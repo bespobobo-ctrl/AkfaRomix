@@ -144,40 +144,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     let selectedWorkerId = null;
     let allEmployees = [];
 
-    // --- ROMIX HR DATA (MODERN) ---
+    // --- ROMIX HR DATA (ELITE COMMAND) ---
     async function loadRomixHRData() {
         const { data: emps, error } = await supabase.from('employees').select('*').order('full_name', { ascending: true });
-        if (error) return;
+        if (error) {
+            console.error("HR Load Error:", error);
+            return;
+        }
         allEmployees = emps;
 
         renderStaffList(allEmployees);
-
-        // Pill Filtering
-        const pills = document.querySelectorAll('.pills-container .pill');
-        pills.forEach(pill => {
-            if (pill.dataset.init) return;
-            pill.dataset.init = "true";
-
-            pill.onclick = () => {
-                pills.forEach(p => p.classList.remove('active'));
-                pill.classList.add('active');
-                const cat = pill.textContent.trim();
-
-                if (cat === 'Barchasi') {
-                    renderStaffList(allEmployees);
-                } else if (cat === 'Ustalar') {
-                    renderStaffList(allEmployees.filter(e => e.role.toLowerCase().includes('usta') || e.role.toLowerCase().includes('brigada')));
-                } else if (cat === 'Omborchilar') {
-                    renderStaffList(allEmployees.filter(e => e.role.toLowerCase().includes('ombor')));
-                } else if (cat === 'Sotuvchilar') {
-                    renderStaffList(allEmployees.filter(e => e.role.toLowerCase().includes('sotuv') || e.role.toLowerCase().includes('menejer')));
-                } else if (cat === 'Ofis') {
-                    renderStaffList(allEmployees.filter(e => e.role.toLowerCase().includes('ofis') || e.role.toLowerCase().includes('bugalter') || e.role.toLowerCase().includes('hr') || e.role.toLowerCase().includes('admin')));
-                } else if (cat === 'Xo\'jalik') {
-                    renderStaffList(allEmployees.filter(e => e.role.toLowerCase().includes('xo\'jalik') || e.role.toLowerCase().includes('tozalik') || e.role.toLowerCase().includes('oshxona') || e.role.toLowerCase().includes('qorovul')));
-                }
-            };
-        });
+        initHRPills();
+        initStaffSearch();
 
         if (emps && emps.length > 0) {
             selectedWorkerId = emps[0].id;
@@ -205,51 +183,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         setupStaffActions();
     }
 
-    function renderStaffList(staff) {
-        const container = document.getElementById('staff-list-container');
-        if (!container) return;
-        container.innerHTML = '';
-
-        staff.forEach(emp => {
-            const div = document.createElement('div');
-            div.className = 'staff-mini-card';
-            div.style.cssText = `
-                display: flex; align-items: center; gap: 15px; padding: 15px;
-                background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);
-                border-radius: 18px; cursor: pointer; transition: 0.3s; margin-bottom: 1px;
-            `;
-
-            div.innerHTML = `
-                <div style="width: 45px; height: 45px; border-radius: 12px; background: rgba(0,210,255,0.1); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #00d2ff; font-size: 0.8rem;">
-                    ${emp.full_name.split(' ').map(n => n[0]).join('')}
-                </div>
-                <div style="flex: 1;">
-                    <div style="font-size: 0.9rem; font-weight: 600;">${emp.full_name}</div>
-                    <div style="font-size: 0.7rem; opacity: 0.5;">${emp.role}</div>
-                </div>
-                <div style="text-align: right;">
-                    <div style="font-size: 0.8rem; font-weight: 700; color: #00ff88;">${emp.salary_info || '---'}</div>
-                    <div style="font-size: 0.6rem; opacity: 0.4;">Ishlamoqda</div>
-                </div>
-            `;
-
-            div.onclick = () => {
-                document.querySelectorAll('.staff-mini-card').forEach(c => c.style.borderColor = 'rgba(255,255,255,0.05)');
-                div.style.borderColor = '#00ff88';
-                selectedWorkerId = emp.id;
-                updateStaffProfileCard(emp);
-            };
-
-            container.appendChild(div);
-        });
-
-        // Auto-select first
-        if (staff.length > 0) {
-            selectedWorkerId = staff[0].id;
-            updateStaffProfileCard(staff[0]);
-        }
-    }
-
     function setupStaffActions() {
         const btnBonus = document.getElementById('btn-bonus');
         const btnRaise = document.getElementById('btn-raise');
@@ -262,7 +195,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const amount = prompt("Premya miqdorini kiriting (masalan: 500,000):");
                 if (amount) {
                     alert(`Xodimga ${amount} premya belgilandi.`);
-                    // Logic to store bonus could go here
                 }
             };
             btnRaise.onclick = async () => {
@@ -284,7 +216,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     .eq('status', 'Tasdiqlash kutilmoqda');
 
                 if (reqs && reqs.length > 0) {
-                    const choice = confirm("Xodim dam olish uchun ruxsat so'ragan. Tasdiqlaysizmi?\n\n'OK' - Ruxsat berish, 'Cancel' - Rad etish");
+                    const choice = confirm("Xodim dam olish uchun ruxsat so'ragan. Tasdiqlaysizmi?");
                     const newStatus = choice ? 'Ruxsat berildi' : 'Ruxsat berilmadi';
                     await supabase.from('attendance').update({ status: newStatus }).eq('id', reqs[0].id);
                     alert(`Javob yuborildi: ${newStatus}`);
@@ -300,92 +232,154 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    function initHRPills() {
+        const pills = document.querySelectorAll('.pill-btn');
+        pills.forEach(pill => {
+            if (pill.dataset.init) return;
+            pill.dataset.init = "true";
+
+            pill.onclick = () => {
+                pills.forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+                const cat = pill.textContent.trim().toLowerCase();
+
+                let filtered = allEmployees;
+                if (cat === 'ustalar') {
+                    filtered = allEmployees.filter(e => e.role.toLowerCase().includes('usta') || e.role.toLowerCase().includes('brigada') || e.role.toLowerCase().includes('operator'));
+                } else if (cat === 'ofis') {
+                    filtered = allEmployees.filter(e => e.role.toLowerCase().includes('ofis') || e.role.toLowerCase().includes('bugalter') || e.role.toLowerCase().includes('menejer') || e.role.toLowerCase().includes('admin'));
+                } else if (cat === 'xo\'jalik') {
+                    filtered = allEmployees.filter(e => e.role.toLowerCase().includes('xo\'jalik') || e.role.toLowerCase().includes('tozalik') || e.role.toLowerCase().includes('oshxona') || e.role.toLowerCase().includes('qorovul'));
+                }
+                renderStaffList(filtered);
+            };
+        });
+    }
+
+    function initStaffSearch() {
+        const input = document.getElementById('staffSearchInput');
+        if (!input || input.dataset.init) return;
+        input.dataset.init = "true";
+        input.addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            const filtered = allEmployees.filter(emp => emp.full_name.toLowerCase().includes(val) || emp.role.toLowerCase().includes(val));
+            renderStaffList(filtered);
+        });
+    }
+
+    function renderStaffList(staff) {
+        const container = document.getElementById('staff-list-container');
+        if (!container) return;
+        container.innerHTML = staff.length ? '' : '<tr><td colspan="4" style="text-align:center; opacity:0.3; padding:40px;">Xodimlar topilmadi</td></tr>';
+
+        staff.forEach(emp => {
+            const tr = document.createElement('tr');
+            if (emp.id === selectedWorkerId) tr.classList.add('active');
+
+            const initials = emp.full_name.split(' ').map(n => n?.[0]).join('').substring(0, 2).toUpperCase() || '?';
+            const salary = emp.salary_info || '---';
+
+            tr.innerHTML = `
+                <td>
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div class="staff-ava-v2">${initials}</div>
+                        <strong style="color:#fff;">${emp.full_name}</strong>
+                    </div>
+                </td>
+                <td><span style="opacity:0.6; font-size:0.8rem;">${emp.role || 'Xodim'}</span></td>
+                <td><b style="color:var(--adm-accent);">${salary}</b></td>
+                <td><span style="font-size:0.7rem; color:#00ff88;">● Online</span></td>
+            `;
+
+            tr.onclick = () => {
+                document.querySelectorAll('#staff-list-container tr').forEach(r => r.classList.remove('active'));
+                tr.classList.add('active');
+                selectedWorkerId = emp.id;
+                updateStaffProfileCard(emp);
+
+                // If in mobile (mini app), we could trigger an overlay here
+                const mobileOverlay = document.getElementById('empModalOverlay');
+                if (window.innerWidth < 768 && mobileOverlay) {
+                    mobileOverlay.classList.add('active');
+                }
+            };
+
+            container.appendChild(tr);
+        });
+    }
+
     function updateStaffProfileCard(emp) {
-        // Core Info
-        document.getElementById('selected-staff-img').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=random`;
-        document.getElementById('selected-staff-name').textContent = emp.full_name;
-        document.getElementById('selected-staff-role').textContent = emp.role;
-        document.getElementById('st-salary-badge').textContent = emp.salary_info || '---';
+        if (!emp) return;
+        const img = document.getElementById('selected-staff-img');
+        const name = document.getElementById('selected-staff-name');
+        const role = document.getElementById('selected-staff-role');
 
-        // Details Row
-        document.getElementById('st-phone').textContent = emp.phone || '+998-- --- -- --';
-        document.getElementById('st-dept').textContent = emp.department || 'Bo\'lim belgilanmagan';
-        document.getElementById('st-exp').textContent = emp.experience || 'Yangi xodim';
-        document.getElementById('st-device').textContent = emp.device || 'Noma\'lum';
+        if (img) img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=00ff88&color=000&size=200`;
+        if (name) name.textContent = emp.full_name;
+        if (role) role.textContent = emp.role;
 
-        // Analytics (Logic/Calculations)
-        const dayKpi = 85 + Math.floor(Math.random() * 14);
-        document.getElementById('st-kpi-val').textContent = dayKpi + '% KPI';
-        document.getElementById('kpi-bar').style.width = dayKpi + '%';
-
-        // Time Tracker Mock
+        // Reset details
         document.getElementById('worked-hours').textContent = "08:30";
-        document.getElementById('st-time-in').textContent = "08:12";
-        document.getElementById('st-time-out').textContent = "--:--";
+        document.getElementById('st-kpi-val').textContent = (85 + Math.floor(Math.random() * 15)) + "%";
 
         renderModernCalendar(currentCalMonth, currentCalYear);
     }
 
     async function renderModernCalendar(month, year) {
-        const monthNames = ["Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun", "Iyul", "Avgust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr"];
         const monthHeader = document.getElementById('current-month-name');
-        if (monthHeader) monthHeader.textContent = monthNames[month] + " " + year;
-
-        const calGrid = document.querySelector('.cal-grid');
+        const calGrid = document.getElementById('calendar-grid-v2');
         if (!calGrid) return;
 
-        // Clear only dates, keep labels
-        const labels = Array.from(calGrid.querySelectorAll('.cal-day-label'));
+        const monthNames = ["Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun", "Iyul", "Avgust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr"];
+        if (monthHeader) monthHeader.textContent = monthNames[month] + " " + year;
+
         calGrid.innerHTML = '';
-        labels.forEach(l => calGrid.appendChild(l));
 
         const firstDay = new Date(year, month, 1).getDay();
         const adjustedFirstDay = (firstDay === 0) ? 6 : firstDay - 1;
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         const today = new Date();
 
-        // Fetch attendance for this month for selectedWorkerId
         let monthAtt = [];
         if (selectedWorkerId) {
-            const startMonth = `${year}-${(month + 1).toString().padStart(2, '0')}-01`;
-            const endMonth = `${year}-${(month + 1).toString().padStart(2, '0')}-${daysInMonth}`;
+            const startStr = `${year}-${(month + 1).toString().padStart(2, '0')}-01`;
+            const endStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${daysInMonth}`;
             const { data } = await supabase.from('attendance')
                 .select('date, status')
                 .eq('employee_id', selectedWorkerId)
-                .gte('date', startMonth)
-                .lte('date', endMonth);
+                .gte('date', startStr)
+                .lte('date', endStr);
             monthAtt = data || [];
         }
 
         // Pad start
         for (let i = 0; i < adjustedFirstDay; i++) {
             const div = document.createElement('div');
-            div.className = 'cal-day-num disabled';
+            div.className = 'cal-day-cell disabled';
             calGrid.appendChild(div);
         }
 
         for (let d = 1; d <= daysInMonth; d++) {
             const div = document.createElement('div');
-            div.className = 'cal-day-num';
+            div.className = 'cal-day-cell';
             div.textContent = d;
 
             const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
-
-            // Check status for this specific day
-            const dayStatus = monthAtt.find(a => a.date === dateStr);
-            if (dayStatus) {
-                if (dayStatus.status === 'Vaqtida keldi') div.classList.add('has-present');
-                if (dayStatus.status === 'Kech qoldi') div.classList.add('has-late');
-            }
+            const att = monthAtt.find(a => a.date === dateStr);
+            if (att) div.classList.add('has-att');
 
             if (year === today.getFullYear() && month === today.getMonth() && d === today.getDate()) {
                 div.classList.add('today');
             }
 
             div.onclick = () => {
-                document.querySelectorAll('.cal-day-num').forEach(n => n.classList.remove('active'));
+                document.querySelectorAll('.cal-day-cell').forEach(c => c.classList.remove('active'));
                 div.classList.add('active');
-                showDailyAttendance(dateStr);
+                // Could show detailed attendance here
+                const details = document.getElementById('daily-att-details');
+                if (details) {
+                    details.innerHTML = `<span style="color:#00ff88;">${d}-${monthNames[month]}</span>: ${att ? att.status : 'Ma\'lumot yo\'q'}`;
+                }
             };
 
             calGrid.appendChild(div);
