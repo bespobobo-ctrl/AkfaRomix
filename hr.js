@@ -136,13 +136,43 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 🏗️ DATA INITIALIZATION
     await loadInitialData();
+    initHomeDashboard();
 
     // 🔄 PROFESSIONAL SYNC HEARTBEAT (Every 60s)
     setInterval(loadInitialData, 60000);
 });
 
+function initHomeDashboard() {
+    const homeCtx = document.getElementById('homeTotalChart');
+    if (!homeCtx) return;
+    new Chart(homeCtx, {
+        type: 'line',
+        data: {
+            labels: ['Yan', 'Feb', 'Mar', 'Apr', 'May', 'Iyun'],
+            datasets: [{
+                label: 'Oylik Fond O\'sishi',
+                data: [45, 52, 48, 70, 75, 85],
+                borderColor: '#00ff88',
+                backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { display: false }, x: { display: false } }
+        }
+    });
+}
+
 async function loadInitialData() {
     const todayStr = new Date().toISOString().split('T')[0];
+    const list = document.getElementById('employeeList');
+
+    // Skeleton placeholder
+    list.innerHTML = Array(3).fill(0).map(() => `<div class="skeleton" style="height:80px; margin-bottom:10px;"></div>`).join('');
 
     const { data: staff, error: e1 } = await supabase
         .from('employees').select('*').order('created_at', { ascending: false });
@@ -155,7 +185,6 @@ async function loadInitialData() {
 
     updateGlobalStats();
     renderStaffList(employeesData);
-    if (employeesData.length > 0) showEmployeeDetail(employeesData[0]);
 }
 
 function filterAndRender() {
@@ -246,28 +275,31 @@ function renderStaffList(data) {
 
 function showEmployeeDetail(emp) {
     currentEmp = emp;
-    const panel = document.getElementById('profileDetail');
+    const homeView = document.getElementById('homeView');
+    const profileView = document.getElementById('profileDetail');
 
-    gsap.to(panel, {
-        opacity: 0, scale: 0.98, duration: 0.2, onComplete: () => {
-            document.getElementById('dt-name').textContent = emp.full_name;
-            document.getElementById('dt-role').textContent = (emp.role || 'Xodim').toUpperCase();
-            document.getElementById('dt-dept').textContent = emp.department || 'Ofis';
-            document.getElementById('dt-phone').textContent = emp.phone || '—';
-            document.getElementById('dt-exp').textContent = emp.experience || 'Yangi';
+    if (homeView.style.display !== 'none') {
+        gsap.to(homeView, {
+            opacity: 0, scale: 0.95, duration: 0.4, onComplete: () => {
+                homeView.style.display = 'none';
+                profileView.style.display = 'flex';
+                gsap.fromTo(profileView, { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.6, ease: "power2.out" });
+            }
+        });
+    } else {
+        // Smooth refresh if profile already open
+        gsap.fromTo(profileView, { opacity: 0.8 }, { opacity: 1, duration: 0.3 });
+    }
 
-            const photoEl = document.getElementById('dt-photo');
-            photoEl.src = emp.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=0f172a&color=00ff88&size=300`;
+    document.getElementById('dt-photo').src = emp.avatar_url;
+    document.getElementById('dt-name').textContent = emp.full_name;
+    document.getElementById('dt-role').textContent = emp.role || 'Xodim';
+    document.getElementById('dt-phone').textContent = emp.phone || '---';
+    document.getElementById('dt-dept').textContent = emp.department || 'Bo\'limsiz';
+    document.getElementById('dt-salary').textContent = formatCurrency(emp.salary_info);
+    document.getElementById('dt-experience').textContent = emp.experience || 'YANGI';
 
-            const salary = parseInt(String(emp.salary_info || '0').replace(/[^0-9]/g, '')) || 0;
-            document.getElementById('dt-salary').textContent = salary.toLocaleString();
-            document.getElementById('dt-kpi').textContent = (85 + Math.floor(Math.random() * 12)) + '%';
-            document.getElementById('dt-attendance').textContent = '96%';
-
-            initActivityChart();
-            gsap.to(panel, { opacity: 1, scale: 1, duration: 0.5, ease: "power2.out" });
-        }
-    });
+    initActivityChart();
 }
 
 function initActivityChart() {

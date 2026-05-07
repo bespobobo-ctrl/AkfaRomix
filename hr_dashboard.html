@@ -426,179 +426,95 @@
             border-color: var(--accent);
         }
 
-        /* Original White Badge Design */
-        .badge-presentation {
-            display: flex;
-            gap: 40px;
-            justify-content: center;
-            margin-top: 20px;
-        }
-
-        .id-badge {
-            width: 260px;
-            height: 410px;
-            background: #fff;
+        /* Skeleton Loading Animation */
+        .skeleton {
+            background: rgba(255, 255, 255, 0.05);
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
             border-radius: 12px;
-            position: relative;
-            overflow: hidden;
-            color: #106f70;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+        }
+
+        @keyframes skeleton-loading {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        /* Home Dashboard State */
+        .home-dashboard {
             display: flex;
             flex-direction: column;
-            background-image: linear-gradient(#eef4f4 2px, transparent 2px), linear-gradient(90deg, #eef4f4 2px, transparent 2px);
-            background-size: 30px 30px;
-        }
-
-        .badge-lanyard {
-            position: absolute;
-            top: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 30px;
-            height: 60px;
-            background: #1a7b7c;
-            border-radius: 4px;
-            z-index: 10;
-            border: 2px solid #1a7b7c;
-        }
-
-        .badge-lanyard .clip {
-            position: absolute;
-            bottom: -18px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 15px;
-            height: 25px;
-            border-radius: 8px;
-            background: #e0e0e0;
-            border: 2px solid #b0b0b0;
-            box-shadow: inset 0 2px 4px #fff, 0 2px 5px rgba(0, 0, 0, 0.2);
-        }
-
-        .badge-header {
-            margin-top: 65px;
-            padding: 0 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            z-index: 2;
-        }
-
-        .logo-box {
-            font-weight: 800;
-            font-size: 1.1rem;
-            line-height: 1;
-            color: #1a7b7c;
-        }
-
-        .logo-box span {
-            font-weight: 400;
-            font-size: 0.8rem;
-        }
-
-        .header-text {
-            font-size: 0.6rem;
-            text-align: right;
-            font-weight: 700;
-            color: #555;
-        }
-
-        .badge-photo-container {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
-            z-index: 2;
-            padding: 0 10px;
-            margin-top: 10px;
-        }
-
-        .badge-photo {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-            border-radius: 8px 8px 0 0;
-            border: 3px solid #fff;
-            border-bottom: none;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .badge-qr-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
+            gap: 20px;
+            height: 100%;
             justify-content: center;
             align-items: center;
-            z-index: 2;
-        }
-
-        .scan-me-text {
-            background: #fff;
-            padding: 4px 15px;
-            border-radius: 20px;
-            font-weight: 800;
-            font-size: 0.9rem;
-            margin-bottom: 5px;
-            color: #1a7b7c;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-
-        .badge-qr-large {
-            width: 140px;
-            height: 140px;
-            border: 6px solid #1a7b7c;
-            border-radius: 8px;
-            background: #fff;
-            padding: 5px;
-        }
-
-        .badge-bottom-box {
-            background: #4ab3b4;
-            width: 100%;
-            height: 80px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: #fff;
-            z-index: 3;
-            border-top: 4px solid #1a7b7c;
-            box-shadow: 0 -5px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .badge-surname {
-            font-size: 1.8rem;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            line-height: 1;
-        }
-
-        .badge-name {
-            font-size: 1.1rem;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 5px;
-        }
-
-        .badge-role {
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            color: rgba(255, 255, 255, 0.8);
-        }
-
-        .badge-very-bottom-text {
-            background: #1a7b7c;
-            color: #8fd5d5;
-            font-size: 0.45rem;
-            white-space: nowrap;
-            overflow: hidden;
-            padding: 3px 0;
             text-align: center;
-            letter-spacing: 1px;
+            padding: 40px;
+            opacity: 1;
+            transition: 0.5s;
+        }
+
+        .home-dashboard i {
+            font-size: 4rem;
+            color: var(--accent);
+            margin-bottom: 20px;
+            filter: drop-shadow(0 0 20px var(--accent));
+        }
+
+        /* Mobile Bottom Nav */
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+
+            .app-container {
+                padding-bottom: 80px;
+            }
+
+            .mobile-nav {
+                display: flex !important;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: 70px;
+                background: var(--card-glass);
+                backdrop-filter: blur(20px);
+                border-top: 1px solid var(--border-glass);
+                z-index: 1000;
+                justify-content: space-around;
+                align-items: center;
+            }
+
+            .bento-grid {
+                grid-template-columns: 1fr !important;
+                grid-template-rows: auto !important;
+            }
+
+            .staff-panel {
+                grid-row: auto !important;
+            }
+
+            .profile-panel {
+                display: none;
+                /* Hide profile in main mobile view */
+            }
+        }
+
+        .mobile-nav {
+            display: none;
+        }
+
+        /* High Contrast Glass */
+        .bento-card {
+            background: rgba(10, 15, 25, 0.9);
+            /* Darker for better contrast */
+            border: 1px solid rgba(255, 255, 255, 0.15);
         }
     </style>
 </head>
@@ -652,41 +568,62 @@
                 <button class="add-btn-lux" id="addWorkerBtn"><i data-lucide="plus-circle"></i> YANGI XODIM</button>
             </div>
 
-            <div class="bento-card profile-panel" id="profileDetail">
-                <div style="display:flex; flex-direction:column; align-items:center; padding:20px;">
-                    <img src="" id="dt-photo" class="hero-img">
-                    <h2 class="hero-name" id="dt-name">...</h2>
-                    <span class="hero-role" id="dt-role">---</span>
-                    <div style="margin-top:20px; width:100%; font-size:0.8rem;">
-                        <p style="color:var(--text-s)">Tel: <b id="dt-phone" style="color:#fff">---</b></p>
-                        <p style="color:var(--text-s)">Bo'lim: <b id="dt-dept" style="color:#fff">---</b></p>
-                    </div>
-                    <button id="genBadgeBtn"
-                        style="margin-top:20px; width:100%; padding:12px; border-radius:15px; border:1px solid var(--border-glass); background:rgba(0,255,136,0.1); color:var(--accent); font-weight:800; cursor:pointer; font-size:0.75rem; letter-spacing:1px;">BEJIK
-                        TAYYORLASH</button>
-                </div>
-                <div style="display:flex; flex-direction:column; gap:20px;">
-                    <div class="profile-stats">
-                        <div class="lux-stat-box">
-                            <div class="lux-stat-val" id="dt-salary">0</div>
-                            <div class="lux-stat-lab">OYLIK</div>
-                        </div>
-                        <div class="lux-stat-box">
-                            <div class="lux-stat-val" id="dt-kpi">0%</div>
-                            <div class="lux-stat-lab">KPI</div>
-                        </div>
-                        <div class="lux-stat-box">
-                            <div class="lux-stat-val" id="dt-attendance">0%</div>
-                            <div class="lux-stat-lab">DAVOMAT</div>
-                        </div>
-                    </div>
+            <div class="bento-card profile-panel" id="profileDetailContainer" style="overflow:hidden;">
+                <!-- DASHBOARD HOME (Empty State) -->
+                <div class="home-dashboard" id="homeView">
+                    <i data-lucide="layout-dashboard"></i>
+                    <h2 style="font-family:'Outfit'; font-size:1.8rem; font-weight:900;">HR BOSHQARUV PANELI</h2>
+                    <p style="color:var(--text-s); max-width:300px;">Xodim ma'lumotlarini ko'rish uchun chap tomondagi
+                        ro'yxatdan birini tanlang</p>
                     <div
-                        style="flex:1; background:rgba(255,255,255,0.01); border-radius:25px; border:1px solid var(--border-glass); padding:20px;">
-                        <canvas id="detailActivityChart"></canvas>
+                        style="margin-top:30px; width:100%; height:200px; background:rgba(255,255,255,0.02); border-radius:25px; border:1px solid var(--border-glass); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;">
+                        <canvas id="homeTotalChart" style="padding:20px;"></canvas>
+                    </div>
+                </div>
+
+                <!-- PROFILE DETAIL (Active State - Hidden by Default) -->
+                <div id="profileDetail" style="display:none; flex-direction:column; gap:20px;">
+                    <div style="display:flex; flex-direction:column; align-items:center; padding:20px;">
+                        <img src="" id="dt-photo" class="hero-img">
+                        <h2 class="hero-name" id="dt-name">...</h2>
+                        <span class="hero-role" id="dt-role">---</span>
+                        <div style="margin-top:20px; width:100%; font-size:0.8rem;">
+                            <p style="color:var(--text-s)">Tel: <b id="dt-phone" style="color:#fff">---</b></p>
+                            <p style="color:var(--text-s)">Bo'lim: <b id="dt-dept" style="color:#fff">---</b></p>
+                        </div>
+                        <button id="genBadgeBtn"
+                            style="margin-top:20px; width:100%; padding:12px; border-radius:15px; border:1px solid var(--border-glass); background:rgba(0,255,136,0.1); color:var(--accent); font-weight:800; cursor:pointer; font-size:0.75rem; letter-spacing:1px;">BEJIK
+                            TAYYORLASH</button>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:20px;">
+                        <div class="profile-stats">
+                            <div class="lux-stat-box">
+                                <div class="lux-stat-val" id="dt-salary">0</div>
+                                <div class="lux-stat-lab">OYLIK</div>
+                            </div>
+                            <div class="lux-stat-box">
+                                <div class="lux-stat-val" id="dt-experience">YANGI</div>
+                                <div class="lux-stat-lab">STAJ</div>
+                            </div>
+                        </div>
+                        <div
+                            style="flex:1; background:rgba(255,255,255,0.01); border-radius:25px; border:1px solid var(--border-glass); padding:20px;">
+                            <canvas id="detailActivityChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- MOBILE NAV -->
+    <div class="mobile-nav">
+        <i data-lucide="users" style="color:var(--accent)"></i>
+        <i data-lucide="calendar" style="color:var(--text-s)"></i>
+        <i data-lucide="plus-circle" style="color:var(--accent)" id="mobileAddBtn"
+            onclick="document.getElementById('addWorkerBtn').click()"></i>
+        <i data-lucide="bar-chart-3" style="color:var(--text-s)"></i>
+        <i data-lucide="settings" style="color:var(--text-s)"></i>
     </div>
 
     <!-- MODAL ADD -->
