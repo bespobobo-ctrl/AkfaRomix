@@ -536,9 +536,15 @@
     <div class="main-container">
         <header class="top-nav">
             <h1 class="brand-title">AKFA ROMIX <span>HR</span></h1>
-            <div class="search-container">
-                <i data-lucide="search" size="18" style="color:var(--text-s)"></i>
-                <input type="text" id="hrSearchInput" placeholder="Xodimlarni qidirish...">
+            <div style="display:flex; gap:15px; align-items:center; flex:1; max-width:600px; margin-left: 20px;">
+                <div class="search-container" style="flex:1;">
+                    <i data-lucide="search" size="18" style="color:var(--text-s)"></i>
+                    <input type="text" id="hrSearchInput" placeholder="Xodimlarni qidirish...">
+                </div>
+                <button class="add-btn-lux" id="addWorkerBtn"
+                    style="margin:0; width:auto; padding:0 25px; height:45px; border-radius:12px; font-size:0.75rem; white-space:nowrap;">
+                    <i data-lucide="plus-circle" size="18"></i> <span>YANGI XODIM</span>
+                </button>
             </div>
             <div style="display:flex; align-items:center; gap:15px;">
                 <div style="width:40px; height:40px; border-radius:12px; background:linear-gradient(135deg, var(--accent), var(--accent-sec)); display:flex; align-items:center; justify-content:center; color:#000; font-weight:900"
@@ -565,7 +571,6 @@
                     <div class="pill" data-dept="Ombor">Ombor</div>
                 </div>
                 <div class="staff-scroller" id="employeeList"></div>
-                <button class="add-btn-lux" id="addWorkerBtn"><i data-lucide="plus-circle"></i> YANGI XODIM</button>
             </div>
 
             <div class="bento-card profile-panel" id="profileDetailContainer" style="overflow:hidden;">
