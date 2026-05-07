@@ -155,8 +155,12 @@
             z-index: 2;
         }
 
-        /* 📱 MOBILE RESPONSIVE ENGINE (Elite Tier) */
-        @media (max-width: 1100px) {
+        .mobile-bottom-nav {
+            display: none;
+        }
+
+        /* 📱 UNIVERSAL RESPONSIVE ENGINE (Elite Tier) */
+        @media (max-width: 1400px) {
 
             .sidebar-slim,
             .hr-left-sidebar {
@@ -165,68 +169,92 @@
 
             .admin-layout {
                 display: block !important;
+                padding: 10px !important;
+                min-height: auto !important;
+                width: 100% !important;
+                overflow-x: hidden !important;
             }
 
             .admin-main {
                 margin-left: 0 !important;
-                padding: 10px 10px 110px 10px !important;
+                padding: 10px 0 120px 0 !important;
                 width: 100% !important;
             }
 
             .top-nav-v2 {
                 left: 0 !important;
-                padding: 10px 15px !important;
+                padding: 15px !important;
                 width: 100% !important;
                 position: sticky;
                 top: 0;
                 z-index: 1000;
                 background: var(--adm-bg);
-            }
-
-            .hr-main-grid {
-                grid-template-columns: 1fr !important;
-                gap: 20px !important;
-            }
-
-            .hr-situational-wing {
-                grid-template-columns: 1fr !important;
+                border-radius: 0 !important;
+                display: flex !important;
+                flex-direction: column !important;
                 gap: 15px !important;
+                height: auto !important;
             }
 
-            .hr-bottom-section .bento-card {
+            .nav-links-v2 {
+                display: flex !important;
+                width: 100% !important;
                 overflow-x: auto !important;
+                padding-bottom: 10px !important;
+                scrollbar-width: none !important;
                 -webkit-overflow-scrolling: touch;
+                gap: 10px !important;
             }
 
-            .v2-table {
-                min-width: 750px;
+            .nav-links-v2::-webkit-scrollbar {
+                display: none;
             }
 
-            h1 {
-                font-size: 1.5rem !important;
+            .nav-link-item {
+                white-space: nowrap !important;
+                padding: 10px 18px !important;
+                flex-shrink: 0 !important;
+                background: rgba(255, 255, 255, 0.03);
             }
 
-            .balance-lg {
-                font-size: 1.6rem !important;
+            .bento-grid {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 20px !important;
+                width: 100% !important;
+            }
+
+            .bento-card {
+                width: 100% !important;
+                grid-column: span 1 !important;
+                margin: 0 !important;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                overflow-x: auto !important;
+            }
+
+            .bento-card div[style*="grid-template-columns: repeat(4, 1fr)"],
+            .bento-card div[style*="repeat(4,1fr)"] {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 15px !important;
             }
 
             .mobile-bottom-nav {
                 display: flex !important;
                 position: fixed;
-                bottom: 20px;
-                left: 20px;
-                right: 20px;
-                height: 70px;
-                background: rgba(13, 22, 34, 0.85);
-                backdrop-filter: blur(25px);
-                border: 1px solid rgba(255, 255, 255, 0.08);
-                border-radius: 24px;
+                bottom: 15px;
+                left: 15px;
+                right: 15px;
+                height: 75px;
+                background: rgba(13, 22, 34, 0.95);
+                backdrop-filter: blur(35px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 28px;
                 z-index: 9999;
-                padding: 0 10px;
+                padding: 5px 10px;
                 justify-content: space-around;
                 align-items: center;
-                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-                animation: slideUpNav 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+                animation: slideUpNav 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             }
 
             @keyframes slideUpNav {
@@ -245,24 +273,34 @@
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                gap: 4px;
-                color: rgba(255, 255, 255, 0.3);
-                text-decoration: none;
+                gap: 5px;
+                color: rgba(255, 255, 255, 0.4);
                 font-size: 0.6rem;
                 font-weight: 700;
                 text-transform: uppercase;
-                transition: 0.3s;
+                transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 flex: 1;
             }
 
             .m-nav-item.active {
                 color: #00d2ff;
+                transform: translateY(-5px);
             }
 
             .m-nav-icon {
-                font-size: 1.3rem;
-                margin-bottom: 2px;
+                font-size: 1.4rem;
             }
+        }
+
+        /* Essential Scroll Re-activation */
+        .admin-v2-body {
+            overflow-y: auto !important;
+            height: auto !important;
+        }
+
+        .admin-layout {
+            height: auto !important;
+            overflow: visible !important;
         }
 
         .cal-day-num.disabled {
