@@ -423,33 +423,51 @@
                 margin-top: 20px !important;
             }
 
-            /* 🛑 Mobile Detail Drawer (Bottom Sheet) */
-            .mobile-detail-drawer {
-                position: fixed;
-                bottom: -100%;
-                left: 0;
-                right: 0;
-                height: 85vh;
-                background: #0d1622;
-                border-top: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 30px 30px 0 0;
-                z-index: 3000;
-                padding: 20px;
-                transition: bottom 0.4s cubic-bezier(0.1, 0.7, 0.1, 1);
-                overflow-y: auto;
-                box-shadow: 0 -20px 40px rgba(0, 0, 0, 0.5);
+            /* 🛑 New Refined Mobile Analytics Drawer (Native CSS Style) */
+            .hr-right-content.mobile-drawer-active {
+                position: fixed !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                height: 85vh !important;
+                z-index: 3000 !important;
+                background: #0d1622 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+                border-radius: 30px 30px 0 0 !important;
+                box-shadow: 0 -20px 40px rgba(0, 0, 0, 0.5) !important;
+                padding: 20px !important;
+                animation: slideUpDrawer 0.4s cubic-bezier(0.1, 0.7, 0.1, 1);
             }
 
-            .mobile-detail-drawer.active {
-                bottom: 0;
+            @keyframes slideUpDrawer {
+                from {
+                    transform: translateY(100%);
+                }
+
+                to {
+                    transform: translateY(0);
+                }
             }
 
-            .drawer-handle {
-                width: 40px;
-                height: 5px;
-                background: rgba(255, 255, 255, 0.2);
-                border-radius: 10px;
-                margin: 0 auto 20px auto;
+            .drawer-close-btn {
+                display: none;
+            }
+
+            .hr-right-content.mobile-drawer-active .drawer-close-btn {
+                display: block !important;
+                position: absolute;
+                right: 20px;
+                top: 15px;
+                background: rgba(255, 255, 255, 0.1);
+                border: none;
+                color: #fff;
+                width: 35px;
+                height: 35px;
+                border-radius: 50%;
+                font-size: 1.2rem;
+                cursor: pointer;
             }
         }
 
@@ -1499,8 +1517,11 @@
                         </div>
                     </div>
 
-                    <!-- RIGHT COLUMN: Analytics & Actions -->
-                    <div class="hr-right-content" style="display:flex; flex-direction:column; gap:20px;">
+                    <!-- RIGHT COLUMN: Personnel Analytics & Timeline -->
+                    <div class="hr-right-content"
+                        style="display:flex; flex-direction:column; gap:20px; position:relative;">
+                        <button class="drawer-close-btn"
+                            onclick="this.parentElement.classList.remove('mobile-drawer-active')">&times;</button>
 
                         <!-- 3-Card Bento Core -->
                         <div class="hr-analytics-grid"
@@ -1544,8 +1565,7 @@
                                 style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
                                 <div
                                     style="font-size:0.85rem; font-weight:600; color:var(--adm-text); opacity:0.8; margin-bottom:20px;">
-                                    Ish
-                                    Vaqti <small style="opacity:0.5;">(Bugun)</small></div>
+                                    Ish Vaqti <small style="opacity:0.5;">(Bugun)</small></div>
                                 <div style="position:relative; width:130px; height:130px;">
                                     <svg viewBox="0 0 100 100"
                                         style="transform:rotate(-90deg); width:100%; height:100%;">
@@ -1559,8 +1579,7 @@
                                         style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center;">
                                         <div id="worked-hours"
                                             style="font-size:1.6rem; font-weight:900; color:var(--adm-text); line-height:1;">
-                                            00:00
-                                        </div>
+                                            00:00</div>
                                         <div
                                             style="font-size:0.55rem; color:var(--adm-text-sec); letter-spacing:1px; margin-top:4px;">
                                             SOAT</div>
@@ -1584,61 +1603,31 @@
                             </div>
 
                             <!-- Card: KPI (Reyting) -->
-                            <div class="hr-card"
-                                style="display:flex; flex-direction:column; padding:25px; border:1px solid var(--border-glass); background:var(--adm-surface); box-shadow:var(--shadow-premium);">
+                            <div class="hr-card" style="display:flex; flex-direction:column; padding:25px;">
                                 <div
                                     style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
                                     <div
                                         style="font-size:0.7rem; color:var(--adm-text-sec); font-weight:700; letter-spacing:1.5px; text-transform:uppercase;">
                                         Umumiy Reyting</div>
-                                    <div id="st-kpi-val"
-                                        style="font-size:1.6rem; font-weight:900; color:#007c52; text-shadow:0 0 10px rgba(0,124,82,0.2);">
-                                        95%</div>
-                                </div>
-
-                                <div
-                                    style="height:6px; background:rgba(255,255,255,0.03); border-radius:10px; margin-bottom:25px; overflow:hidden; position:relative;">
-                                    <div id="kpi-bar"
-                                        style="height:100%; width:95%; background:linear-gradient(90deg, #00d2ff, #00ff88); transition:width 1s cubic-bezier(0.4, 0, 0.2, 1); box-shadow:0 0 15px rgba(0,255,136,0.3);">
+                                    <div id="st-kpi-val" style="font-size:1.6rem; font-weight:900; color:#007c52;">95%
                                     </div>
                                 </div>
-
+                                <div
+                                    style="height:6px; background:rgba(255,255,255,0.03); border-radius:10px; margin-bottom:25px; overflow:hidden;">
+                                    <div id="kpi-bar"
+                                        style="height:100%; width:95%; background:linear-gradient(90deg, #00d2ff, #00ff88); transition:1s;">
+                                    </div>
+                                </div>
                                 <div style="display:flex; flex-direction:column; gap:10px;">
                                     <div
-                                        style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--adm-bg); border:1px solid var(--adm-border); border-radius:12px;">
-                                        <div style="display:flex; align-items:center; gap:10px;">
-                                            <div
-                                                style="width:6px; height:6px; border-radius:50%; background:#007c52; box-shadow:0 0 8px rgba(0,124,82,0.3);">
-                                            </div>
-                                            <div style="font-size:0.75rem; color:var(--adm-text-sec); font-weight:600;">
-                                                Intizom</div>
-                                        </div>
-                                        <div style="font-size:0.75rem; color:var(--adm-text); font-weight:700;">
-                                            Me'yorida</div>
+                                        style="display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background:rgba(0,0,0,0.1); border-radius:10px; font-size:0.75rem;">
+                                        <span style="opacity:0.6;">Intizom</span>
+                                        <span style="font-weight:700; color:#00ff88;">Alo</span>
                                     </div>
                                     <div
-                                        style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--adm-bg); border:1px solid var(--adm-border); border-radius:12px;">
-                                        <div style="display:flex; align-items:center; gap:10px;">
-                                            <div
-                                                style="width:6px; height:6px; border-radius:50%; background:#007aff; box-shadow:0 0 8px rgba(0,122,255,0.3);">
-                                            </div>
-                                            <div style="font-size:0.75rem; color:var(--adm-text-sec); font-weight:600;">
-                                                Kelish</div>
-                                        </div>
-                                        <div style="font-size:0.75rem; color:var(--adm-text); font-weight:700;">100%
-                                        </div>
-                                    </div>
-                                    <div
-                                        style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--adm-bg); border:1px solid var(--adm-border); border-radius:12px;">
-                                        <div style="display:flex; align-items:center; gap:10px;">
-                                            <div
-                                                style="width:6px; height:6px; border-radius:50%; background:#aa7700; box-shadow:0 0 8px rgba(170,119,0,0.3);">
-                                            </div>
-                                            <div style="font-size:0.75rem; color:var(--adm-text-sec); font-weight:600;">
-                                                Norma mosligi</div>
-                                        </div>
-                                        <div style="font-size:0.75rem; color:var(--adm-text); font-weight:700;">85%
-                                        </div>
+                                        style="display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background:rgba(0,0,0,0.1); border-radius:10px; font-size:0.75rem;">
+                                        <span style="opacity:0.6;">Sifat</span>
+                                        <span style="font-weight:700; color:#00d2ff;">Yuqori</span>
                                     </div>
                                 </div>
                             </div>
@@ -1657,10 +1646,10 @@
                             <div class="hr-action-bar-future"
                                 style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
                                 <button class="hr-action-btn" id="btn-delete-staff"
-                                    style="padding:12px; font-size:0.75rem; background:rgba(255,77,79,0.1); color:#ff4d4f; border:1px solid rgba(255,77,79,0.2); border-radius:18px;">Xodimni
+                                    style="padding:12px; font-size:0.75rem; background:rgba(255,77,79,0.1); color:#ff4d4f; border:1px solid rgba(255,77,79,0.2); border-radius:14px;">Xodimni
                                     O'chirish</button>
                                 <button class="hr-action-btn"
-                                    style="padding:12px; font-size:0.75rem; background:rgba(100,255,200,0.1); color:rgba(255,255,255,0.5); border:1px dashed rgba(100,255,200,0.3); border-radius:18px; opacity:0.5;">Hisobot</button>
+                                    style="padding:12px; font-size:0.75rem; background:rgba(100,255,200,0.1); color:rgba(255,255,255,0.5); border:1px dashed rgba(100,255,200,0.3); border-radius:14px; opacity:0.5;">Hisobot</button>
                             </div>
                         </div>
                     </div>
@@ -1884,19 +1873,7 @@
             <span>Oynak</span>
         </div>
     </div>
-    <div class="mobile-detail-drawer" id="mobileStaffDrawer">
-        <div class="drawer-handle"></div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-            <h2 style="font-size:1.1rem; color:#fff; font-weight:800;">Xodim Hisoboti</h2>
-            <button onclick="document.getElementById('mobileStaffDrawer').classList.remove('active')"
-                style="background:none; border:none; color:rgba(255,255,255,0.4); font-size:1.5rem;">&times;</button>
-        </div>
-
-        <div id="drawer-content-placeholder">
-            <!-- Global Analytics & Actions will move here on mobile -->
-        </div>
-    </div>
-
+    <!-- Scripts Moved Back to root path if needed, usually just admin.js -->
     <script type="module" src="admin.js"></script>
 </body>
 

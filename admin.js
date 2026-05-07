@@ -836,18 +836,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         renderModernCalendar(currentCalMonth, currentCalYear);
 
-        // --- 🛑 MOBILE DRAWER LOGIC ---
+        // --- 🛑 MOBILE DRAWER LOGIC (Refined) ---
         if (window.innerWidth <= 1024) {
-            const drawer = document.getElementById('mobileStaffDrawer');
-            const placeholder = document.getElementById('drawer-content-placeholder');
             const rightContent = document.querySelector('.hr-right-content');
-
-            if (drawer && placeholder && rightContent) {
-                // Move analytic panel into drawer if not already there
-                if (!placeholder.contains(rightContent)) {
-                    placeholder.appendChild(rightContent);
-                }
-                drawer.classList.add('active');
+            if (rightContent) {
+                rightContent.classList.add('mobile-drawer-active');
             }
         }
     }
