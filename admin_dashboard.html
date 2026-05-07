@@ -721,11 +721,77 @@
                         <button class="pill-btn">Ofis</button>
                         <button class="pill-btn">Xo'jalik</button>
                     </div>
-                    <div style="position:relative;">
+                    <div style="display:flex; gap:15px; align-items:center;">
                         <input type="text" id="staffSearchInput" placeholder="Xodim qidirish..."
-                            style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:12px 18px 12px 40px; color:#fff; font-size:0.85rem; width:350px; outline:none; transition:0.3s; box-shadow:inset 0 2px 4px rgba(0,0,0,0.1);">
-                        <span
-                            style="position:absolute; left:15px; top:50%; transform:translateY(-50%); opacity:0.3;"></span>
+                            style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:12px 18px 12px 40px; color:#fff; font-size:0.85rem; width:300px; outline:none; transition:0.3s; box-shadow:inset 0 2px 4px rgba(0,0,0,0.1);">
+                        <button id="openAddStaffModal" class="primary-btn"
+                            style="padding:12px 20px; font-size:0.8rem; border-radius:14px; background:linear-gradient(135deg, #00d2ff, #007aff);">+
+                            Ishchi qo'shish</button>
+                    </div>
+                </div>
+
+                <!-- ADD STAFF MODAL -->
+                <div id="staffModalOverlay"
+                    style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(10px); z-index:2000; align-items:center; justify-content:center; padding:20px;">
+                    <div class="hr-card"
+                        style="width:100%; max-width:450px; background:rgba(13,22,34,0.95); border:1px solid rgba(255,255,255,0.1); box-shadow:0 30px 60px rgba(0,0,0,0.5);">
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+                            <h2 id="staffModalTitle" style="font-size:1.4rem; color:#fff;">Yangi Ishchi Qo'shish</h2>
+                            <button id="closeStaffModal"
+                                style="background:none; border:none; color:rgba(255,255,255,0.3); font-size:1.5rem; cursor:pointer;">&times;</button>
+                        </div>
+
+                        <div style="display:flex; flex-direction:column; gap:15px;">
+                            <div class="input-group-v2">
+                                <label
+                                    style="display:block; font-size:0.7rem; color:rgba(255,255,255,0.4); margin-bottom:6px; text-transform:uppercase; letter-spacing:1px;">To'liq
+                                    Ism (F.I.O)</label>
+                                <input type="text" id="staffFullname" placeholder="Masalan: Ali Karimov"
+                                    style="width:100%; padding:14px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; color:#fff; font-size:0.9rem;">
+                            </div>
+
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                                <div class="input-group-v2">
+                                    <label
+                                        style="display:block; font-size:0.7rem; color:rgba(255,255,255,0.4); margin-bottom:6px; text-transform:uppercase; letter-spacing:1px;">Bo'lim</label>
+                                    <select id="staffDept"
+                                        style="width:100%; padding:14px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; color:#fff; font-size:0.9rem; outline:none; cursor:pointer;">
+                                        <option value="Usta">Usta</option>
+                                        <option value="Ombor">Ombor</option>
+                                        <option value="Ofis">Ofis</option>
+                                        <option value="Xo'jalik">Xo'jalik</option>
+                                    </select>
+                                </div>
+                                <div class="input-group-v2">
+                                    <label
+                                        style="display:block; font-size:0.7rem; color:rgba(255,255,255,0.4); margin-bottom:6px; text-transform:uppercase; letter-spacing:1px;">Lavozimi</label>
+                                    <input type="text" id="staffRole" placeholder="Masalan: Payvandchi"
+                                        style="width:100%; padding:14px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; color:#fff; font-size:0.9rem;">
+                                </div>
+                            </div>
+
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                                <div class="input-group-v2">
+                                    <label
+                                        style="display:block; font-size:0.7rem; color:rgba(255,255,255,0.4); margin-bottom:6px; text-transform:uppercase; letter-spacing:1px;">Tel.
+                                        Raqam</label>
+                                    <input type="text" id="staffPhone" placeholder="+998"
+                                        style="width:100%; padding:14px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; color:#fff; font-size:0.9rem;">
+                                </div>
+                                <div class="input-group-v2">
+                                    <label
+                                        style="display:block; font-size:0.7rem; color:rgba(255,255,255,0.4); margin-bottom:6px; text-transform:uppercase; letter-spacing:1px;">Oylik
+                                        (Stavka)</label>
+                                    <input type="number" id="staffSalary" placeholder="4500000"
+                                        style="width:100%; padding:14px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; color:#fff; font-size:0.9rem;">
+                                </div>
+                            </div>
+
+                            <button id="saveStaffBtn"
+                                style="width:100%; margin-top:10px; padding:16px; background:linear-gradient(135deg, #00ff88, #007c52); border:none; border-radius:14px; color:#000; font-weight:800; font-size:0.95rem; cursor:pointer; transition:0.3s; box-shadow:0 10px 25px rgba(0,255,136,0.2);">Xodimni
+                                Saqlash</button>
+                        </div>
                     </div>
                 </div>
 

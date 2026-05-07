@@ -156,12 +156,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderStaffList(allEmployees);
         initHRPills();
         initStaffSearch();
+        initStaffModal(); // New induction system
 
         if (emps && emps.length > 0) {
             selectedWorkerId = emps[0].id;
             updateStaffProfileCard(emps[0]);
         }
 
+        // AKFA Elite HR v2.1
         renderModernCalendar(currentCalMonth, currentCalYear);
 
         const prevBtn = document.getElementById('cal-prev');
@@ -460,6 +462,54 @@ document.addEventListener('DOMContentLoaded', async () => {
     setInterval(checkPendingRequests, 30000);
     setTimeout(checkPendingRequests, 2000);
 
+    function initStaffModal() {
+        const overlay = document.getElementById('staffModalOverlay');
+        const openBtn = document.getElementById('openAddStaffModal');
+        const closeBtn = document.getElementById('closeStaffModal');
+        const saveBtn = document.getElementById('saveStaffBtn');
+
+        if (openBtn) {
+            openBtn.onclick = () => {
+                overlay.style.display = 'flex';
+                document.getElementById('staffModalTitle').textContent = "Yangi Ishchi Qo'shish";
+                document.getElementById('staffFullname').value = '';
+                document.getElementById('staffRole').value = '';
+                document.getElementById('staffPhone').value = '+998';
+                document.getElementById('staffSalary').value = '';
+            };
+        }
+
+        if (closeBtn) closeBtn.onclick = () => overlay.style.display = 'none';
+
+        if (saveBtn) {
+            saveBtn.onclick = async () => {
+                const full_name = document.getElementById('staffFullname').value.trim();
+                const department = document.getElementById('staffDept').value;
+                const role = document.getElementById('staffRole').value.trim();
+                const phone = document.getElementById('staffPhone').value.trim();
+                const salary_info = document.getElementById('staffSalary').value.trim();
+
+                if (!full_name || !role || !salary_info) {
+                    alert("Iltimos, barcha asosiy maydonlarni to'ldiring!");
+                    return;
+                }
+
+                saveBtn.textContent = "Saqlanmoqda...";
+                const newStaff = { full_name, department, role, phone, salary_info: salary_info + " so'm" };
+
+                const { data, error } = await supabase.from('employees').insert([newStaff]).select();
+                saveBtn.textContent = "Xodimni Saqlash";
+
+                if (!error) {
+                    overlay.style.display = 'none';
+                    loadRomixHRData();
+                } else {
+                    alert("Xatolik: " + error.message);
+                }
+            };
+        }
+    }
+
     function initHRPills() {
         const pills = document.querySelectorAll('.pill-btn');
         pills.forEach(pill => {
@@ -472,14 +522,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const cat = pill.textContent.trim().toLowerCase();
 
                 let filtered = allEmployees;
-                if (cat === 'ustalar') {
-                    filtered = allEmployees.filter(e => e.role.toLowerCase().includes('usta') || e.role.toLowerCase().includes('brigada') || e.role.toLowerCase().includes('operator'));
-                } else if (cat === 'ofis') {
-                    filtered = allEmployees.filter(e => e.role.toLowerCase().includes('ofis') || e.role.toLowerCase().includes('bugalter') || e.role.toLowerCase().includes('menejer') || e.role.toLowerCase().includes('admin'));
-                } else if (cat === 'xo\'jalik') {
-                    filtered = allEmployees.filter(e => e.role.toLowerCase().includes('xo\'jalik') || e.role.toLowerCase().includes('tozalik') || e.role.toLowerCase().includes('oshxona') || e.role.toLowerCase().includes('qorovul'));
+                if (cat !== 'barchasi') {
+                    // Match pill name to actual department field
+                    let deptVal = pill.textContent.trim();
+                    if (deptVal === 'Ustalar') deptVal = 'Usta';
+                    filtered = allEmployees.filter(e => e.department === deptVal);
                 }
+
                 renderStaffList(filtered);
+
+                // If a specific department is selected, we could show an overview,
+                // but for now we auto-select the first worker in that filtered list
+                if (filtered.length > 0) {
+                    selectedWorkerId = filtered[0].id;
+                    updateStaffProfileCard(filtered[0]);
+                }
             };
         });
     }
