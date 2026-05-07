@@ -118,7 +118,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             if (tab === 'logins') loadSystemUsers();
-            if (tab === 'xodimlar') loadEmployees();
+            if (tab === 'xodimlar') loadRomixHRData();
             if (tab === 'dashboard') loadRomixDashboardStats();
         });
     });
