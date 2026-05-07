@@ -187,7 +187,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (emps && emps.length > 0) {
             selectedWorkerId = emps[0].id;
-            updateStaffProfileCard(emps[0]);
+            // Only auto-update desktop card, don't open mobile drawer automatically
+            if (window.innerWidth > 1024) {
+                updateStaffProfileCard(emps[0]);
+            }
         }
 
         // AKFA Elite HR v2.1
@@ -642,7 +645,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 renderStaffList(filtered);
 
-                if (filtered.length > 0) {
+                if (filtered.length > 0 && window.innerWidth > 1024) {
                     selectedWorkerId = filtered[0].id;
                     updateStaffProfileCard(filtered[0]);
                 }
@@ -677,8 +680,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 renderStaffList(filtered);
 
-                // Auto-select first member in cards if any
-                if (filtered.length > 0 && window.innerWidth <= 1024) {
+                // No auto-opening of drawer on mobile during filtering
+                if (filtered.length > 0 && window.innerWidth > 1024) {
                     updateStaffProfileCard(filtered[0]);
                 }
             });
