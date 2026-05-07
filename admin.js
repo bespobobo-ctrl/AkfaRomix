@@ -363,12 +363,30 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const end = document.getElementById('hrActionEnd').value;
                     if (start && end) {
                         currentSaveBtn.innerHTML = "Yuborilmoqda...";
-                        await supabase.from('attendance').insert({
-                            employee_id: selectedWorkerId,
-                            date: start,
-                            status: 'Tasdiqlash kutilmoqda',
-                            notes: `Muddat: ${start} dan ${end} gacha`
-                        });
+
+                        let currentDate = new Date(start);
+                        const endDate = new Date(end);
+                        const insertPromises = [];
+
+                        while (currentDate <= endDate) {
+                            const dStr = currentDate.toISOString().split('T')[0];
+                            insertPromises.push(
+                                supabase.from('attendance').insert({
+                                    employee_id: selectedWorkerId,
+                                    date: dStr,
+                                    status: 'Ruxsat so\'raldi',
+                                    notes: `Muddat: ${start} dan ${end} gacha`
+                                })
+                            );
+                            currentDate.setDate(currentDate.getDate() + 1);
+                        }
+
+                        try {
+                            await Promise.all(insertPromises);
+                        } catch (err) {
+                            console.error('Leave insert issue', err);
+                        }
+
                         window.logToHistory(`Dam olishga ruxsat so'rovi yuborildi: ${start} dan ${end} gacha`);
                         alert("Ruxsat berish so'rovi yuborildi. Rahbar tasdiqlashi kutilmoqda.");
                         modal.style.display = 'none';
@@ -542,20 +560,36 @@ document.addEventListener('DOMContentLoaded', async () => {
             div.textContent = d;
 
             const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
-            const dayRecords = monthAtt.filter(a => a.date === dateStr);
+            const dayRecords = monthAtt.filter(a => a.date && a.date.startsWith(dateStr));
 
-            let displayStatusHTML = 'Ma\'lumot kiritilmagan';
+            let displayStatusHTML = 'Baza ma\'lumoti yo\'q';
 
             if (dayRecords.length > 0) {
-                const hasLate = dayRecords.some(r => r.status === 'Kech qoldi');
-                const hasPresent = dayRecords.some(r => r.status === 'Vaqtida keldi');
-                const isSpecial = dayRecords.some(r => r.status.includes('Premya') || r.status.includes('Oylik') || r.status.includes('Ruxsat') || r.status.includes('Tasdiqlash kutilmoqda'));
+                const hasLate = dayRecords.some(r => r.status.includes('Kech'));
+                const hasPresent = dayRecords.some(r => r.status.includes('Vaqtida') || r.status.includes('Keldi'));
+                const isAbsent = dayRecords.some(r => r.status.includes('Kelmagan'));
+                const isLeave = dayRecords.some(r => r.status.includes('Ruxsat') || r.status.includes('Dam') || r.status.includes('Tasdiqlash kutilmoqda'));
+                const isLeftEarly = dayRecords.some(r => r.status.includes('erta ketdi') || r.status.includes('shundan yuborildi') || r.status.includes('Ish vaqtida ketdi'));
+                const isSpecial = dayRecords.some(r => r.status.includes('Premya') || r.status.includes('Oylik'));
 
-                if (isSpecial) {
+                if (isAbsent) {
+                    div.style.background = 'rgba(255, 77, 79, 0.15)';
+                    div.style.borderBottom = '3px solid #ff4d4f';
+                    div.style.color = '#ff4d4f';
+                } else if (isLeftEarly) {
+                    div.style.background = 'rgba(255, 184, 0, 0.15)';
                     div.style.borderBottom = '3px solid #ffb800';
-                    div.style.background = 'rgba(255,184,0,0.1)';
+                    div.style.color = '#ffb800';
+                } else if (isLeave) {
+                    div.style.background = 'rgba(128, 0, 32, 0.3)';
+                    div.style.borderBottom = '3px solid #BA68C8';
+                    div.style.color = '#BA68C8';
                 } else if (hasPresent) {
-                    div.classList.add('has-present');
+                    div.style.background = 'rgba(0, 210, 255, 0.1)';
+                    div.style.borderBottom = '3px solid #00d2ff';
+                    div.style.color = '#00d2ff';
+                } else if (isSpecial) {
+                    div.style.borderBottom = '3px solid #ffb800';
                 } else if (hasLate) {
                     div.classList.add('has-late');
                 } else {
@@ -570,9 +604,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     if (s.includes('Premya')) { icon = '💰'; color = '#FFD700'; bg = 'rgba(255,215,0,0.1)'; }
                     else if (s.includes('Oylik')) { icon = '📈'; color = '#00d2ff'; bg = 'rgba(0,210,255,0.1)'; }
-                    else if (s.includes('Ruxsat') || s.includes('Tasdiqlash kutilmoqda')) { icon = '🏝️'; color = '#BA68C8'; bg = 'rgba(186,104,200,0.1)'; }
-                    else if (s === 'Vaqtida keldi') { icon = '🟢'; color = '#00ff88'; bg = 'rgba(0,255,136,0.1)'; }
-                    else if (s === 'Kech qoldi') { icon = '🔴'; color = '#ff4d4f'; bg = 'rgba(255,77,79,0.1)'; }
+                    else if (s.includes('Ruxsat') || s.includes('Tasdiqlash kutilmoqda') || s.includes('Dam')) { icon = '🏝️'; color = '#BA68C8'; bg = 'rgba(186,104,200,0.1)'; }
+                    else if (s === 'Vaqtida keldi' || s.includes('Keldi')) { icon = '🟢'; color = '#00d2ff'; bg = 'rgba(0,210,255,0.1)'; }
+                    else if (s === 'Kech qoldi' || s.includes('Kech')) { icon = '🔴'; color = '#ff4d4f'; bg = 'rgba(255,77,79,0.1)'; }
 
                     let notesHtml = r.notes ? `<div style="font-size:0.75rem; color:rgba(255,255,255,0.6); margin-top:6px; line-height:1.4;">📝 ${r.notes}</div>` : '';
 
@@ -594,6 +628,34 @@ document.addEventListener('DOMContentLoaded', async () => {
             div.onclick = () => {
                 document.querySelectorAll('.cal-day-num').forEach(c => c.classList.remove('active'));
                 div.classList.add('active');
+
+                // PAYROLL / TIME TRACKER CALCULATION
+                let workedHours = 0;
+                let isPresent = dayRecords.some(r => r.status.includes('Vaqtida') || r.status.includes('Keldi'));
+                let isLate = dayRecords.some(r => r.status.includes('Kech'));
+                let isLeaving = dayRecords.some(r => r.status.includes('Ruxsat') || r.status.includes('Dam') || r.status.includes('Tasdiqlash'));
+
+                if (isPresent) workedHours = 10;
+                else if (isLate) workedHours = 8.5; // Mock for late
+                if (isLeaving) workedHours = 0;
+
+                let salaryText = '0';
+                if (window.romixStaffData && selectedWorkerId) {
+                    const emp = window.romixStaffData.find(e => e.id === selectedWorkerId);
+                    if (emp) salaryText = emp.salary_info || '0';
+                }
+                const monthlySalary = parseInt(salaryText.replace(/\\D/g, '')) || 0;
+
+                // Calculate Working days in month (assuming Sunday is off)
+                let workingDaysCount = 0;
+                for (let i = 1; i <= daysInMonth; i++) {
+                    if (new Date(year, month, i).getDay() !== 0) workingDaysCount++;
+                }
+
+                const dailyRate = workingDaysCount > 0 ? (monthlySalary / workingDaysCount) : 0;
+                const hourlyRate = dailyRate / 10; // Default 10 hours workday (08:00 - 18:00)
+                const earnedToday = Math.round(workedHours * hourlyRate);
+
                 const details = document.getElementById('daily-att-details');
                 if (details) {
                     details.innerHTML = `
@@ -601,9 +663,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <div style="font-size:1.15rem; font-weight:800; color:#fff; text-align:center; padding-bottom:15px; margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.06);">
                                 ${d} ${monthNames[month]}
                             </div>
+
+                            <!-- PAYROLL CARD -->
+                            <div style="margin-bottom:15px; background:linear-gradient(135deg, rgba(0,210,255,0.1), rgba(0,0,0,0.2)); border:1px solid rgba(0,210,255,0.15); border-radius:12px; padding:15px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <div style="font-size:0.8rem; color:rgba(255,255,255,0.6); font-weight:600;">🕒 Ishlandi: <span style="color:#fff;">${workedHours} soat</span></div>
+                                </div>
+                                <div style="margin-top:8px; font-size:0.75rem; color:rgba(255,255,255,0.4);">💰 Kunlik stavka: ${Math.round(dailyRate).toLocaleString()} UZS</div>
+                                <div style="margin-top:10px; font-size:1.3rem; font-weight:800; color:#00d2ff; text-shadow: 0 0 10px rgba(0,210,255,0.3);">
+                                    +${earnedToday.toLocaleString()} so'm
+                                </div>
+                            </div>
+
                             <div style="display:flex; flex-direction:column; width:100%;">
-                                ${displayStatusHTML === 'Ma\'lumot kiritilmagan' ?
-                            `<div style="text-align:center; padding:30px; color:rgba(255,255,255,0.25); font-size:0.85rem; font-weight:500;">Boz ma'lumoti yo'q</div>`
+                                ${displayStatusHTML === 'Baza ma\'lumoti yo\'q' ?
+                            `<div style="text-align:center; padding:30px; color:rgba(255,255,255,0.25); font-size:0.85rem; font-weight:500;">Baza ma'lumoti yo'q</div>`
                             : displayStatusHTML}
                             </div>
                         </div>
