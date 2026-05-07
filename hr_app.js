@@ -1,35 +1,30 @@
 import { supabase } from './supabase.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('AKFA HR Portal v1.0 Loaded');
+    console.log('AKFA HR Premium 2026 Loaded');
 
     // --- 📱 TELEGRAM WEB APP INIT ---
     const tg = window.Telegram ? window.Telegram.WebApp : null;
     if (tg) {
         tg.expand();
-        tg.setHeaderColor('#0d121b');
+        tg.setHeaderColor('#05080d');
     }
 
     // --- 🕒 DATA CACHE & STATE ---
     let allStaff = [];
     let todayAtt = [];
-    const systemTime = document.getElementById('systemTime');
-    const hrAvatar = document.getElementById('hrAvatar');
+    const systemDate = document.getElementById('systemDate');
     const hrName = document.getElementById('hrName');
 
-    // Set Current Date
+    // Set Current Date in Uzbek
     const now = new Date();
     const options = { weekday: 'long', day: 'numeric', month: 'long' };
-    if (systemTime) systemTime.textContent = now.toLocaleDateString('uz-UZ', options);
+    if (systemDate) systemDate.textContent = now.toLocaleDateString('uz-UZ', options);
 
     // --- 🔐 AUTH CHECK ---
     const user = JSON.parse(localStorage.getItem('currentUser'));
-    if (!user || (user.role !== 'admin' && user.role !== 'hr')) {
-        // Not redirected for now for testing, but should be in production
-        console.warn('Auth issue: Not an HR/Admin');
-    } else {
-        if (hrName) hrName.textContent = `Salom, ${user.full_name || 'HR'}`;
-        if (hrAvatar && user.full_name) hrAvatar.textContent = user.full_name[0].toUpperCase();
+    if (user && (user.role === 'admin' || user.role === 'hr')) {
+        if (hrName) hrName.textContent = `Salom, ${user.username || 'HR'}`;
     }
 
     // --- 📥 LOAD HR DATA ---
@@ -55,11 +50,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     function updateStats() {
         const totalCount = document.getElementById('totalStaffCount');
         const presentCount = document.getElementById('presentStaffCount');
+        const lateCount = document.getElementById('lateStaffCount');
 
         if (totalCount) totalCount.textContent = allStaff.length;
 
-        const presentToday = todayAtt.filter(a => a.status.includes('Keldi') || a.status.includes('Vaqtida')).length;
+        const presentToday = todayAtt.filter(a => a.status === 'Vaqtida keldi').length;
+        const lateToday = todayAtt.filter(a => a.status === 'Kechikib keldi').length;
+
         if (presentCount) presentCount.textContent = presentToday;
+        if (lateCount) lateCount.textContent = lateToday;
     }
 
     function renderStaffFeed(staff) {
@@ -68,62 +67,81 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         feed.innerHTML = '';
         if (staff.length === 0) {
-            feed.innerHTML = '<div style="text-align:center; padding:30px; opacity:0.3;">Ma\'lumot topilmadi</div>';
+            feed.innerHTML = `
+                <div style="text-align:center; padding:50px; opacity:0.3;">
+                    <i data-lucide="info" style="margin-bottom:10px;"></i>
+                    <p>Ma'lumot topilmadi</p>
+                </div>
+            `;
+            if (window.lucide) lucide.createIcons();
             return;
         }
 
-        staff.forEach(emp => {
-            const div = document.createElement('div');
-            div.className = 'staff-row';
+        staff.forEach((emp, index) => {
+            const card = document.createElement('div');
+            card.className = 'staff-card';
+            card.style.opacity = '0'; // For GSAP
 
             const initials = emp.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
             const attRecord = todayAtt.find(a => a.employee_id === emp.id);
             const isPresent = attRecord && (attRecord.status.includes('Keldi') || attRecord.status.includes('Vaqtida'));
 
-            div.innerHTML = `
-                <div class="staff-avatar">${initials}</div>
-                <div class="staff-info">
+            card.innerHTML = `
+                <div class="staff-photo">${initials}</div>
+                <div class="staff-meta">
                     <h4>${emp.full_name}</h4>
-                    <p>${emp.role || 'Xodim'}</p>
+                    <p>${emp.role || 'Xodim'} • ${emp.department || 'Bo\'lim'}</p>
                 </div>
-                <div class="presence-tag ${isPresent ? 'tag-present' : 'tag-absent'}">
-                    ${isPresent ? 'Kelgan' : 'Kelmagan'}
-                </div>
+                <div class="status-badge ${isPresent ? '' : 'offline'}"></div>
             `;
 
-            div.onclick = () => {
-                // Future: Open individual staff manager modal
+            card.onclick = () => {
+                // Future: Detailed Profile Sheet
+                if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
             };
 
-            feed.appendChild(div);
+            feed.appendChild(card);
+        });
+
+        // ✨ GSAP Entrance for Feed
+        gsap.to('.staff-card', {
+            opacity: 1,
+            y: 0,
+            stagger: 0.05,
+            duration: 0.6,
+            ease: 'power2.out',
+            startAt: { y: 20 }
         });
     }
 
     function showLoading(show) {
-        // Future: Subtle top-loading bar
+        // Simple opacity fade for content
+        gsap.to('#portal-content', { opacity: show ? 0.5 : 1, duration: 0.3 });
     }
 
     // --- 🗺️ BOTTOM NAVIGATION LOGIC ---
-    const navItems = document.querySelectorAll('.nav-item');
-    navItems.forEach(item => {
-        item.onclick = (e) => {
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+        link.onclick = (e) => {
             e.preventDefault();
-            navItems.forEach(i => i.classList.remove('active'));
-            item.classList.add('active');
-
-            const section = item.querySelector('.nav-label').textContent.toLowerCase();
-            console.log('Switching to:', section);
-            // Logic for switching screens would go here
+            if (window.Telegram && window.Telegram.WebApp.HapticFeedback) {
+                window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+            }
+            navLinks.forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
         };
     });
 
-    // --- 🔘 FILTER LOGIC ---
-    const filters = document.querySelectorAll('.quick-action');
-    filters.forEach(f => {
-        f.onclick = () => {
-            filters.forEach(x => x.classList.remove('active'));
-            f.classList.add('active');
-            const cat = f.textContent.trim();
+    // --- 📁 CATEGORY FILTERS ---
+    const pills = document.querySelectorAll('.cat-pill');
+    pills.forEach(pill => {
+        pill.onclick = () => {
+            if (window.Telegram && window.Telegram.WebApp.HapticFeedback) {
+                window.Telegram.WebApp.HapticFeedback.selectionChanged();
+            }
+            pills.forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+            const cat = pill.textContent.trim();
 
             if (cat === 'Barchasi') {
                 renderStaffFeed(allStaff);
@@ -134,7 +152,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     });
 
-    // --- 🔍 SMART SEARCH LOGIC ---
+    // --- 🔍 SEARCH LOGIC ---
     const searchInput = document.getElementById('hrSearchInput');
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
@@ -147,39 +165,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // --- 📥 STAFF MODAL (Bottom Sheet) ---
-    const fab = document.getElementById('fabAddStaff');
-    const modal = document.getElementById('staffModal');
+    // --- 📥 ADD STAFF SUBMIT ---
     const submitBtn = document.getElementById('submitAddStaff');
-
-    if (fab && modal) {
-        fab.onclick = () => {
-            modal.style.display = 'flex';
-            setTimeout(() => modal.classList.add('active'), 10);
-        };
-
-        modal.onclick = (e) => {
-            if (e.target === modal) {
-                modal.classList.remove('active');
-                setTimeout(() => modal.style.display = 'none', 400);
-            }
-        };
-    }
-
     if (submitBtn) {
         submitBtn.onclick = async () => {
             const full_name = document.getElementById('addStaffName').value.trim();
             const department = document.getElementById('addStaffDept').value;
             const role = document.getElementById('addStaffRole').value.trim();
-            const birth_year = document.getElementById('addStaffBirthYear').value.trim();
-            const joined_year = document.getElementById('addStaffJoinedYear').value.trim();
 
             if (!full_name || !role) {
-                alert("Iltimos barcha maydonlarni to'ldiring!");
+                if (tg && tg.showAlert) tg.showAlert("Iltimos barcha maydonlarni to'ldiring!");
                 return;
             }
 
-            submitBtn.textContent = "Saqlanmoqda...";
             submitBtn.disabled = true;
 
             const { error } = await supabase.from('employees').insert([{
@@ -187,26 +185,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                 department,
                 role,
                 salary_info: '---',
-                experience: joined_year ? joined_year + "-yildan beri" : "Yangi",
-                birth_year: birth_year || null
+                experience: 'Yangi',
             }]);
 
-            submitBtn.textContent = "Xodimni Saqlash";
-            submitBtn.disabled = false;
-
             if (!error) {
-                modal.classList.remove('active');
-                setTimeout(() => {
-                    modal.style.display = 'none';
-                    loadHRData();
-                    // Clear inputs
-                    document.getElementById('addStaffName').value = '';
-                    document.getElementById('addStaffRole').value = '';
-                    document.getElementById('addStaffBirthYear').value = '';
-                    document.getElementById('addStaffJoinedYear').value = '';
-                }, 400);
+                if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                // Close modal using globally defined logic in HTML
+                const modal = document.getElementById('staffModal');
+                const sheet = modal.querySelector('.sheet');
+                gsap.to(sheet, { y: '100%', duration: 0.4 });
+                gsap.to(modal, {
+                    opacity: 0, duration: 0.3, onComplete: () => {
+                        modal.style.display = 'none';
+                        loadHRData();
+                        document.getElementById('addStaffName').value = '';
+                        document.getElementById('addStaffRole').value = '';
+                        submitBtn.disabled = false;
+                    }
+                });
             } else {
                 alert("Xatolik: " + error.message);
+                submitBtn.disabled = false;
             }
         };
     }
