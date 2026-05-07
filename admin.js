@@ -232,39 +232,116 @@ document.addEventListener('DOMContentLoaded', async () => {
         const btnRaise = document.getElementById('btn-raise');
         const btnLeave = document.getElementById('btn-leave');
 
-        if (btnBonus && !btnBonus.dataset.init) {
-            btnBonus.dataset.init = "true";
-            btnBonus.onclick = async () => {
-                if (!selectedWorkerId) { alert("Xodim tanlanmagan!"); return; }
-                const amount = prompt("Premya miqdorini kiriting (UZS):");
-                if (amount) alert(`${amount} so'm premya muvaffaqiyatli belgilandi.`);
-            };
-            btnRaise.onclick = async () => {
-                if (!selectedWorkerId) { alert("Xodim tanlanmagan!"); return; }
-                const newSalary = prompt("Yangi oylik miqdorini kiriting:");
-                if (newSalary) {
-                    await supabase.from('employees').update({ salary_info: newSalary }).eq('id', selectedWorkerId);
-                    alert("Oylik yangilandi.");
-                    loadRomixHRData();
-                }
-            };
-            btnLeave.onclick = async () => {
-                if (!selectedWorkerId) { alert("Xodim tanlanmagan!"); return; }
-                const startDate = prompt("Dam olish BOSHLANISH sanasini kiriting (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
-                const endDate = prompt("Dam olish TUGASH sanasini kiriting (YYYY-MM-DD):", startDate);
+        const modal = document.getElementById('hrActionModalOverlay');
+        const title = document.getElementById('hrActionModalTitle');
+        const desc = document.getElementById('hrActionModalDesc');
+        const icon = document.getElementById('hrActionModalIcon');
+        const container = document.getElementById('hrActionInputContainer');
+        const saveBtn = document.getElementById('hrActionSaveBtn');
+        const closeBtn = document.getElementById('hrActionCloseBtn');
 
-                if (startDate) {
-                    // Start process/request
-                    await supabase.from('attendance').insert({
-                        employee_id: selectedWorkerId,
-                        date: startDate,
-                        status: 'Tasdiqlash kutilmoqda',
-                        notes: `Muddat: ${startDate} dan ${endDate} gacha`
-                    });
-                    alert("Ruxsat berish so'rovi yuborildi. Rahbar tasdiqlashi kutilmoqda.");
-                    checkPendingRequests();
-                }
-            };
+        if (closeBtn && !closeBtn.dataset.init) {
+            closeBtn.dataset.init = "true";
+            closeBtn.onclick = () => { modal.style.display = 'none'; };
+        }
+
+        function openActionModal(actionType) {
+            if (!selectedWorkerId) { alert("Xodim tanlanmagan!"); return; }
+            modal.style.display = 'flex';
+            container.innerHTML = '';
+
+            // Clean specific previous event listener by cloning node
+            const oldSave = saveBtn.cloneNode(true);
+            saveBtn.parentNode.replaceChild(oldSave, saveBtn);
+            const newSaveBtn = document.getElementById('hrActionSaveBtn');
+
+            if (actionType === 'bonus') {
+                icon.textContent = '💰';
+                title.textContent = 'Premya Belgilash';
+                desc.textContent = "Xodimga beriladigan mukofot miqdorini kiriting.";
+                newSaveBtn.style.background = 'linear-gradient(135deg, #FFD700, #DAA520)';
+                newSaveBtn.style.boxShadow = '0 4px 15px rgba(218, 165, 32, 0.4)';
+                newSaveBtn.style.color = '#000';
+
+                container.innerHTML = `
+                    <label style="font-size:0.8rem; color:var(--adm-text-sec); font-weight:600; margin-left:5px;">Miqdor (UZS)</label>
+                    <input type="number" id="hrActionAmount" class="form-input-v2" placeholder="Masalan: 500000" style="font-size:1.1rem; padding:15px; border-radius:14px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:#fff; width:100%; box-sizing:border-box;">
+                `;
+
+                newSaveBtn.onclick = () => {
+                    const val = document.getElementById('hrActionAmount').value;
+                    if (val) {
+                        alert(`${val} so'm premya muvaffaqiyatli belgilandi.`);
+                        modal.style.display = 'none';
+                    }
+                };
+            } else if (actionType === 'raise') {
+                icon.textContent = '📈';
+                title.textContent = "Oylikni O'zgartirish";
+                desc.textContent = "Xodimning doimiy maoshini yangilang.";
+                newSaveBtn.style.background = 'linear-gradient(135deg, #00d2ff, #3a7bd5)';
+                newSaveBtn.style.boxShadow = '0 4px 15px rgba(0, 122, 255, 0.4)';
+                newSaveBtn.style.color = '#fff';
+
+                container.innerHTML = `
+                    <label style="font-size:0.8rem; color:var(--adm-text-sec); font-weight:600; margin-left:5px;">Yangi maosh miqdori</label>
+                    <input type="number" id="hrActionSalary" class="form-input-v2" placeholder="Yangi oylikni kiriting" style="font-size:1.1rem; padding:15px; border-radius:14px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:#fff; width:100%; box-sizing:border-box;">
+                `;
+
+                newSaveBtn.onclick = async () => {
+                    const val = document.getElementById('hrActionSalary').value;
+                    if (val) {
+                        await supabase.from('employees').update({ salary_info: val }).eq('id', selectedWorkerId);
+                        alert("Oylik muvaffaqiyatli yangilandi.");
+                        modal.style.display = 'none';
+                        loadRomixHRData();
+                    }
+                };
+            } else if (actionType === 'leave') {
+                icon.textContent = '🏝️';
+                title.textContent = "Dam Olish (Otpusk)";
+                desc.textContent = "Xodimga qaysi sanalar orasida dam berishni belgilang.";
+                newSaveBtn.style.background = 'linear-gradient(135deg, #00ff88, #00cc6a)';
+                newSaveBtn.style.boxShadow = '0 4px 15px rgba(0, 255, 136, 0.4)';
+                newSaveBtn.style.color = '#000';
+
+                const today = new Date().toISOString().split('T')[0];
+                container.innerHTML = `
+                    <div style="display:flex; gap:10px;">
+                        <div style="flex:1;">
+                            <label style="font-size:0.8rem; color:var(--adm-text-sec); font-weight:600; margin-left:5px;">Boshlanish</label>
+                            <input type="date" id="hrActionStart" value="${today}" style="font-size:1rem; padding:14px; border-radius:14px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:#fff; width:100%; box-sizing:border-box; margin-top:5px; color-scheme:dark;">
+                        </div>
+                        <div style="flex:1;">
+                            <label style="font-size:0.8rem; color:var(--adm-text-sec); font-weight:600; margin-left:5px;">Tugash</label>
+                            <input type="date" id="hrActionEnd" value="${today}" style="font-size:1rem; padding:14px; border-radius:14px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:#fff; width:100%; box-sizing:border-box; margin-top:5px; color-scheme:dark;">
+                        </div>
+                    </div>
+                `;
+
+                newSaveBtn.onclick = async () => {
+                    const start = document.getElementById('hrActionStart').value;
+                    const end = document.getElementById('hrActionEnd').value;
+                    if (start && end) {
+                        await supabase.from('attendance').insert({
+                            employee_id: selectedWorkerId,
+                            date: start,
+                            status: 'Tasdiqlash kutilmoqda',
+                            notes: `Muddat: ${start} dan ${end} gacha`
+                        });
+                        alert("Ruxsat berish so'rovi yuborildi. Rahbar tasdiqlashi kutilmoqda.");
+                        modal.style.display = 'none';
+                        checkPendingRequests();
+                    }
+                };
+            }
+        }
+
+        if (btnBonus && !btnBonus.dataset.initModal) {
+            btnBonus.dataset.initModal = "true";
+            btnBonus.onclick = () => openActionModal('bonus');
+            btnRaise.onclick = () => openActionModal('raise');
+            btnLeave.onclick = () => openActionModal('leave');
         }
     }
 
