@@ -581,21 +581,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <td style="padding:15px 24px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                     <div style="display:flex; align-items:center; gap:12px;">
                         ${avatarHtml}
-                        <div style="font-weight:600; color:#fff; overflow:hidden; text-overflow:ellipsis;">${emp.full_name}</div>
+                        <div style="font-weight:600; color:var(--adm-text); overflow:hidden; text-overflow:ellipsis;">${emp.full_name}</div>
                     </div>
                 </td>
-                <td style="font-size:0.85rem; color:rgba(255,255,255,0.6); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${emp.role || '---'}</td>
+                <td style="font-size:0.85rem; color:var(--adm-text-sec); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${emp.role || '---'}</td>
                 <td style="font-size:0.85rem; font-weight:700; color:var(--adm-accent); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${salary}</td>
-                <td style="font-size:0.85rem; color:rgba(255,255,255,0.8); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${emp.department || 'Bo\'limsiz'}</td>
-                <td style="font-size:0.85rem; color:rgba(255,255,255,0.6); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${emp.experience || 'Yangi'}</td>
+                <td style="font-size:0.85rem; color:var(--adm-text-sec); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; opacity:0.8;">${emp.department || 'Bo\'limsiz'}</td>
+                <td style="font-size:0.85rem; color:var(--adm-text-sec); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${emp.experience || 'Yangi'}</td>
                 <td>
                     <div style="display:flex; align-items:center; gap:8px;">
-                        <span style="width:8px; height:8px; border-radius:50%; background:#00ff88; box-shadow:0 0 8px #00ff88;"></span>
-                        <span style="font-size:0.75rem; color:#00ff88;">Faol</span>
+                        <span style="width:8px; height:8px; border-radius:50%; background:#007c52; box-shadow:0 0 8px rgba(0,124,82,0.3);"></span>
+                        <span style="font-size:0.75rem; color:#007c52; font-weight:700;">Faol</span>
                     </div>
                 </td>
                 <td style="text-align:right; padding-right:24px;">
-                    <button class="icon-small-btn" style="background:rgba(255,255,255,0.05); border:none; color:#fff; width:30px; height:30px; cursor:pointer;">⋮</button>
+                    <button class="icon-small-btn" style="background:var(--adm-bg); border:1px solid var(--adm-border); color:var(--adm-text); width:30px; height:30px; cursor:pointer; border-radius:8px;">⋮</button>
                 </td>
             `;
 
@@ -733,28 +733,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 displayStatusHTML = dayRecords.map(r => {
-                    let icon = '📆';
-                    let color = '#fff';
-                    let glow = 'rgba(255,255,255,0.1)';
+                    let icon = '';
+                    let color = 'var(--adm-text)';
+                    let glow = 'rgba(0,0,0,0.05)';
                     let s = r.status;
 
-                    if (s.includes('Premya')) { icon = '💰'; color = '#FFD700'; glow = 'rgba(255,215,0,0.2)'; }
-                    else if (s.includes('Oylik')) { icon = '📈'; color = '#00d2ff'; glow = 'rgba(0,210,255,0.2)'; }
-                    else if (s.includes('Ruxsat') || s.includes('Dam')) { icon = '🏝️'; color = '#BA68C8'; glow = 'rgba(186,104,200,0.2)'; }
-                    else if (s.includes('Kech')) { icon = '🕒'; color = '#ff4d4f'; glow = 'rgba(255,77,79,0.2)'; }
-                    else if (s.includes('Vaqtida') || s.includes('Keldi')) { icon = '✅'; color = '#00ff88'; glow = 'rgba(0,255,136,0.2)'; }
+                    if (s.includes('Premya')) { color = '#FFB800'; glow = 'rgba(255,184,0,0.1)'; }
+                    else if (s.includes('Oylik')) { color = '#007aff'; glow = 'rgba(0,122,255,0.1)'; }
+                    else if (s.includes('Ruxsat') || s.includes('Dam')) { color = '#BA68C8'; glow = 'rgba(186,104,200,0.1)'; }
+                    else if (s.includes('Kech')) { color = '#ff4d4f'; glow = 'rgba(255,77,79,0.1)'; }
+                    else if (s.includes('Vaqtida') || s.includes('Keldi')) { color = '#007c52'; glow = 'rgba(0,124,82,0.1)'; }
 
                     return `
-                        <div class="premium-event-card" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:16px; border-radius:18px; margin-bottom:12px; position:relative; overflow:hidden;">
-                            <div style="position:absolute; top:0; left:0; width:4px; height:100%; background:${color}; box-shadow:0 0 15px ${glow};"></div>
-                            <div style="display:flex; justify-content:space-between; align-items:start;">
+                        <div class="premium-event-card" style="background:var(--adm-bg); border:1px solid var(--adm-border); padding:16px; border-radius:18px; margin-bottom:12px; position:relative; overflow:hidden;">
+                            <div style="position:absolute; top:0; left:0; width:4px; height:100%; background:${color}; box-shadow:0 0 10px ${glow};"></div>
+                            <div style="display:flex; justify-content:space-between; align-items:start; color:var(--adm-text);">
                                 <div style="display:flex; gap:12px; align-items:center;">
                                     <div style="width:36px; height:36px; border-radius:10px; background:${glow}; display:flex; align-items:center; justify-content:center; font-size:1.1rem;">${icon}</div>
-                                    <div style="font-weight:600; color:#fff; font-size:0.92rem; line-height:1.3;">${s}</div>
+                                    <div style="font-weight:600; color:var(--adm-text); font-size:0.92rem; line-height:1.3;">${s}</div>
                                 </div>
                             </div>
-                            <div style="display:flex; gap:10px; margin-top:14px; border-top:1px solid rgba(255,255,255,0.04); padding-top:10px;">
-                                <button onclick="window.editHrEvent('${r.id}', '${s}')" style="flex:1; background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.6); border:1px solid rgba(255,255,255,0.08); padding:8px; border-radius:10px; cursor:pointer; font-size:0.75rem; transition:0.3s; font-weight:600;">Tahrirlash</button>
+                            <div style="display:flex; gap:10px; margin-top:14px; border-top:1px solid var(--adm-border); padding-top:10px;">
+                                <button onclick="window.editHrEvent('${r.id}', '${s}')" style="flex:1; background:var(--adm-bg); color:var(--adm-text-sec); border:1px solid var(--adm-border); padding:8px; border-radius:10px; cursor:pointer; font-size:0.75rem; transition:0.3s; font-weight:600;">Tahrirlash</button>
                                 <button onclick="window.deleteHrEvent('${r.id}')" style="flex:1; background:rgba(255,77,79,0.05); color:#ff4d4f; border:1px solid rgba(255,77,79,0.1); padding:8px; border-radius:10px; cursor:pointer; font-size:0.75rem; transition:0.3s; font-weight:600;">O'chirish</button>
                             </div>
                         </div>
