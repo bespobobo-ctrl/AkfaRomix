@@ -1097,18 +1097,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // --- 🏦 HR ACTION LOGIC (Premya, Oylik, Edit, Delete, Hisobot) ---
+    // --- 🏦 HR ACTION LOGIC (Premium Modals v4.8) ---
     const btnBonus = document.getElementById('btn-bonus');
     const btnRaise = document.getElementById('btn-raise');
     const btnEdit = document.getElementById('btn-edit-staff');
     const btnDelete = document.getElementById('btn-delete-staff');
     const btnReport = document.getElementById('btn-hisobot-staff');
     const hrModal = document.getElementById('hrActionModalOverlay');
+    const reportModal = document.getElementById('reportModalOverlay');
 
     if (btnBonus) btnBonus.onclick = () => openHRAction('Premya');
     if (btnRaise) btnRaise.onclick = () => openHRAction('Oylik');
     if (btnEdit) btnEdit.onclick = () => openEditStaff();
     if (btnDelete) btnDelete.onclick = () => deleteWorker();
-    if (btnReport) btnReport.onclick = () => openReportOptions();
+    if (btnReport) btnReport.onclick = () => { if (reportModal) reportModal.style.display = 'flex'; };
+
+    let selectedReportDays = 30; // Default
+
+    window.selectReportPeriod = (days, btn) => {
+        selectedReportDays = days;
+        document.querySelectorAll('.report-cycle-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    };
+
+    const genPdfBtn = document.getElementById('genPdfBtn');
+    const genXlsBtn = document.getElementById('genXlsBtn');
+    if (genPdfBtn) genPdfBtn.onclick = () => generateEmployeeReport(selectedReportDays, 'pdf');
+    if (genXlsBtn) genXlsBtn.onclick = () => generateEmployeeReport(selectedReportDays, 'excel');
 
     function openHRAction(type) {
         if (!selectedWorkerId) { alert('Avval xodimni tanlang!'); return; }
@@ -1119,8 +1134,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (icon) icon.textContent = type === 'Premya' ? '💰' : '📈';
         if (title) title.textContent = type === 'Premya' ? 'Premya tayinlash' : 'Oylikni yangilash';
         if (input) {
-            input.placeholder = type === 'Premya' ? 'Premya summasi (masalan: 500,000)' : 'Yangi oylik summasi';
+            input.placeholder = type === 'Premya' ? 'Summani kiriting (UZS)' : 'Yangi stavkani kiriting';
             input.value = '';
+            input.className = 'form-input-v2';
         }
 
         if (hrModal) {
@@ -1132,51 +1148,41 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function saveHRAction(type) {
         const val = document.getElementById('hrActionValue').value.trim();
-        if (!val) return;
+        if (!val) { alert('Summani kiriting!'); return; }
 
         const saveBtn = document.getElementById('saveHrActionBtn');
-        saveBtn.textContent = 'Saqlanmoqda...';
+        const originalText = saveBtn.textContent;
+        saveBtn.textContent = 'Muvaffaqiyatli... ✅';
+        saveBtn.style.background = '#00ff88';
+        saveBtn.style.color = '#000';
 
         try {
             if (type === 'Premya') {
-                // Record bonus as a special attendance entry for current day
                 const todayStr = new Date().toISOString().split('T')[0];
                 await supabase.from('attendance').insert([{
                     employee_id: selectedWorkerId,
                     date: todayStr,
-                    status: `Premya: ${val} UZS`
+                    status: `Premya: ${val.toLocaleString()} UZS`
                 }]);
-                alert('Premya muvaffaqiyatli saqlandi!');
             } else if (type === 'Oylik') {
-                // Update worker's base salary
-                await supabase.from('employees').update({ salary_info: val + " UZS" }).eq('id', selectedWorkerId);
-                alert('Oylik muvaffaqiyatli yangilandi!');
+                await supabase.from('employees').update({ salary_info: val.toLocaleString() + " UZS" }).eq('id', selectedWorkerId);
             }
-            if (hrModal) hrModal.style.display = 'none';
-            fetchStaff(); // Refresh list/state
+
+            setTimeout(() => {
+                if (hrModal) hrModal.style.display = 'none';
+                saveBtn.textContent = originalText;
+                saveBtn.style.background = '';
+                saveBtn.style.color = '';
+                fetchStaff();
+            }, 1000);
         } catch (err) {
             console.error(err);
-            alert('Xatolik yuz berdi saqlashda.');
-        } finally {
-            saveBtn.textContent = 'Saqlash';
+            alert('Xatolik yuz berdi.');
+            saveBtn.textContent = originalText;
         }
     }
 
-    // --- 📊 REPORTING ENGINE (Excel/PDF) ---
-    function openReportOptions() {
-        if (!selectedWorkerId) { alert('Avval xodimni tanlang!'); return; }
-        const typeSelected = prompt("Hisobot turini tanlang:\n1. Kunlik\n2. Haftalik\n3. Oylik\n4. Yillik", "3");
-        if (!typeSelected) return;
-
-        let days = 1;
-        if (typeSelected === '2') days = 7;
-        if (typeSelected === '3') days = 30;
-        if (typeSelected === '4') days = 365;
-
-        generateEmployeeReport(days);
-    }
-
-    async function generateEmployeeReport(daysLimit) {
+    async function generateEmployeeReport(daysLimit, format) {
         const worker = allEmployees.find(e => e.id === selectedWorkerId);
         if (!worker) return;
 
@@ -1184,7 +1190,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         startDate.setDate(startDate.getDate() - daysLimit);
         const startStr = startDate.toISOString().split('T')[0];
 
-        // Fetch all relevant data
         const { data: attendance } = await supabase.from('attendance')
             .select('*')
             .eq('employee_id', selectedWorkerId)
@@ -1196,46 +1201,51 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // --- 📄 PDF Generation (jsPDF) ---
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
+        if (format === 'pdf') {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFontSize(22);
+            doc.setTextColor(0, 124, 82);
+            doc.text("AKFA ROMIX ENTERPRISE", 105, 20, { align: "center" });
+            doc.setFontSize(14);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Xodimlarning Rasmiy Hisoboti`, 105, 30, { align: "center" });
 
-        doc.setFontSize(18);
-        doc.text("AKFA ROMIX - XODIM HISOBOTI", 105, 20, { align: "center" });
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            doc.text(`Xodim: ${worker.full_name}`, 20, 50);
+            doc.text(`Lavozimi: ${worker.role || '---'}`, 20, 58);
+            doc.text(`Hisobot davri: ${startStr} - ${new Date().toISOString().split('T')[0]}`, 20, 66);
+            doc.text(`Joriy oylik stavka: ${worker.salary_info || '---'}`, 20, 74);
 
-        doc.setFontSize(12);
-        doc.text(`Xodim: ${worker.full_name}`, 20, 40);
-        doc.text(`Lavozimi: ${worker.role || '---'}`, 20, 50);
-        doc.text(`Davr: ${startStr} dan bugungacha`, 20, 60);
-        doc.text(`Joriy stavka: ${worker.salary_info || '---'}`, 20, 70);
+            const tableData = attendance.map(a => [a.date, a.status]);
+            doc.autoTable({
+                startY: 85,
+                head: [['SANA', 'HOLAT VA AMALLAR']],
+                body: tableData,
+                theme: 'striped',
+                headStyles: { fillColor: [0, 124, 82], textColor: [255, 255, 255], fontStyle: 'bold' },
+                styles: { fontSize: 10, cellPadding: 5 }
+            });
 
-        const tableData = attendance.map(a => [a.date, a.status]);
-        doc.autoTable({
-            startY: 80,
-            head: [['Sana', 'Holat / Amalllar']],
-            body: tableData,
-            theme: 'grid',
-            headStyles: { fillColor: [0, 122, 255] }
-        });
+            doc.save(`AKFA_Hisobot_${worker.full_name.replace(/ /g, '_')}.pdf`);
+        } else {
+            const ws = XLSX.utils.json_to_sheet(attendance.map(a => ({
+                "SANASI": a.date,
+                "F.I.O": worker.full_name,
+                "STATUS / AMAL": a.status
+            })));
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Xodim_Hisoboti");
+            XLSX.writeFile(wb, `AKFA_Hisobot_${worker.full_name.replace(/ /g, '_')}.xlsx`);
+        }
 
-        doc.save(`Hisobot_${worker.full_name.replace(/ /g, '_')}.pdf`);
-
-        // --- 📗 Excel Generation (SheetJS) ---
-        const ws = XLSX.utils.json_to_sheet(attendance.map(a => ({
-            "Sana": a.date,
-            "Xodim": worker.full_name,
-            "Holat": a.status
-        })));
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Hisobot");
-        XLSX.writeFile(wb, `Hisobot_${worker.full_name.replace(/ /g, '_')}.xlsx`);
-
-        alert("Hisobotlar (PDF va Excel) muvaffaqiyatli tayyorlandi va yuklab olindi!");
+        if (reportModal) reportModal.style.display = 'none';
     }
 
     async function deleteWorker() {
         if (!selectedWorkerId) return;
-        if (confirm('Rostdan ham ushbu xodimni o\'chirmoqchimisiz? Barcha davomatlari ham oiriladi.')) {
+        if (confirm('Xodimni butkul o\'chirmoqchimisiz?')) {
             await supabase.from('employees').delete().eq('id', selectedWorkerId);
             selectedWorkerId = null;
             fetchStaff();
