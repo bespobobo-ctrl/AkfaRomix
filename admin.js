@@ -792,9 +792,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                     <div class="sc-actions">
                         <a href="tel:${emp.phone}" class="sc-btn call" style="text-decoration:none;">📞 Qo'ng'iroq</a>
-                        <button class="sc-btn edit" onclick="updateStaffProfileCard(${JSON.stringify(emp).replace(/"/g, '&quot;')})">⚙️ Profil</button>
+                        <button class="sc-btn profile-trigger">⚙️ Profil</button>
                     </div>
                 `;
+
+                const btn = card.querySelector('.profile-trigger');
+                if (btn) {
+                    btn.addEventListener('click', () => {
+                        updateStaffProfileCard(emp);
+                    });
+                }
+
                 mobileContainer.appendChild(card);
             }
         });
