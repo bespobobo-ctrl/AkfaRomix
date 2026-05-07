@@ -482,9 +482,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const initials = emp.full_name.split(' ').map(n => n?.[0]).join('').substring(0, 2).toUpperCase() || '?';
             const salary = emp.salary_info || '---';
+            const avatarHtml = emp.avatar_url
+                ? `<img src="${emp.avatar_url}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`
+                : initials;
 
             div.innerHTML = `
-                <div class="staff-avatar-mini">${initials}</div>
+                <div class="staff-avatar-mini">${avatarHtml}</div>
                 <div style="flex:1;">
                     <div style="font-weight:600; color:#fff; font-size:0.9rem;">${emp.full_name}</div>
                     <div style="font-size:0.7rem; color:rgba(255,255,255,0.4); margin-top:2px;">
@@ -512,7 +515,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const role = document.getElementById('selected-staff-role');
         const salary = document.getElementById('st-salary-badge');
 
-        if (img) img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=00ff88&color=000&size=200`;
+        if (img) {
+            img.src = emp.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=00ff88&color=000&size=200`;
+        }
         if (name) name.textContent = emp.full_name;
         if (role) role.textContent = emp.role;
         if (salary) salary.textContent = emp.salary_info || '---';

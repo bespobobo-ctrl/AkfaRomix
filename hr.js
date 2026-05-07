@@ -591,7 +591,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 birth_year: birthYear,
                 phone: phone,
                 role: role,
-                salary_info: salary
+                salary_info: salary,
+                avatar_url: customPhoto
             };
 
             if (editingWorkerId) {
