@@ -256,12 +256,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    window.editHrEvent = async (id, currentStatus, currentNotes) => {
-        const newVal = prompt("Yangi ma'lumotlarni yoki miqdorni kiriting:", currentNotes);
+    window.editHrEvent = async (id, currentStatus) => {
+        const newVal = prompt("Yangi ma'lumotlarni yoki miqdorni kiriting:", currentStatus);
         if (newVal !== null) {
-            const { error } = await supabase.from('attendance').update({ notes: newVal }).eq('id', id);
+            const { error } = await supabase.from('attendance').update({ status: newVal }).eq('id', id);
             if (error) { alert("Xatolik: " + error.message); return; }
-            window.logToHistory(`Rahbar amalni tahrirladi (Holat: ${currentStatus})`);
+            window.logToHistory(`Rahbar amalni tahrirladi (P/N: ${id.substring(0, 6)})`);
             loadRomixHRData();
         }
     };
@@ -321,7 +321,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (val) {
                         currentSaveBtn.innerHTML = "Saqlanmoqda...";
                         const today = new Date().toISOString().split('T')[0];
-                        const { error } = await supabase.from('attendance').insert({ employee_id: selectedWorkerId, date: today, status: 'Premya', notes: `Miqdor: ${val} so'm` });
+                        const { error } = await supabase.from('attendance').insert({ employee_id: selectedWorkerId, date: today, status: `Premya: ${val} so'm` });
                         if (error) { alert("Xatolik saqlashda: " + error.message); return; }
                         window.logToHistory(`Xodimga premya belgilandi: ${val} so'm`);
                         alert(`${val} so'm premya muvaffaqiyatli belgilandi.`);
@@ -348,7 +348,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         currentSaveBtn.innerHTML = "Saqlanmoqda...";
                         const today = new Date().toISOString().split('T')[0];
                         await supabase.from('employees').update({ salary_info: val }).eq('id', selectedWorkerId);
-                        const { error } = await supabase.from('attendance').insert({ employee_id: selectedWorkerId, date: today, status: 'Oylik oshirildi', notes: `Yangi maosh: ${val}` });
+                        const { error } = await supabase.from('attendance').insert({ employee_id: selectedWorkerId, date: today, status: `Oylik oshirildi: ${val}` });
                         if (error) { alert("Xatolik saqlashda: " + error.message); return; }
                         window.logToHistory(`Xodimning oyligi o'zgartirildi: ${val}`);
                         alert("Oylik muvaffaqiyatli yangilandi.");
@@ -394,8 +394,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 supabase.from('attendance').insert({
                                     employee_id: selectedWorkerId,
                                     date: dStr,
-                                    status: 'Ruxsat so\'raldi',
-                                    notes: `Muddat: ${start} dan ${end} gacha`
+                                    status: `Ruxsat so'raldi: ${start} dan ${end}`,
                                 })
                             );
                             currentDate.setDate(currentDate.getDate() + 1);
@@ -544,7 +543,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const startStr = `${year}-${(month + 1).toString().padStart(2, '0')}-01`;
             const endStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${daysInMonth}`;
             const { data } = await supabase.from('attendance')
-                .select('id, date, status, notes')
+                .select('id, date, status')
                 .eq('employee_id', selectedWorkerId)
                 .gte('date', startStr)
                 .lte('date', endStr);
@@ -630,19 +629,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                     else if (s === 'Vaqtida keldi' || s.includes('Keldi')) { icon = '🟢'; color = '#00d2ff'; bg = 'rgba(0,210,255,0.1)'; }
                     else if (s === 'Kech qoldi' || s.includes('Kech')) { icon = '🔴'; color = '#ff4d4f'; bg = 'rgba(255,77,79,0.1)'; }
 
-                    let notesHtml = r.notes ? `<div style="font-size:0.75rem; color:rgba(255,255,255,0.6); margin-top:6px; line-height:1.4; flex-grow:1;">📝 ${r.notes}</div>` : '';
                     let actionBtns = `<div style="display:flex; gap:8px; margin-top:8px;">
-                                        <button onclick="window.editHrEvent('${r.id}', '${s}', '${r.notes || ''}')" style="background:rgba(0,210,255,0.1); color:#00d2ff; border:none; padding:4px 8px; border-radius:6px; cursor:pointer; font-size:0.7rem;">Tahrirlash</button>
+                                        <button onclick="window.editHrEvent('${r.id}', '${s}')" style="background:rgba(0,210,255,0.1); color:#00d2ff; border:none; padding:4px 8px; border-radius:6px; cursor:pointer; font-size:0.7rem;">Tahrirlash</button>
                                         <button onclick="window.deleteHrEvent('${r.id}')" style="background:rgba(255,77,79,0.1); color:#ff4d4f; border:none; padding:4px 8px; border-radius:6px; cursor:pointer; font-size:0.7rem;">O'chirish</button>
                                       </div>`;
 
                     return `
                         <div style="background:${bg}; border-left: 3px solid ${color}; padding:14px; border-radius:0 12px 12px 0; margin-bottom:12px; font-family:'Inter', sans-serif;">
-                            <div style="font-weight:700; color:${color}; font-size:0.95rem; display:flex; align-items:center; gap:8px;">
+                            <div style="font-weight:700; color:${color}; font-size:0.95rem; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                                 <span>${icon}</span> ${s}
                             </div>
                             <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-                                ${notesHtml}
                                 ${actionBtns}
                             </div>
                         </div>
