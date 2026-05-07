@@ -525,8 +525,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (cat !== 'barchasi') {
                     // Match pill name to actual department field
                     let deptVal = pill.textContent.trim();
-                    if (deptVal === 'Ustalar') deptVal = 'Usta';
-                    filtered = allEmployees.filter(e => e.department === deptVal);
+                    if (deptVal === 'Ustalar') {
+                        filtered = allEmployees.filter(e => e.department === 'Ustalar' || e.department === 'Usta');
+                    } else {
+                        filtered = allEmployees.filter(e => e.department === deptVal);
+                    }
                 }
 
                 renderStaffList(filtered);
