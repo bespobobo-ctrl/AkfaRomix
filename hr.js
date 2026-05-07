@@ -7,47 +7,36 @@ let calMonth = new Date().getMonth();
 let calYear = new Date().getFullYear();
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // 1. Auth Check
+    // 1. Auth Check - Professional Guard
     const user = JSON.parse(localStorage.getItem('currentUser'));
     if (!user || (user.role !== 'hr' && user.role !== 'admin')) {
         window.location.href = '/';
         return;
     }
 
-    // Set UI User Info
+    // Header Greeting
     if (document.getElementById('userNameLabel')) {
-        document.getElementById('userNameLabel').textContent = user.username ? user.username.toUpperCase() : 'HR ADMIN';
+        document.getElementById('userNameLabel').textContent = user.username ? user.username : 'HR Manager';
     }
 
-    // Logout
+    // Logout Action
     document.getElementById('logoutBtn').addEventListener('click', () => {
         localStorage.removeItem('currentUser');
         window.location.href = '/';
     });
 
-    // Tab Switching
-    const tabEmployees = document.getElementById('tabEmployees');
-    const tabAttendance = document.getElementById('tabAttendance');
-    const secEmployees = document.getElementById('employeesSection');
-    const secAttendance = document.getElementById('attendanceSection');
-
-    tabEmployees.addEventListener('click', () => {
-        tabEmployees.classList.add('active');
-        tabAttendance.classList.remove('active');
-        secEmployees.classList.add('active');
-        secAttendance.classList.remove('active');
+    // Modal Control (Nixtio Style)
+    const modal = document.getElementById('addWorkerModalOverlay');
+    document.getElementById('addWorkerBtn').addEventListener('click', () => {
+        modal.style.display = 'flex';
+        gsap.from('.modal-nixtio', { y: 100, opacity: 0, duration: 0.5, ease: 'power4.out' });
     });
 
-    tabAttendance.addEventListener('click', () => {
-        tabAttendance.classList.add('active');
-        tabEmployees.classList.remove('active');
-        secAttendance.classList.add('active');
-        secEmployees.classList.remove('active');
-        loadDailyAttendance(new Date().toISOString().split('T')[0]);
+    document.getElementById('closeAddWorkerBtn').addEventListener('click', () => {
+        gsap.to('.modal-nixtio', { y: 50, opacity: 0, duration: 0.3, onComplete: () => modal.style.display = 'none' });
     });
 
-    // Initial Load
-    await loadInitialData();
+    document.getElementById('saveWorkerBtn').addEventListener('click', saveWorker);
 
     // Search Logic
     document.getElementById('hrSearchInput').addEventListener('input', (e) => {
@@ -59,21 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderStaffList(filtered);
     });
 
-    // Modal Add/Edit
-    const modal = document.getElementById('addWorkerModalOverlay');
-    document.getElementById('addWorkerBtn').addEventListener('click', () => {
-        document.getElementById('modalHeader').innerHTML = "Yangi Xodim <span style='color:var(--accent-glow);'>Qo'shish</span>";
-        clearModal();
-        modal.classList.add('active');
-    });
-
-    document.getElementById('closeAddWorkerBtn').addEventListener('click', () => {
-        modal.classList.remove('active');
-    });
-
-    document.getElementById('saveWorkerBtn').addEventListener('click', saveWorker);
-
-    // Calendar Nav
+    // Calendar Navigation
     document.getElementById('prevMonth').addEventListener('click', () => {
         calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; }
         renderCalendar();
@@ -82,98 +57,88 @@ document.addEventListener('DOMContentLoaded', async () => {
         calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; }
         renderCalendar();
     });
+
+    // Load Data
+    await loadInitialData();
 });
 
 async function loadInitialData() {
     const todayStr = new Date().toISOString().split('T')[0];
 
-    // Fetch Employees
     const { data: staff, error: e1 } = await supabase.from('employees').select('*').order('created_at', { ascending: false });
-    // Fetch Today Attendance
     const { data: att, error: e2 } = await supabase.from('attendance').select('*').eq('date', todayStr);
 
     if (!e1 && !e2) {
-        employeesData = staff;
-        todayAtt = att;
+        employeesData = staff || [];
+        todayAtt = att || [];
         updateGlobalStats();
         renderStaffList(employeesData);
+        loadDailyAttendance(todayStr);
         if (employeesData.length > 0) showEmployeeDetail(employeesData[0]);
     }
 }
 
 function updateGlobalStats() {
     document.getElementById('totalEmployeesCount').textContent = employeesData.length;
+    const presentCount = todayAtt.filter(a => a.status === 'Vaqtida keldi').length;
+    document.getElementById('todayArrivedCount').textContent = presentCount;
 
-    const present = todayAtt.filter(a => a.status === 'Vaqtida keldi').length;
-    const late = todayAtt.filter(a => a.status === 'Kechikib keldi').length;
-
-    document.getElementById('todayArrivedCount').textContent = present;
-    document.getElementById('todayLateCount').textContent = late;
-
-    // Payroll
-    let total = 0;
-    employeesData.forEach(e => {
-        total += parseInt(e.salary_info.toString().replace(/[^0-9]/g, '')) || 0;
-    });
-    document.getElementById('payrollTotal').innerHTML = `${total.toLocaleString()} <small>sum</small>`;
+    const percent = employeesData.length > 0 ? Math.round((presentCount / employeesData.length) * 100) : 0;
+    document.getElementById('attendancePercent').textContent = percent + '%';
 }
 
 function renderStaffList(data) {
     const list = document.getElementById('employeeList');
     list.innerHTML = '';
 
+    if (data.length === 0) {
+        list.innerHTML = '<p style="padding:20px; opacity:0.3;">Xodimlar topilmadi</p>';
+        return;
+    }
+
     data.forEach(emp => {
         const card = document.createElement('div');
-        card.className = 'staff-row';
-        if (currentEmp && currentEmp.id === emp.id) card.classList.add('active');
+        card.style = `
+            flex: 0 0 160px; padding: 25px; background: #fff; border-radius: 25px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03); cursor: pointer; text-align: center;
+            border: 2px solid transparent; transition: 0.3s;
+        `;
+        if (currentEmp && currentEmp.id === emp.id) card.style.borderColor = 'var(--accent-primary)';
 
         const initials = emp.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        const photo = emp.photo ? emp.photo : `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=f1f5f9&color=00d2ff&size=100`;
 
         card.innerHTML = `
-            <div style="width:40px; height:40px; border-radius:10px; background:rgba(0,255,136,0.1); color:var(--accent-glow); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.9rem;">${initials}</div>
-            <div style="flex:1;">
-                <h4 style="font-size:0.9rem; font-weight:700;">${emp.full_name}</h4>
-                <p style="font-size:0.7rem; color:var(--text-dim);">${emp.role || 'Xodim'}</p>
-            </div>
-            <i data-lucide="chevron-right" size="14" style="opacity:0.3;"></i>
+            <img src="${photo}" style="width:60px; height:60px; border-radius:20px; object-fit:cover; margin-bottom:15px;">
+            <h4 style="font-size:0.9rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${emp.full_name}</h4>
+            <p style="font-size:0.7rem; color:var(--text-dim);">${emp.role || 'Xodim'}</p>
         `;
 
         card.onclick = () => {
-            document.querySelectorAll('.staff-row').forEach(r => r.classList.remove('active'));
-            card.classList.add('active');
+            currentEmp = emp;
+            renderStaffList(data); // Re-render to show active border
             showEmployeeDetail(emp);
         };
         list.appendChild(card);
     });
-    if (window.lucide) lucide.createIcons();
 }
 
-// Desktop Pro Logic v2026
 async function showEmployeeDetail(emp) {
     currentEmp = emp;
 
-    // Smooth Transitions using GSAP
-    gsap.to('#profileDetail', {
-        opacity: 0, x: 20, duration: 0.2, onComplete: () => {
+    // Transition Detail View
+    gsap.to('.profile-pane, .analytics-pane', {
+        opacity: 0, duration: 0.2, onComplete: () => {
             document.getElementById('dt-name').textContent = emp.full_name;
             document.getElementById('dt-role').textContent = emp.role || '---';
-            document.getElementById('dt-phone').textContent = emp.phone || '+998 -- --- -- --';
-            document.getElementById('dt-dept').textContent = emp.department || '---';
+            document.getElementById('dt-photo').src = emp.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=00d2ff&color=fff&size=200`;
+
+            // Stats
             document.getElementById('dt-salary').textContent = (parseInt(emp.salary_info) || 0).toLocaleString();
+            document.getElementById('dt-kpi').textContent = (80 + Math.floor(Math.random() * 20)) + '%';
 
-            // Photo Handle
-            const photoEl = document.getElementById('dt-photo');
-            if (emp.photo) {
-                photoEl.src = emp.photo;
-            } else {
-                photoEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=05080c&color=00ff88&size=200`;
-            }
-
-            // Stats Mix
-            document.getElementById('dt-kpi').textContent = (85 + Math.floor(Math.random() * 10)) + '%';
-            document.getElementById('dt-attendance').textContent = '94%';
-
-            gsap.to('#profileDetail', { opacity: 1, x: 0, duration: 0.4, ease: 'power2.out' });
+            gsap.to('.profile-pane, .analytics-pane', { opacity: 1, duration: 0.4, ease: 'power2.out' });
+            renderCalendar();
         }
     });
 }
@@ -181,7 +146,7 @@ async function showEmployeeDetail(emp) {
 async function renderCalendar() {
     if (!currentEmp) return;
     const grid = document.getElementById('profCalendar');
-    grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; opacity:0.3;">Yuklanmoqda...</p>';
+    grid.innerHTML = '<p style="padding:20px; opacity:0.3;">Yuklanmoqda...</p>';
 
     const monthNames = ["Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun", "Iyul", "Avgust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr"];
     document.getElementById('profCalendarTitle').textContent = `${monthNames[calMonth]} ${calYear}`;
@@ -196,34 +161,45 @@ async function renderCalendar() {
     for (let i = 1; i <= daysInMonth; i++) {
         const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
         const record = monthAtt ? monthAtt.find(x => x.date === dateStr) : null;
+        const dayDate = new Date(calYear, calMonth, i);
+        const dayNamesShort = ["Ya", "Du", "Se", "Ch", "Pa", "Ju", "Sh"];
 
         const dayDiv = document.createElement('div');
-        dayDiv.className = 'cal-day';
-        if (record) dayDiv.classList.add('present');
-        dayDiv.textContent = i;
+        dayDiv.className = `cal-day-box ${record ? 'active' : ''}`;
+        if (new Date().toISOString().split('T')[0] === dateStr) dayDiv.style.border = '2px solid var(--accent-deep)';
+
+        dayDiv.innerHTML = `
+            <div class="cal-day-name">${dayNamesShort[dayDate.getDay()]}</div>
+            <div class="cal-day-num">${i}</div>
+        `;
         grid.appendChild(dayDiv);
     }
 }
 
 async function loadDailyAttendance(date) {
     const list = document.getElementById('attendanceList');
-    list.innerHTML = '<tr><td colspan="6" style="text-align:center;">Yuklanmoqda...</td></tr>';
+    list.innerHTML = '<p style="opacity:0.3;">Loglar yuklanmoqda...</p>';
 
-    const { data, error } = await supabase.from('attendance').select('*, employees(full_name)').eq('date', date);
+    const { data } = await supabase.from('attendance').select('*, employees(full_name)').eq('date', date);
     list.innerHTML = '';
-    if (data) {
+    if (data && data.length > 0) {
         data.forEach(a => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${a.employees ? a.employees.full_name : '---'}</td>
-                <td>${a.employee_id.substring(0, 6)}</td>
-                <td>${a.check_in}</td>
-                <td>${a.check_out || '--:--'}</td>
-                <td>---</td>
-                <td><span class="status-badge ${a.status === 'Vaqtida keldi' ? 'present' : 'late'}">${a.status}</span></td>
+            const card = document.createElement('div');
+            card.className = 'task-card';
+            card.innerHTML = `
+                <div class="check-circle" style="background:${a.status === 'Vaqtida keldi' ? 'var(--accent-primary)' : '#ffb800'}; border:none;">
+                    <i data-lucide="check" size="14" style="color:#fff"></i>
+                </div>
+                <div style="flex:1;">
+                    <p style="font-weight:600; font-size:0.9rem;">${a.employees ? a.employees.full_name : 'Xodim'}</p>
+                    <p style="font-size:0.7rem; opacity:0.6;">${a.status} • ${a.check_in}</p>
+                </div>
             `;
-            list.appendChild(tr);
+            list.appendChild(card);
         });
+        if (window.lucide) lucide.createIcons();
+    } else {
+        list.innerHTML = '<p style="opacity:0.5; font-size:0.8rem;">Bugun hali hech kim kelmadi.</p>';
     }
 }
 
@@ -235,21 +211,14 @@ async function saveWorker() {
     const role = document.getElementById('empRole').value.trim();
     const salary = document.getElementById('empSalary').value;
     const joinedYear = document.getElementById('empJoinedYear').value;
-    const photoPreview = document.getElementById('photoPreview');
 
     if (!fname || !role) {
-        alert("Ism va Lavozim majburiy!");
+        alert("Ma'lumotlarni to'liq kiriting!");
         return;
     }
 
     btn.textContent = 'Saqlanmoqda...';
     btn.disabled = true;
-
-    // Convert preview image to Base64 if exists
-    let photoData = null;
-    if (photoPreview.src && photoPreview.style.display === 'block') {
-        photoData = photoPreview.src;
-    }
 
     const { error } = await supabase.from('employees').insert([{
         full_name: `${fname} ${lname}`,
@@ -257,7 +226,6 @@ async function saveWorker() {
         department: dept,
         salary_info: salary,
         experience: joinedYear ? `${joinedYear}-yildan beri` : "Yangi",
-        photo: photoData,
         status: 'Ishlamoqda'
     }]);
 
@@ -268,7 +236,7 @@ async function saveWorker() {
     } else {
         alert("Xatolik: " + error.message);
     }
-    btn.textContent = 'SAQLASH VA QO\'SHISH';
+    btn.textContent = 'Tizimga Qo\'shish';
     btn.disabled = false;
 }
 
@@ -277,6 +245,5 @@ function clearModal() {
     document.getElementById('empLastName').value = '';
     document.getElementById('empRole').value = '';
     document.getElementById('empSalary').value = '';
-    document.getElementById('photoPreview').style.display = 'none';
-    document.getElementById('photoPreview').src = '';
+    document.getElementById('empJoinedYear').value = '';
 }
