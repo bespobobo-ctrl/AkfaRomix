@@ -783,17 +783,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 else if (s.includes('Vaqtida') || s.includes('Keldi')) { icon = '✅'; color = '#00ff88'; glow = 'rgba(0,255,136,0.2)'; }
 
                 return `
-                    <div class="premium-event-card" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:14px; border-radius:18px; margin-bottom:12px; position:relative; overflow:hidden;">
+                    <div class="premium-event-card" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:16px; border-radius:18px; margin-bottom:10px; position:relative; overflow:hidden;">
                         <div style="position:absolute; top:0; left:0; width:4px; height:100%; background:${color}; box-shadow:0 0 15px ${glow};"></div>
                         <div style="display:flex; justify-content:space-between; align-items:start;">
-                            <div style="display:flex; gap:10px; align-items:center;">
-                                <div style="width:32px; height:32px; border-radius:10px; background:${glow}; display:flex; align-items:center; justify-content:center; font-size:1rem;">${icon}</div>
-                                <div style="font-weight:600; color:#fff; font-size:0.85rem; line-height:1.3;">${s}</div>
-                            </div>
+                            <div style="font-weight:600; color:#fff; font-size:0.9rem; line-height:1.4;">${s}</div>
                         </div>
-                        <div style="display:flex; gap:8px; margin-top:12px; border-top:1px solid rgba(255,255,255,0.04); padding-top:10px;">
-                            <button onclick="window.editHrEvent('${r.id}', '${s}')" style="flex:1; background:rgba(255,255,255,0.03); color:rgba(255,255,255,0.4); border:1px solid rgba(255,255,255,0.06); padding:6px; border-radius:8px; cursor:pointer; font-size:0.7rem; transition:0.3s; font-weight:600;">Tahrirlash</button>
-                            <button onclick="window.deleteHrEvent('${r.id}')" style="flex:1; background:rgba(255,77,79,0.03); color:#ff4d4f; border:1px solid rgba(255,77,79,0.08); padding:6px; border-radius:8px; cursor:pointer; font-size:0.7rem; transition:0.3s; font-weight:600;">O'chirish</button>
+                        <div style="display:flex; gap:8px; margin-top:14px;">
+                            <button onclick="window.editHrEvent('${r.id}', '${s}')" style="flex:1; background:rgba(255,255,255,0.03); color:rgba(255,255,255,0.4); border:1px solid rgba(255,255,255,0.06); padding:8px; border-radius:10px; cursor:pointer; font-size:0.7rem; transition:0.3s; font-weight:700;">Tahrirlash</button>
+                            <button onclick="window.deleteHrEvent('${r.id}')" style="flex:1; background:rgba(255,77,79,0.03); color:#ff4d4f; border:1px solid rgba(255,77,79,0.08); padding:8px; border-radius:10px; cursor:pointer; font-size:0.7rem; transition:0.3s; font-weight:700;">O'chirish</button>
                         </div>
                     </div>
                 `;
