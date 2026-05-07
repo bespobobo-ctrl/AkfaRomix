@@ -1716,8 +1716,8 @@
                                 <button class="hr-action-btn" id="btn-delete-staff"
                                     style="padding:12px; font-size:0.75rem; background:rgba(255,77,79,0.1); color:#ff4d4f; border:1px solid rgba(255,77,79,0.2); border-radius:14px;">Xodimni
                                     O'chirish</button>
-                                <button class="hr-action-btn"
-                                    style="padding:12px; font-size:0.75rem; background:rgba(100,255,200,0.1); color:rgba(255,255,255,0.5); border:1px dashed rgba(100,255,200,0.3); border-radius:14px; opacity:0.5;">Hisobot</button>
+                                <button class="hr-action-btn" id="btn-hisobot-staff"
+                                    style="padding:12px; font-size:0.75rem; background:rgba(0,255,136,0.1); color:#00ff88; border:1px solid rgba(0,255,136,0.2); border-radius:14px;">Hisobot</button>
                             </div>
 
                             <!-- 📱 Mobile-only Close Trigger -->
@@ -1946,7 +1946,11 @@
         </div>
     </div>
     <!-- Scripts Moved Back to root path if needed, usually just admin.js -->
-    <script type="module" src="admin.js?v=4.6"></script>
+    <!-- Reporting Libraries -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <script type="module" src="admin.js?v=4.7"></script>
 </body>
 
 </html>

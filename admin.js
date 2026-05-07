@@ -1096,124 +1096,153 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // --- SYSTEM USERS MANAGEMENT ---
-    const sysUsersTable = document.getElementById('sysUsersTable');
-    const userModalOverlay = document.getElementById('userModalOverlay');
+    // --- 🏦 HR ACTION LOGIC (Premya, Oylik, Edit, Delete, Hisobot) ---
+    const btnBonus = document.getElementById('btn-bonus');
+    const btnRaise = document.getElementById('btn-raise');
+    const btnEdit = document.getElementById('btn-edit-staff');
+    const btnDelete = document.getElementById('btn-delete-staff');
+    const btnReport = document.getElementById('btn-hisobot-staff');
+    const hrModal = document.getElementById('hrActionModalOverlay');
 
-    async function loadSystemUsers() {
-        if (!sysUsersTable) return;
-        sysUsersTable.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">Yuklanmoqda...</td></tr>';
+    if (btnBonus) btnBonus.onclick = () => openHRAction('Premya');
+    if (btnRaise) btnRaise.onclick = () => openHRAction('Oylik');
+    if (btnEdit) btnEdit.onclick = () => openEditStaff();
+    if (btnDelete) btnDelete.onclick = () => deleteWorker();
+    if (btnReport) btnReport.onclick = () => openReportOptions();
 
-        // Use system_users table from Supabase
-        const { data, error } = await supabase.from('system_users').select('*').order('created_at', { ascending: false });
+    function openHRAction(type) {
+        if (!selectedWorkerId) { alert('Avval xodimni tanlang!'); return; }
+        const icon = document.getElementById('hrActionModalIcon');
+        const title = document.getElementById('hrActionModalTitle');
+        const input = document.getElementById('hrActionValue');
 
-        if (error) {
-            console.error("Users load error:", error);
-            sysUsersTable.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Xatolik: system_users jadvali topilmadi.</td></tr>';
+        if (icon) icon.textContent = type === 'Premya' ? '💰' : '📈';
+        if (title) title.textContent = type === 'Premya' ? 'Premya tayinlash' : 'Oylikni yangilash';
+        if (input) {
+            input.placeholder = type === 'Premya' ? 'Premya summasi (masalan: 500,000)' : 'Yangi oylik summasi';
+            input.value = '';
+        }
+
+        if (hrModal) {
+            hrModal.style.display = 'flex';
+            const saveBtn = document.getElementById('saveHrActionBtn');
+            saveBtn.onclick = () => saveHRAction(type);
+        }
+    }
+
+    async function saveHRAction(type) {
+        const val = document.getElementById('hrActionValue').value.trim();
+        if (!val) return;
+
+        const saveBtn = document.getElementById('saveHrActionBtn');
+        saveBtn.textContent = 'Saqlanmoqda...';
+
+        try {
+            if (type === 'Premya') {
+                // Record bonus as a special attendance entry for current day
+                const todayStr = new Date().toISOString().split('T')[0];
+                await supabase.from('attendance').insert([{
+                    employee_id: selectedWorkerId,
+                    date: todayStr,
+                    status: `Premya: ${val} UZS`
+                }]);
+                alert('Premya muvaffaqiyatli saqlandi!');
+            } else if (type === 'Oylik') {
+                // Update worker's base salary
+                await supabase.from('employees').update({ salary_info: val + " UZS" }).eq('id', selectedWorkerId);
+                alert('Oylik muvaffaqiyatli yangilandi!');
+            }
+            if (hrModal) hrModal.style.display = 'none';
+            fetchStaff(); // Refresh list/state
+        } catch (err) {
+            console.error(err);
+            alert('Xatolik yuz berdi saqlashda.');
+        } finally {
+            saveBtn.textContent = 'Saqlash';
+        }
+    }
+
+    // --- 📊 REPORTING ENGINE (Excel/PDF) ---
+    function openReportOptions() {
+        if (!selectedWorkerId) { alert('Avval xodimni tanlang!'); return; }
+        const typeSelected = prompt("Hisobot turini tanlang:\n1. Kunlik\n2. Haftalik\n3. Oylik\n4. Yillik", "3");
+        if (!typeSelected) return;
+
+        let days = 1;
+        if (typeSelected === '2') days = 7;
+        if (typeSelected === '3') days = 30;
+        if (typeSelected === '4') days = 365;
+
+        generateEmployeeReport(days);
+    }
+
+    async function generateEmployeeReport(daysLimit) {
+        const worker = allEmployees.find(e => e.id === selectedWorkerId);
+        if (!worker) return;
+
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - daysLimit);
+        const startStr = startDate.toISOString().split('T')[0];
+
+        // Fetch all relevant data
+        const { data: attendance } = await supabase.from('attendance')
+            .select('*')
+            .eq('employee_id', selectedWorkerId)
+            .gte('date', startStr)
+            .order('date', { ascending: true });
+
+        if (!attendance || attendance.length === 0) {
+            alert("Ushbu davr uchun ma'lumot topilmadi.");
             return;
         }
 
-        sysUsersTable.innerHTML = '';
-        data.forEach(user => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name)}&background=random" style="width:30px; height:30px; border-radius:50%;">
-                        <strong>${user.full_name}</strong>
-                    </div>
-                </td>
-                <td><span class="status-badge" style="background:rgba(0,124,82,0.1); color:#007c52; padding:4px 10px; border-radius:30px;">${user.role === 'admin' ? 'RAHBAR' : user.role.toUpperCase()}</span></td>
-                <td><code style="background:rgba(0,0,0,0.05); padding:2px 5px; border-radius:4px;">${user.username}</code> / ***</td>
-                <td>Online</td>
-                <td>
-                    <button class="text-btn edit-user" data-id="${user.id}" style="margin-right:15px; border:none; background:none; cursor:pointer;">✏️</button>
-                    <button class="text-btn delete-user" data-id="${user.id}" style="color:#ff4d4f; border:none; background:none; cursor:pointer;">🗑️</button>
-                </td>
-            `;
-            sysUsersTable.appendChild(tr);
+        // --- 📄 PDF Generation (jsPDF) ---
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        doc.setFontSize(18);
+        doc.text("AKFA ROMIX - XODIM HISOBOTI", 105, 20, { align: "center" });
+
+        doc.setFontSize(12);
+        doc.text(`Xodim: ${worker.full_name}`, 20, 40);
+        doc.text(`Lavozimi: ${worker.role || '---'}`, 20, 50);
+        doc.text(`Davr: ${startStr} dan bugungacha`, 20, 60);
+        doc.text(`Joriy stavka: ${worker.salary_info || '---'}`, 20, 70);
+
+        const tableData = attendance.map(a => [a.date, a.status]);
+        doc.autoTable({
+            startY: 80,
+            head: [['Sana', 'Holat / Amalllar']],
+            body: tableData,
+            theme: 'grid',
+            headStyles: { fillColor: [0, 122, 255] }
         });
 
-        // Add Listeners
-        document.querySelectorAll('.edit-user').forEach(btn => {
-            btn.onclick = () => {
-                const id = btn.getAttribute('data-id');
-                const u = data.find(x => x.id === id);
-                if (u) {
-                    editingUserId = u.id;
-                    document.getElementById('modalUserTitle').textContent = "Foydalanuvchini Tahrirlash";
-                    document.getElementById('sysFullname').value = u.full_name;
-                    document.getElementById('sysUsername').value = u.username;
-                    document.getElementById('sysPassword').value = u.password;
-                    document.getElementById('sysRole').value = u.role;
-                    userModalOverlay.style.display = 'flex';
-                }
-            };
-        });
+        doc.save(`Hisobot_${worker.full_name.replace(/ /g, '_')}.pdf`);
 
-        document.querySelectorAll('.delete-user').forEach(btn => {
-            btn.onclick = async () => {
-                const id = btn.getAttribute('data-id');
-                if (confirm('Ushbu foydalanuvchini o\'chirmoqchimisiz?')) {
-                    const { error } = await supabase.from('system_users').delete().eq('id', id);
-                    if (!error) loadSystemUsers();
-                }
-            };
-        });
+        // --- 📗 Excel Generation (SheetJS) ---
+        const ws = XLSX.utils.json_to_sheet(attendance.map(a => ({
+            "Sana": a.date,
+            "Xodim": worker.full_name,
+            "Holat": a.status
+        })));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Hisobot");
+        XLSX.writeFile(wb, `Hisobot_${worker.full_name.replace(/ /g, '_')}.xlsx`);
+
+        alert("Hisobotlar (PDF va Excel) muvaffaqiyatli tayyorlandi va yuklab olindi!");
     }
 
-    const openAddUserModal = document.getElementById('openAddUserModal');
-    if (openAddUserModal) {
-        openAddUserModal.onclick = () => {
-            editingUserId = null;
-            document.getElementById('modalUserTitle').textContent = "Yangi Foydalanuvchi";
-            document.getElementById('sysFullname').value = '';
-            document.getElementById('sysUsername').value = '';
-            document.getElementById('sysPassword').value = '';
-            userModalOverlay.style.display = 'flex';
-        };
+    async function deleteWorker() {
+        if (!selectedWorkerId) return;
+        if (confirm('Rostdan ham ushbu xodimni o\'chirmoqchimisiz? Barcha davomatlari ham oiriladi.')) {
+            await supabase.from('employees').delete().eq('id', selectedWorkerId);
+            selectedWorkerId = null;
+            fetchStaff();
+        }
     }
 
-    const closeUserModal = document.getElementById('closeUserModal');
-    if (closeUserModal) {
-        closeUserModal.onclick = () => {
-            userModalOverlay.style.display = 'none';
-        };
-    }
-
-    const saveUserBtn = document.getElementById('saveUserBtn');
-    if (saveUserBtn) {
-        saveUserBtn.onclick = async () => {
-            const full_name = document.getElementById('sysFullname').value.trim();
-            const username = document.getElementById('sysUsername').value.trim();
-            const password = document.getElementById('sysPassword').value.trim();
-            const role = document.getElementById('sysRole').value;
-
-            if (!username || !password || !full_name) {
-                alert('Barcha maydonlarni to\'ldiring!');
-                return;
-            }
-
-            saveUserBtn.textContent = 'Saqlanmoqda...';
-            const userData = { full_name, username, password, role };
-
-            let result;
-            if (editingUserId) {
-                result = await supabase.from('system_users').update(userData).eq('id', editingUserId);
-            } else {
-                result = await supabase.from('system_users').insert([userData]);
-            }
-
-            saveUserBtn.textContent = 'Saqlash';
-
-            if (!result.error) {
-                userModalOverlay.style.display = 'none';
-                loadSystemUsers();
-            } else {
-                alert("Xatolik: " + result.error.message);
-            }
-        };
-    }
+    window.closeHrModal = () => { if (hrModal) hrModal.style.display = 'none'; };
 
     // Pulse animation for the chart bars
     const chartBars = document.querySelectorAll('.v2-bar');
