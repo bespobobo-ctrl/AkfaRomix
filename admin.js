@@ -582,15 +582,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function renderStaffList(staff) {
         const container = document.getElementById('staff-list-container');
+        const mobileContainer = document.getElementById('mobileStaffList');
         if (!container) return;
 
         if (!staff.length) {
             container.innerHTML = '<tr><td colspan="7" style="text-align:center; opacity:0.3; padding:40px;">Xodimlar topilmadi</td></tr>';
+            if (mobileContainer) mobileContainer.innerHTML = '<div style="text-align:center; opacity:0.3; padding:40px; color:var(--adm-text-sec);">Xodimlar topilmadi</div>';
             return;
         }
 
         container.innerHTML = '';
+        if (mobileContainer) mobileContainer.innerHTML = '';
+
         staff.forEach(emp => {
+            // --- Desktop Rendering ---
             const tr = document.createElement('tr');
             tr.className = `table-row-staff ${emp.id === selectedWorkerId ? 'active' : ''}`;
             tr.style.cursor = 'pointer';
@@ -633,13 +638,42 @@ document.addEventListener('DOMContentLoaded', async () => {
                 tr.classList.add('active');
                 selectedWorkerId = emp.id;
                 updateStaffProfileCard(emp);
-
-                // Switch to analytics view smooth
                 const detailPanel = document.querySelector('.hr-detail-panel');
-                if (detailPanel) detailPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (detailPanel && window.innerWidth > 1024) detailPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
             };
 
             container.appendChild(tr);
+
+            // --- Mobile Rendering (Elite Cards) ---
+            if (mobileContainer) {
+                const card = document.createElement('div');
+                card.className = 'staff-card-v2';
+                card.innerHTML = `
+                    <div class="sc-header">
+                        <div class="sc-avatar">${initials}</div>
+                        <div class="sc-info">
+                            <div class="sc-name">${emp.full_name}</div>
+                            <div class="sc-role">${emp.role || 'Bolimsiz'}</div>
+                        </div>
+                        <div class="sc-status present"></div>
+                    </div>
+                    <div class="sc-body">
+                        <div class="sc-stat">
+                            <span>Telefon</span>
+                            <b>${emp.phone || '+998 ---'}</b>
+                        </div>
+                        <div class="sc-stat">
+                            <span>Bo'lim</span>
+                            <b>${emp.department || '---'}</b>
+                        </div>
+                    </div>
+                    <div class="sc-actions">
+                        <a href="tel:${emp.phone}" class="sc-btn call" style="text-decoration:none;">📞 Qo'ng'iroq</a>
+                        <button class="sc-btn edit" onclick="updateStaffProfileCard(${JSON.stringify(emp).replace(/"/g, '&quot;')})">⚙️ Profil</button>
+                    </div>
+                `;
+                mobileContainer.appendChild(card);
+            }
         });
     }
 

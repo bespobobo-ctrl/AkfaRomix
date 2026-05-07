@@ -323,6 +323,189 @@
             border: 1px solid var(--adm-accent);
         }
 
+        /* 📱 MOBILE STAFF CARD SYSTEM (Elite UI/UX) */
+        @media (max-width: 1024px) {
+
+            .desktop-staff-view,
+            .hr-left-sidebar {
+                display: none !important;
+            }
+
+            .mobile-staff-list,
+            .mobile-staff-header {
+                display: block !important;
+            }
+
+            .mobile-staff-header {
+                margin: 15px 0;
+            }
+
+            .search-bar-v2 input {
+                width: 100%;
+                padding: 14px 20px;
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid var(--adm-border);
+                border-radius: 16px;
+                color: var(--adm-text);
+                font-size: 0.95rem;
+                outline: none;
+                transition: 0.3s;
+            }
+
+            .search-bar-v2 input:focus {
+                border-color: var(--adm-accent);
+                background: rgba(0, 255, 136, 0.05);
+            }
+
+            .filter-chips {
+                display: flex;
+                gap: 10px;
+                overflow-x: auto;
+                padding: 15px 0 5px 0;
+                scrollbar-width: none;
+            }
+
+            .filter-chips::-webkit-scrollbar {
+                display: none;
+            }
+
+            .chip {
+                padding: 8px 18px;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 12px;
+                font-size: 0.8rem;
+                font-weight: 600;
+                color: var(--adm-text-sec);
+                white-space: nowrap;
+                transition: 0.3s;
+            }
+
+            .chip.active {
+                background: var(--adm-accent);
+                color: #fff;
+                box-shadow: 0 5px 15px rgba(0, 255, 136, 0.2);
+            }
+
+            .mobile-staff-list {
+                display: flex !important;
+                flex-direction: column;
+                gap: 15px;
+                padding-bottom: 50px;
+            }
+
+            .staff-card-v2 {
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                border-radius: 20px;
+                padding: 15px;
+                transition: 0.3s;
+            }
+
+            body.dark-mode .staff-card-v2 {
+                background: rgba(255, 255, 255, 0.02);
+            }
+
+            .sc-header {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 12px;
+            }
+
+            .sc-avatar {
+                width: 44px;
+                height: 44px;
+                background: linear-gradient(135deg, var(--adm-accent), #00d2ff);
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #fff;
+                font-weight: 800;
+                font-size: 0.9rem;
+            }
+
+            .sc-info {
+                flex: 1;
+            }
+
+            .sc-name {
+                font-weight: 700;
+                font-size: 1rem;
+                color: var(--adm-text);
+            }
+
+            .sc-role {
+                font-size: 0.75rem;
+                color: var(--adm-text-sec);
+            }
+
+            .sc-status {
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+            }
+
+            .sc-status.present {
+                background: #00ff88;
+                box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+            }
+
+            .sc-status.absent {
+                background: #ff4d4f;
+            }
+
+            .sc-body {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                padding: 10px 0;
+                border-top: 1px solid rgba(255, 255, 255, 0.03);
+            }
+
+            .sc-stat {
+                display: flex;
+                justify-content: space-between;
+                font-size: 0.85rem;
+            }
+
+            .sc-stat span {
+                color: var(--adm-text-sec);
+            }
+
+            .sc-stat b {
+                color: var(--adm-text);
+            }
+
+            .sc-actions {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+                margin-top: 12px;
+            }
+
+            .sc-btn {
+                padding: 10px;
+                border-radius: 12px;
+                border: none;
+                font-size: 0.8rem;
+                font-weight: 700;
+                cursor: pointer;
+                transition: 0.3s;
+                text-align: center;
+            }
+
+            .sc-btn.call {
+                background: rgba(0, 255, 136, 0.1);
+                color: #00ff88;
+            }
+
+            .sc-btn.edit {
+                background: rgba(255, 255, 255, 0.05);
+                color: var(--adm-text);
+            }
+        }
+
         /* 💎 PREMIUM HEADER STYLING (Professional UI/UX) */
         .premium-header {
             background: rgba(255, 255, 255, 0.7);
@@ -1117,6 +1300,19 @@
                     </div>
                 </div>
 
+                <!-- 🔍 STAFF INTERFACE (Professional UI/UX) -->
+                <div class="mobile-staff-header" style="display:none;">
+                    <div class="search-bar-v2">
+                        <input type="text" id="staffMobileSearch" placeholder="Xodimlarni qidirish...">
+                    </div>
+                    <div class="filter-chips">
+                        <div class="chip active">Hammasi</div>
+                        <div class="chip">HR</div>
+                        <div class="chip">Ombor</div>
+                        <div class="chip">Sotuv</div>
+                    </div>
+                </div>
+
                 <div class="hr-main-grid"
                     style="display:grid; grid-template-columns: 380px 1fr; gap:30px; margin-bottom:30px; align-items:start;">
 
@@ -1340,28 +1536,52 @@
                     </div>
                 </div>
 
-                <!-- BOTTOM: Employee Table -->
+                <!-- 🔍 STAFF INTERFACE (Dual-Engine: Desktop Table / Mobile Cards) -->
+
+                <!-- 📱 MOBILE-ONLY SEARCH & FILTER (Hidden on Desktop) -->
+                <div class="mobile-staff-header" style="display:none;">
+                    <div class="search-bar-v2">
+                        <input type="text" id="staffMobileSearch" placeholder="Xodimlarni qidirish...">
+                    </div>
+                    <div class="filter-chips">
+                        <div class="chip active">Hammasi</div>
+                        <div class="chip">HR</div>
+                        <div class="chip">Ombor</div>
+                        <div class="chip">Sotuv</div>
+                    </div>
+                </div>
+
                 <div class="hr-bottom-section">
                     <h2 style="font-size:1.2rem; margin-bottom:15px; font-weight:700; opacity:0.9;">Hodimlar Ro'yxati
                     </h2>
-                    <div class="bento-card" style="padding:0; overflow:hidden; border-radius:24px;">
-                        <table class="v2-table" style="width:100%; text-align:left; table-layout:fixed;">
-                            <thead>
-                                <tr style="background:var(--adm-bg);">
-                                    <th style="padding:18px 24px; width:30%; color:var(--adm-text);">Xodim</th>
-                                    <th style="width:15%; color:var(--adm-text);">Lavozimi</th>
-                                    <th style="width:15%; color:var(--adm-text);">Oylik</th>
-                                    <th style="width:15%; color:var(--adm-text);">Bo'lim</th>
-                                    <th style="width:10%; color:var(--adm-text);">Staj</th>
-                                    <th style="width:10%; color:var(--adm-text);">Holat</th>
-                                    <th style="text-align:right; padding-right:24px; width:5%; color:var(--adm-text);">
-                                        Amallar</th>
-                                </tr>
-                            </thead>
-                            <tbody id="staff-list-container">
-                                <!-- Replaces old sidebar list -->
-                            </tbody>
-                        </table>
+
+                    <!-- 💻 DESKTOP TABLE VIEW -->
+                    <div class="desktop-staff-view">
+                        <div class="bento-card" style="padding:0; overflow:hidden; border-radius:24px;">
+                            <table class="v2-table" style="width:100%; text-align:left; table-layout:fixed;">
+                                <thead>
+                                    <tr style="background:var(--adm-bg);">
+                                        <th style="padding:18px 24px; width:30%; color:var(--adm-text);">Xodim</th>
+                                        <th style="width:15%; color:var(--adm-text);">Lavozimi</th>
+                                        <th style="width:15%; color:var(--adm-text);">Oylik</th>
+                                        <th style="width:15%; color:var(--adm-text);">Bo'lim</th>
+                                        <th style="width:10%; color:var(--adm-text);">Staj</th>
+                                        <th style="width:10%; color:var(--adm-text);">Holat</th>
+                                        <th
+                                            style="text-align:right; padding-right:24px; width:5%; color:var(--adm-text);">
+                                            Amallar</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="staff-list-container">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 📱 MOBILE CARD VIEW -->
+                    <div class="mobile-staff-list" id="mobileStaffList" style="display:none;">
+                        <!-- JS code will populate this with staff-card-v2 items -->
                     </div>
                 </div>
             </section>
