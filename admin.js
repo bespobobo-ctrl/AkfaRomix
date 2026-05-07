@@ -217,18 +217,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // Setup robust history logging backed by localStorage
+    window.AKFA_HISTORY = JSON.parse(localStorage.getItem('AKFA_HISTORY') || '[]');
+
+    window.renderHistoryUI = () => {
+        const tbody = document.getElementById('audit-trail-table');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        window.AKFA_HISTORY.forEach(log => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${log.timeStr}</td><td><span style="background:rgba(0,124,82,0.1); color:#007c52; padding:4px 10px; border-radius:30px; font-size:0.75rem;">RAHBAR</span></td><td>${log.actionText}</td><td><span style="color:#00ff88; font-size:0.8rem; font-weight:700;">✓ Bajarildi</span></td>`;
+            tbody.appendChild(tr);
+        });
+    };
+
     window.logToHistory = async (actionText) => {
         const now = new Date();
         const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} ${now.getDate().toString().padStart(2, '0')}.${(now.getMonth() + 1).toString().padStart(2, '0')}`;
-        const tbody = document.getElementById('audit-trail-table');
-        if (tbody) {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${timeStr}</td><td><span style="background:rgba(0,124,82,0.1); color:#007c52; padding:4px 10px; border-radius:30px; font-size:0.75rem;">RAHBAR</span></td><td>${actionText}</td><td><span style="color:#00ff88; font-size:0.8rem; font-weight:700;">✓ Bajarildi</span></td>`;
-            if (tbody.firstChild) tbody.insertBefore(tr, tbody.firstChild);
-            else tbody.appendChild(tr);
-        }
+
+        window.AKFA_HISTORY.unshift({ timeStr, actionText });
+        if (window.AKFA_HISTORY.length > 50) window.AKFA_HISTORY.length = 50;
+        localStorage.setItem('AKFA_HISTORY', JSON.stringify(window.AKFA_HISTORY));
+        window.renderHistoryUI();
+
         try { await supabase.from('audit_logs').insert({ action: actionText, user: 'Rahbar', created_at: new Date() }); } catch (err) { }
     };
+
+    // Call immediately on load to populate existing history
+    window.renderHistoryUI();
 
     window.processLeave = async (id, approve) => {
         const newStatus = approve ? 'Ruxsat berildi' : 'Rad etildi';
@@ -285,7 +301,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (val) {
                         currentSaveBtn.innerHTML = "Saqlanmoqda...";
                         const today = new Date().toISOString().split('T')[0];
-                        await supabase.from('attendance').insert({ employee_id: selectedWorkerId, date: today, status: `Premya: ${val} so'm` });
+                        const { error } = await supabase.from('attendance').insert({ employee_id: selectedWorkerId, date: today, status: 'Premya', notes: `Miqdor: ${val} so'm` });
+                        if (error) console.error("Insert error:", error);
                         window.logToHistory(`Xodimga premya belgilandi: ${val} so'm`);
                         alert(`${val} so'm premya muvaffaqiyatli belgilandi.`);
                         modal.style.display = 'none';
@@ -311,7 +328,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                         currentSaveBtn.innerHTML = "Saqlanmoqda...";
                         const today = new Date().toISOString().split('T')[0];
                         await supabase.from('employees').update({ salary_info: val }).eq('id', selectedWorkerId);
-                        await supabase.from('attendance').insert({ employee_id: selectedWorkerId, date: today, status: `Oylik oshirildi: ${val}` });
+                        const { error } = await supabase.from('attendance').insert({ employee_id: selectedWorkerId, date: today, status: 'Oylik oshirildi', notes: `Yangi maosh: ${val}` });
+                        if (error) console.error("Insert error:", error);
                         window.logToHistory(`Xodimning oyligi o'zgartirildi: ${val}`);
                         alert("Oylik muvaffaqiyatli yangilandi.");
                         modal.style.display = 'none';
