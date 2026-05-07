@@ -217,11 +217,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    window.logToHistory = async (actionText) => {
+        const now = new Date();
+        const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} ${now.getDate().toString().padStart(2, '0')}.${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+        const tbody = document.getElementById('audit-trail-table');
+        if (tbody) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${timeStr}</td><td><span style="background:rgba(0,124,82,0.1); color:#007c52; padding:4px 10px; border-radius:30px; font-size:0.75rem;">RAHBAR</span></td><td>${actionText}</td><td><span style="color:#00ff88; font-size:0.8rem; font-weight:700;">✓ Bajarildi</span></td>`;
+            if (tbody.firstChild) tbody.insertBefore(tr, tbody.firstChild);
+            else tbody.appendChild(tr);
+        }
+        try { await supabase.from('audit_logs').insert({ action: actionText, user: 'Rahbar', created_at: new Date() }); } catch (err) { }
+    };
+
     window.processLeave = async (id, approve) => {
         const newStatus = approve ? 'Ruxsat berildi' : 'Rad etildi';
         const { error } = await supabase.from('attendance').update({ status: newStatus }).eq('id', id);
         if (!error) {
             alert(`So'rov ${newStatus.toLowerCase()} (ID: ${id})`);
+            window.logToHistory(`Dam olish so'rovi ${newStatus.toLowerCase()}`);
             checkPendingRequests();
             loadRomixHRData();
         }
@@ -266,11 +280,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <input type="number" id="hrActionAmount" class="form-input-v2" placeholder="Masalan: 500000" style="font-size:1.1rem; padding:15px; border-radius:14px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:#fff; width:100%; box-sizing:border-box;">
                 `;
 
-                currentSaveBtn.onclick = () => {
+                currentSaveBtn.onclick = async () => {
                     const val = document.getElementById('hrActionAmount').value;
                     if (val) {
+                        currentSaveBtn.innerHTML = "Saqlanmoqda...";
+                        const today = new Date().toISOString().split('T')[0];
+                        await supabase.from('attendance').insert({ employee_id: selectedWorkerId, date: today, status: `Premya: ${val} so'm` });
+                        window.logToHistory(`Xodimga premya belgilandi: ${val} so'm`);
                         alert(`${val} so'm premya muvaffaqiyatli belgilandi.`);
                         modal.style.display = 'none';
+                        loadRomixHRData();
                     }
                 };
             } else if (actionType === 'raise') {
@@ -290,7 +309,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const val = document.getElementById('hrActionSalary').value;
                     if (val) {
                         currentSaveBtn.innerHTML = "Saqlanmoqda...";
+                        const today = new Date().toISOString().split('T')[0];
                         await supabase.from('employees').update({ salary_info: val }).eq('id', selectedWorkerId);
+                        await supabase.from('attendance').insert({ employee_id: selectedWorkerId, date: today, status: `Oylik oshirildi: ${val}` });
+                        window.logToHistory(`Xodimning oyligi o'zgartirildi: ${val}`);
                         alert("Oylik muvaffaqiyatli yangilandi.");
                         modal.style.display = 'none';
                         loadRomixHRData();
@@ -329,9 +351,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                             status: 'Tasdiqlash kutilmoqda',
                             notes: `Muddat: ${start} dan ${end} gacha`
                         });
+                        window.logToHistory(`Dam olishga ruxsat so'rovi yuborildi: ${start} dan ${end} gacha`);
                         alert("Ruxsat berish so'rovi yuborildi. Rahbar tasdiqlashi kutilmoqda.");
                         modal.style.display = 'none';
                         checkPendingRequests();
+                        loadRomixHRData();
                     }
                 };
             }
@@ -510,6 +534,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (att) {
                 if (att.status === 'Vaqtida keldi') div.classList.add('has-present');
                 else if (att.status === 'Kech qoldi') div.classList.add('has-late');
+                else if (att.status.includes('Premya') || att.status.includes('Oylik') || att.status.includes('Ruxsat')) {
+                    div.style.borderBottom = '3px solid #ffb800';
+                    div.style.background = 'rgba(255,184,0,0.1)';
+                }
+                else div.classList.add('has-att'); // fallback
             }
 
             if (year === today.getFullYear() && month === today.getMonth() && d === today.getDate()) {
