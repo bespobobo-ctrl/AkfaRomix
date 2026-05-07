@@ -167,6 +167,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         const prevBtn = document.getElementById('cal-prev');
         const nextBtn = document.getElementById('cal-next');
         const todayBtn = document.getElementById('cal-today');
+        const toggleCalBtn = document.getElementById('toggleCalendarBtn');
+        const calContainer = document.getElementById('collapsible-cal-container');
+
+        if (toggleCalBtn && calContainer) {
+            toggleCalBtn.onclick = () => {
+                const isHidden = calContainer.style.display === 'none';
+                calContainer.style.display = isHidden ? 'block' : 'none';
+                toggleCalBtn.textContent = isHidden ? '✖ Yopish' : '📅 Taqvimni ochish';
+            };
+        }
+
+        // Update Today's Big Display
+        const now = new Date();
+        const days = ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'];
+        const months = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr'];
+        const bigDate = document.getElementById('today-big-display');
+        const bigDay = document.getElementById('today-day-name');
+        if (bigDate) bigDate.textContent = `${now.getDate()} ${months[now.getMonth()]}`;
+        if (bigDay) bigDay.textContent = `${days[now.getDay()]}, ${now.getFullYear()}`;
 
         if (prevBtn && !prevBtn.dataset.navInit) {
             prevBtn.dataset.navInit = "true";
@@ -739,6 +758,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (headHours) headHours.textContent = workedHours > 0 ? (workedHours + ":00") : "00:00";
         if (headIn) headIn.textContent = isPresent ? "08:00" : "--:--";
         if (headOut) headOut.textContent = isPresent ? "18:00" : "--:--";
+
+        // Update Big Display on the left
+        const bigDate = document.getElementById('today-big-display');
+        const bigDay = document.getElementById('today-day-name');
+        const dateObj = new Date(year, month, d);
+        const dayNames = ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'];
+        const monthNamesFull = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr'];
+        if (bigDate) bigDate.textContent = `${d} ${monthNamesFull[month]}`;
+        if (bigDay) bigDay.textContent = `${dayNames[dateObj.getDay()]}, ${year}`;
 
         const displayStatusHTML = dayRecords.length === 0 ?
             `<div style="text-align:center; padding:30px; color:rgba(255,255,255,0.15); font-size:0.8rem; font-weight:500; border:1px dashed rgba(255,255,255,0.05); border-radius:15px; margin-top:10px;">📉 Baza ma'lumoti topilmadi</div>` :

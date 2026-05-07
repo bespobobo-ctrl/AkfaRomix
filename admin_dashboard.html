@@ -481,32 +481,29 @@
 
                     /* ═══ Glassmorphism & Cards ═══ */
                     .hr-card {
-                        background: rgba(255, 255, 255, 0.03);
-                        border: 1px solid rgba(255, 255, 255, 0.08);
-                        border-radius: 24px;
+                        background: rgba(255, 255, 255, 0.02);
+                        border: 1px solid rgba(255, 255, 255, 0.05);
+                        border-radius: 28px;
                         padding: 24px;
-                        backdrop-filter: blur(12px);
-                        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                        backdrop-filter: blur(20px);
+                        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+                        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
                     }
 
                     .hr-card:hover {
-                        border-color: rgba(0, 210, 255, 0.2);
-                        background: rgba(255, 255, 255, 0.05);
+                        border-color: rgba(0, 210, 255, 0.15);
+                        background: rgba(255, 255, 255, 0.035);
+                        transform: translateY(-2px);
                     }
 
-                    /* ═══ Staff List Elite ═══ */
-                    .staff-row-v2 {
-                        display: flex;
-                        align-items: center;
-                        gap: 15px;
-                        padding: 14px 18px;
-                        background: rgba(255, 255, 255, 0.02);
-                        border: 1px solid rgba(255, 255, 255, 0.04);
-                        border-radius: 18px;
-                        cursor: pointer;
-                        transition: 0.2s;
-                        margin-bottom: 8px;
+                    /* ═══ Staff Row Table Elite ═══ */
+                    .v2-table tr {
+                        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+                        transition: 0.3s;
+                    }
+
+                    .table-row-staff:hover {
+                        background: rgba(255, 255, 255, 0.02) !important;
                     }
 
                     .staff-row-v2:hover {
@@ -728,31 +725,53 @@
                 <div class="hr-main-grid"
                     style="display:grid; grid-template-columns: 380px 1fr; gap:30px; margin-bottom:30px;">
 
-                    <!-- LEFT COLUMN: Calendar & Daily Details -->
+                    <!-- LEFT COLUMN: Executive Control Wing -->
                     <div class="hr-left-sidebar" style="display:flex; flex-direction:column; gap:20px;">
-                        <div class="modern-calendar" style="margin-top:0 !important; padding:20px;">
+
+                        <!-- Premium Date Focus Card -->
+                        <div class="hr-card"
+                            style="padding:20px; background:linear-gradient(135deg, rgba(0,210,255,0.08), rgba(255,255,255,0.02)); border:1px solid rgba(0,210,255,0.15);">
+                            <div
+                                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                                <div
+                                    style="font-size:0.7rem; color:rgba(255,255,255,0.4); font-weight:700; letter-spacing:1px; text-transform:uppercase;">
+                                    Bugungi Sana</div>
+                                <button id="toggleCalendarBtn" class="cal-nav-btn"
+                                    style="width: auto; padding: 4px 10px; font-size: 0.65rem; background:rgba(255,255,255,0.05); border-radius:8px;">📅
+                                    Taqvimni ochish</button>
+                            </div>
+                            <div id="today-big-display"
+                                style="font-size:1.8rem; font-weight:800; color:#fff; letter-spacing:-1px;">7 May</div>
+                            <div id="today-day-name"
+                                style="font-size:0.9rem; color:rgba(255,255,255,0.5); font-weight:500; margin-top:2px;">
+                                Payshanba, 2026</div>
+                        </div>
+
+                        <!-- Collapsible Calendar Grid -->
+                        <div id="collapsible-cal-container" class="modern-calendar"
+                            style="display:none; margin-top:0 !important; padding:18px; animation: slideDown 0.3s ease;">
                             <div class="cal-header">
-                                <h2 id="current-month-name" style="font-size:0.95rem;">Ma'lumot kutilmoqda</h2>
-                                <div style="display:flex; gap:8px; align-items:center;">
+                                <h2 id="current-month-name" style="font-size:0.9rem;">---</h2>
+                                <div style="display:flex; gap:6px;">
                                     <button class="cal-nav-btn" id="cal-today"
-                                        style="width: auto; padding: 0 10px; font-size: 0.65rem; font-weight: 700; background: rgba(0,210,255,0.1); color: #00d2ff; border: 1px solid rgba(0,210,255,0.2);">BUGUN</button>
+                                        style="width: auto; padding: 0 8px; font-size:0.6rem;">BUGUN</button>
                                     <div class="cal-nav-group">
                                         <button class="cal-nav-btn" id="cal-prev"
-                                            style="width:28px; height:28px;">‹</button>
+                                            style="width:26px; height:26px;">‹</button>
                                         <button class="cal-nav-btn" id="cal-next"
-                                            style="width:28px; height:28px;">›</button>
+                                            style="width:26px; height:26px;">›</button>
                                     </div>
                                 </div>
                             </div>
-                            <div class="cal-grid" id="calendar-grid-v2" style="gap:2px;">
-                                <!-- Calendar Grid Rendered here -->
+                            <div class="cal-grid" id="calendar-grid-v2" style="gap:1px;">
+                                <!-- Grid -->
                             </div>
                         </div>
 
-                        <div id="daily-att-details"
-                            style="min-height:430px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:24px; padding:20px;">
+                        <div id="daily-att-details" class="hr-card"
+                            style="min-height:350px; background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.05); border-radius:24px; padding:20px; overflow-y:auto; scrollbar-width: none;">
                             <p
-                                style="text-align:center; color:rgba(255,255,255,0.2); font-size:0.85rem; margin-top:100px;">
+                                style="text-align:center; color:rgba(255,255,255,0.15); font-size:0.8rem; margin-top:100px;">
                                 📅 Kunni tanlang</p>
                         </div>
                     </div>
