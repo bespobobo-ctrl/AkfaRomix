@@ -625,27 +625,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                 displayStatusHTML = dayRecords.map(r => {
                     let icon = '📆';
                     let color = '#fff';
-                    let bg = 'rgba(255,255,255,0.05)';
+                    let glow = 'rgba(255,255,255,0.1)';
                     let s = r.status;
 
-                    if (s.includes('Premya')) { icon = '💰'; color = '#FFD700'; bg = 'rgba(255,215,0,0.1)'; }
-                    else if (s.includes('Oylik')) { icon = '📈'; color = '#00d2ff'; bg = 'rgba(0,210,255,0.1)'; }
-                    else if (s.includes('Ruxsat') || s.includes('Tasdiqlash kutilmoqda') || s.includes('Dam')) { icon = '🏝️'; color = '#BA68C8'; bg = 'rgba(186,104,200,0.1)'; }
-                    else if (s === 'Vaqtida keldi' || s.includes('Keldi')) { icon = '🟢'; color = '#00d2ff'; bg = 'rgba(0,210,255,0.1)'; }
-                    else if (s === 'Kech qoldi' || s.includes('Kech')) { icon = '🔴'; color = '#ff4d4f'; bg = 'rgba(255,77,79,0.1)'; }
-
-                    let actionBtns = `<div style="display:flex; gap:8px; margin-top:8px;">
-                                        <button onclick="window.editHrEvent('${r.id}', '${s}')" style="background:rgba(0,210,255,0.1); color:#00d2ff; border:none; padding:4px 8px; border-radius:6px; cursor:pointer; font-size:0.7rem;">Tahrirlash</button>
-                                        <button onclick="window.deleteHrEvent('${r.id}')" style="background:rgba(255,77,79,0.1); color:#ff4d4f; border:none; padding:4px 8px; border-radius:6px; cursor:pointer; font-size:0.7rem;">O'chirish</button>
-                                      </div>`;
+                    if (s.includes('Premya')) { icon = '💰'; color = '#FFD700'; glow = 'rgba(255,215,0,0.2)'; }
+                    else if (s.includes('Oylik')) { icon = '📈'; color = '#00d2ff'; glow = 'rgba(0,210,255,0.2)'; }
+                    else if (s.includes('Ruxsat') || s.includes('Dam')) { icon = '🏝️'; color = '#BA68C8'; glow = 'rgba(186,104,200,0.2)'; }
+                    else if (s.includes('Kech')) { icon = '🕒'; color = '#ff4d4f'; glow = 'rgba(255,77,79,0.2)'; }
+                    else if (s.includes('Vaqtida') || s.includes('Keldi')) { icon = '✅'; color = '#00ff88'; glow = 'rgba(0,255,136,0.2)'; }
 
                     return `
-                        <div style="background:${bg}; border-left: 3px solid ${color}; padding:14px; border-radius:0 12px 12px 0; margin-bottom:12px; font-family:'Inter', sans-serif;">
-                            <div style="font-weight:700; color:${color}; font-size:0.95rem; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                                <span>${icon}</span> ${s}
+                        <div class="premium-event-card" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:16px; border-radius:18px; margin-bottom:12px; position:relative; overflow:hidden;">
+                            <div style="position:absolute; top:0; left:0; width:4px; height:100%; background:${color}; box-shadow:0 0 15px ${glow};"></div>
+                            <div style="display:flex; justify-content:space-between; align-items:start;">
+                                <div style="display:flex; gap:12px; align-items:center;">
+                                    <div style="width:36px; height:36px; border-radius:10px; background:${glow}; display:flex; align-items:center; justify-content:center; font-size:1.1rem;">${icon}</div>
+                                    <div style="font-weight:600; color:#fff; font-size:0.92rem; line-height:1.3;">${s}</div>
+                                </div>
                             </div>
-                            <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-                                ${actionBtns}
+                            <div style="display:flex; gap:10px; margin-top:14px; border-top:1px solid rgba(255,255,255,0.04); padding-top:10px;">
+                                <button onclick="window.editHrEvent('${r.id}', '${s}')" style="flex:1; background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.6); border:1px solid rgba(255,255,255,0.08); padding:8px; border-radius:10px; cursor:pointer; font-size:0.75rem; transition:0.3s; font-weight:600;">Tahrirlash</button>
+                                <button onclick="window.deleteHrEvent('${r.id}')" style="flex:1; background:rgba(255,77,79,0.05); color:#ff4d4f; border:1px solid rgba(255,77,79,0.1); padding:8px; border-radius:10px; cursor:pointer; font-size:0.75rem; transition:0.3s; font-weight:600;">O'chirish</button>
                             </div>
                         </div>
                     `;
