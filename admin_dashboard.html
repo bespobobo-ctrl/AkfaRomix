@@ -323,6 +323,107 @@
             border: 1px solid var(--adm-accent);
         }
 
+        /* 📱 CLEAN MOBILE RECALIBRATION (Bug Fixes) */
+        @media (max-width: 1024px) {
+
+            /* Hide ALL Desktop duplicates strictly */
+            .sidebar-slim,
+            .hr-left-sidebar,
+            .desktop-staff-view,
+            .sidebar-search,
+            .search-container {
+                display: none !important;
+            }
+
+            .admin-layout {
+                display: block !important;
+                padding: 0 !important;
+                width: 100vw !important;
+                overflow-x: hidden !important;
+            }
+
+            .admin-main {
+                margin: 0 !important;
+                padding: 0 0 100px 0 !important;
+                /* Space for bottom nav */
+                width: 100% !important;
+            }
+
+            /* Optimized Header Sizing */
+            .premium-header {
+                padding: 12px 15px !important;
+                gap: 12px !important;
+            }
+
+            .user-name {
+                font-size: 1rem !important;
+            }
+
+            .header-avatar {
+                width: 40px !important;
+                height: 40px !important;
+                border-radius: 12px !important;
+            }
+
+            .action-btn {
+                width: 40px !important;
+                height: 40px !important;
+                font-size: 1rem !important;
+            }
+
+            .executive-tabs {
+                padding-top: 10px !important;
+                gap: 8px !important;
+            }
+
+            .executive-tabs .nav-link-item {
+                padding: 8px 14px !important;
+                font-size: 0.8rem !important;
+            }
+
+            /* Fixed Bottom Nav (Toolbar) */
+            .mobile-bottom-nav {
+                display: flex !important;
+                left: 10px !important;
+                right: 10px !important;
+                bottom: 10px !important;
+                height: 65px !important;
+                /* Smaller height */
+                border-radius: 20px !important;
+                padding: 0 15px !important;
+                box-sizing: border-box !important;
+                width: calc(100% - 20px) !important;
+            }
+
+            .m-nav-icon {
+                font-size: 1.2rem !important;
+            }
+
+            .m-nav-item span {
+                font-size: 0.55rem !important;
+            }
+
+            /* Grid Fixes */
+            .bento-grid {
+                gap: 12px !important;
+                padding: 0 15px !important;
+            }
+
+            .bento-card {
+                padding: 15px !important;
+                margin-bottom: 0 !important;
+            }
+
+            h3 {
+                font-size: 0.9rem !important;
+            }
+
+            .hr-bottom-section {
+                padding: 0 15px !important;
+                margin-top: 20px !important;
+            }
+        }
+
         /* 📱 MOBILE STAFF CARD SYSTEM (Elite UI/UX) */
         @media (max-width: 1024px) {
 
@@ -1536,27 +1637,32 @@
                     </div>
                 </div>
 
-                <!-- 🔍 STAFF INTERFACE (Dual-Engine: Desktop Table / Mobile Cards) -->
-
-                <!-- 📱 MOBILE-ONLY SEARCH & FILTER (Hidden on Desktop) -->
-                <div class="mobile-staff-header" style="display:none;">
+                <!-- 🔍 SINGLE STAFF INTERFACE HUB (Mobile Optimized) -->
+                <div class="mobile-staff-header" style="display:none; margin: 15px 0;">
                     <div class="search-bar-v2">
-                        <input type="text" id="staffMobileSearch" placeholder="Xodimlarni qidirish...">
+                        <input type="text" id="staffMobileSearch" placeholder="Xodimlarni qidirish..."
+                            style="width:100%; padding:12px 20px; border-radius:14px; border:1px solid var(--adm-border); background:rgba(255,255,255,0.03); color:var(--adm-text); font-size:0.95rem;">
                     </div>
-                    <div class="filter-chips">
-                        <div class="chip active">Hammasi</div>
+                    <div class="filter-chips"
+                        style="display:flex; gap:10px; overflow-x:auto; padding:12px 0 5px 0; scrollbar-width:none;">
+                        <style>
+                            .filter-chips::-webkit-scrollbar {
+                                display: none;
+                            }
+                        </style>
+                        <div class="chip active">Barchasi</div>
                         <div class="chip">HR</div>
                         <div class="chip">Ombor</div>
                         <div class="chip">Sotuv</div>
+                        <div class="chip">Usta</div>
                     </div>
                 </div>
 
                 <div class="hr-bottom-section">
-                    <h2 style="font-size:1.2rem; margin-bottom:15px; font-weight:700; opacity:0.9;">Hodimlar Ro'yxati
-                    </h2>
-
-                    <!-- 💻 DESKTOP TABLE VIEW -->
+                    <!-- 💻 Desktop View (Table) -->
                     <div class="desktop-staff-view">
+                        <h2 style="font-size:1.2rem; margin-bottom:15px; font-weight:700; opacity:0.9;">Hodimlar
+                            Ro'yxati</h2>
                         <div class="bento-card" style="padding:0; overflow:hidden; border-radius:24px;">
                             <table class="v2-table" style="width:100%; text-align:left; table-layout:fixed;">
                                 <thead>
@@ -1572,16 +1678,15 @@
                                             Amallar</th>
                                     </tr>
                                 </thead>
-                                <tbody id="staff-list-container">
-                                    <!-- Dynamic rows -->
-                                </tbody>
+                                <tbody id="staff-list-container"></tbody>
                             </table>
                         </div>
                     </div>
 
-                    <!-- 📱 MOBILE CARD VIEW -->
-                    <div class="mobile-staff-list" id="mobileStaffList" style="display:none;">
-                        <!-- JS code will populate this with staff-card-v2 items -->
+                    <!-- 📱 Mobile View (Cards) -->
+                    <div class="mobile-staff-list" id="mobileStaffList"
+                        style="display:none; flex-direction:column; gap:15px; padding-bottom:100px;">
+                        <!-- Cards injected via JS -->
                     </div>
                 </div>
             </section>
