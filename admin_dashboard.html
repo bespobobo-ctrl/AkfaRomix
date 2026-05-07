@@ -1396,9 +1396,20 @@
                                 </div>
                             </div>
 
+                            <div class="input-group-v2">
+                                <label
+                                    style="display:block; font-size:0.7rem; color:var(--adm-text-sec); margin-bottom:6px; text-transform:uppercase; letter-spacing:1px;">Ishga
+                                    kirgan yili</label>
+                                <input type="number" id="staffJoinedYear" placeholder="Masalan: 2022"
+                                    style="width:100%; padding:14px; background:rgba(0,0,0,0.02); border:1px solid var(--adm-border); border-radius:12px; color:var(--adm-text); font-size:0.9rem;">
+                            </div>
+
                             <button id="saveStaffBtn"
                                 style="width:100%; margin-top:10px; padding:16px; background:linear-gradient(135deg, #00ff88, #007c52); border:none; border-radius:14px; color:#000; font-weight:800; font-size:0.95rem; cursor:pointer; transition:0.3s; box-shadow:0 10px 25px rgba(0,255,136,0.2);">Xodimni
                                 Saqlash</button>
+                            <button id="deleteStaffBtn"
+                                style="display:none; width:100%; margin-top:10px; padding:14px; background:rgba(255,100,100,0.1); border:1px solid rgba(255,100,100,0.3); border-radius:14px; color:#ff4d4f; font-weight:700; font-size:0.9rem; cursor:pointer;">Xodimni
+                                O'chirish</button>
                         </div>
                     </div>
                 </div>
@@ -1611,17 +1622,16 @@
                                     style="padding:14px; font-size:0.8rem;">Premya</button>
                                 <button class="hr-action-btn btn-premium-blue" id="btn-raise"
                                     style="padding:14px; font-size:0.8rem;">Oylik</button>
-                                <button class="hr-action-btn btn-premium-purple" id="btn-leave"
-                                    style="padding:14px; font-size:0.8rem;">Dam berish</button>
+                                <button class="hr-action-btn btn-premium-purple" id="btn-edit-staff"
+                                    style="padding:14px; font-size:0.8rem;">Tahrirlash</button>
                             </div>
                             <div class="hr-action-bar-future"
-                                style="display:grid; grid-template-columns: 1fr 1fr 1.2fr; gap:15px; opacity: 0.3; pointer-events: none;">
+                                style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                                <button class="hr-action-btn" id="btn-delete-staff"
+                                    style="padding:12px; font-size:0.75rem; background:rgba(255,77,79,0.1); color:#ff4d4f; border:1px solid rgba(255,77,79,0.2); border-radius:18px;">Xodimni
+                                    O'chirish</button>
                                 <button class="hr-action-btn"
-                                    style="padding:12px; font-size:0.75rem; background:rgba(255,100,100,0.1); color:rgba(255,255,255,0.5); border:1px dashed rgba(255,100,100,0.3); border-radius:18px;">Jarima</button>
-                                <button class="hr-action-btn"
-                                    style="padding:12px; font-size:0.75rem; background:rgba(100,255,200,0.1); color:rgba(255,255,255,0.5); border:1px dashed rgba(100,255,200,0.3); border-radius:18px;">Sertifikat</button>
-                                <button class="hr-action-btn"
-                                    style="padding:12px; font-size:0.75rem; background:rgba(200,200,200,0.1); color:rgba(255,255,255,0.5); border:1px dashed rgba(200,200,200,0.3); border-radius:18px;">Hisobot</button>
+                                    style="padding:12px; font-size:0.75rem; background:rgba(100,255,200,0.1); color:rgba(255,255,255,0.5); border:1px dashed rgba(100,255,200,0.3); border-radius:18px; opacity:0.5;">Hisobot</button>
                             </div>
                         </div>
                     </div>

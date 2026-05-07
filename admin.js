@@ -489,22 +489,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     setInterval(checkPendingRequests, 30000);
     setTimeout(checkPendingRequests, 2000);
 
+    let editingStaffId = null;
+
     function initStaffModal() {
         const overlay = document.getElementById('staffModalOverlay');
         const openBtn = document.getElementById('openAddStaffModal');
+        const openBtnMobile = document.getElementById('openAddStaffModalMobile');
         const closeBtn = document.getElementById('closeStaffModal');
         const saveBtn = document.getElementById('saveStaffBtn');
+        const deleteStaffBtn = document.getElementById('deleteStaffBtn');
 
-        if (openBtn) {
-            openBtn.onclick = () => {
-                overlay.style.display = 'flex';
-                document.getElementById('staffModalTitle').textContent = "Yangi Ishchi Qo'shish";
-                document.getElementById('staffFullname').value = '';
-                document.getElementById('staffRole').value = '';
-                document.getElementById('staffPhone').value = '+998';
-                document.getElementById('staffSalary').value = '';
-            };
-        }
+        const resetForm = () => {
+            editingStaffId = null;
+            document.getElementById('staffModalTitle').textContent = "Yangi Ishchi Qo'shish";
+            document.getElementById('staffFullname').value = '';
+            document.getElementById('staffRole').value = '';
+            document.getElementById('staffPhone').value = '+998';
+            document.getElementById('staffSalary').value = '';
+            document.getElementById('staffJoinedYear').value = '';
+            if (deleteStaffBtn) deleteStaffBtn.style.display = 'none';
+        };
+
+        if (openBtn) openBtn.onclick = () => { overlay.style.display = 'flex'; resetForm(); };
+        if (openBtnMobile) openBtnMobile.onclick = () => { overlay.style.display = 'flex'; resetForm(); };
 
         if (closeBtn) closeBtn.onclick = () => overlay.style.display = 'none';
 
@@ -514,24 +521,98 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const department = document.getElementById('staffDept').value;
                 const role = document.getElementById('staffRole').value.trim();
                 const phone = document.getElementById('staffPhone').value.trim();
-                const salary_info = document.getElementById('staffSalary').value.trim();
+                const salary = document.getElementById('staffSalary').value.trim();
+                const joined_year = document.getElementById('staffJoinedYear').value.trim();
 
-                if (!full_name || !role || !salary_info) {
+                if (!full_name || !role || !salary) {
                     alert("Iltimos, barcha asosiy maydonlarni to'ldiring!");
                     return;
                 }
 
                 saveBtn.textContent = "Saqlanmoqda...";
-                const newStaff = { full_name, department, role, phone, salary_info: salary_info + " so'm" };
+                const staffData = {
+                    full_name,
+                    department,
+                    role,
+                    phone,
+                    salary_info: salary.includes("so'm") ? salary : salary + " so'm",
+                    experience: joined_year ? joined_year + "-yildan beri" : "Yangi"
+                };
 
-                const { data, error } = await supabase.from('employees').insert([newStaff]).select();
+                let result;
+                if (editingStaffId) {
+                    result = await supabase.from('employees').update(staffData).eq('id', editingStaffId);
+                } else {
+                    result = await supabase.from('employees').insert([staffData]);
+                }
+
                 saveBtn.textContent = "Xodimni Saqlash";
-
-                if (!error) {
+                if (!result.error) {
                     overlay.style.display = 'none';
                     loadRomixHRData();
+                    alert(editingStaffId ? "Ma'lumotlar yangilandi!" : "Yangi xodim qo'shildi!");
                 } else {
-                    alert("Xatolik: " + error.message);
+                    alert("Xatolik: " + result.error.message);
+                }
+            };
+        }
+
+        if (deleteStaffBtn) {
+            deleteStaffBtn.onclick = async () => {
+                if (editingStaffId && confirm("Haqiqatdan ham ushbu xodimni o'chirmoqchimisiz?")) {
+                    const { error } = await supabase.from('employees').delete().eq('id', editingStaffId);
+                    if (!error) {
+                        overlay.style.display = 'none';
+                        loadRomixHRData();
+                        alert("Xodim o'chirildi.");
+                    } else {
+                        alert("Xatolik: " + error.message);
+                    }
+                }
+            };
+        }
+    }
+
+    function openEditStaffModal(emp) {
+        const overlay = document.getElementById('staffModalOverlay');
+        editingStaffId = emp.id;
+        document.getElementById('staffModalTitle').textContent = "Ma'lumotlarni Tahrirlash";
+        document.getElementById('staffFullname').value = emp.full_name;
+        document.getElementById('staffDept').value = emp.department || 'Ustalar';
+        document.getElementById('staffRole').value = emp.role || '';
+        document.getElementById('staffPhone').value = emp.phone || '+998';
+        const salaryVal = emp.salary_info ? emp.salary_info.toString().replace(/[^0-9]/g, '') : '';
+        document.getElementById('staffSalary').value = salaryVal;
+        const yearVal = emp.experience ? emp.experience.toString().replace(/[^0-9]/g, '') : '';
+        document.getElementById('staffJoinedYear').value = yearVal;
+
+        const delBtn = document.getElementById('deleteStaffBtn');
+        if (delBtn) delBtn.style.display = 'block';
+        overlay.style.display = 'flex';
+    }
+
+    function setupStaffActions() {
+        const btnEdit = document.getElementById('btn-edit-staff');
+        const btnDelete = document.getElementById('btn-delete-staff');
+
+        if (btnEdit) {
+            btnEdit.onclick = () => {
+                const emp = allEmployees.find(e => e.id === selectedWorkerId);
+                if (emp) openEditStaffModal(emp);
+                else alert("Xodim tanlanmagan!");
+            };
+        }
+
+        if (btnDelete) {
+            btnDelete.onclick = async () => {
+                if (selectedWorkerId && confirm("Xodimni o'chirishni tasdiqlaysizmi?")) {
+                    const { error } = await supabase.from('employees').delete().eq('id', selectedWorkerId);
+                    if (!error) {
+                        loadRomixHRData();
+                        alert("O'chirildi.");
+                    } else {
+                        alert("Xatolik: " + error.message);
+                    }
                 }
             };
         }
@@ -561,8 +642,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 renderStaffList(filtered);
 
-                // If a specific department is selected, we could show an overview,
-                // but for now we auto-select the first worker in that filtered list
                 if (filtered.length > 0) {
                     selectedWorkerId = filtered[0].id;
                     updateStaffProfileCard(filtered[0]);
