@@ -238,79 +238,64 @@ function animateCounter(id, target) {
     });
 }
 
-function renderStaffList(data) {
-    const list = document.getElementById('employeeList');
-    list.innerHTML = '';
+function renderStaffList(listData) {
+    const tableBody = document.getElementById('employeeTableBody');
+    tableBody.innerHTML = '';
 
-    if (!data || data.length === 0) {
-        list.innerHTML = '<p style="text-align:center; padding:40px 0; color:var(--text-s); font-size:0.8rem;">Xodim topilmadi</p>';
+    if (!listData || listData.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:50px; color:var(--text-s); font-size:0.9rem;">Hozircha xodimlar mavjud emas</td></tr>`;
         return;
     }
 
-    data.forEach(emp => {
-        const isArrived = todayAtt.some(a => a.employee_id === emp.id);
-        const item = document.createElement('div');
-        item.className = 'staff-card';
-        if (currentEmp && currentEmp.id === emp.id) item.classList.add('active');
-        item.style.opacity = '0';
-        item.style.transform = 'translateX(-20px)';
+    listData.forEach(emp => {
+        const att = todayAtt.find(a => a.employee_id === emp.id);
+        const statusHTML = att
+            ? `<span class="t-status-pill" style="background:rgba(0,255,136,0.1); color:var(--accent);">ISHDA</span>`
+            : `<span class="t-status-pill" style="background:rgba(255,255,255,0.05); color:var(--text-s);">KELMAGAN</span>`;
 
-        item.innerHTML = `
-            <div style="position:relative;">
-                <img src="${emp.avatar_url}" class="avatar-img">
-                <div class="status-dot" style="background: ${isArrived ? 'var(--accent)' : '#ff4444'}; box-shadow: 0 0 10px ${isArrived ? 'var(--accent)' : '#ff4444'}"></div>
-            </div>
-            <div class="staff-info">
-                <h4>${emp.full_name}</h4>
-                <p>${emp.role || 'HR'}</p>
-            </div>
-            <div style="margin-left:auto; opacity:0.3; font-size:0.8rem;">
-                <i data-lucide="chevron-right" size="16"></i>
-            </div>
+        const tr = document.createElement('tr');
+        tr.className = 'staff-row';
+        tr.innerHTML = `
+            <td>
+                <div class="t-user-cell">
+                    <img src="${emp.avatar_url}" class="t-avatar">
+                    <div>
+                        <div style="font-weight:900; font-size:0.95rem; color:#fff;">${emp.full_name}</div>
+                        <div style="font-size:0.65rem; color:var(--text-s); letter-spacing:0.5px;">ID: ${emp.id.split('-')[0].toUpperCase()}</div>
+                    </div>
+                </div>
+            </td>
+            <td style="font-size:0.85rem; font-weight:700; color:rgba(255,255,255,0.9);">${emp.role || 'HR Coordinator'}</td>
+            <td style="font-size:0.85rem; font-weight:700; color:var(--accent-sec);">${emp.department || 'Bosh Ofis'}</td>
+            <td style="font-size:0.85rem; font-weight:600; color:rgba(255,255,255,0.7); letter-spacing:0.5px;">${emp.phone || '+998 --- -- --'}</td>
+            <td>${statusHTML}</td>
+            <td style="text-align:right; padding-right:25px;">
+                <button style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; width:35px; height:35px; border-radius:10px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition:0.3s;" onmouseover="this.style.background='var(--accent)'; this.style.color='#000';">
+                    <i data-lucide="eye" style="width:16px; height:16px;"></i>
+                </button>
+            </td>
         `;
 
-        item.onclick = () => {
-            document.querySelectorAll('.staff-card').forEach(r => r.classList.remove('active'));
-            item.classList.add('active');
-            showEmployeeDetail(emp);
-        };
-
-        list.appendChild(item);
+        tr.onclick = () => showEmployeeDetail(emp);
+        tableBody.appendChild(tr);
     });
 
     lucide.createIcons();
-
-    // 🎭 STAGGER ANIMATION
-    gsap.to(".staff-card", {
-        opacity: 1,
-        x: 0,
-        duration: 0.5,
-        stagger: 0.08,
-        ease: "power2.out"
-    });
+    gsap.from(".staff-row", { opacity: 0, x: -15, duration: 0.5, stagger: 0.04, ease: "power2.out" });
 }
 
 function showEmployeeDetail(emp) {
     currentEmp = emp;
-    const homeView = document.getElementById('homeView');
+    const modal = document.getElementById('detailModalOverlay');
     const profileView = document.getElementById('profileDetail');
 
-    if (homeView.style.display !== 'none') {
-        gsap.to(homeView, {
-            opacity: 0, y: -20, duration: 0.4, onComplete: () => {
-                homeView.style.display = 'none';
-                profileView.style.display = 'flex';
-                gsap.fromTo(profileView, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" });
-            }
-        });
-    } else {
-        gsap.fromTo(profileView, { opacity: 0.8 }, { opacity: 1, duration: 0.3 });
-    }
+    modal.style.display = 'flex';
+    profileView.style.display = 'flex';
 
-    // Basic Info
+    // Populate data
     document.getElementById('dt-photo').src = emp.avatar_url;
     document.getElementById('dt-name').textContent = emp.full_name;
-    document.getElementById('dt-role').textContent = emp.role || 'HR';
+    document.getElementById('dt-role').textContent = emp.role || 'Xodim';
     document.getElementById('dt-phone').textContent = emp.phone || '---';
     document.getElementById('dt-dept').textContent = emp.department || 'Ofis';
     document.getElementById('dt-experience').textContent = emp.experience || 'Yangi xodim';
@@ -318,20 +303,15 @@ function showEmployeeDetail(emp) {
     const salary = parseInt(String(emp.salary_info || '0').replace(/[^0-9]/g, '')) || 0;
     document.getElementById('dt-sum').textContent = (salary / 1000000).toFixed(1) + 'M';
 
-    // QR Code Generation
     document.getElementById('dt-qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(emp.id)}`;
 
-    // Work Time Simulation (Based on Arrival)
     const att = todayAtt.find(a => a.employee_id === emp.id);
     if (att) {
         document.getElementById('dt-arrived').textContent = att.arrival_time || '--:--';
         document.getElementById('dt-left').textContent = att.leave_time || '--:--';
-
-        // Progress Logic (e.g. 70% completed)
-        const progress = 70;
-        const offset = 440 - (440 * progress) / 100;
+        const offset = 440 - (440 * 85) / 100;
         gsap.to("#timeProgress", { strokeDashoffset: offset, duration: 1.5, ease: "power2.out" });
-        document.getElementById('dt-worktime').textContent = "08:30";
+        document.getElementById('dt-worktime').textContent = "08:15";
     } else {
         document.getElementById('dt-arrived').textContent = '--:--';
         document.getElementById('dt-left').textContent = '--:--';
@@ -339,8 +319,19 @@ function showEmployeeDetail(emp) {
         document.getElementById('dt-worktime').textContent = "00:00";
     }
 
-    initActivityChart();
+    // Animation Open
+    gsap.fromTo(profileView, { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(1.2)" });
 }
+
+function closeDetailModal() {
+    const modal = document.getElementById('detailModalOverlay');
+    gsap.to("#profileDetail", {
+        scale: 0.9, opacity: 0, duration: 0.3, onComplete: () => {
+            modal.style.display = 'none';
+        }
+    });
+}
+
 
 function initActivityChart() {
     const ctx = document.getElementById('detailActivityChart').getContext('2d');
