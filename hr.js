@@ -388,18 +388,54 @@ function prepareBadge(emp) {
     );
 }
 
-window.printBadge = () => {
+window.downloadBadge = () => {
     const badge = document.getElementById('badgePrintArea');
     const btn = event.target;
-    btn.textContent = 'EKSPORT QILINMOQDA...';
+    const originalText = btn.textContent;
+    btn.textContent = 'YUKLANMOQDA...';
 
     html2canvas(badge, { scale: 3, useCORS: true, backgroundColor: null }).then(canvas => {
         const link = document.createElement('a');
         link.download = `AKFA-Badge-${document.getElementById('badgePreviewSurname').textContent}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
-        btn.textContent = 'YUKLAB OLISH (PNG)';
+        btn.textContent = originalText;
     });
+};
+
+window.printBadgeReal = () => {
+    const badgeHtml = document.getElementById('badgePrintArea').innerHTML;
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Print Badge</title>
+                <style>
+                    body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #fff; }
+                    .badge-presentation { display: flex; gap: 40px; transform: scale(1.2); }
+                    .id-badge { width: 260px; height: 410px; background: #fff; border-radius: 12px; position: relative; overflow: hidden; border: 1px solid #ddd; display: flex; flex-direction: column; font-family: sans-serif; }
+                    .badge-lanyard { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 30px; height: 60px; background: #1a7b7c; border-radius: 4px; }
+                    .badge-header { margin-top: 65px; padding: 0 15px; display: flex; justify-content: space-between; }
+                    .logo-box { font-weight: 800; font-size: 1.1rem; color: #1a7b7c; }
+                    .badge-photo-container { flex: 1; display: flex; justify-content: center; align-items: flex-end; }
+                    .badge-photo { width: 90%; height: 200px; object-fit: cover; border-radius: 8px; border: 3px solid #fff; }
+                    .badge-bottom-box { background: #4ab3b4; height: 80px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #fff; }
+                    .badge-surname { font-size: 1.8rem; font-weight: 900; }
+                    .badge-qr-container { flex: 1; display: flex; justify-content: center; align-items: center; }
+                    .badge-qr-large { width: 140px; height: 140px; border: 6px solid #1a7b7c; }
+                    .badge-very-bottom-text { background: #1a7b7c; color: #8fd5d5; font-size: 0.5rem; text-align: center; }
+                    @media print { .no-print { display: none; } }
+                </style>
+            </head>
+            <body>
+                <div class="badge-presentation">${badgeHtml}</div>
+                <script>
+                    setTimeout(() => { window.print(); window.close(); }, 500);
+                </script>
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
 };
 
 function clearModal() {
