@@ -309,10 +309,8 @@ async function saveWorker() {
         salary_info: salary || '0',
         phone: phone || '',
         birth_year: birthYear || null,
-        experience: joinedYear ? `${joinedYear}-yildan beri` : 'Yangi',
         avatar_url: avatar,
         status: 'Ishlamoqda'
-        // No department column in DB as per previous check, so we store it in role or experience if needed, or omit
     }]).select();
 
     if (!error) {
