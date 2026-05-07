@@ -518,16 +518,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 : `<div style="width:32px; height:32px; border-radius:10px; background:linear-gradient(135deg, #00d2ff, #007aff); display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:700; color:#fff;">${initials}</div>`;
 
             tr.innerHTML = `
-                <td style="padding:15px 24px;">
+                <td style="padding:15px 24px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                     <div style="display:flex; align-items:center; gap:12px;">
                         ${avatarHtml}
-                        <div style="font-weight:600; color:#fff;">${emp.full_name}</div>
+                        <div style="font-weight:600; color:#fff; overflow:hidden; text-overflow:ellipsis;">${emp.full_name}</div>
                     </div>
                 </td>
-                <td style="font-size:0.85rem; color:rgba(255,255,255,0.6);">${emp.role || '---'}</td>
-                <td style="font-size:0.85rem; font-weight:700; color:var(--adm-accent);">${salary}</td>
-                <td style="font-size:0.85rem; color:rgba(255,255,255,0.6);">${emp.department || '---'}</td>
-                <td style="font-size:0.85rem; color:rgba(255,255,255,0.6);">${emp.experience || '---'}</td>
+                <td style="font-size:0.85rem; color:rgba(255,255,255,0.6); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${emp.role || '---'}</td>
+                <td style="font-size:0.85rem; font-weight:700; color:var(--adm-accent); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${salary}</td>
+                <td style="font-size:0.85rem; color:rgba(255,255,255,0.6); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${emp.department || '---'}</td>
+                <td style="font-size:0.85rem; color:rgba(255,255,255,0.6); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${emp.experience || '---'}</td>
                 <td>
                     <div style="display:flex; align-items:center; gap:8px;">
                         <span style="width:8px; height:8px; border-radius:50%; background:#00ff88; box-shadow:0 0 8px #00ff88;"></span>
