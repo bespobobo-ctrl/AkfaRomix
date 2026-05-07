@@ -297,24 +297,47 @@ function showEmployeeDetail(emp) {
 
     if (homeView.style.display !== 'none') {
         gsap.to(homeView, {
-            opacity: 0, scale: 0.95, duration: 0.4, onComplete: () => {
+            opacity: 0, y: -20, duration: 0.4, onComplete: () => {
                 homeView.style.display = 'none';
                 profileView.style.display = 'flex';
-                gsap.fromTo(profileView, { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.6, ease: "power2.out" });
+                gsap.fromTo(profileView, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" });
             }
         });
     } else {
-        // Smooth refresh if profile already open
         gsap.fromTo(profileView, { opacity: 0.8 }, { opacity: 1, duration: 0.3 });
     }
 
+    // Basic Info
     document.getElementById('dt-photo').src = emp.avatar_url;
     document.getElementById('dt-name').textContent = emp.full_name;
-    document.getElementById('dt-role').textContent = emp.role || 'Xodim';
+    document.getElementById('dt-role').textContent = emp.role || 'HR';
     document.getElementById('dt-phone').textContent = emp.phone || '---';
-    document.getElementById('dt-dept').textContent = emp.department || 'Bo\'limsiz';
-    document.getElementById('dt-salary').textContent = formatCurrency(emp.salary_info);
-    document.getElementById('dt-experience').textContent = emp.experience || 'YANGI';
+    document.getElementById('dt-dept').textContent = emp.department || 'Ofis';
+    document.getElementById('dt-experience').textContent = emp.experience || 'Yangi xodim';
+
+    const salary = parseInt(String(emp.salary_info || '0').replace(/[^0-9]/g, '')) || 0;
+    document.getElementById('dt-sum').textContent = (salary / 1000000).toFixed(1) + 'M';
+
+    // QR Code Generation
+    document.getElementById('dt-qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(emp.id)}`;
+
+    // Work Time Simulation (Based on Arrival)
+    const att = todayAtt.find(a => a.employee_id === emp.id);
+    if (att) {
+        document.getElementById('dt-arrived').textContent = att.arrival_time || '--:--';
+        document.getElementById('dt-left').textContent = att.leave_time || '--:--';
+
+        // Progress Logic (e.g. 70% completed)
+        const progress = 70;
+        const offset = 440 - (440 * progress) / 100;
+        gsap.to("#timeProgress", { strokeDashoffset: offset, duration: 1.5, ease: "power2.out" });
+        document.getElementById('dt-worktime').textContent = "08:30";
+    } else {
+        document.getElementById('dt-arrived').textContent = '--:--';
+        document.getElementById('dt-left').textContent = '--:--';
+        gsap.to("#timeProgress", { strokeDashoffset: 440, duration: 1 });
+        document.getElementById('dt-worktime').textContent = "00:00";
+    }
 
     initActivityChart();
 }
