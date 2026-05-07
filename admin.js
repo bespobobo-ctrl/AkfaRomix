@@ -486,7 +486,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const startStr = `${year}-${(month + 1).toString().padStart(2, '0')}-01`;
             const endStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${daysInMonth}`;
             const { data } = await supabase.from('attendance')
-                .select('date, status')
+                .select('date, status, notes')
                 .eq('employee_id', selectedWorkerId)
                 .gte('date', startStr)
                 .lte('date', endStr);
@@ -531,7 +531,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (dayRecords.length > 0) {
                 const hasLate = dayRecords.some(r => r.status === 'Kech qoldi');
                 const hasPresent = dayRecords.some(r => r.status === 'Vaqtida keldi');
-                const isSpecial = dayRecords.some(r => r.status.includes('Premya') || r.status.includes('Oylik') || r.status.includes('Ruxsat'));
+                const isSpecial = dayRecords.some(r => r.status.includes('Premya') || r.status.includes('Oylik') || r.status.includes('Ruxsat') || r.status.includes('Tasdiqlash kutilmoqda'));
 
                 if (isSpecial) {
                     div.style.borderBottom = '3px solid #ffb800';
@@ -544,7 +544,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                     div.classList.add('has-att');
                 }
 
-                displayStatusHTML = dayRecords.map(r => r.status).join('<br/>');
+                displayStatusHTML = dayRecords.map(r => {
+                    let icon = '📆';
+                    let color = '#fff';
+                    let bg = 'rgba(255,255,255,0.05)';
+                    let s = r.status;
+
+                    if (s.includes('Premya')) { icon = '💰'; color = '#FFD700'; bg = 'rgba(255,215,0,0.1)'; }
+                    else if (s.includes('Oylik')) { icon = '📈'; color = '#00d2ff'; bg = 'rgba(0,210,255,0.1)'; }
+                    else if (s.includes('Ruxsat') || s.includes('Tasdiqlash kutilmoqda')) { icon = '🏝️'; color = '#BA68C8'; bg = 'rgba(186,104,200,0.1)'; }
+                    else if (s === 'Vaqtida keldi') { icon = '🟢'; color = '#00ff88'; bg = 'rgba(0,255,136,0.1)'; }
+                    else if (s === 'Kech qoldi') { icon = '🔴'; color = '#ff4d4f'; bg = 'rgba(255,77,79,0.1)'; }
+
+                    let notesHtml = r.notes ? `<div style="font-size:0.75rem; color:rgba(255,255,255,0.6); margin-top:6px; line-height:1.4;">📝 ${r.notes}</div>` : '';
+
+                    return `
+                        <div style="background:${bg}; border-left: 3px solid ${color}; padding:14px; border-radius:0 12px 12px 0; margin-bottom:12px; font-family:'Inter', sans-serif;">
+                            <div style="font-weight:700; color:${color}; font-size:0.95rem; display:flex; align-items:center; gap:8px;">
+                                <span>${icon}</span> ${s}
+                            </div>
+                            ${notesHtml}
+                        </div>
+                    `;
+                }).join('');
             }
 
             if (year === today.getFullYear() && month === today.getMonth() && d === today.getDate()) {
@@ -557,9 +579,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const details = document.getElementById('daily-att-details');
                 if (details) {
                     details.innerHTML = `
-                        <div style="font-size:1.1rem; font-weight:700; color:#fff; margin-bottom:8px;">${d} ${monthNames[month]}</div>
-                        <div style="padding:10px 20px; background:rgba(0,255,136,0.1); border-radius:12px; color:#00ff88; font-weight:600; font-size:0.85rem; line-height:1.6;">
-                            ${displayStatusHTML}
+                        <div style="width:100%;">
+                            <div style="font-size:1.15rem; font-weight:800; color:#fff; text-align:center; padding-bottom:15px; margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.06);">
+                                ${d} ${monthNames[month]}
+                            </div>
+                            <div style="display:flex; flex-direction:column; width:100%;">
+                                ${displayStatusHTML === 'Ma\'lumot kiritilmagan' ?
+                            `<div style="text-align:center; padding:30px; color:rgba(255,255,255,0.25); font-size:0.85rem; font-weight:500;">Boz ma'lumoti yo'q</div>`
+                            : displayStatusHTML}
+                            </div>
                         </div>
                     `;
                 }
