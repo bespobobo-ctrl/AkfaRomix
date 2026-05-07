@@ -422,6 +422,35 @@
                 padding: 0 15px !important;
                 margin-top: 20px !important;
             }
+
+            /* 🛑 Mobile Detail Drawer (Bottom Sheet) */
+            .mobile-detail-drawer {
+                position: fixed;
+                bottom: -100%;
+                left: 0;
+                right: 0;
+                height: 85vh;
+                background: #0d1622;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 30px 30px 0 0;
+                z-index: 3000;
+                padding: 20px;
+                transition: bottom 0.4s cubic-bezier(0.1, 0.7, 0.1, 1);
+                overflow-y: auto;
+                box-shadow: 0 -20px 40px rgba(0, 0, 0, 0.5);
+            }
+
+            .mobile-detail-drawer.active {
+                bottom: 0;
+            }
+
+            .drawer-handle {
+                width: 40px;
+                height: 5px;
+                background: rgba(255, 255, 255, 0.2);
+                border-radius: 10px;
+                margin: 0 auto 20px auto;
+            }
         }
 
         /* 📱 MOBILE STAFF CARD SYSTEM (Elite UI/UX) */
@@ -1855,8 +1884,20 @@
             <span>Oynak</span>
         </div>
     </div>
+    <div class="mobile-detail-drawer" id="mobileStaffDrawer">
+        <div class="drawer-handle"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 style="font-size:1.1rem; color:#fff; font-weight:800;">Xodim Hisoboti</h2>
+            <button onclick="document.getElementById('mobileStaffDrawer').classList.remove('active')"
+                style="background:none; border:none; color:rgba(255,255,255,0.4); font-size:1.5rem;">&times;</button>
+        </div>
 
-    <script type="module" src="/admin.js"></script>
+        <div id="drawer-content-placeholder">
+            <!-- Global Analytics & Actions will move here on mobile -->
+        </div>
+    </div>
+
+    <script type="module" src="admin.js"></script>
 </body>
 
 </html>

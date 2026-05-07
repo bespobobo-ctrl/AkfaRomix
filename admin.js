@@ -799,6 +799,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function updateStaffProfileCard(emp) {
         if (!emp) return;
+        selectedWorkerId = emp.id;
         const img = document.getElementById('selected-staff-img');
         const name = document.getElementById('selected-staff-name');
         const role = document.getElementById('selected-staff-role');
@@ -812,19 +813,43 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (salary) salary.textContent = emp.salary_info || '---';
 
         // Additional info details
-        document.getElementById('st-phone').textContent = emp.phone || '+998-- --- -- --';
-        document.getElementById('st-dept').textContent = emp.department || 'Bo\'limsiz';
-        document.getElementById('st-exp').textContent = emp.experience || 'Yangi xodim';
+        const phoneEl = document.getElementById('st-phone');
+        const deptEl = document.getElementById('st-dept');
+        const expEl = document.getElementById('st-exp');
+        if (phoneEl) phoneEl.textContent = emp.phone || '+998-- --- -- --';
+        if (deptEl) deptEl.textContent = emp.department || 'Bo\'limsiz';
+        if (expEl) expEl.textContent = emp.experience || 'Yangi xodim';
 
         // KPI and Tracking
         const kpi = (85 + Math.floor(Math.random() * 15));
-        document.getElementById('st-kpi-val').textContent = kpi + "%";
-        document.getElementById('kpi-bar').style.width = kpi + "%";
-        document.getElementById('worked-hours').textContent = "08:30";
-        document.getElementById('st-time-in').textContent = "08:12";
-        document.getElementById('st-time-out').textContent = "--:--";
+        const kpiVal = document.getElementById('st-kpi-val');
+        const kpiBar = document.getElementById('kpi-bar');
+        const workedHours = document.getElementById('worked-hours');
+        if (kpiVal) kpiVal.textContent = kpi + "%";
+        if (kpiBar) kpiBar.style.width = kpi + "%";
+        if (workedHours) workedHours.textContent = "08:30";
+
+        const timeIn = document.getElementById('st-time-in');
+        const timeOut = document.getElementById('st-time-out');
+        if (timeIn) timeIn.textContent = "08:12";
+        if (timeOut) timeOut.textContent = "--:--";
 
         renderModernCalendar(currentCalMonth, currentCalYear);
+
+        // --- 🛑 MOBILE DRAWER LOGIC ---
+        if (window.innerWidth <= 1024) {
+            const drawer = document.getElementById('mobileStaffDrawer');
+            const placeholder = document.getElementById('drawer-content-placeholder');
+            const rightContent = document.querySelector('.hr-right-content');
+
+            if (drawer && placeholder && rightContent) {
+                // Move analytic panel into drawer if not already there
+                if (!placeholder.contains(rightContent)) {
+                    placeholder.appendChild(rightContent);
+                }
+                drawer.classList.add('active');
+            }
+        }
     }
 
     async function renderModernCalendar(month, year) {
