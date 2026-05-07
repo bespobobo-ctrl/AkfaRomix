@@ -432,16 +432,28 @@
                 bottom: 0 !important;
                 left: 0 !important;
                 right: 0 !important;
-                height: 85vh !important;
-                z-index: 6000 !important;
+                height: 82vh !important;
+                z-index: 8000 !important;
                 background: #0d1622 !important;
                 flex-direction: column !important;
-                border-top: 2px solid rgba(0, 255, 136, 0.3) !important;
-                border-radius: 35px 35px 0 0 !important;
-                box-shadow: 0 -25px 60px rgba(0, 0, 0, 1) !important;
-                padding: 30px 20px !important;
-                animation: slideUpDrawer 0.45s cubic-bezier(0.1, 0.7, 0.1, 1);
+                border-top: 3px solid rgba(0, 255, 136, 0.3) !important;
+                border-radius: 40px 40px 0 0 !important;
+                box-shadow: 0 -30px 80px rgba(0, 0, 0, 1) !important;
+                padding: 35px 20px 50px !important;
+                animation: slideUpDrawer 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
                 overflow-y: auto !important;
+            }
+
+            .hr-right-content.mobile-drawer-active::before {
+                content: '';
+                position: absolute;
+                top: 12px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 45px;
+                height: 5px;
+                background: rgba(255, 255, 255, 0.15);
+                border-radius: 10px;
             }
 
             .hr-right-content.mobile-drawer-active::-webkit-scrollbar {
@@ -467,17 +479,17 @@
                 position: absolute;
                 right: 25px;
                 top: 25px;
-                background: rgba(255, 255, 255, 0.1);
-                border: 1px solid rgba(255, 255, 255, 0.15);
+                background: rgba(255, 255, 255, 0.08);
+                border: 1px solid rgba(255, 255, 255, 0.1);
                 color: #fff;
-                width: 44px;
-                height: 44px;
-                border-radius: 12px;
-                font-size: 1.4rem;
+                width: 42px;
+                height: 42px;
+                border-radius: 14px;
+                font-size: 1.2rem;
                 cursor: pointer;
                 align-items: center;
                 justify-content: center;
-                z-index: 7000;
+                z-index: 8100;
                 backdrop-filter: blur(10px);
             }
         }
@@ -1868,7 +1880,7 @@
 
     <!-- User Management Modal -->
     <div id="userModalOverlay"
-        style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(5px); z-index:1000; align-items:center; justify-content:center;">
+        style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(10px); z-index:9999; align-items:center; justify-content:center;">
         <div class="user-form-modal">
             <h2 id="modalUserTitle" style="margin-bottom:20px; color:var(--adm-text);">Yangi Foydalanuvchi</h2>
             <input type="text" id="sysFullname" placeholder="Foydalanuvchi ismi" class="form-input-v2">
@@ -1896,7 +1908,7 @@
 
     <!-- Premium HR Action Modal -->
     <div id="hrActionModalOverlay"
-        style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(8px); z-index:1000; align-items:center; justify-content:center;">
+        style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(10px); z-index:9999; align-items:center; justify-content:center;">
         <div class="user-form-modal" style="width: 400px; padding: 30px; text-align: center; position: relative;">
             <div id="hrActionModalIcon" style="font-size: 3.5rem; margin-bottom: 15px;">💰</div>
             <h2 id="hrActionModalTitle"
