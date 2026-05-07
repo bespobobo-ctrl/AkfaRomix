@@ -426,15 +426,6 @@
                         box-shadow: 0 4px 15px rgba(0, 124, 82, 0.3);
                     }
 
-                    /* ═══ Staff List ═══ */
-                    #staff-list-container {
-                        flex: 1;
-                        overflow-y: auto;
-                        display: flex;
-                        flex-direction: column;
-                        gap: 6px;
-                    }
-
                     .pill-btn {
                         padding: 8px 18px;
                         border-radius: 50px;
@@ -620,11 +611,27 @@
 
                     .v2-table th {
                         font-family: 'Outfit', sans-serif;
-                        font-weight: 600;
+                        font-weight: 700;
                         color: rgba(255, 255, 255, 0.4);
-                        font-size: 0.75rem;
+                        font-size: 0.7rem;
                         text-transform: uppercase;
-                        letter-spacing: 1px;
+                        letter-spacing: 1.5px;
+                        padding: 20px 24px;
+                        background: rgba(255, 255, 255, 0.015);
+                        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                    }
+
+                    .table-row-staff td {
+                        border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+                        padding: 16px 24px;
+                    }
+
+                    .table-row-staff:hover td {
+                        border-bottom-color: rgba(0, 210, 255, 0.1);
+                    }
+
+                    .table-row-staff.active {
+                        background: linear-gradient(90deg, rgba(0, 210, 255, 0.08), transparent) !important;
                     }
 
                     /* ═══ Notification System ═══ */
