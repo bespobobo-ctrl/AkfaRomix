@@ -434,6 +434,16 @@
                 box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.8) !important;
                 padding: 25px 20px !important;
                 animation: slideUpDrawer 0.45s cubic-bezier(0.1, 0.7, 0.1, 1);
+                overflow-y: auto !important;
+                scrollbar-width: none;
+            }
+
+            .hr-right-content.mobile-drawer-active::-webkit-scrollbar {
+                display: none;
+            }
+
+            .hr-right-content.mobile-drawer-active .drawer-close-trigger {
+                display: block !important;
             }
 
             @keyframes slideUpDrawer {
@@ -1651,6 +1661,11 @@
                                 <button class="hr-action-btn"
                                     style="padding:12px; font-size:0.75rem; background:rgba(100,255,200,0.1); color:rgba(255,255,255,0.5); border:1px dashed rgba(100,255,200,0.3); border-radius:14px; opacity:0.5;">Hisobot</button>
                             </div>
+
+                            <!-- 📱 Mobile-only Close Trigger -->
+                            <button class="hr-action-btn drawer-close-trigger"
+                                onclick="document.querySelector('.hr-right-content').classList.remove('mobile-drawer-active')"
+                                style="display:none; width:100%; margin-top:15px; padding:16px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:18px; color:#fff; font-weight:700;">Yopish</button>
                         </div>
                     </div>
                 </div>
