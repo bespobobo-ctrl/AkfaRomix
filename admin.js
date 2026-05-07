@@ -181,6 +181,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderStaffList(allEmployees);
         initHRPills();
         initStaffSearch();
+        initMobileFilters(); // AKFA Mobile Engine
+        initMobileSearch();  // AKFA Mobile Engine
         initStaffModal(); // New induction system
 
         if (emps && emps.length > 0) {
@@ -575,7 +577,46 @@ document.addEventListener('DOMContentLoaded', async () => {
         input.dataset.init = "true";
         input.addEventListener('input', (e) => {
             const val = e.target.value.toLowerCase();
-            const filtered = allEmployees.filter(emp => emp.full_name.toLowerCase().includes(val) || emp.role.toLowerCase().includes(val));
+            const filtered = allEmployees.filter(emp => emp.full_name.toLowerCase().includes(val) || (emp.role && emp.role.toLowerCase().includes(val)));
+            renderStaffList(filtered);
+        });
+    }
+
+    function initMobileFilters() {
+        const chips = document.querySelectorAll('.filter-chips .chip');
+        chips.forEach(chip => {
+            if (chip.dataset.init) return;
+            chip.dataset.init = "true";
+            chip.addEventListener('click', () => {
+                chips.forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                const dept = chip.dataset.dept;
+
+                let filtered = allEmployees;
+                if (dept !== 'all') {
+                    filtered = allEmployees.filter(e => e.department === dept);
+                }
+                renderStaffList(filtered);
+
+                // Auto-select first member in cards if any
+                if (filtered.length > 0 && window.innerWidth <= 1024) {
+                    updateStaffProfileCard(filtered[0]);
+                }
+            });
+        });
+    }
+
+    function initMobileSearch() {
+        const input = document.getElementById('staffMobileSearch');
+        if (!input || input.dataset.init) return;
+        input.dataset.init = "true";
+        input.addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            const filtered = allEmployees.filter(emp =>
+                emp.full_name.toLowerCase().includes(val) ||
+                (emp.role && emp.role.toLowerCase().includes(val)) ||
+                (emp.department && emp.department.toLowerCase().includes(val))
+            );
             renderStaffList(filtered);
         });
     }

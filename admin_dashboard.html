@@ -1628,23 +1628,28 @@
                 </div>
 
                 <!-- 🔍 SINGLE STAFF INTERFACE HUB (Mobile Optimized) -->
-                <div class="mobile-staff-header" style="display:none; margin: 15px 0;">
-                    <div class="search-bar-v2">
-                        <input type="text" id="staffMobileSearch" placeholder="Xodimlarni qidirish..."
-                            style="width:100%; padding:12px 20px; border-radius:14px; border:1px solid var(--adm-border); background:rgba(255,255,255,0.03); color:var(--adm-text); font-size:0.95rem;">
+                <div class="mobile-staff-header" style="display:none; margin: 15px 0 25px 0;">
+                    <div style="display:flex; gap:12px; margin-bottom:15px; align-items:center;">
+                        <div class="search-bar-v2" style="flex:1;">
+                            <input type="text" id="staffMobileSearch" placeholder="Xodimlarni qidirish..."
+                                style="width:100%; padding:12px 20px; border-radius:16px; border:1px solid var(--adm-border); background:rgba(255,255,255,0.03); color:var(--adm-text); font-size:0.9rem; outline:none; box-shadow:inset 0 2px 4px rgba(0,0,0,0.1);">
+                        </div>
+                        <button class="action-btn" id="openAddStaffModalMobile"
+                            style="width:48px; height:48px; border-radius:16px; background:linear-gradient(135deg, #00d2ff, #007aff); border:none; color:#fff; font-size:1.4rem; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 16px rgba(0,122,255,0.3); transition:0.3s;"
+                            onclick="document.getElementById('staffModalOverlay').style.display='flex'">+</button>
                     </div>
                     <div class="filter-chips"
-                        style="display:flex; gap:10px; overflow-x:auto; padding:12px 0 5px 0; scrollbar-width:none;">
+                        style="display:flex; gap:10px; overflow-x:auto; padding:10px 0 5px 0; scrollbar-width:none;">
                         <style>
                             .filter-chips::-webkit-scrollbar {
                                 display: none;
                             }
                         </style>
-                        <div class="chip active">Barchasi</div>
-                        <div class="chip">HR</div>
-                        <div class="chip">Ombor</div>
-                        <div class="chip">Sotuv</div>
-                        <div class="chip">Usta</div>
+                        <div class="chip active" data-dept="all">Barchasi</div>
+                        <div class="chip" data-dept="Ustalar">Ustalar</div>
+                        <div class="chip" data-dept="Ombor">Ombor</div>
+                        <div class="chip" data-dept="Ofis">Ofis</div>
+                        <div class="chip" data-dept="Xo'jalik">Xo'jalik</div>
                     </div>
                 </div>
 
