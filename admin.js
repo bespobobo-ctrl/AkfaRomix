@@ -118,11 +118,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             if (tab === 'logins') loadSystemUsers();
-            if (tab === 'xodimlar') {
-                // Redirect to the new Elite HR Dashboard
-                window.location.href = 'hr_dashboard.html';
-                return;
-            }
+            if (tab === 'xodimlar') loadEmployees();
             if (tab === 'dashboard') loadRomixDashboardStats();
         });
     });
@@ -543,7 +539,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     role,
                     phone,
                     salary_info: salary.includes("so'm") ? salary : salary + " so'm",
-                    experience: joined_year ? joined_year + "-yildan beri" : "Yangi",
                     birth_year: birth_year || null,
                     status: 'Ishlamoqda'
                 };
