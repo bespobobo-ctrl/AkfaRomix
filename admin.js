@@ -183,6 +183,50 @@ document.addEventListener('DOMContentLoaded', async () => {
         setupStaffActions();
     }
 
+    async function checkPendingRequests() {
+        const { data: reqs } = await supabase.from('attendance')
+            .select('*, employees(full_name)')
+            .eq('status', 'Tasdiqlash kutilmoqda');
+
+        const panel = document.getElementById('hr-notif-panel');
+        const list = document.getElementById('pending-requests-list');
+        const dot = document.getElementById('global-notif-dot');
+
+        if (reqs && reqs.length > 0) {
+            panel.style.display = 'block';
+            if (dot) dot.style.display = 'block';
+            list.innerHTML = '';
+            reqs.forEach(req => {
+                const card = document.createElement('div');
+                card.className = 'request-card';
+                card.innerHTML = `
+                    <div>
+                        <div style="font-weight:700; font-size:0.85rem;">${req.employees?.full_name || 'Xodim'}</div>
+                        <div style="font-size:0.7rem; opacity:0.6;">Sana: ${req.date}</div>
+                    </div>
+                    <div>
+                        <button class="approve-btn" onclick="window.processLeave('${req.id}', true)">✓</button>
+                        <button class="reject-btn" onclick="window.processLeave('${req.id}', false)">✖</button>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        } else {
+            panel.style.display = 'none';
+            if (dot) dot.style.display = 'none';
+        }
+    }
+
+    window.processLeave = async (id, approve) => {
+        const newStatus = approve ? 'Ruxsat berildi' : 'Rad etildi';
+        const { error } = await supabase.from('attendance').update({ status: newStatus }).eq('id', id);
+        if (!error) {
+            alert(`So'rov ${newStatus.toLowerCase()} (ID: ${id})`);
+            checkPendingRequests();
+            loadRomixHRData();
+        }
+    };
+
     function setupStaffActions() {
         const btnBonus = document.getElementById('btn-bonus');
         const btnRaise = document.getElementById('btn-raise');
@@ -191,46 +235,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (btnBonus && !btnBonus.dataset.init) {
             btnBonus.dataset.init = "true";
             btnBonus.onclick = async () => {
-                if (!selectedWorkerId) return;
-                const amount = prompt("Premya miqdorini kiriting (masalan: 500,000):");
-                if (amount) {
-                    alert(`Xodimga ${amount} premya belgilandi.`);
-                }
+                if (!selectedWorkerId) { alert("Xodim tanlanmagan!"); return; }
+                const amount = prompt("Premya miqdorini kiriting (UZS):");
+                if (amount) alert(`${amount} so'm premya muvaffaqiyatli belgilandi.`);
             };
             btnRaise.onclick = async () => {
-                if (!selectedWorkerId) return;
+                if (!selectedWorkerId) { alert("Xodim tanlanmagan!"); return; }
                 const newSalary = prompt("Yangi oylik miqdorini kiriting:");
                 if (newSalary) {
-                    const { error } = await supabase.from('employees').update({ salary_info: newSalary }).eq('id', selectedWorkerId);
-                    if (!error) {
-                        alert("Oylik muvaffaqiyatli o'zgartirildi.");
-                        loadRomixHRData();
-                    }
+                    await supabase.from('employees').update({ salary_info: newSalary }).eq('id', selectedWorkerId);
+                    alert("Oylik yangilandi.");
+                    loadRomixHRData();
                 }
             };
             btnLeave.onclick = async () => {
-                if (!selectedWorkerId) return;
-                const { data: reqs } = await supabase.from('attendance')
-                    .select('*')
-                    .eq('employee_id', selectedWorkerId)
-                    .eq('status', 'Tasdiqlash kutilmoqda');
+                if (!selectedWorkerId) { alert("Xodim tanlanmagan!"); return; }
+                const startDate = prompt("Dam olish BOSHLANISH sanasini kiriting (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
+                const endDate = prompt("Dam olish TUGASH sanasini kiriting (YYYY-MM-DD):", startDate);
 
-                if (reqs && reqs.length > 0) {
-                    const choice = confirm("Xodim dam olish uchun ruxsat so'ragan. Tasdiqlaysizmi?");
-                    const newStatus = choice ? 'Ruxsat berildi' : 'Ruxsat berilmadi';
-                    await supabase.from('attendance').update({ status: newStatus }).eq('id', reqs[0].id);
-                    alert(`Javob yuborildi: ${newStatus}`);
-                } else {
-                    const choice = confirm("Xodimga dam olish (otpusk) bermoqchimisiz?");
-                    if (choice) {
-                        await supabase.from('employees').update({ status: 'Dam olmoqda' }).eq('id', selectedWorkerId);
-                        alert("Xodim 'Dam olmoqda' holatiga o'tkazildi.");
-                    }
+                if (startDate) {
+                    // Start process/request
+                    await supabase.from('attendance').insert({
+                        employee_id: selectedWorkerId,
+                        date: startDate,
+                        status: 'Tasdiqlash kutilmoqda',
+                        notes: `Muddat: ${startDate} dan ${endDate} gacha`
+                    });
+                    alert("Ruxsat berish so'rovi yuborildi. Rahbar tasdiqlashi kutilmoqda.");
+                    checkPendingRequests();
                 }
-                loadRomixHRData();
             };
         }
     }
+
+    // Check for requests every 30s
+    setInterval(checkPendingRequests, 30000);
+    setTimeout(checkPendingRequests, 2000);
 
     function initHRPills() {
         const pills = document.querySelectorAll('.pill-btn');

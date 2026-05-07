@@ -215,6 +215,10 @@
                 </div>
                 <div style="display: flex; gap: 20px; align-items: center;">
                     <button id="themeToggle" class="theme-toggle" title="Tungi/Kunduzgi rejim">🌙</button>
+                    <div class="notif-badge">
+                        <i class="icon" style="color: #666; cursor: pointer;">🔔</i>
+                        <span id="global-notif-dot" class="notif-dot"></span>
+                    </div>
                     <i class="icon" style="color: #666; cursor: pointer;">🔍</i>
                     <i class="icon" style="color: #666; cursor: pointer;">🔔</i>
                     <img id="adminAvatar" src="https://ui-avatars.com/api/?name=Rahbar&background=007c52&color=fff"
@@ -468,89 +472,124 @@
                         border-radius: 4px;
                     }
 
-                    /* ═══ Glassmorphism & Cards ═══ */
-                    .hr-card {
-                        background: rgba(255, 255, 255, 0.03);
-                        border: 1px solid rgba(255, 255, 255, 0.08);
-                        border-radius: 24px;
-                        padding: 24px;
-                        backdrop-filter: blur(12px);
-                        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                    }
-
-                    .hr-card:hover {
-                        border-color: rgba(0, 210, 255, 0.2);
-                        background: rgba(255, 255, 255, 0.05);
-                    }
-
-                    /* ═══ Staff List Elite ═══ */
-                    .staff-row-v2 {
+                    /* ═══ Action Bar Premium ═══ */
+                    .hr-action-bar {
                         display: flex;
-                        align-items: center;
                         gap: 15px;
-                        padding: 14px 18px;
-                        background: rgba(255, 255, 255, 0.02);
-                        border: 1px solid rgba(255, 255, 255, 0.04);
+                        margin-top: 25px;
+                        margin-bottom: 25px;
+                    }
+
+                    .hr-action-btn {
+                        flex: 1;
+                        padding: 16px;
+                        border: none;
                         border-radius: 18px;
+                        font-weight: 700;
+                        font-size: 0.88rem;
                         cursor: pointer;
-                        transition: 0.2s;
-                        margin-bottom: 8px;
-                    }
-
-                    .staff-row-v2:hover {
-                        background: rgba(0, 210, 255, 0.06);
-                        border-color: rgba(0, 210, 255, 0.15);
-                        transform: translateX(4px);
-                    }
-
-                    .staff-row-v2.active {
-                        background: linear-gradient(90deg, rgba(0, 210, 255, 0.15), rgba(0, 255, 136, 0.05));
-                        border-color: rgba(0, 210, 255, 0.3);
-                        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-                    }
-
-                    .staff-avatar-mini {
-                        width: 44px;
-                        height: 44px;
-                        border-radius: 14px;
-                        background: linear-gradient(135deg, #00d2ff, #007aff);
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        font-weight: 700;
-                        font-size: 0.9rem;
+                        gap: 10px;
+                        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
                         color: #fff;
-                        flex-shrink: 0;
                     }
 
-                    /* ═══ Bottom Grid ═══ */
-                    .hr-bottom-grid {
-                        display: grid;
-                        grid-template-columns: 1fr 1.2fr;
-                        gap: 25px;
+                    .hr-action-btn:hover {
+                        transform: translateY(-4px) scale(1.02);
+                        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
                     }
 
-                    #daily-att-details {
+                    .btn-premium-gold {
+                        background: linear-gradient(135deg, #FFD700, #DAA520);
+                        color: #000;
+                    }
+
+                    .btn-premium-blue {
+                        background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+                    }
+
+                    .btn-premium-purple {
+                        background: linear-gradient(135deg, #BA68C8, #9C27B0);
+                    }
+
+                    /* ═══ Notification System ═══ */
+                    .notif-badge {
+                        position: relative;
+                        display: inline-flex;
+                    }
+
+                    .notif-dot {
+                        position: absolute;
+                        top: -5px;
+                        right: -5px;
+                        width: 12px;
+                        height: 12px;
+                        background: #ff4d4f;
+                        border-radius: 50%;
+                        border: 2px solid var(--adm-bg);
+                        display: none;
+                        /* JS toggles */
+                    }
+
+                    .notif-panel {
                         background: rgba(255, 255, 255, 0.02);
                         border: 1px solid rgba(255, 255, 255, 0.06);
                         border-radius: 20px;
-                        padding: 25px;
-                        display: flex;
-                        flex-direction: column;
-                        justify-content: center;
-                        align-items: center;
+                        padding: 20px;
+                        margin-bottom: 20px;
+                        display: none;
+                        animation: slideDown 0.4s ease;
                     }
 
-                    .hr-directory {
-                        width: 380px;
-                        flex-shrink: 0;
+                    @keyframes slideDown {
+                        from {
+                            opacity: 0;
+                            transform: translateY(-10px);
+                        }
+
+                        to {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                    }
+
+                    .request-card {
+                        background: rgba(255, 255, 255, 0.04);
+                        border-radius: 12px;
+                        padding: 12px 18px;
                         display: flex;
-                        flex-direction: column;
-                        border-right: 1px solid rgba(255, 255, 255, 0.05);
-                        padding-right: 20px;
+                        justify-content: space-between;
+                        align-items: center;
+                        margin-bottom: 8px;
+                    }
+
+                    .approve-btn {
+                        background: #00ff88;
+                        border: none;
+                        padding: 6px 12px;
+                        border-radius: 8px;
+                        font-weight: 700;
+                        cursor: pointer;
+                        font-size: 0.75rem;
+                        color: #000;
+                    }
+
+                    .reject-btn {
+                        background: rgba(255, 77, 79, 0.1);
+                        border: 1px solid #ff4d4f;
+                        padding: 6px 12px;
+                        border-radius: 8px;
+                        color: #ff4d4f;
+                        font-weight: 700;
+                        cursor: pointer;
+                        font-size: 0.75rem;
+                        margin-left: 8px;
                     }
                 </style>
+
 
 
                 <!-- HR LAYOUT -->
@@ -566,6 +605,18 @@
 
                     <!-- RIGHT: Analytics & Detail -->
                     <div class="hr-detail-panel">
+
+                        <!-- Notification Center (Rahbar Approval) -->
+                        <div id="hr-notif-panel" class="notif-panel">
+                            <h3 style="margin-bottom:15px; font-size:1rem; display:flex; align-items:center; gap:8px;">
+                                <span
+                                    style="background:#ff4d4f; padding:4px 8px; border-radius:8px; font-size:0.7rem; color:#fff;">TASDIQLASH</span>
+                                Yangi so'rovlar
+                            </h3>
+                            <div id="pending-requests-list">
+                                <!-- JS Populated -->
+                            </div>
+                        </div>
 
                         <!-- Premium Action Top Bar -->
                         <div
@@ -712,17 +763,17 @@
                             </div>
                         </div>
 
-                        <!-- Row 2: Action Buttons -->
+                        <!-- Row 2: Elite Action Buttons -->
                         <div class="hr-action-bar">
-                            <button class="hr-action-btn" id="btn-bonus"
-                                style="background:linear-gradient(135deg,#ffb800,#ff8a00); color:#000;">💰 Premya
-                                belgilash</button>
-                            <button class="hr-action-btn" id="btn-raise"
-                                style="background:linear-gradient(135deg,#00d2ff,#007aff); color:#fff;">📈 Oylikni
-                                o'zgartirish</button>
-                            <button class="hr-action-btn" id="btn-leave"
-                                style="background:rgba(255,255,255,0.05); color:#fff; border:1px solid rgba(255,255,255,0.1);">🏝️
-                                Dam berish / Tasdiqlash</button>
+                            <button class="hr-action-btn btn-premium-gold" id="btn-bonus">
+                                <span style="font-size:1.2rem;">💰</span> Premya belgilash
+                            </button>
+                            <button class="hr-action-btn btn-premium-blue" id="btn-raise">
+                                <span style="font-size:1.2rem;">📈</span> Oylikni o'zgartirish
+                            </button>
+                            <button class="hr-action-btn btn-premium-purple" id="btn-leave">
+                                <span style="font-size:1.2rem;">🏝️</span> Dam berish / Tasdiqlash
+                            </button>
                         </div>
 
                         <!-- Row 3: Calendar + Day Details -->
