@@ -636,12 +636,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 let filtered = allEmployees;
                 if (cat !== 'barchasi') {
-                    // Match pill name to actual department field
                     let deptVal = pill.textContent.trim();
                     if (deptVal === 'Ustalar') {
-                        filtered = allEmployees.filter(e => e.department === 'Ustalar' || e.department === 'Usta');
-                    } else {
-                        filtered = allEmployees.filter(e => e.department === deptVal);
+                        filtered = allEmployees.filter(e =>
+                            (e.department && (e.department.toLowerCase().includes('usta') || e.department.toLowerCase().includes('ishlab'))) ||
+                            (e.role && e.role.toLowerCase().includes('usta'))
+                        );
+                    } else if (deptVal === 'Ombor') {
+                        filtered = allEmployees.filter(e =>
+                            (e.department && e.department.toLowerCase().includes('ombor')) ||
+                            (e.role && e.role.toLowerCase().includes('ombor'))
+                        );
+                    } else if (deptVal === 'Ofis') {
+                        filtered = allEmployees.filter(e =>
+                            (e.department && e.department.toLowerCase().includes('ofis')) ||
+                            (e.role && e.role.toLowerCase().includes('manager'))
+                        );
+                    } else if (deptVal === 'Xo\'jalik') {
+                        filtered = allEmployees.filter(e =>
+                            (e.department && e.department.toLowerCase().includes('xojalik'))
+                        );
                     }
                 }
 
