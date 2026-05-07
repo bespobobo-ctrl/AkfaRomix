@@ -500,14 +500,31 @@
                 border: none !important;
             }
 
-            .hr-analytics-grid {
-                grid-template-columns: 1fr !important;
-                gap: 20px !important;
-            }
-
             .drawer-close-btn {
                 display: none !important;
             }
+        }
+
+        /* 📊 Analytics Grid (Universal Side-by-Side) */
+        .hr-analytics-grid {
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 12px !important;
+            width: 100% !important;
+        }
+
+        /* Compact UI for cards to fit well in 3 columns */
+        .hr-analytics-grid .hr-card {
+            padding: 15px 8px !important;
+            min-width: 0 !important;
+        }
+
+        .hr-card h3 {
+            font-size: 0.75rem !important;
+        }
+
+        .hr-card .balance-lg {
+            font-size: 1.1rem !important;
         }
 
         /* 📱 MOBILE STAFF CARD SYSTEM (Elite UI/UX) */
