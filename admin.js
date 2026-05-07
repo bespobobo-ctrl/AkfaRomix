@@ -1141,16 +1141,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (hrModal) {
             hrModal.style.display = 'flex';
-            const saveBtn = document.getElementById('saveHrActionBtn');
-            saveBtn.onclick = () => saveHRAction(type);
+            const saveBtn = document.getElementById('hrActionSaveBtn');
+            if (saveBtn) saveBtn.onclick = () => saveHRAction(type);
+
+            const closeBtn = document.getElementById('hrActionCloseBtn');
+            if (closeBtn) closeBtn.onclick = () => hrModal.style.display = 'none';
         }
     }
 
     async function saveHRAction(type) {
-        const val = document.getElementById('hrActionValue').value.trim();
+        const inputEl = document.getElementById('hrActionValue');
+        const val = inputEl ? inputEl.value.trim() : '';
         if (!val) { alert('Summani kiriting!'); return; }
 
-        const saveBtn = document.getElementById('saveHrActionBtn');
+        const saveBtn = document.getElementById('hrActionSaveBtn');
         const originalText = saveBtn.textContent;
         saveBtn.textContent = 'Muvaffaqiyatli... ✅';
         saveBtn.style.background = '#00ff88';
