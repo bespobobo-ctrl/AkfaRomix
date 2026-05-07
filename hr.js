@@ -22,28 +22,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (initEl) initEl.textContent = (user.username || 'A')[0].toUpperCase();
 
     // Logout
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-        localStorage.removeItem('currentUser');
-        window.location.href = '/';
-    });
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('currentUser');
+            window.location.href = '/';
+        });
+    }
 
     // 🍱 MODAL CONTROL (GSAP NIxtio Style)
     const modal = document.getElementById('addWorkerModalOverlay');
-    document.getElementById('addWorkerBtn').addEventListener('click', () => {
-        clearModal();
-        modal.style.display = 'flex';
-        gsap.fromTo(".modal-content",
-            { scale: 0.8, opacity: 0, y: 40 },
-            { scale: 1, opacity: 1, y: 0, duration: 0.6, ease: "power4.out" }
-        );
-    });
-
-    document.getElementById('closeAddWorkerBtn').addEventListener('click', () => {
-        gsap.to(".modal-content", {
-            scale: 0.9, opacity: 0, y: 20, duration: 0.3,
-            onComplete: () => modal.style.display = 'none'
+    const addBtn = document.getElementById('addWorkerBtn');
+    if (addBtn && modal) {
+        addBtn.addEventListener('click', () => {
+            clearModal();
+            modal.style.display = 'flex';
+            gsap.fromTo(".modal-content",
+                { scale: 0.8, opacity: 0, y: 40 },
+                { scale: 1, opacity: 1, y: 0, duration: 0.6, ease: "power4.out" }
+            );
         });
-    });
+    }
+
+    const closeAddBtn = document.getElementById('closeAddWorkerBtn');
+    if (closeAddBtn && modal) {
+        closeAddBtn.addEventListener('click', () => {
+            gsap.to(".modal-content", {
+                scale: 0.9, opacity: 0, y: 20, duration: 0.3,
+                onComplete: () => modal.style.display = 'none'
+            });
+        });
+    }
 
     // 🎫 BADGE MODAL
     const closeBadgeBtn = document.getElementById('closeBadgeBtn');
@@ -126,12 +135,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             activeDept = pill.dataset.dept;
             filterAndRender();
         });
-    });
-
-    // 🎫 MANUAL BADGE PREVIEW
-    document.getElementById('genBadgeBtn').addEventListener('click', () => {
-        if (currentEmp) prepareBadge(currentEmp);
-        else alert("Iltimos, xodimni tanlang!");
     });
 
     // 🏗️ DATA INITIALIZATION
@@ -322,6 +325,8 @@ function showEmployeeDetail(emp) {
     }
 
     gsap.fromTo(profileView, { scale: 0.95, opacity: 0, y: 30 }, { scale: 1, opacity: 1, y: 0, duration: 0.5, ease: "power4.out" });
+
+    // Safety check for charts or other UI
     lucide.createIcons();
 }
 
