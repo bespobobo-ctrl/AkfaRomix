@@ -765,20 +765,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             const initials = emp.full_name.split(' ').map(n => n?.[0]).join('').substring(0, 2).toUpperCase() || '?';
             const salary = emp.salary_info || '---';
             const avatarHtml = emp.avatar_url
-                ? `<img src="${emp.avatar_url}" style="width:32px; height:32px; border-radius:10px; object-fit:cover;">`
-                : `<div style="width:32px; height:32px; border-radius:10px; background:linear-gradient(135deg, #00d2ff, #007aff); display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:700; color:#fff;">${initials}</div>`;
+                ? `<img src="${emp.avatar_url}" style="width:36px; height:36px; border-radius:12px; object-fit:cover; box-shadow:0 5px 15px rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1);">`
+                : `<div class="cyber-avatar" style="width:36px; height:36px;">${initials}</div>`;
 
             tr.innerHTML = `
-                <td style="padding:15px 24px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                    <div style="display:flex; align-items:center; gap:12px;">
+                <td style="padding:18px 24px;">
+                    <div style="display:flex; align-items:center; gap:14px; animation: fadeIn 0.4s ease forwards;">
                         ${avatarHtml}
-                        <div style="font-weight:600; color:var(--adm-text); overflow:hidden; text-overflow:ellipsis;">${emp.full_name}</div>
+                        <div style="font-weight:700; color:var(--adm-text); letter-spacing:0.5px; font-size:0.9rem;">${emp.full_name}</div>
                     </div>
                 </td>
-                <td style="font-size:0.85rem; color:var(--adm-text-sec); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${emp.role || '---'}</td>
-                <td style="font-size:0.85rem; font-weight:700; color:var(--adm-accent); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${salary}</td>
-                <td style="font-size:0.85rem; color:var(--adm-text-sec); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; opacity:0.8;">${emp.department || 'Bo\'limsiz'}</td>
-                <td style="font-size:0.85rem; color:var(--adm-text-sec); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${emp.experience || 'Yangi'}</td>
+                <td style="font-size:0.8rem; color:var(--adm-text-sec); letter-spacing:0.8px; text-transform:uppercase; font-weight:600; opacity:0.7;">${emp.role || '---'}</td>
+                <td style="font-size:0.9rem; font-weight:800; color:#00ff88; text-shadow:0 0 10px rgba(0,255,136,0.1); letter-spacing:0.5px;">${salary}</td>
+                <td style="font-size:0.8rem; color:var(--adm-text-sec); letter-spacing:1px; text-transform:uppercase; font-weight:600; opacity:0.6;">${emp.department || '---'}</td>
+                <td style="font-size:0.8rem; color:var(--adm-text-sec); font-weight:600; opacity:0.7;">${emp.experience || 'Yangi'}</td>
                 <td>
                     <div style="display:flex; align-items:center; gap:8px;">
                         <span style="width:8px; height:8px; border-radius:50%; background:#007c52; box-shadow:0 0 8px rgba(0,124,82,0.3);"></span>
