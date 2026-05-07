@@ -250,25 +250,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             modal.style.display = 'flex';
             container.innerHTML = '';
 
-            // Clean specific previous event listener by cloning node
-            const oldSave = saveBtn.cloneNode(true);
-            saveBtn.parentNode.replaceChild(oldSave, saveBtn);
-            const newSaveBtn = document.getElementById('hrActionSaveBtn');
+            // Re-fetch the button in case it was modified, though not strictly required.
+            const currentSaveBtn = document.getElementById('hrActionSaveBtn');
 
             if (actionType === 'bonus') {
                 icon.textContent = '💰';
                 title.textContent = 'Premya Belgilash';
                 desc.textContent = "Xodimga beriladigan mukofot miqdorini kiriting.";
-                newSaveBtn.style.background = 'linear-gradient(135deg, #FFD700, #DAA520)';
-                newSaveBtn.style.boxShadow = '0 4px 15px rgba(218, 165, 32, 0.4)';
-                newSaveBtn.style.color = '#000';
+                currentSaveBtn.style.background = 'linear-gradient(135deg, #FFD700, #DAA520)';
+                currentSaveBtn.style.boxShadow = '0 4px 15px rgba(218, 165, 32, 0.4)';
+                currentSaveBtn.style.color = '#000';
 
                 container.innerHTML = `
                     <label style="font-size:0.8rem; color:var(--adm-text-sec); font-weight:600; margin-left:5px;">Miqdor (UZS)</label>
                     <input type="number" id="hrActionAmount" class="form-input-v2" placeholder="Masalan: 500000" style="font-size:1.1rem; padding:15px; border-radius:14px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:#fff; width:100%; box-sizing:border-box;">
                 `;
 
-                newSaveBtn.onclick = () => {
+                currentSaveBtn.onclick = () => {
                     const val = document.getElementById('hrActionAmount').value;
                     if (val) {
                         alert(`${val} so'm premya muvaffaqiyatli belgilandi.`);
@@ -279,18 +277,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 icon.textContent = '📈';
                 title.textContent = "Oylikni O'zgartirish";
                 desc.textContent = "Xodimning doimiy maoshini yangilang.";
-                newSaveBtn.style.background = 'linear-gradient(135deg, #00d2ff, #3a7bd5)';
-                newSaveBtn.style.boxShadow = '0 4px 15px rgba(0, 122, 255, 0.4)';
-                newSaveBtn.style.color = '#fff';
+                currentSaveBtn.style.background = 'linear-gradient(135deg, #00d2ff, #3a7bd5)';
+                currentSaveBtn.style.boxShadow = '0 4px 15px rgba(0, 122, 255, 0.4)';
+                currentSaveBtn.style.color = '#fff';
 
                 container.innerHTML = `
                     <label style="font-size:0.8rem; color:var(--adm-text-sec); font-weight:600; margin-left:5px;">Yangi maosh miqdori</label>
                     <input type="number" id="hrActionSalary" class="form-input-v2" placeholder="Yangi oylikni kiriting" style="font-size:1.1rem; padding:15px; border-radius:14px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:#fff; width:100%; box-sizing:border-box;">
                 `;
 
-                newSaveBtn.onclick = async () => {
+                currentSaveBtn.onclick = async () => {
                     const val = document.getElementById('hrActionSalary').value;
                     if (val) {
+                        currentSaveBtn.innerHTML = "Saqlanmoqda...";
                         await supabase.from('employees').update({ salary_info: val }).eq('id', selectedWorkerId);
                         alert("Oylik muvaffaqiyatli yangilandi.");
                         modal.style.display = 'none';
@@ -301,9 +300,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 icon.textContent = '🏝️';
                 title.textContent = "Dam Olish (Otpusk)";
                 desc.textContent = "Xodimga qaysi sanalar orasida dam berishni belgilang.";
-                newSaveBtn.style.background = 'linear-gradient(135deg, #00ff88, #00cc6a)';
-                newSaveBtn.style.boxShadow = '0 4px 15px rgba(0, 255, 136, 0.4)';
-                newSaveBtn.style.color = '#000';
+                currentSaveBtn.style.background = 'linear-gradient(135deg, #00ff88, #00cc6a)';
+                currentSaveBtn.style.boxShadow = '0 4px 15px rgba(0, 255, 136, 0.4)';
+                currentSaveBtn.style.color = '#000';
 
                 const today = new Date().toISOString().split('T')[0];
                 container.innerHTML = `
@@ -319,10 +318,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                 `;
 
-                newSaveBtn.onclick = async () => {
+                currentSaveBtn.onclick = async () => {
                     const start = document.getElementById('hrActionStart').value;
                     const end = document.getElementById('hrActionEnd').value;
                     if (start && end) {
+                        currentSaveBtn.innerHTML = "Yuborilmoqda...";
                         await supabase.from('attendance').insert({
                             employee_id: selectedWorkerId,
                             date: start,
@@ -335,6 +335,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 };
             }
+            currentSaveBtn.innerHTML = "Tasdiqlash";
         }
 
         if (btnBonus && !btnBonus.dataset.initModal) {
