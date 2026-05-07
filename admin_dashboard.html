@@ -725,12 +725,12 @@
                         <input type="text" id="staffSearchInput" placeholder="Xodim qidirish..."
                             style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:12px 18px 12px 40px; color:#fff; font-size:0.85rem; width:350px; outline:none; transition:0.3s; box-shadow:inset 0 2px 4px rgba(0,0,0,0.1);">
                         <span
-                            style="position:absolute; left:15px; top:50%; transform:translateY(-50%); opacity:0.3;">🔍</span>
+                            style="position:absolute; left:15px; top:50%; transform:translateY(-50%); opacity:0.3;"></span>
                     </div>
                 </div>
 
                 <div class="hr-main-grid"
-                    style="display:grid; grid-template-columns: 380px 1fr; gap:30px; margin-bottom:30px;">
+                    style="display:grid; grid-template-columns: 380px 1fr; gap:30px; margin-bottom:30px; align-items:start;">
 
                     <!-- LEFT COLUMN: Executive Control Wing -->
                     <div class="hr-left-sidebar" style="display:flex; flex-direction:column; gap:20px;">
@@ -744,8 +744,8 @@
                                     style="font-size:0.7rem; color:rgba(255,255,255,0.4); font-weight:700; letter-spacing:1px; text-transform:uppercase;">
                                     Bugungi Sana</div>
                                 <button id="toggleCalendarBtn" class="cal-nav-btn"
-                                    style="width: auto; padding: 4px 10px; font-size: 0.65rem; background:rgba(255,255,255,0.05); border-radius:8px;">📅
-                                    Taqvimni ochish</button>
+                                    style="width: auto; padding: 4px 10px; font-size: 0.65rem; background:rgba(255,255,255,0.05); border-radius:8px;">Taqvimni
+                                    ochish</button>
                             </div>
                             <div id="today-big-display"
                                 style="font-size:1.8rem; font-weight:800; color:#fff; letter-spacing:-1px;">7 May</div>
@@ -779,81 +779,75 @@
                             style="background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.05); border-radius:28px; padding:20px; overflow-y:auto; scrollbar-width: none; max-height: 500px;">
                             <p
                                 style="text-align:center; color:rgba(255,255,255,0.15); font-size:0.8rem; padding: 20px;">
-                                📅 Kunni tanlang</p>
+                                Kunni tanlang</p>
                         </div>
                     </div>
 
-                    <!-- RIGHT COLUMN: Profile & Actions -->
-                    <div class="hr-right-content" style="display:flex; flex-direction:column; gap:25px;">
+                    <!-- RIGHT COLUMN: Analytics & Actions -->
+                    <div class="hr-right-content" style="display:flex; flex-direction:column; gap:20px;">
 
-                        <div id="hr-notif-panel" class="notif-panel" style="margin-bottom:0;">
-                            <!-- Notification Center -->
-                        </div>
-
+                        <!-- 3-Card Bento Core -->
                         <div class="hr-analytics-grid"
                             style="display:grid; grid-template-columns: repeat(3, 1fr); gap:20px;">
-                            <!-- Card: Profile -->
-                            <div class="hr-card" style="display:flex; flex-direction:column; align-items:center;">
-                                <div style="position:relative; width:80px; height:80px; margin-bottom:14px;">
-                                    <img id="selected-staff-img"
-                                        src="https://ui-avatars.com/api/?name=?&background=0a1628&color=555&size=160"
-                                        style="width:100%; height:100%; border-radius:20px; object-fit:cover; border:2px solid rgba(255,255,255,0.08);">
+                            <!-- Card: Profile Summary -->
+                            <div class="hr-card"
+                                style="display:flex; flex-direction:column; align-items:center; text-align:center;">
+                                <div style="position:relative; margin-bottom:15px;">
+                                    <img id="selected-staff-img" src=""
+                                        style="width:100px; height:100px; border-radius:30px; object-fit:cover; border:3px solid rgba(0,255,136,0.2);">
                                     <div id="st-salary-badge"
-                                        style="position:absolute; bottom:-6px; right:-12px; background:linear-gradient(135deg,#00d2ff,#007aff); color:#fff; padding:3px 10px; border-radius:8px; font-size:0.65rem; font-weight:700;">
+                                        style="position:absolute; bottom:-5px; left:50%; transform:translateX(-50%); background:var(--adm-accent); color:#fff; font-size:0.65rem; padding:4px 10px; border-radius:10px; font-weight:800; white-space:nowrap; box-shadow:0 10px 20px rgba(0,124,82,0.3);">
                                         ---</div>
                                 </div>
                                 <h3 id="selected-staff-name"
-                                    style="font-size:1.1rem; font-weight:700; margin-bottom:2px;">Xodim tanlang</h3>
-                                <p id="selected-staff-role"
-                                    style="color:#00d2ff; font-size:0.75rem; margin-bottom:18px;">---</p>
+                                    style="font-size:1.1rem; font-weight:800; margin-bottom:4px; color:#fff;">---</h3>
+                                <div id="selected-staff-role"
+                                    style="font-size:0.75rem; color:var(--adm-accent); font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:20px;">
+                                    ---</div>
+
                                 <div
-                                    style="width:100%; display:flex; flex-direction:column; gap:8px; font-size:0.78rem;">
-                                    <div
-                                        style="display:flex; justify-content:space-between; padding:8px 12px; background:rgba(255,255,255,0.03); border-radius:10px;">
-                                        <span style="opacity:0.5;">Telefon</span><span id="st-phone"
-                                            style="font-weight:600;">---</span>
+                                    style="width:100%; display:flex; flex-direction:column; gap:12px; border-top:1px solid rgba(255,255,255,0.05); padding-top:15px;">
+                                    <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
+                                        <span style="opacity:0.4;">Telefon</span>
+                                        <span id="st-phone" style="font-weight:600; color:#fff;">---</span>
                                     </div>
-                                    <div
-                                        style="display:flex; justify-content:space-between; padding:8px 12px; background:rgba(255,255,255,0.03); border-radius:10px;">
-                                        <span style="opacity:0.5;">Bo'lim</span><span id="st-dept"
-                                            style="font-weight:600;">---</span>
+                                    <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
+                                        <span style="opacity:0.4;">Bo'lim</span>
+                                        <span id="st-dept" style="font-weight:600; color:#fff;">---</span>
                                     </div>
-                                    <div
-                                        style="display:flex; justify-content:space-between; padding:8px 12px; background:rgba(255,255,255,0.03); border-radius:10px;">
-                                        <span style="opacity:0.5;">Staj</span><span id="st-exp"
-                                            style="font-weight:600;">---</span>
+                                    <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
+                                        <span style="opacity:0.4;">Staj</span>
+                                        <span id="st-exp" style="font-weight:600; color:#fff;">---</span>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Card: Time Tracker -->
+                            <!-- Card: Time Tracking -->
                             <div class="hr-card"
                                 style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                                <h4 style="font-size:0.85rem; font-weight:600; margin-bottom:18px; opacity:0.8;">Ish
-                                    Vaqti <span style="opacity:0.4;">(Bugun)</span></h4>
-                                <div
-                                    style="position:relative; width:120px; height:120px; display:flex; align-items:center; justify-content:center;">
-                                    <svg width="120" height="120" viewBox="0 0 130 130">
-                                        <circle cx="65" cy="65" r="55" fill="none" stroke="rgba(255,255,255,0.04)"
-                                            stroke-width="8" />
-                                        <circle cx="65" cy="65" r="55" fill="none" stroke="url(#timeGrad2)"
-                                            stroke-width="8" stroke-dasharray="345" stroke-dashoffset="100"
-                                            stroke-linecap="round" transform="rotate(-90 65 65)" />
-                                        <defs>
-                                            <linearGradient id="timeGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
-                                                <stop offset="0%" stop-color="#00d2ff" />
-                                                <stop offset="100%" stop-color="#00ff88" />
-                                            </linearGradient>
-                                        </defs>
+                                <div style="font-size:0.85rem; font-weight:600; opacity:0.8; margin-bottom:20px;">Ish
+                                    Vaqti <small style="opacity:0.5;">(Bugun)</small></div>
+                                <div style="position:relative; width:130px; height:130px;">
+                                    <svg viewBox="0 0 100 100"
+                                        style="transform:rotate(-90deg); width:100%; height:100%;">
+                                        <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.04)"
+                                            stroke-width="6" />
+                                        <circle cx="50" cy="50" r="45" fill="none" stroke="#00ff88" stroke-width="6"
+                                            stroke-dasharray="283" stroke-dashoffset="70" stroke-linecap="round"
+                                            style="filter:drop-shadow(0 0 8px rgba(0,255,136,0.4));" />
                                     </svg>
-                                    <div style="position:absolute; text-align:center;">
-                                        <div id="worked-hours" style="font-size:1.4rem; font-weight:800;">00:00</div>
-                                        <div style="font-size:0.55rem; opacity:0.4; text-transform:uppercase;">soat
+                                    <div
+                                        style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center;">
+                                        <div id="worked-hours"
+                                            style="font-size:1.6rem; font-weight:900; color:#fff; line-height:1;">00:00
                                         </div>
+                                        <div
+                                            style="font-size:0.55rem; opacity:0.4; letter-spacing:1px; margin-top:4px;">
+                                            SOAT</div>
                                     </div>
                                 </div>
                                 <div
-                                    style="display:grid; grid-template-columns:1fr 1fr; gap:8px; width:100%; margin-top:15px;">
+                                    style="display:grid; grid-template-columns:1fr 1fr; gap:12px; width:100%; margin-top:25px;">
                                     <div
                                         style="text-align:center; background:rgba(0,255,136,0.04); padding:8px; border-radius:10px;">
                                         <div style="font-size:0.55rem; opacity:0.4;">KELDI</div>
@@ -903,11 +897,11 @@
                         <div class="hr-action-bar"
                             style="display:grid; grid-template-columns: 1fr 1fr 1.2fr; gap:15px;">
                             <button class="hr-action-btn btn-premium-gold" id="btn-bonus"
-                                style="padding:14px; font-size:0.8rem;">💰 Premya</button>
+                                style="padding:14px; font-size:0.8rem;">Premya</button>
                             <button class="hr-action-btn btn-premium-blue" id="btn-raise"
-                                style="padding:14px; font-size:0.8rem;">📈 Oylik</button>
+                                style="padding:14px; font-size:0.8rem;">Oylik</button>
                             <button class="hr-action-btn btn-premium-purple" id="btn-leave"
-                                style="padding:14px; font-size:0.8rem;">🏝️ Dam berish</button>
+                                style="padding:14px; font-size:0.8rem;">Dam berish</button>
                         </div>
                     </div>
                 </div>

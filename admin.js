@@ -769,18 +769,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (bigDay) bigDay.textContent = `${dayNames[dateObj.getDay()]}, ${year}`;
 
         const displayStatusHTML = dayRecords.length === 0 ?
-            `<div style="text-align:center; padding:30px; color:rgba(255,255,255,0.15); font-size:0.8rem; font-weight:500; border:1px dashed rgba(255,255,255,0.05); border-radius:15px; margin-top:10px;">📉 Baza ma'lumoti topilmadi</div>` :
+            `<div style="text-align:center; padding:30px; color:rgba(255,255,255,0.15); font-size:0.8rem; font-weight:500; border:1px dashed rgba(255,255,255,0.05); border-radius:15px; margin-top:10px;">Baza ma'lumoti topilmadi</div>` :
             dayRecords.map(r => {
-                let icon = '📆';
                 let color = '#fff';
                 let glow = 'rgba(255,255,255,0.1)';
                 let s = r.status;
 
-                if (s.includes('Premya')) { icon = '💰'; color = '#FFD700'; glow = 'rgba(255,215,0,0.2)'; }
-                else if (s.includes('Oylik')) { icon = '📈'; color = '#00d2ff'; glow = 'rgba(0,210,255,0.2)'; }
-                else if (s.includes('Ruxsat') || s.includes('Dam')) { icon = '🏝️'; color = '#BA68C8'; glow = 'rgba(186,104,200,0.2)'; }
-                else if (s.includes('Kech')) { icon = '🕒'; color = '#ff4d4f'; glow = 'rgba(255,77,79,0.2)'; }
-                else if (s.includes('Vaqtida') || s.includes('Keldi')) { icon = '✅'; color = '#00ff88'; glow = 'rgba(0,255,136,0.2)'; }
+                if (s.includes('Premya')) { color = '#FFD700'; glow = 'rgba(255,215,0,0.2)'; }
+                else if (s.includes('Oylik')) { color = '#00d2ff'; glow = 'rgba(0,210,255,0.2)'; }
+                else if (s.includes('Ruxsat') || s.includes('Dam')) { color = '#BA68C8'; glow = 'rgba(186,104,200,0.2)'; }
+                else if (s.includes('Kech')) { color = '#ff4d4f'; glow = 'rgba(255,77,79,0.2)'; }
+                else if (s.includes('Vaqtida') || s.includes('Keldi')) { color = '#00ff88'; glow = 'rgba(0,255,136,0.2)'; }
 
                 return `
                     <div class="premium-event-card" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:16px; border-radius:18px; margin-bottom:10px; position:relative; overflow:hidden;">
@@ -808,11 +807,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <!-- PAYROLL CARD -->
                     <div style="margin-bottom:18px; background:linear-gradient(135deg, rgba(0,210,255,0.1), rgba(0,0,0,0.3)); border:1px solid rgba(0,210,255,0.15); border-radius:18px; padding:15px; box-shadow:0 8px 32px rgba(0,0,0,0.1);">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                            <div style="font-size:0.75rem; color:rgba(255,255,255,0.5); font-weight:500;">🕒 Ish vaqti</div>
+                            <div style="font-size:0.75rem; color:rgba(255,255,255,0.5); font-weight:500;">Ish vaqti</div>
                             <div style="font-size:0.85rem; color:#fff; font-weight:700;">${workedHours} soat</div>
                         </div>
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                            <div style="font-size:0.75rem; color:rgba(255,255,255,0.5); font-weight:500;">💰 Stavka</div>
+                            <div style="font-size:0.75rem; color:rgba(255,255,255,0.5); font-weight:500;">Stavka</div>
                             <div style="font-size:0.8rem; color:rgba(255,255,255,0.7);">${Math.round(dailyRate).toLocaleString()} UZS</div>
                         </div>
                         <div style="height:1px; background:rgba(255,255,255,0.05); margin-bottom:12px;"></div>
