@@ -640,11 +640,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (isLeaving) workedHours = 0;
 
                 let salaryText = '0';
-                if (window.romixStaffData && selectedWorkerId) {
-                    const emp = window.romixStaffData.find(e => e.id === selectedWorkerId);
+                if (typeof allEmployees !== 'undefined' && selectedWorkerId) {
+                    const emp = allEmployees.find(e => e.id === selectedWorkerId);
                     if (emp) salaryText = emp.salary_info || '0';
                 }
-                const monthlySalary = parseInt(salaryText.replace(/\\D/g, '')) || 0;
+                const monthlySalary = parseInt(String(salaryText).replace(/\\D/g, '')) || 0;
 
                 // Calculate Working days in month (assuming Sunday is off)
                 let workingDaysCount = 0;
