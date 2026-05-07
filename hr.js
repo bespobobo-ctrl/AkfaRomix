@@ -159,9 +159,23 @@ async function loadInitialData() {
 }
 
 function filterAndRender() {
-    const filtered = activeDept === 'all'
-        ? employeesData
-        : employeesData.filter(e => e.department === activeDept || (e.role && e.role.includes(activeDept)));
+    let filtered = employeesData;
+    if (activeDept !== 'all') {
+        filtered = employeesData.filter(e => {
+            const d = (e.department || '').toLowerCase();
+            const r = (e.role || '').toLowerCase();
+            const target = activeDept.toLowerCase();
+
+            if (target === 'ustalar') {
+                return d.includes('usta') || d.includes('ishlab') || r.includes('usta');
+            } else if (target === 'ombor') {
+                return d.includes('ombor') || r.includes('ombor');
+            } else if (target === 'ofis') {
+                return d.includes('ofis') || r.includes('manager');
+            }
+            return d === target;
+        });
+    }
     renderStaffList(filtered);
 }
 
