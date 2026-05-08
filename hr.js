@@ -6,6 +6,7 @@ let todayAtt = [];
 let currentEmp = null;
 let currentEditId = null;
 let activeDept = 'all';
+let activeAnaDept = 'all';
 let tempPhotoData = null;
 let html5QrCode = null;
 let workInterval = null;
@@ -106,13 +107,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     }
 
-    // Pill Filtering
-    document.querySelectorAll('.pill').forEach(pill => {
+    // Main Dashboard Pill Filtering
+    document.querySelectorAll('.pill[data-dept]').forEach(pill => {
         pill.onclick = () => {
-            document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.pill[data-dept]').forEach(p => p.classList.remove('active'));
             pill.classList.add('active');
             activeDept = pill.dataset.dept;
             filterAndRender();
+        };
+    });
+
+    // Analytics Dashboard Pill Filtering
+    document.querySelectorAll('.pill[data-ana-dept]').forEach(pill => {
+        pill.onclick = () => {
+            document.querySelectorAll('.pill[data-ana-dept]').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+            activeAnaDept = pill.dataset.anaDept;
+            renderAnalyticsBoard();
         };
     });
 
@@ -922,7 +933,12 @@ window.renderAnalyticsBoard = function () {
     let totalBonusAll = 0;
     let totalFinesAll = 0;
 
-    employeesData.forEach(emp => {
+    let targetEmps = employeesData;
+    if (activeAnaDept !== 'all') {
+        targetEmps = employeesData.filter(e => ((e.department || '').toLowerCase() === activeAnaDept.toLowerCase() || (e.dept || '').toLowerCase() === activeAnaDept.toLowerCase()));
+    }
+
+    targetEmps.forEach(emp => {
         // Demofied calculations for professional display
         const baseSalary = parseInt(emp.salary_info?.toString().replace(/\D/g, '') || 5000000);
         const dayRate = baseSalary / 26;
