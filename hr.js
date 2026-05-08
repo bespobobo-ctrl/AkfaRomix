@@ -128,7 +128,8 @@ async function loadInitialData() {
     if (table) table.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--accent);">⏳ Bazaga ulanilmoqda...</td></tr>`;
 
     try {
-        const todayStr = new Date().toISOString().split('T')[0];
+        const today = new Date();
+        const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
 
         // STEP 2: Fetch employees
         if (table) table.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--accent);">⏳ Xodimlar yuklanmoqda...</td></tr>`;
@@ -1476,7 +1477,8 @@ window.processAttendanceExternal = (id, type) => {
 };
 
 async function processAttendance(emp, type) {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const today = new Date();
+    const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
     const nowIso = new Date().toISOString();
 
     let payload = {
