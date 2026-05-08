@@ -230,16 +230,21 @@ async function saveWorker() {
     btn.disabled = true;
 
     const fullName = `${fname} ${lname}`.trim();
+    // 🧠 SMART PAYLOAD: Automatically use the correct column name found in employeesData
+    const isDeptShort = employeesData.length > 0 && ('dept' in employeesData[0]);
+
     const payload = {
         full_name: fullName,
         role: role,
-        department: dept,
         salary_info: salary || '0',
         phone: phone || '',
         birth_year: birthYear || null,
         joined_year: joinedYear || null,
         avatar_url: tempPhotoData || (currentEditId ? currentEmp.avatar_url : `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=1a7b7c&color=fff`)
     };
+
+    if (isDeptShort) payload.dept = dept;
+    else payload.department = dept;
 
     let res;
     if (currentEditId) {
