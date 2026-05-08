@@ -33,6 +33,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.closeBadgeModal = closeBadgeModal;
     window.downloadBadge = downloadBadge;
     window.printBadgeReal = printBadgeReal;
+    window.closeActionModal = closeActionModal;
+    window.closeActionModal = closeActionModal;
 
     // Logout
     const logoutBtn = document.getElementById('logoutBtn');
@@ -247,16 +249,20 @@ async function saveWorker() {
     }
 
     if (!res.error) {
-        btn.textContent = 'TAYYOR!';
+        btn.textContent = 'MUVAFFAQIYATLI!';
+        btn.style.background = '#00ff88';
         setTimeout(async () => {
             document.getElementById('addWorkerModalOverlay').style.display = 'none';
             await loadInitialData();
             clearModal();
             btn.textContent = 'SAQLASH';
+            btn.style.background = '';
             btn.disabled = false;
-        }, 1000);
+            currentEditId = null; // Reset
+        }, 1500);
     } else {
-        alert("Xatolik: " + res.error.message);
+        console.error("Supabase Error:", res.error);
+        alert("Xatolik yuz berdi: " + res.error.message);
         btn.disabled = false;
         btn.textContent = 'QAYTA URINISH';
     }
@@ -273,6 +279,10 @@ function clearModal() {
     document.getElementById('empJoinedYear').value = '';
     document.getElementById('modalPhotoPreview').style.display = 'none';
     document.getElementById('plusIcon').style.display = 'block';
+}
+
+function closeBadgeModal() {
+    document.getElementById('badgeModalOverlay').style.display = 'none';
 }
 
 function prepareBadge() {
@@ -309,17 +319,83 @@ function prepareBadge() {
     }
 }
 
-function closeBadgeModal() {
-    document.getElementById('badgeModalOverlay').style.display = 'none';
-}
-
 function handlePremya() {
-    const val = prompt(`${currentEmp.full_name} uchun premya miqdorini kiriting:`);
-    if (val) alert(`${val} UZS muvaffaqiyatli saqlandi!`);
+    if (!currentEmp) return;
+    showActionModal({
+        title: "PREMYA BERISH",
+        desc: `${currentEmp.full_name} uchun rag'batlantirish miqdorini kiriting:`,
+        icon: "award",
+        input: true,
+        confirmText: "PREMYANI TASDIQLASH",
+        onConfirm: (val) => {
+            alert(`${val} UZS premya muvaffaqiyatli qo'shildi!`);
+            closeActionModal();
+        }
+    });
 }
 
 function handleOylik() {
-    alert(`Xodim: ${currentEmp.full_name}\nAsosiy oylik: ${parseInt(currentEmp.salary_info || 0).toLocaleString()} UZS`);
+    if (!currentEmp) return;
+    showActionModal({
+        title: "OYLIK MA'LUMOT",
+        desc: `${currentEmp.full_name}ning joriy oylik maoshi:`,
+        icon: "wallet",
+        input: false,
+        confirmText: "TUSHUNARLI",
+        customContent: `<div style="font-size:2rem; font-weight:900; color:#00ff88; margin:20px 0;">${parseInt(currentEmp.salary_info || 0).toLocaleString()} <small style="font-size:1rem; color:rgba(255,255,255,0.6)">UZS</small></div>`,
+        onConfirm: () => closeActionModal()
+    });
+}
+
+// 💎 PREMIUM ACTION MODAL ENGINE
+function showActionModal(cfg) {
+    const overlay = document.getElementById('actionModalOverlay');
+    const title = document.getElementById('actionModalTitle');
+    const desc = document.getElementById('actionModalDesc');
+    const iconInner = document.getElementById('actionIconInner');
+    const inputBox = document.getElementById('actionInputBox');
+    const inputField = document.getElementById('actionInput');
+    const mainBtn = document.getElementById('actionMainBtn');
+
+    title.textContent = cfg.title;
+    desc.textContent = cfg.desc;
+    iconInner.setAttribute('data-lucide', cfg.icon || 'check-circle');
+    mainBtn.textContent = cfg.confirmText || 'TASDIQLASH';
+
+    if (cfg.input) {
+        inputBox.style.display = 'block';
+        inputField.value = '';
+    } else {
+        inputBox.style.display = 'none';
+    }
+
+    // Handle Custom HTML content if needed
+    const oldContent = overlay.querySelector('.custom-modal-content');
+    if (oldContent) oldContent.remove();
+    if (cfg.customContent) {
+        const div = document.createElement('div');
+        div.className = 'custom-modal-content';
+        div.innerHTML = cfg.customContent;
+        desc.after(div);
+    }
+
+    overlay.style.display = 'flex';
+    gsap.fromTo(overlay.querySelector('.modal-content'), { y: -100, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "back.out(1.7)" });
+
+    mainBtn.onclick = () => {
+        if (cfg.onConfirm) cfg.onConfirm(inputField.value);
+    };
+
+    lucide.createIcons();
+}
+
+function closeActionModal() {
+    const overlay = document.getElementById('actionModalOverlay');
+    gsap.to(overlay.querySelector('.modal-content'), {
+        y: -50, opacity: 0, duration: 0.3, onComplete: () => {
+            overlay.style.display = 'none';
+        }
+    });
 }
 
 let selectedPeriod = 'month';
