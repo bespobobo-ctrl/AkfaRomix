@@ -191,7 +191,7 @@ function renderStaffList(data) {
     container.innerHTML = '';
 
     // Update Stats
-    updateStatsHeader(employeesData, todayAtt);
+    updateGlobalStats();
 
     if (data.length === 0) {
         container.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:50px; color:var(--text-s);">Xodimlar topilmadi</td></tr>';
