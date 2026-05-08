@@ -1109,85 +1109,84 @@
         </div>
     </div>
 
-    <!-- MODAL BADGE -->
+    <!-- MODAL BADGE (ELITE LUXURY RELOADED) -->
     <div class="badge-modal-overlay" id="badgeModalOverlay"
-        style="position:fixed; inset:0; background:rgba(0,0,0,0.95); backdrop-filter:blur(30px); z-index:9000; display:none; align-items:center; justify-content:center; flex-direction:column;">
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.98); backdrop-filter:blur(40px); z-index:9999; display:none; align-items:center; justify-content:center; flex-direction:column; padding:20px;">
 
         <style>
             .badge-presentation {
                 display: flex;
-                gap: 40px;
+                gap: 60px;
                 justify-content: center;
                 width: 100%;
-                perspective: 1000px;
-                padding: 20px;
+                perspective: 2500px;
             }
 
             .id-badge {
-                width: 320px;
-                height: 500px;
-                background: #fff;
-                border-radius: 25px;
+                width: 340px;
+                height: 530px;
+                background: #05080c;
+                border-radius: 45px;
                 position: relative;
                 overflow: hidden;
-                box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8);
+                box-shadow: 0 50px 120px rgba(0, 0, 0, 1);
+                border: 1px solid rgba(255, 255, 255, 0.08);
                 display: flex;
                 flex-direction: column;
                 text-align: center;
-                color: #1a1a1a !important;
             }
 
             .badge-lanyard {
                 height: 45px;
-                background: #000;
+                background: linear-gradient(90deg, #000 0%, #222 50%, #000 100%);
                 display: flex;
                 justify-content: center;
                 position: relative;
+                z-index: 10;
             }
 
-            .badge-lanyard .clip {
-                width: 45px;
-                height: 12px;
+            .badge-lanyard::after {
+                content: '';
+                position: absolute;
+                top: 18px;
+                width: 60px;
+                height: 14px;
                 background: #333;
-                border-radius: 6px;
-                margin-top: 20px;
+                border-radius: 7px;
+                box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.6);
             }
 
             .badge-header {
-                padding: 20px;
-                background: #fdfdfd;
-                border-bottom: 4px solid #00ff88;
+                padding: 40px 20px 20px;
+                background: linear-gradient(180deg, rgba(0, 255, 136, 0.1) 0%, transparent 100%);
             }
 
             .logo-box {
                 font-weight: 900;
-                font-size: 1.4rem;
-                line-height: 1;
-                color: #000;
+                font-size: 1.8rem;
+                color: #fff;
+                letter-spacing: -1px;
+                line-height: 0.8;
             }
 
             .logo-box span {
-                color: #1a7b7c;
-                font-size: 0.9rem;
-            }
-
-            .header-text {
-                font-size: 0.7rem;
-                font-weight: 800;
-                color: #888;
-                margin-top: 5px;
-                letter-spacing: 1px;
+                color: #00ff88;
+                font-size: 0.85rem;
+                letter-spacing: 4px;
+                display: block;
+                margin-top: 6px;
             }
 
             .badge-photo-container {
-                width: 170px;
-                height: 170px;
-                margin: 35px auto;
-                border-radius: 25px;
-                border: 6px solid #f5f5f5;
+                width: 200px;
+                height: 200px;
+                margin: 20px auto 25px;
+                border-radius: 55px;
+                border: 2px solid rgba(255, 255, 255, 0.06);
                 overflow: hidden;
-                background: #eee;
-                box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.05);
+                background: #0a111a;
+                box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7);
+                position: relative;
             }
 
             .badge-photo {
@@ -1196,139 +1195,319 @@
                 object-fit: cover;
             }
 
+            .badge-details {
+                padding: 0 30px;
+            }
+
             .badge-surname {
-                font-size: 1.3rem;
-                font-weight: 400;
-                color: #777;
+                font-size: 1.1rem;
+                color: rgba(255, 255, 255, 0.35);
                 text-transform: uppercase;
-                line-height: 1;
+                letter-spacing: 4px;
+                font-weight: 300;
             }
 
             .badge-name {
-                font-size: 2rem;
-                font-weight: 900;
-                color: #000;
-                margin-top: 2px;
-                line-height: 1;
+                font-size: 2.3rem;
+                font-weight: 950;
+                color: #fff;
+                line-height: 0.9;
+                margin: 5px 0 15px;
             }
 
-            .badge-role {
-                font-size: 0.8rem;
-                font-weight: 800;
-                background: #000;
+            .badge-role-tag {
+                font-size: 0.85rem;
+                font-weight: 900;
+                background: rgba(0, 255, 136, 0.12);
                 color: #00ff88;
-                padding: 6px 20px;
-                border-radius: 12px;
+                padding: 12px 30px;
+                border-radius: 100px;
                 display: inline-block;
-                margin-top: 15px;
                 text-transform: uppercase;
-                letter-spacing: 1px;
-            }
-
-            .badge-qr-container {
-                padding: 40px;
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                background: #fff;
-            }
-
-            .badge-qr-large {
-                width: 150px;
-                height: 150px;
-                padding: 10px;
-                background: #fff;
-                border: 1px solid #eee;
-                border-radius: 15px;
-            }
-
-            .badge-very-bottom-text {
-                font-size: 0.6rem;
-                font-weight: 900;
-                color: #ddd;
-                position: absolute;
-                bottom: 20px;
-                width: 100%;
-                text-align: center;
                 letter-spacing: 2px;
+                border: 1px solid rgba(0, 255, 136, 0.25);
+                backdrop-filter: blur(15px);
+            }
+
+            .badge-qr-box {
+                background: rgba(255, 255, 255, 0.02);
+                padding: 35px;
+                border-radius: 50px;
+                border: 1px solid rgba(255, 255, 255, 0.06);
+                box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.6);
+            }
+
+            .badge-qr-img {
+                width: 170px;
+                height: 170px;
+                filter: invert(1) brightness(1.3) contrast(1.1);
+            }
+
+            .badge-footer {
+                position: absolute;
+                bottom: 35px;
+                width: 100%;
+                color: rgba(255, 255, 255, 0.15);
+                font-size: 0.65rem;
+                font-weight: 900;
+                letter-spacing: 6px;
             }
 
             .badge-btn {
-                padding: 18px 40px;
-                border-radius: 18px;
+                padding: 18px 45px;
+                border-radius: 20px;
                 font-weight: 900;
                 cursor: pointer;
-                transition: 0.3s;
+                transition: 0.4s;
                 border: none;
                 font-size: 0.9rem;
+                text-transform: uppercase;
+                letter-spacing: 1px;
             }
         </style>
 
-        <div style="background:transparent; border:none; box-shadow:none; width:auto;">
-            <h3
-                style="text-align:center; color:#fff; font-weight:900; margin-bottom:30px; font-family:'Outfit'; letter-spacing:3px;">
-                BEJIK TAYYOR!</h3>
-            <div class="badge-presentation" id="badgePrintArea">
-                <!-- FRONT SIDE -->
-                <div class="id-badge">
-                    <div class="badge-lanyard">
-                        <div class="clip"></div>
-                    </div>
-                    <div class="badge-header">
-                        <div class="logo-box">AKFA<br><span>ROMIX</span></div>
-                        <div class="header-text">XODIMLAR<br>TIZIMI 2026</div>
-                    </div>
-                    <div class="badge-photo-container">
-                        <img src="" id="badgePreviewPhoto" class="badge-photo">
-                    </div>
-                    <div class="badge-bottom-box">
-                        <div class="badge-surname" id="badgePreviewSurname">FAMILIYA</div>
-                        <div class="badge-name" id="badgePreviewName">ISM</div>
-                        <div style="display:flex; gap:10px; align-items:center; margin-bottom:3px;">
-                            <div class="badge-role" id="badgePreviewRole">LAVOZIM</div>
-                            <div id="badgePreviewAge"
-                                style="font-size:0.7rem; color:#fff; background:rgba(0,0,0,0.2); padding:2px 6px; border-radius:4px;">
-                                25 YOSH</div>
-                        </div>
-                    </div>
-                    <div class="badge-very-bottom-text">AKFA ROMIX AUTOMATION SYSTEM</div>
-                </div>
+        <h3
+            style="text-align:center; color:#fff; font-weight:900; margin-bottom:30px; font-family:'Outfit'; letter-spacing:10px; text-transform:uppercase; text-shadow:0 0 40px rgba(0,255,136,0.4);">
+            ID-PASS SYSTEM</h3>
 
-                <!-- BACK SIDE -->
-                <div class="id-badge">
-                    <div class="badge-lanyard">
-                        <div class="clip"></div>
-                    </div>
-                    <div class="badge-header">
-                        <div class="logo-box">AKFA<br><span>ROMIX</span></div>
-                        <div class="header-text">XODIMLAR<br>TIZIMI 2026</div>
-                    </div>
-                    <div class="badge-qr-container">
-                        <div class="scan-me-text" style="color:#1a7b7c; font-weight:900;">SCAN ME</div>
-                        <img src="" id="badgePreviewQR" class="badge-qr-large">
-                    </div>
-                    <div class="badge-bottom-box">
-                        <div class="badge-name" style="font-size:1.8rem; margin-top:5px;">CONNECT</div>
-                        <div class="badge-role" id="badgePreviewID">AKFA-0000</div>
-                    </div>
-                    <div class="badge-very-bottom-text">AKFA ROMIX AUTOMATION SYSTEM</div>
+        <div class="badge-presentation" id="badgePrintArea">
+            <!-- FRONT -->
+            <div class="id-badge">
+                <div class="badge-lanyard"></div>
+                <div class="badge-header">
+                    <div class="logo-box">AKFA<span>ROMIX HR</span></div>
                 </div>
+                <div class="badge-photo-container">
+                    <img src="" id="badgePreviewPhoto" class="badge-photo">
+                </div>
+                <div class="badge-details">
+                    <div class="badge-surname" id="badgePreviewSurname">FAMILIYA</div>
+                    <div class="badge-name" id="badgePreviewName">ISM</div>
+                    <div class="badge-role-tag" id="badgePreviewRole">LAVOZIM</div>
+                </div>
+                <div class="badge-footer">AKFA ROMIX AUTOMATION</div>
             </div>
 
-            <div style="margin-top:40px; display:flex; justify-content:center; gap:20px;">
-                <button id="closeBadgeBtn"
-                    style="padding:15px 30px; background:rgba(255,255,255,0.1); color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:15px; cursor:pointer; font-weight:700;">YOPISH</button>
-                <button onclick="window.printBadgeReal()"
-                    style="padding:15px 30px; background:#fff; color:#000; font-weight:800; border:none; border-radius:15px; cursor:pointer;">CHOP
-                    ETISH (PRINT)</button>
-                <button onclick="window.downloadBadge()"
-                    style="padding:15px 40px; background:var(--accent); color:#000; font-weight:900; border:none; border-radius:15px; cursor:pointer; box-shadow:0 10px 20px rgba(0,255,136,0.2);">YUKLAB
-                    OLISH (PNG)</button>
+            <!-- BACK -->
+            <div class="id-badge" style="justify-content:center;">
+                <div class="badge-lanyard"></div>
+                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                    <div class="badge-qr-box">
+                        <img src="" id="badgePreviewQR" class="badge-qr-img">
+                    </div>
+                    <div
+                        style="color:#00ff88; font-weight:900; letter-spacing:10px; font-size:1rem; margin-bottom:8px;">
+                        CONNECT</div>
+                    <div id="badgePreviewID"
+                        style="color:rgba(255,255,255,0.25); font-size:0.75rem; font-weight:800; letter-spacing:3px;">
+                        ID: AKFA-0000</div>
+                </div>
+                <div class="badge-footer">AKFA ROMIX AUTOMATION</div>
             </div>
         </div>
+
+        <div style="margin-top:50px; display:flex; gap:20px;">
+            <button onclick="window.closeBadgeModal()" class="badge-btn"
+                style="background:rgba(255,255,255,0.05); color:#fff; border:1px solid rgba(255,255,255,0.1);">YOPISH</button>
+            <button onclick="window.printBadgeReal()" class="badge-btn" style="background:#fff; color:#000;">CHOP
+                ETISH</button>
+            <button onclick="window.downloadBadge()" class="badge-btn"
+                style="background:var(--accent); color:#000; box-shadow:0 15px 30px rgba(0,255,136,0.3);">PNG
+                YUKLASH</button>
+        </div>
     </div>
+
+    <style>
+        .badge-presentation {
+            display: flex;
+            gap: 60px;
+            justify-content: center;
+            width: 100%;
+            perspective: 2500px;
+        }
+
+        .id-badge {
+            width: 340px;
+            height: 530px;
+            background: #05080c;
+            border-radius: 45px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 50px 120px rgba(0, 0, 0, 1);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .badge-lanyard {
+            height: 45px;
+            background: linear-gradient(90deg, #000 0%, #222 50%, #000 100%);
+            display: flex;
+            justify-content: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        .badge-lanyard::after {
+            content: '';
+            position: absolute;
+            top: 18px;
+            width: 60px;
+            height: 14px;
+            background: #333;
+            border-radius: 7px;
+            box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.6);
+        }
+
+        .badge-header {
+            padding: 40px 20px 20px;
+            background: linear-gradient(180deg, rgba(0, 255, 136, 0.1) 0%, transparent 100%);
+        }
+
+        .logo-box {
+            font-weight: 900;
+            font-size: 1.8rem;
+            color: #fff;
+            letter-spacing: -1px;
+            line-height: 0.8;
+        }
+
+        .logo-box span {
+            color: #00ff88;
+            font-size: 0.85rem;
+            letter-spacing: 4px;
+            display: block;
+            margin-top: 6px;
+        }
+
+        .badge-photo-container {
+            width: 200px;
+            height: 200px;
+            margin: 20px auto 25px;
+            border-radius: 55px;
+            border: 2px solid rgba(255, 255, 255, 0.06);
+            overflow: hidden;
+            background: #0a111a;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7);
+            position: relative;
+        }
+
+        .badge-photo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .badge-details {
+            padding: 0 30px;
+        }
+
+        .badge-surname {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.35);
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            font-weight: 300;
+        }
+
+        .badge-name {
+            font-size: 2.3rem;
+            font-weight: 950;
+            color: #fff;
+            line-height: 0.9;
+            margin: 5px 0 15px;
+        }
+
+        .badge-role-tag {
+            font-size: 0.85rem;
+            font-weight: 900;
+            background: rgba(0, 255, 136, 0.12);
+            color: #00ff88;
+            padding: 12px 30px;
+            border-radius: 100px;
+            display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border: 1px solid rgba(0, 255, 136, 0.25);
+            backdrop-filter: blur(15px);
+        }
+
+        .badge-qr-box {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 35px;
+            border-radius: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.6);
+        }
+
+        .badge-qr-img {
+            width: 170px;
+            height: 170px;
+            filter: invert(1) brightness(1.3) contrast(1.1);
+        }
+
+        .badge-footer {
+            position: absolute;
+            bottom: 35px;
+            width: 100%;
+            color: rgba(255, 255, 255, 0.15);
+            font-size: 0.65rem;
+            font-weight: 900;
+            letter-spacing: 6px;
+        }
+    </style>
+
+    <h3
+        style="text-align:center; color:#fff; font-weight:900; margin-bottom:30px; font-family:'Outfit'; letter-spacing:10px; text-transform:uppercase; text-shadow:0 0 40px rgba(0,255,136,0.4);">
+        ID-PASS SYSTEM</h3>
+
+    <div class="badge-presentation" id="badgePrintArea">
+        <!-- FRONT -->
+        <div class="id-badge">
+            <div class="badge-lanyard"></div>
+            <div class="badge-header">
+                <div class="logo-box">AKFA<span>ROMIX HR</span></div>
+            </div>
+            <div class="badge-photo-container">
+                <img src="" id="badgePreviewPhoto" class="badge-photo">
+            </div>
+            <div class="badge-details">
+                <div class="badge-surname" id="badgePreviewSurname">FAMILIYA</div>
+                <div class="badge-name" id="badgePreviewName">ISM</div>
+                <div class="badge-role-tag" id="badgePreviewRole">LAVOZIM</div>
+            </div>
+            <div class="badge-footer">AKFA ROMIX AUTOMATION</div>
+        </div>
+
+        <!-- BACK -->
+        <div class="id-badge" style="justify-content:center;">
+            <div class="badge-lanyard"></div>
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                <div class="badge-qr-box">
+                    <img src="" id="badgePreviewQR" class="badge-qr-img">
+                </div>
+                <div style="color:#00ff88; font-weight:900; letter-spacing:10px; font-size:1rem; margin-bottom:8px;">
+                    CONNECT</div>
+                <div id="badgePreviewID"
+                    style="color:rgba(255,255,255,0.25); font-size:0.75rem; font-weight:800; letter-spacing:3px;">
+                    ID: AKFA-0000</div>
+            </div>
+            <div class="badge-footer">AKFA ROMIX AUTOMATION</div>
+        </div>
+    </div>
+
+    <div style="margin-top:50px; display:flex; gap:20px;">
+        <button onclick="window.closeBadgeModal()" class="badge-btn"
+            style="background:rgba(255,255,255,0.05); color:#fff; border:1px solid rgba(255,255,255,0.1);">YOPISH</button>
+        <button onclick="window.printBadgeReal()" class="badge-btn" style="background:#fff; color:#000;">CHOP
+            ETISH</button>
+        <button onclick="window.downloadBadge()" class="badge-btn"
+            style="background:var(--accent); color:#000; box-shadow:0 15px 30px rgba(0,255,136,0.3);">PNG
+            YUKLASH</button>
+    </div>
+    </div>
+
 
     <!-- 💎 LUXURY ACTION MODAL (Universal) -->
     <div id="actionModalOverlay" class="modal-blur">
