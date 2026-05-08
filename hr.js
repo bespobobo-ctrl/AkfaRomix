@@ -622,17 +622,20 @@ function prepareBadge(emp) {
     }
 
     document.getElementById('badgePreviewPhoto').src = emp.avatar_url;
-    document.getElementById('badgePreviewSurname').textContent = (emp.last_name || '').toUpperCase();
-    document.getElementById('badgePreviewName').textContent = (emp.first_name || '').toUpperCase();
-    document.getElementById('badgePreviewRole').textContent = (emp.role || '').toUpperCase();
 
-    if (emp.birth_year) {
-        const age = new Date().getFullYear() - parseInt(emp.birth_year);
-        document.getElementById('badgePreviewAge').textContent = `${age} YOSH`;
-    }
+    // Yozuvlarni yangi dizayn ID'lariga moslab joylashtiramiz
+    const sideNameNode = document.getElementById('badgePreviewSideName');
+    const fullNameNode = document.getElementById('badgePreviewFullName');
+    const roleNode = document.getElementById('badgePreviewRole');
+
+    if (sideNameNode) sideNameNode.textContent = (emp.first_name || '').toUpperCase();
+    if (fullNameNode) fullNameNode.textContent = (emp.full_name || '').toUpperCase();
+    if (roleNode) roleNode.textContent = (emp.role || '').toUpperCase();
 
     const workerId = emp.id.substring(0, 8).toUpperCase();
-    document.getElementById('badgePreviewID').textContent = `AKFA-${workerId}`;
+    const idNode = document.getElementById('badgePreviewID');
+    if (idNode) idNode.textContent = `AKFA-${workerId}`;
+
     document.getElementById('badgePreviewQR').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=AKFA-STAFF-${emp.id}`;
 
     badgeModal.style.display = 'flex';
