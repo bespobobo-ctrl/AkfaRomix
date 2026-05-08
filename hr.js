@@ -992,3 +992,68 @@ window.downloadBadge = async function () {
 window.printBadgeReal = function () {
     window.print();
 };
+
+// --- 🧪 DEMO REPORT GENERATION (For Visualization) ---
+window.demoExportReport = async function (format) {
+    if (!currentEmp) { alert("Avval xodimni tanlang!"); return; }
+
+    alert(`DEMO: ${format.toUpperCase()} hisoboti tayyorlanmoqda (30 kunlik namuna)...`);
+
+    const demoRows = [];
+    let totalWorkedHours = 0;
+    let totalBonuses = 500000; // Mock bonus
+    let totalFines = 0;
+
+    const salaryText = currentEmp.salary_info || '7500000';
+    const monthlySalary = parseInt(String(salaryText).replace(/\D/g, '')) || 7500000;
+    const dayRate = monthlySalary / 26;
+    const hourRate = dayRate / 10;
+
+    const today = new Date();
+
+    for (let i = 25; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(today.getDate() - i);
+
+        // Skip Sundays for demo
+        if (d.getDay() === 0) continue;
+
+        const dateStr = d.toISOString().split('T')[0];
+        const isLate = Math.random() > 0.8;
+        const timeIn = isLate ? "08:45" : "08:00";
+        const hours = isLate ? 9.25 : 10;
+        const status = isLate ? "Kechikish" : "Vaqtida keldi";
+
+        const earned = (hours * hourRate);
+        totalWorkedHours += hours;
+
+        demoRows.push({
+            date: dateStr,
+            in: timeIn,
+            out: "18:00",
+            hours: hours.toFixed(1) + ' s',
+            status: status,
+            earned: Math.round(earned).toLocaleString() + ' UZS'
+        });
+    }
+
+    // Add a random bonus record
+    demoRows.push({
+        date: today.toISOString().split('T')[0],
+        in: "--:--",
+        out: "--:--",
+        hours: "0.0 s",
+        status: "Premya: 500,000 UZS",
+        earned: "500,000 UZS"
+    });
+
+    const totalEarned = (totalWorkedHours * hourRate) + totalBonuses;
+
+    if (format === 'pdf') {
+        generateProfessionalPDF(demoRows, totalEarned, totalBonuses, totalFines, demoRows.length - 1);
+    } else if (format === 'excel') {
+        generateExcelReport(demoRows, totalEarned, totalBonuses, totalFines, demoRows.length - 1);
+    } else if (format === 'word') {
+        generateWordReport(demoRows, totalEarned, totalBonuses, totalFines, demoRows.length - 1);
+    }
+};
