@@ -888,14 +888,102 @@ function switchTab(tab) {
         loadHistoryData();
     } else if (tab === 'kitchen') {
         sections.kitchen.style.display = 'flex';
-        document.getElementById('kitchenPresentCount').textContent = document.getElementById('todayArrivedCount').textContent;
+        // Set default date to today
+        document.getElementById('kitchenDate').value = new Date().toISOString().split('T')[0];
+        window.handleKitchenDateChange();
     } else if (tab === 'dashboard') {
         sections.dashboard.style.display = 'flex';
         stopScanner();
     }
 
     if (tab === 'reports') handleReport();
+    lucide.createIcons();
 }
+
+// 🍽️ KITCHEN CORE ENGINE
+let currentKitchenStatus = 'debt';
+
+window.handleKitchenDateChange = async function () {
+    const selectedDate = document.getElementById('kitchenDate').value;
+    if (!selectedDate) return;
+
+    // Fetch unique people present on that day
+    const { data: att, error } = await supabase.from('attendance')
+        .select('employee_id')
+        .eq('date', selectedDate)
+        .eq('status', 'ISHDA');
+
+    const count = att ? new Set(att.map(a => a.employee_id)).size : 0;
+    document.getElementById('kitchenCountDisplay').textContent = count;
+
+    // Check if we have saved data for this date in localStorage (Mocking persistence)
+    const saved = JSON.parse(localStorage.getItem('kitchen_' + selectedDate));
+    if (saved) {
+        document.getElementById('kitchenPrice').value = saved.price;
+        window.setKitchenPayStatus(saved.status);
+        document.getElementById('kitchenSaveStatus').textContent = "SAQLANGAN";
+        document.getElementById('kitchenSaveStatus').style.color = "var(--accent)";
+    } else {
+        document.getElementById('kitchenPrice').value = 25000;
+        window.setKitchenPayStatus('debt');
+        document.getElementById('kitchenSaveStatus').textContent = "SAQLANMAGAN";
+        document.getElementById('kitchenSaveStatus').style.color = "#8a8f98";
+    }
+
+    window.calcKitchenTotal();
+};
+
+window.calcKitchenTotal = function () {
+    const count = parseInt(document.getElementById('kitchenCountDisplay').textContent) || 0;
+    const price = parseInt(document.getElementById('kitchenPrice').value) || 0;
+    const total = count * price;
+    document.getElementById('kitchenTotalSum').innerHTML = `${total.toLocaleString()} <small style="font-size:1rem; color:var(--text-s)">UZS</small>`;
+};
+
+window.setKitchenPayStatus = function (status) {
+    currentKitchenStatus = status;
+    const pBtn = document.getElementById('payStatusPaid');
+    const dBtn = document.getElementById('payStatusDebt');
+
+    if (status === 'paid') {
+        pBtn.style.background = 'rgba(0, 255, 136, 0.1)';
+        pBtn.style.borderColor = 'rgba(0, 255, 136, 0.3)';
+        pBtn.style.color = 'var(--accent)';
+        dBtn.style.background = 'rgba(255, 255, 255, 0.05)';
+        dBtn.style.borderColor = 'transparent';
+        dBtn.style.color = 'var(--text-s)';
+    } else {
+        dBtn.style.background = 'rgba(255, 77, 79, 0.1)';
+        dBtn.style.borderColor = 'rgba(255, 77, 79, 0.3)';
+        dBtn.style.color = '#ff4d4f';
+        pBtn.style.background = 'rgba(255, 255, 255, 0.05)';
+        pBtn.style.borderColor = 'transparent';
+        pBtn.style.color = 'var(--text-s)';
+    }
+};
+
+window.saveKitchenData = function () {
+    const date = document.getElementById('kitchenDate').value;
+    const price = document.getElementById('kitchenPrice').value;
+    const count = document.getElementById('kitchenCountDisplay').textContent;
+
+    if (!date) return;
+
+    const data = {
+        date,
+        price,
+        count,
+        status: currentKitchenStatus,
+        savedAt: new Date().toISOString()
+    };
+
+    localStorage.setItem('kitchen_' + date, JSON.stringify(data));
+
+    document.getElementById('kitchenSaveStatus').textContent = "SAQLANDI!";
+    document.getElementById('kitchenSaveStatus').style.color = "var(--accent)";
+
+    alert(`${date} sanasi uchun oshxona hisob-kitobi muvaffaqiyatli saqlandi!`);
+};
 
 async function loadHistoryData() {
     const tbody = document.getElementById('historyTableBody');
