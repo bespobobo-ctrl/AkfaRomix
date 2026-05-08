@@ -445,7 +445,7 @@ async function saveWorker() {
         role: role,
         salary_info: salary || '0',
         phone: phone || '',
-        birth_year: birthYear || null,
+        birth_year: birthYear ? parseInt(birthYear) : null,
         avatar_url: tempPhotoData || (currentEditId ? currentEmp.avatar_url : `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=1a7b7c&color=fff`)
     };
 
@@ -453,7 +453,7 @@ async function saveWorker() {
     const firstRow = employeesData[0] || {};
     if ('department' in firstRow) payload.department = dept;
     if ('dept' in firstRow) payload.dept = dept;
-    if ('joined_year' in firstRow) payload.joined_year = joinedYear;
+    if ('joined_year' in firstRow) payload.joined_year = joinedYear ? parseInt(joinedYear) : null;
 
     let res;
     try {
