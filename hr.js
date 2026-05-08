@@ -162,7 +162,8 @@ function getSmartStatus(att) {
 
 function renderStaffList(data) {
     const todayStr = new Date().toISOString().split('T')[0];
-    const container = document.getElementById('staffTableBody');
+    const container = document.getElementById('employeeTableBody');
+    if (!container) return;
     container.innerHTML = '';
 
     // Join with Attendance
