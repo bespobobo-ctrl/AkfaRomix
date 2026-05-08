@@ -53,13 +53,7 @@ function getSmartStatus(att) {
 
     if (!att.check_in) return { text: 'KELMAGAN', color: '#ff4d4f', glow: 'rgba(255, 77, 79, 0.2)' };
 
-    const checkTime = new Date(att.check_in);
-    const mins = checkTime.getHours() * 60 + checkTime.getMinutes();
-
-    if (mins <= 480) return { text: 'VAQTIDA', color: '#00ff88', glow: 'rgba(0, 255, 136, 0.3)' }; // 08:00
-    if (mins <= 495) return { text: 'KECHIKISH', color: '#ffec3d', glow: 'rgba(255, 236, 61, 0.2)' }; // 08:15
-    if (mins <= 510) return { text: 'KECH QOLDI', color: '#ff7875', glow: 'rgba(255, 120, 117, 0.2)' }; // 08:30
-    return { text: 'JUDA KECH', color: '#820014', glow: 'rgba(130, 0, 20, 0.3)' }; // > 08:30
+    return { text: 'ISHDA', color: '#00ff88', glow: 'rgba(0, 255, 136, 0.3)' };
 }
 
 function renderMiniStaff(staff, attendance) {
@@ -70,7 +64,7 @@ function renderMiniStaff(staff, attendance) {
     }
 
     container.innerHTML = staff.map(emp => {
-        const attRec = attendance.find(a => a.id === emp.id);
+        const attRec = attendance.find(a => a.employee_id === emp.id);
         const status = getSmartStatus(attRec);
 
         return `
@@ -174,10 +168,19 @@ window.miniProcessAttendance = async function (type) {
     const todayStr = new Date().toISOString().split('T')[0];
     const nowIso = new Date().toISOString();
 
-    const payload = {
-        id: emp.id,
+    // Avvalgi yozuvni tekshirish
+    const { data: existing } = await supabase.from('attendance')
+        .select('id')
+        .eq('employee_id', emp.id)
+        .eq('date', todayStr)
+        .maybeSingle();
+
+    let payload = {
+        employee_id: emp.id,
         date: todayStr
     };
+
+    if (existing) payload.id = existing.id;
 
     if (type === 'in') {
         payload.check_in = nowIso;
