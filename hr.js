@@ -1139,47 +1139,69 @@ window.genKitchenReport = function (format) {
     }
 
     records.sort((a, b) => new Date(a.date) - new Date(b.date));
-    records = records.map(r => ({
-        ...r,
-        total: parseInt(r.count) * parseInt(r.price)
-    }));
-    const totalSum = records.reduce((acc, r) => acc + r.total, 0);
+    let totalSum = 0;
+    const tableData = records.map(r => {
+        const rowTotal = parseInt(r.count) * parseInt(r.price);
+        totalSum += rowTotal;
+        return {
+            "Sana": r.date,
+            "Odam soni": parseInt(r.count),
+            "Narxi (UZS)": parseInt(r.price),
+            "Jami (UZS)": rowTotal,
+            "Holati": r.status === 'paid' ? "TO'LANDI" : "QARZ"
+        };
+    });
+
     const exportName = `OSHXONA_HISOBOTI_${format.toUpperCase()}_${new Date().getTime()}`;
 
     if (format === 'excel') {
-        let csvContent = "Sana,Odam soni,Narxi,Jami Summa,Holati\n";
-        records.forEach(r => {
-            csvContent += `${r.date},${r.count},${r.price},${r.total},${r.status.toUpperCase()}\n`;
+        const ws = XLSX.utils.json_to_sheet(tableData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Oshxona_Hisoboti");
+        XLSX.writeFile(wb, `${exportName}.xlsx`);
+    } else if (format === 'pdf') {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.setFontSize(20);
+        doc.text("AKFA ROMIX - PROFESSIONAL HISOBOT", 14, 22);
+        doc.setFontSize(10);
+        doc.text(`HISOBOT DAVRI: ${titleRange}`, 14, 30);
+        doc.text(`YARATILDI: ${new Date().toLocaleString()}`, 14, 35);
+        doc.autoTable({
+            startY: 45,
+            head: [["Sana", "Odam soni", "Narxi (UZS)", "Jami (UZS)", "Holati"]],
+            body: tableData.map(r => [r.Sana, r["Odam soni"], r["Narxi (UZS)"].toLocaleString(), r["Jami (UZS)"].toLocaleString(), r.Holati]),
+            theme: 'grid',
+            headStyles: { fillColor: [255, 169, 64], textColor: [0, 0, 0] }
         });
-        csvContent += `\nJAMI HARAJAT,,,${totalSum},`;
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.setAttribute("download", `${exportName}.csv`);
-        link.click();
-    } else {
-        const docContent = `
-AKFA ROMIX - PROFESSIONAL MOLIYAVIY HISOBOT
---------------------------------------------------------------------------------
-HISOBLANGAN DAVR: ${titleRange}
-HISOBOT TURI: ${format.toUpperCase()}
-YARATILGAN VAQT: ${new Date().toLocaleString()}
---------------------------------------------------------------------------------
-Sana        | Odam soni | Narxi (UZS) | Jami (UZS)  | Holati
---------------------------------------------------------------------------------
-${records.map(r => `${r.date}  | ${String(r.count).padEnd(9)} | ${String(r.price).padEnd(11)} | ${String(r.total).padEnd(11)} | ${r.status.toUpperCase()}`).join('\n')}
---------------------------------------------------------------------------------
-UMUMIY SUMMA: ${totalSum.toLocaleString()} UZS
-
-Ushbu hujjat AKFA Romix HR tizimi tomonidan buxgalteriya talablari asosida
-avtomatik shakllantirildi.
-
-Mas'ul shaxs: _________________ (Imzo)
+        const finalY = doc.lastAutoTable.finalY + 15;
+        doc.text(`UMUMIY SUMMA: ${totalSum.toLocaleString()} UZS`, 14, finalY);
+        doc.text(`Mas'ul: _________________ (Imzo)`, 14, finalY + 15);
+        doc.save(`${exportName}.pdf`);
+    } else if (format === 'word') {
+        const htmlStr = `
+            <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+            <head><meta charset='utf-8'></head>
+            <body style="font-family:Arial, sans-serif; padding:20px;">
+                <h1 style="text-align:center;">AKFA ROMIX</h1>
+                <h2 style="text-align:center;">OSHXONA MOLIYAVIY HISOBOTI</h2>
+                <hr>
+                <p><b>Davr:</b> ${titleRange}</p>
+                <p><b>Yaratilgan:</b> ${new Date().toLocaleString()}</p>
+                <table border="1" cellspacing="0" cellpadding="8" style="width:100%; border-collapse:collapse; margin-top:20px;">
+                    <tr style="background:#ffa940; color:#000;">
+                        <th>Sana</th><th>Odam soni</th><th>Narxi</th><th>Jami</th><th>Holati</th>
+                    </tr>
+                    ${tableData.map(r => `<tr><td>${r.Sana}</td><td>${r["Odam soni"]}</td><td>${r["Narxi (UZS)"].toLocaleString()}</td><td>${r["Jami (UZS)"].toLocaleString()}</td><td>${r.Holati}</td></tr>`).join('')}
+                </table>
+                <h3 style="margin-top:20px;">JAMI SUMMA: ${totalSum.toLocaleString()} UZS</h3>
+                <br><br><p>Buxgalter imzosi: _________________</p>
+            </body></html>
         `;
-        const blob = new Blob([docContent], { type: 'text/plain;charset=utf-8;' });
+        const blob = new Blob([htmlStr], { type: 'application/msword' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.setAttribute("download", `${exportName}.${format === 'pdf' ? 'pdf' : 'doc'}`);
+        link.setAttribute("download", `${exportName}.doc`);
         link.click();
     }
 };
