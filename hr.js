@@ -417,23 +417,28 @@ window.handleOylik = () => {
 };
 
 window.handleEdit = () => {
-    currentEditId = currentEmp.id;
+    if (!currentEmp) return;
+    const emp = { ...currentEmp };
+    currentEditId = emp.id;
+
     window.closeDetailModal();
 
     document.getElementById('modalTitle').textContent = "TAHRIRLASH";
     document.getElementById('saveWorkerBtn').textContent = "YANGILASH";
 
-    const parts = currentEmp.full_name.split(' ');
+    const parts = emp.full_name.split(' ');
     document.getElementById('empFirstName').value = parts[0] || '';
     document.getElementById('empLastName').value = parts.slice(1).join(' ') || '';
-    document.getElementById('empRole').value = currentEmp.role || '';
-    document.getElementById('empDept').value = currentEmp.department || 'Ofis';
-    document.getElementById('empSalary').value = currentEmp.salary_info || '';
-    document.getElementById('empPhone').value = currentEmp.phone || '';
-    document.getElementById('empBirthYear').value = currentEmp.birth_year || '';
+    document.getElementById('empRole').value = emp.role || '';
+    document.getElementById('empDept').value = emp.department || 'Ofis';
+    document.getElementById('empSalary').value = emp.salary_info || '';
+    document.getElementById('empPhone').value = emp.phone || '';
+    document.getElementById('empBirthYear').value = emp.birth_year || '';
+    document.getElementById('empJoinedYear').value = emp.joined_year || '';
 
     document.getElementById('addWorkerModalOverlay').style.display = 'flex';
     gsap.fromTo("#addWorkerModalOverlay .modal-content", { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4 });
+    lucide.createIcons();
 };
 
 window.handleDelete = async () => {
