@@ -170,7 +170,7 @@ window.showEmployeeDetail = function (id) {
     document.getElementById('dt-dept').textContent = emp.department || 'Ofis';
     document.getElementById('dt-experience').textContent = (emp.joined_year ? (2026 - emp.joined_year) + " yil" : "Yangi xodim");
     document.getElementById('dt-sum').textContent = (parseInt(emp.salary_info || 0) / 1000000).toFixed(1) + 'M';
-    document.getElementById('dt-qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=ROMIX-${emp.id}`;
+    document.getElementById('dt-qr').src = `https://chart.googleapis.com/chart?cht=qr&chl=ROMIX-${emp.id}&chs=150x150&chld=L|0`;
 
     gsap.fromTo("#profileDetail", { scale: 0.95, opacity: 0, y: 30 }, { scale: 1, opacity: 1, y: 0, duration: 0.5 });
     lucide.createIcons();
@@ -283,7 +283,7 @@ function prepareBadge() {
     document.getElementById('badgePreviewFullName').textContent = (emp.full_name || '').toUpperCase();
     document.getElementById('badgePreviewRole').textContent = (emp.department || 'OFIS').toUpperCase() + " XODIMI";
     document.getElementById('badgePreviewID').textContent = 'ROMIX-' + emp.id.substring(0, 8).toUpperCase();
-    document.getElementById('badgePreviewQR').src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=ROMIX-STAFF-${emp.id}`;
+    document.getElementById('badgePreviewQR').src = `https://chart.googleapis.com/chart?cht=qr&chl=ROMIX-STAFF-${emp.id}&chs=250x250&chld=L|0`;
 }
 
 function closeBadgeModal() {
