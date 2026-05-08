@@ -20,7 +20,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function loadMiniData() {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
 
     // Fetch Employees
     const { data: staff } = await supabase.from('employees').select('*').order('full_name');
@@ -165,8 +166,9 @@ window.miniCloseAction = function () {
 
 window.miniProcessAttendance = async function (type) {
     const emp = currentEmp;
-    const todayStr = new Date().toISOString().split('T')[0];
-    const nowIso = new Date().toISOString();
+    const now = new Date();
+    const todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    const nowIso = now.toISOString();
 
     // Avvalgi yozuvni tekshirish
     const { data: existing } = await supabase.from('attendance')
