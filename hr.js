@@ -1001,7 +1001,7 @@ window.renderAnalyticsBoard = function () {
                 </div>
             </td>
             <td style="font-weight:800; font-size:0.8rem; color:var(--text-s);">${baseSalary.toLocaleString()}</td>
-            <td style="font-weight:700; font-size:0.8rem; color:#fff;">${mockWorkedHours} <small style="color:var(--text-s)">s</small></td>
+            <td style="font-weight:700; font-size:0.8rem; color:#fff;">${mockWorkedHours} <small style="color:var(--text-s)">soat</small></td>
             <td style="font-weight:700; font-size:0.8rem; color:var(--text-s);">${mockLates} ms</td>
             <td style="font-weight:800; font-size:0.8rem; color:#ffa940;">+${mockBonus.toLocaleString()}</td>
             <td style="font-weight:800; font-size:0.8rem; color:#ff4d4f;">-${mockFine.toLocaleString()}</td>
