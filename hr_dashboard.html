@@ -1161,7 +1161,37 @@
         </div>
     </div>
 
-    <script type="module" src="hr.js?v=2.3"></script>
+    <!-- 💎 LUXURY ACTION MODAL (Universal) -->
+    <div id="actionModalOverlay" class="modal-blur">
+        <div class="modal-content"
+            style="width:450px; padding:35px; text-align:center; background:#0a0f1a; border:1px solid var(--border-glass);">
+            <div id="actionModalIcon"
+                style="width:80px; height:80px; background:rgba(0,255,136,0.1); border-radius:30px; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; color:var(--accent);">
+                <i id="actionIconInner" data-lucide="check-circle" style="width:40px; height:40px;"></i>
+            </div>
+            <h2 id="actionModalTitle" style="font-family:'Outfit'; font-weight:900; margin-bottom:10px; color:#fff;">
+                TITUL</h2>
+            <p id="actionModalDesc" style="color:var(--text-s); font-size:0.9rem; margin-bottom:25px;">Tavsif yozuvi bu
+                yerda bo'ladi.</p>
+
+            <div id="actionInputBox" style="display:none; margin-bottom:25px; text-align:left;">
+                <div class="lux-field">
+                    <label id="actionInputLabel" style="background:#0a0f1a; z-index:1001;">MIQDOR</label>
+                    <input type="text" id="actionInput" class="lux-input" placeholder="0.00">
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                <button onclick="window.closeActionModal()" class="action-btn"
+                    style="background:rgba(255,255,255,0.05); color:#fff; height:50px; border-radius:15px; border:1px solid var(--border-glass); cursor:pointer;">BEKOR
+                    QILISH</button>
+                <button id="actionMainBtn" class="action-btn"
+                    style="background:var(--accent); color:#000; height:50px; border-radius:15px; border:none; font-weight:900; cursor:pointer;">TASDIQLASH</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="hr.js?v=3.0"></script>
     <script>
         lucide.createIcons();
         gsap.from(".sidebar", { x: -100, opacity: 0, duration: 1 });

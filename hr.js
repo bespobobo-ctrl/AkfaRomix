@@ -344,16 +344,76 @@ window.closeDetailModal = function () {
     });
 };
 
+// 💎 LUXURY ACTION MODAL LOGIC
+window.openActionModal = function ({ title, desc, icon, showInput, inputLabel, confirmText, onConfirm }) {
+    const modal = document.getElementById('actionModalOverlay');
+    document.getElementById('actionModalTitle').textContent = title || "TASDIQLASH";
+    document.getElementById('actionModalDesc').textContent = desc || "";
+    document.getElementById('actionInputBox').style.display = showInput ? 'block' : 'none';
+    if (inputLabel) document.getElementById('actionInputLabel').textContent = inputLabel;
+
+    const iconInner = document.getElementById('actionIconInner');
+    iconInner.setAttribute('data-lucide', icon || 'check-circle');
+    lucide.createIcons();
+
+    const mainBtn = document.getElementById('actionMainBtn');
+    mainBtn.textContent = confirmText || "TASDIQLASH";
+    mainBtn.onclick = () => {
+        const val = document.getElementById('actionInput').value;
+        onConfirm(val);
+    };
+
+    modal.style.display = 'flex';
+    gsap.fromTo("#actionModalOverlay .modal-content",
+        { scale: 0.8, opacity: 0, y: 30 },
+        { scale: 1, opacity: 1, y: 0, duration: 0.5, ease: "back.out(1.7)" }
+    );
+};
+
+window.closeActionModal = function () {
+    gsap.to("#actionModalOverlay .modal-content", {
+        scale: 0.9, opacity: 0, y: 20, duration: 0.3, onComplete: () => {
+            document.getElementById('actionModalOverlay').style.display = 'none';
+            document.getElementById('actionInput').value = '';
+        }
+    });
+};
+
 window.handlePremya = () => {
-    const amount = prompt(`${currentEmp.full_name} uchun premya miqdorini kiriting (UZS):`, "500000");
-    if (amount) {
-        alert(`MUVAFFAQIYATLI: ${currentEmp.full_name} uchun ${parseInt(amount).toLocaleString()} UZS premya tasdiqlandi.`);
-    }
+    window.openActionModal({
+        title: "PREMYA BERISH",
+        desc: `${currentEmp.full_name} uchun rag'batlantirish miqdorini kiriting.`,
+        icon: "award",
+        showInput: true,
+        inputLabel: "PREMYA MIQDORI (UZS)",
+        confirmText: "PREMYA BERISH",
+        onConfirm: (val) => {
+            if (!val) return;
+            window.closeActionModal();
+            setTimeout(() => {
+                window.openActionModal({
+                    title: "TASDIQLANDI",
+                    desc: `${currentEmp.full_name} uchun ${parseInt(val).toLocaleString()} UZS premya muvaffaqiyatli saqlandi.`,
+                    icon: "check-circle",
+                    showInput: false,
+                    confirmText: "YOPISH",
+                    onConfirm: () => window.closeActionModal()
+                });
+            }, 500);
+        }
+    });
 };
 
 window.handleOylik = () => {
     const s = parseInt(currentEmp.salary_info || '0');
-    alert(`XODIM: ${currentEmp.full_name}\n\nASOSIY OYLIK: ${s.toLocaleString()} UZS\nKPI BONUS: ${(s * 0.1).toLocaleString()} UZS\nJAMI: ${(s * 1.1).toLocaleString()} UZS`);
+    window.openActionModal({
+        title: "OYLIK TAHLILI",
+        desc: `Xodim: ${currentEmp.full_name}\nAsosiy: ${s.toLocaleString()} UZS | Bonus: ${(s * 0.1).toLocaleString()} UZS | Jami: ${(s * 1.1).toLocaleString()} UZS`,
+        icon: "wallet",
+        showInput: false,
+        confirmText: "TUSHUNARLI",
+        onConfirm: () => window.closeActionModal()
+    });
 };
 
 window.handleEdit = () => {
@@ -373,24 +433,57 @@ window.handleEdit = () => {
     document.getElementById('empBirthYear').value = currentEmp.birth_year || '';
 
     document.getElementById('addWorkerModalOverlay').style.display = 'flex';
-    gsap.fromTo(".modal-content", { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4 });
+    gsap.fromTo("#addWorkerModalOverlay .modal-content", { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4 });
 };
 
 window.handleDelete = async () => {
-    if (!confirm(`${currentEmp.full_name} ni tizimdan butkul o'chirishni tasdiqlaysizmi?`)) return;
-    const { error } = await supabase.from('employees').delete().eq('id', currentEmp.id);
-    if (!error) {
-        alert("Xodim muvaffaqiyatli o'chirildi.");
-        window.closeDetailModal();
-        loadInitialData();
-    } else {
-        alert("Xatolik: " + error.message);
-    }
+    window.openActionModal({
+        title: "O'CHIRISH",
+        desc: `${currentEmp.full_name} ni tizimdan butkul o'chirishni tasdiqlaysizmi? Bu amalni ortga qaytarib bo'lmaydi.`,
+        icon: "trash-2",
+        showInput: false,
+        confirmText: "O'CHIRISH",
+        onConfirm: async () => {
+            const { error } = await supabase.from('employees').delete().eq('id', currentEmp.id);
+            window.closeActionModal();
+            if (!error) {
+                window.closeDetailModal();
+                loadInitialData();
+            } else {
+                window.openActionModal({
+                    title: "XATOLIK",
+                    desc: "O'chirishda xatolik yuz berdi: " + error.message,
+                    icon: "alert-circle",
+                    showInput: false,
+                    confirmText: "YOPISH",
+                    onConfirm: () => window.closeActionModal()
+                });
+            }
+        }
+    });
 };
 
 window.handleReport = () => {
-    alert("Xodim faoliyati hisoboti (PDF) tayyorlanmoqda...");
-    setTimeout(() => { alert("Hisobot tayyor! Yuklab olish boshlandi."); }, 1500);
+    window.openActionModal({
+        title: "HISOBOT TAYYORLASH",
+        desc: "Xodim faoliyati va davomat hisoboti generatsiya qilinmoqda. Yuklab olish manzili tayyorlanmoqda.",
+        icon: "file-text",
+        showInput: false,
+        confirmText: "YUKLAB OLISH",
+        onConfirm: () => {
+            window.closeActionModal();
+            setTimeout(() => {
+                window.openActionModal({
+                    title: "HISOBOT TAYYOR",
+                    desc: "Barcha ko'rsatkichlar tahlili yakunlandi va PDF formatida yuklab olishga tayyor.",
+                    icon: "check-circle",
+                    showInput: false,
+                    confirmText: "YUKLAB OLISH",
+                    onConfirm: () => window.closeActionModal()
+                });
+            }, 800);
+        }
+    });
 };
 
 window.prepareBadge = () => {
