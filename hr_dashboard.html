@@ -2312,6 +2312,37 @@
             </style>
         </div>
     </div>
+    <!-- 💎 PREMIUM ACTION MODAL ENGINE OVERLAY -->
+    <div id="actionModalOverlay" class="modal-blur"
+        style="display:none; position:fixed; inset:0; z-index:10001; background:rgba(7,11,18,0.9); backdrop-filter:blur(15px); align-items:center; justify-content:center;">
+        <div class="modal-content bento-card"
+            style="width:90%; max-width:450px; padding:45px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.1); border-radius:40px; text-align:center; position:relative; box-shadow:0 30px 60px rgba(0,0,0,0.5);">
+            <button onclick="window.closeActionModal()"
+                style="position:absolute; top:25px; right:25px; background:none; border:none; color:var(--text-s); cursor:pointer;"><i
+                    data-lucide="x"></i></button>
+
+            <div id="actionIconBox"
+                style="width:80px; height:80px; background:rgba(0,255,136,0.1); border-radius:24px; display:flex; align-items:center; justify-content:center; margin:0 auto 25px; border:1px solid rgba(0,255,136,0.2);">
+                <i id="actionIconInner" data-lucide="check-circle"
+                    style="color:var(--accent); width:40px; height:40px;"></i>
+            </div>
+
+            <h2 id="actionModalTitle"
+                style="font-family:'Outfit'; font-weight:1000; font-size:1.6rem; color:#fff; letter-spacing:1px; margin-bottom:12px;">
+                ACTION TITLE</h2>
+            <p id="actionModalDesc"
+                style="color:var(--text-s); font-size:0.85rem; font-weight:700; line-height:1.6; margin-bottom:30px;">
+                Action description goes here for confirmation.</p>
+
+            <div id="actionInputBox" style="display:none; margin-bottom:30px;">
+                <input type="password" id="actionInput" placeholder="••••"
+                    style="width:100%; padding:18px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:15px; color:#fff; text-align:center; font-size:1.5rem; letter-spacing:10px; outline:none; font-family:'Outfit';">
+            </div>
+
+            <button id="actionMainBtn"
+                style="width:100%; padding:20px; background:var(--accent); color:#000; border:none; border-radius:20px; font-weight:1000; font-size:0.9rem; letter-spacing:2px; cursor:pointer; transition:0.3s; box-shadow:0 10px 25px rgba(0,255,136,0.3);">TASDIQLASH</button>
+        </div>
+    </div>
 </body>
 
 </html>
