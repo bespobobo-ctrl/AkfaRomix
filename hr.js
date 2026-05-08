@@ -391,7 +391,12 @@ function handleEdit() {
     document.getElementById('empFirstName').value = parts[0] || '';
     document.getElementById('empLastName').value = parts.slice(1).join(' ') || '';
     document.getElementById('empRole').value = emp.role || '';
-    document.getElementById('empDept').value = emp.department || 'Ofis';
+    // Handle Department Selection in UI
+    const dept = emp.department || emp.dept || 'Ofis';
+    document.querySelectorAll('.dept-opt').forEach(opt => {
+        if (opt.dataset.value === dept) opt.classList.add('active');
+        else opt.classList.remove('active');
+    });
     document.getElementById('empSalary').value = parseInt(emp.salary_info || 0);
     document.getElementById('empPhone').value = emp.phone || '';
     document.getElementById('empBirthYear').value = emp.birth_year || '';
