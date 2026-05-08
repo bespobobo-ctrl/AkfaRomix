@@ -247,13 +247,17 @@ async function saveWorker() {
     else payload.department = dept;
 
     let res;
-    if (currentEditId) {
-        res = await supabase.from('employees').update(payload).eq('id', currentEditId).select();
-    } else {
-        res = await supabase.from('employees').insert([payload]).select();
+    try {
+        if (currentEditId) {
+            res = await supabase.from('employees').update(payload).eq('id', currentEditId).select();
+        } else {
+            res = await supabase.from('employees').insert([payload]).select();
+        }
+    } catch (e) {
+        console.error("Critical Exception:", e);
     }
 
-    if (!res.error) {
+    if (res && !res.error) {
         btn.textContent = 'MUVAFFAQIYATLI!';
         btn.style.background = '#00ff88';
         setTimeout(async () => {
@@ -263,11 +267,15 @@ async function saveWorker() {
             btn.textContent = 'SAQLASH';
             btn.style.background = '';
             btn.disabled = false;
-            currentEditId = null; // Reset
+            currentEditId = null;
         }, 1500);
     } else {
-        console.error("Supabase Error:", res.error);
-        alert("Xatolik yuz berdi: " + res.error.message);
+        const errMsg = res ? res.error.message : "Noma'lum xato";
+        const availableKeys = employeesData.length > 0 ? Object.keys(employeesData[0]).join(', ') : "Ma'lumot yo'q";
+
+        console.error("Supabase Error:", res ? res.error : "No response");
+        alert(`XATOLIK: ${errMsg}\n\nBAZADAGI USTUNLAR: ${availableKeys}\n\nIltimos, ushbu yozuvni nusxalab menga yuboring!`);
+
         btn.disabled = false;
         btn.textContent = 'QAYTA URINISH';
     }
