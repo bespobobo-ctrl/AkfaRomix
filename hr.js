@@ -1046,6 +1046,81 @@ window.saveKitchenData = function () {
     gsap.to("#saveKitchenBtn", { scale: 0.95, duration: 0.1, yoyo: true, repeat: 1 });
 };
 
+// 📑 PROFESSIONAL KITCHEN ACCOUNTING REPORTS
+window.showKitchenReportOptions = function () {
+    const suite = document.getElementById('kitchenReportSuite');
+    if (!suite) return;
+    suite.style.display = suite.style.display === 'none' ? 'grid' : 'none';
+};
+
+window.genKitchenReport = function (format) {
+    const months = ["Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun", "Iyul", "Avgust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr"];
+    const monthName = months[kitchenCurrentDate.getMonth()];
+    const year = kitchenCurrentDate.getFullYear();
+    const fileName = `OSHXONA_HISOBOTI_${monthName}_${year}`;
+
+    // Collect month data
+    let records = [];
+    let totalMonthSum = 0;
+
+    for (let d = 1; d <= 31; d++) {
+        const dateKey = `${year}-${String(kitchenCurrentDate.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const saved = JSON.parse(localStorage.getItem('kitchen_' + dateKey));
+        if (saved) {
+            const rowTotal = parseInt(saved.count) * parseInt(saved.price);
+            records.push({
+                date: dateKey,
+                count: saved.count,
+                price: saved.price,
+                total: rowTotal,
+                status: saved.status === 'paid' ? 'TO\'LANDI' : 'QARZ'
+            });
+            totalMonthSum += rowTotal;
+        }
+    }
+
+    if (records.length === 0) {
+        alert("Ushbu oy uchun saqlangan ma'lumotlar topilmadi!");
+        return;
+    }
+
+    if (format === 'excel') {
+        let csvContent = "Sana,Odam soni,Narxi,Jami Summa,Holati\n";
+        records.forEach(r => {
+            csvContent += `${r.date},${r.count},${r.price},${r.total},${r.status}\n`;
+        });
+        csvContent += `\nJAMI OYLIQ HARAJAT,,,${totalMonthSum},`;
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute("download", `${fileName}.csv`);
+        link.click();
+    } else {
+        const docContent = `
+AKFA ROMIX - OSHXONA MOLIYAVIY HISOBOTI
+Davr: ${monthName} ${year}
+--------------------------------------------------------------------------------
+Sana       | Odam soni | Narxi (UZS) | Jami (UZS)  | Holati
+--------------------------------------------------------------------------------
+${records.map(r => `${r.date} | ${String(r.count).padEnd(9)} | ${String(r.price).padEnd(11)} | ${String(r.total).padEnd(11)} | ${r.status}`).join('\n')}
+--------------------------------------------------------------------------------
+UMUMIY OYLIK HARAJAT: ${totalMonthSum.toLocaleString()} UZS
+
+Mas'ul shaxs (Buxgalter): _________________
+Sana: ${new Date().toLocaleDateString()}
+        `;
+
+        const blob = new Blob([docContent], { type: 'text/plain;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute("download", `${fileName}.${format === 'pdf' ? 'pdf' : 'doc'}`);
+        link.click();
+    }
+
+    alert(`${format.toUpperCase()} formatidagi hisobot tayyorlandi!`);
+};
+
 async function loadHistoryData() {
     const tbody = document.getElementById('historyTableBody');
     if (!tbody) return;

@@ -1586,11 +1586,27 @@
 
                     <div
                         style="margin-top:30px; padding:25px; border-radius:20px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05);">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                             <span
                                 style="font-size:0.75rem; color:var(--text-s); font-weight:800; letter-spacing:1px;">TANLANGAN:</span>
                             <span id="kitchenSelectedDateLabel"
                                 style="color:#ffa940; font-weight:900; font-size:1.1rem; font-family:'Outfit';">--.--.----</span>
+                        </div>
+                        <div style="border-top:1px solid rgba(255,255,255,0.05); padding-top:20px;">
+                            <button onclick="window.showKitchenReportOptions()" class="mgmt-btn"
+                                style="width:100%; justify-content:center; gap:10px; background:rgba(255,169,64,0.1); color:#ffa940; border:1px solid rgba(255,169,64,0.2); font-weight:900;">
+                                <i data-lucide="file-text" style="width:18px;"></i> HISOBOT TAYYORLASH
+                            </button>
+                            <div id="kitchenReportSuite"
+                                style="display:none; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:15px;">
+                                <button onclick="window.genKitchenReport('excel')"
+                                    style="background:#2ecc71; color:#fff; border:none; padding:12px; border-radius:10px; font-weight:800; font-size:0.7rem; cursor:pointer; transition:0.3s;">EXCEL</button>
+                                <button onclick="window.genKitchenReport('word')"
+                                    style="background:#3498db; color:#fff; border:none; padding:12px; border-radius:10px; font-weight:800; font-size:0.7rem; cursor:pointer; transition:0.3s;">WORD</button>
+                                <button onclick="window.genKitchenReport('pdf')"
+                                    style="background:#e74c3c; color:#fff; border:none; padding:12px; border-radius:10px; font-weight:800; font-size:0.7rem; cursor:pointer; transition:0.3s;">PDF</button>
+                            </div>
                         </div>
                     </div>
                 </div>
