@@ -70,7 +70,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // photo logic
+    // Dept Selector in Modal
+    document.querySelectorAll('.dept-opt').forEach(opt => {
+        opt.onclick = () => {
+            document.querySelectorAll('.dept-opt').forEach(o => o.classList.remove('active'));
+            opt.classList.add('active');
+        };
+    });
+
     const photoInput = document.getElementById('empPhotoFile');
     if (photoInput) {
         photoInput.onchange = (e) => {
@@ -204,49 +211,53 @@ function getSmartStatus(att) {
 function renderStaffList(data) {
     const container = document.getElementById('employeeTableBody');
     if (!container) return;
+
+    // 🛡️ FORCE V1.00 TABLE RESET
     container.innerHTML = '';
 
-    // Update Headers (using cached data)
+    // Update Stats
     updateStatsHeader(employeesData, todayAtt);
+
+    if (data.length === 0) {
+        container.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:50px; color:var(--text-s);">Xodimlar topilmadi</td></tr>';
+        return;
+    }
 
     data.forEach(emp => {
         const att = todayAtt.find(a => a.employee_id === emp.id);
         const status = getSmartStatus(att);
 
         const tr = document.createElement('tr');
-        tr.style.borderBottom = "1px solid rgba(255,255,255,0.03)";
+        tr.style.background = "rgba(255,255,255,0.01)";
+        tr.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
+
         tr.innerHTML = `
-            <td style="padding: 15px 20px;">
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <div style="position:relative;">
-                        <img src="${emp.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(emp.full_name)}" 
-                             style="width:40px; height:40px; border-radius:12px; object-fit:cover; border:1px solid rgba(255,255,255,0.1);">
-                        <div style="position:absolute; bottom:-2px; right:-2px; width:10px; height:10px; border-radius:50%; background:${status.color}; border:2px solid #05080c;"></div>
-                    </div>
+            <td style="padding: 16px 20px;">
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <img src="${emp.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(emp.full_name)}" 
+                         style="width:42px; height:42px; border-radius:14px; object-fit:cover; border:1px solid rgba(255,255,255,0.1); flex-shrink:0;">
                     <div>
-                        <div style="font-weight:700; font-size:0.85rem; color:#fff;">${emp.full_name}</div>
-                        <div style="font-size:0.65rem; color:var(--text-s); font-family:monospace;">ID: ${emp.id.substring(0, 8).toUpperCase()}</div>
+                        <div style="font-weight:700; font-size:0.9rem; color:#fff; line-height:1.2;">${emp.full_name}</div>
+                        <div style="font-size:0.65rem; color:var(--text-s); margin-top:3px; opacity:0.5;">ID: ${emp.id.substring(0, 8).toUpperCase()}</div>
                     </div>
                 </div>
             </td>
-            <td style="padding: 15px 20px; font-size:0.8rem; font-weight:600; color:var(--text-s);">${emp.role || 'Xodim'}</td>
-            <td style="padding: 15px 20px;">
-                <span style="font-size:0.7rem; font-weight:800; background:rgba(255,255,255,0.03); padding:4px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.05); color:var(--text-s); text-transform:uppercase;">
-                    ${emp.department || emp.dept || 'Ofis'}
-                </span>
+            <td style="padding: 16px 20px;">
+                <div style="font-size:0.8rem; font-weight:600; color:var(--text-p);">${emp.role || 'Xodim'}</div>
+                <div style="font-size:0.65rem; color:var(--accent); font-weight:700; text-transform:uppercase; margin-top:2px;">${emp.department || emp.dept || 'Ofis'}</div>
             </td>
-            <td style="padding: 15px 20px; font-size:0.8rem; font-weight:600; color:var(--text-s); font-family:monospace;">${emp.phone || '---'}</td>
-            <td style="padding: 15px 20px;">
-                <span style="display:inline-flex; align-items:center; gap:8px; background:${status.glow}; color:${status.color}; padding:6px 14px; border-radius:12px; font-size:0.65rem; font-weight:900; letter-spacing:0.5px; border:1px solid ${status.color}33;">
-                    <span style="width:5px; height:5px; border-radius:50%; background:${status.color};"></span>
+            <td style="padding: 16px 20px; font-size:0.8rem; color:var(--text-s); font-family:monospace;">${emp.phone || '---'}</td>
+            <td style="padding: 16px 20px;">
+                <div style="display:inline-flex; align-items:center; gap:8px; background:${status.glow}; color:${status.color}; padding:6px 14px; border-radius:12px; font-size:0.7rem; font-weight:800; border:1px solid ${status.color}22;">
+                    <span style="width:6px; height:6px; border-radius:50%; background:${status.color}; box-shadow:0 0 8px ${status.color}"></span>
                     ${status.text}
-                </span>
+                </div>
             </td>
-            <td style="padding: 15px 20px; text-align:right;">
+            <td style="padding: 16px 20px; text-align:right;">
                 <button onclick="window.viewDetails('${emp.id}')" 
-                        style="width:35px; height:35px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); color:var(--text-s); cursor:pointer; transition:0.3s; display:inline-flex; align-items:center; justify-content:center;"
-                        onmouseover="this.style.background='var(--accent)'; this.style.color='#000'; this.style.borderColor='var(--accent)'"
-                        onmouseout="this.style.background='rgba(255,255,255,0.03)'; this.style.color='var(--text-s)'; this.style.borderColor='rgba(255,255,255,0.08)'">
+                        style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:#fff; width:36px; height:36px; border-radius:12px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition:0.3s;"
+                        onmouseover="this.style.background='var(--accent)'; this.style.color='#000'; this.style.transform='translateX(3px)'"
+                        onmouseout="this.style.background='rgba(255,255,255,0.03)'; this.style.color='#fff'; this.style.transform='none'">
                     <i data-lucide="chevron-right" size="18"></i>
                 </button>
             </td>
@@ -334,11 +345,25 @@ function calculateDuration(start, end) {
     const timeStr = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
     document.getElementById('dt-worktime').textContent = timeStr;
 
-    // Progress Circle (Max 8 hours)
+    // 💰 SALARY CALCULATION ENGINE
+    if (currentEmp && currentEmp.salary_info) {
+        const monthlySalary = parseInt(currentEmp.salary_info.toString().replace(/\D/g, '') || 0);
+        if (monthlySalary > 0) {
+            const dailySalary = monthlySalary / 26;
+            const hourlySalary = dailySalary / 10; // 10 Working hours (08:00 - 18:00)
+
+            const totalHours = diff / 3600000;
+            const todayPay = Math.floor(totalHours * hourlySalary);
+
+            document.getElementById('dt-today-pay').innerHTML = `${todayPay.toLocaleString()} <small style="font-size:0.8rem; color:var(--text-s);">UZS</small>`;
+        }
+    }
+
+    // Progress Circle (Max 10 hours instead of 8)
     const progressEl = document.getElementById('timeProgress');
     if (progressEl) {
         const totalSecs = hrs * 3600 + mins * 60 + secs;
-        const maxSecs = 8 * 3600;
+        const maxSecs = 10 * 3600; // 10 Working hours
         const percent = Math.min(totalSecs / maxSecs, 1);
         const offset = 597 - (597 * percent);
         progressEl.style.strokeDashoffset = offset;
@@ -384,7 +409,7 @@ async function saveWorker() {
     const fname = document.getElementById('empFirstName').value.trim();
     const lname = document.getElementById('empLastName').value.trim();
     const role = document.getElementById('empRole').value.trim();
-    const dept = document.getElementById('empDept').value;
+    const dept = document.querySelector('.dept-opt.active')?.dataset.value || 'Ofis';
     const salary = document.getElementById('empSalary').value.trim();
     const phone = document.getElementById('empPhone').value.trim();
     const birthYear = document.getElementById('empBirthYear').value.trim();
