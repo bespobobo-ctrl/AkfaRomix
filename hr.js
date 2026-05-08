@@ -113,6 +113,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.querySelectorAll('.pill[data-dept]').forEach(p => p.classList.remove('active'));
             pill.classList.add('active');
             activeDept = pill.dataset.dept;
+
+            // UX Fix: Clear search bar when explicitly selecting a category
+            const searchInput = document.getElementById('hrSearchInput');
+            if (searchInput) searchInput.value = '';
+
             filterAndRender();
         };
     });
@@ -877,7 +882,7 @@ function filterAndRender() {
             return att && att.status === 'ISHDA';
         });
     } else if (activeDept !== 'all') {
-        filtered = filtered.filter(e => ((e.department || '').toLowerCase() === activeDept.toLowerCase() || (e.dept || '').toLowerCase() === activeDept.toLowerCase()));
+        filtered = filtered.filter(e => ((e.department || '').trim().toLowerCase() === activeDept.trim().toLowerCase() || (e.dept || '').trim().toLowerCase() === activeDept.trim().toLowerCase()));
     }
 
     renderStaffList(filtered);
@@ -935,7 +940,7 @@ window.renderAnalyticsBoard = function () {
 
     let targetEmps = employeesData;
     if (activeAnaDept !== 'all') {
-        targetEmps = employeesData.filter(e => ((e.department || '').toLowerCase() === activeAnaDept.toLowerCase() || (e.dept || '').toLowerCase() === activeAnaDept.toLowerCase()));
+        targetEmps = employeesData.filter(e => ((e.department || '').trim().toLowerCase() === activeAnaDept.trim().toLowerCase() || (e.dept || '').trim().toLowerCase() === activeAnaDept.trim().toLowerCase()));
     }
 
     targetEmps.forEach(emp => {
