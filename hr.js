@@ -101,10 +101,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Search
     const searchInput = document.getElementById('hrSearchInput');
     if (searchInput) {
-        searchInput.oninput = (e) => {
-            const val = e.target.value.toLowerCase();
-            const filtered = employeesData.filter(emp => emp.full_name.toLowerCase().includes(val));
-            renderStaffList(filtered);
+        searchInput.oninput = () => {
+            filterAndRender();
         };
     }
 
@@ -856,14 +854,20 @@ function handleDelete() {
 function filterAndRender() {
     let filtered = employeesData;
 
+    // Apply Search Input
+    const searchInput = document.getElementById('hrSearchInput');
+    if (searchInput && searchInput.value) {
+        const val = searchInput.value.toLowerCase();
+        filtered = filtered.filter(emp => (emp.full_name || '').toLowerCase().includes(val) || (emp.department || '').toLowerCase().includes(val) || (emp.role || '').toLowerCase().includes(val));
+    }
+
     if (activeDept === 'at_work') {
-        // Filter: Show only those who have checked in today and haven't checked out yet (or just present today)
-        filtered = employeesData.filter(e => {
+        filtered = filtered.filter(e => {
             const att = todayAtt.find(a => a.employee_id === e.id);
-            return att && att.check_in && !att.check_out;
+            return att && att.status === 'ISHDA';
         });
     } else if (activeDept !== 'all') {
-        filtered = employeesData.filter(e => (e.department === activeDept || e.dept === activeDept));
+        filtered = filtered.filter(e => ((e.department || '').toLowerCase() === activeDept.toLowerCase() || (e.dept || '').toLowerCase() === activeDept.toLowerCase()));
     }
 
     renderStaffList(filtered);
@@ -899,6 +903,7 @@ function switchTab(tab) {
     } else if (tab === 'dashboard') {
         sections.dashboard.style.display = 'flex';
         stopScanner();
+        filterAndRender();
     }
 
     if (tab === 'reports') handleReport();
