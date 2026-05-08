@@ -122,46 +122,94 @@ async function loadInitialData() {
     updateGlobalStats();
 }
 
+function updateStatsHeader(staff, attendance) {
+    const total = staff.length;
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    const present = attendance.filter(a => a.status === 'ISHDA').length;
+
+    // 🧠 SMART LATE COUNTER: Arrived after 08:00
+    const lateCount = attendance.filter(a => {
+        if (!a.check_in) return false;
+        const time = new Date(a.check_in).getHours() * 60 + new Date(a.check_in).getMinutes();
+        return time > 480; // 480 mins = 08:00
+    }).length;
+
+    document.getElementById('totalStaffCount').innerText = total;
+    document.getElementById('activeStaffCount').innerText = present;
+    document.getElementById('lateCount').innerText = lateCount;
+
+    // Monthly Fund (Simulation)
+    const fund = staff.reduce((acc, curr) => acc + parseInt(curr.salary_info?.replace(/\D/g, '') || 0), 0);
+    document.getElementById('totalSalaryFund').innerText = fund.toLocaleString() + " UZS";
+}
+
+function getSmartStatus(att) {
+    if (!att) return { text: 'KELMAGAN', color: '#ff4d4f', glow: 'rgba(255, 77, 79, 0.2)' };
+    if (att.status === 'KETGAN') return { text: 'KETGAN', color: '#8a8f98', glow: 'transparent' };
+    if (att.status === 'RUHSAT') return { text: 'RUHSAT', color: '#ffa940', glow: 'rgba(255, 169, 64, 0.2)' };
+
+    if (!att.check_in) return { text: 'KELMAGAN', color: '#ff4d4f', glow: 'rgba(255, 77, 79, 0.2)' };
+
+    const checkTime = new Date(att.check_in);
+    const mins = checkTime.getHours() * 60 + checkTime.getMinutes();
+
+    if (mins <= 480) return { text: 'VAQTIDA', color: '#00ff88', glow: 'rgba(0, 255, 136, 0.3)' }; // 08:00
+    if (mins <= 495) return { text: 'KECHIKISH', color: '#ffec3d', glow: 'rgba(255, 236, 61, 0.2)' }; // 08:15
+    if (mins <= 510) return { text: 'KECH QOLDI', color: '#ff7875', glow: 'rgba(255, 120, 117, 0.2)' }; // 08:30
+    return { text: 'JUDA KECH', color: '#820014', glow: 'rgba(130, 0, 20, 0.3)' }; // > 08:30
+}
+
+function renderStaffList(data) {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const container = document.getElementById('staffTableBody');
+    container.innerHTML = '';
+
+    // Join with Attendance
+    supabase.from('attendance').select('*').eq('date', todayStr).then(({ data: attData }) => {
+        updateStatsHeader(employeesData, attData || []);
+
+        data.forEach(emp => {
+            const att = (attData || []).find(a => a.id === emp.id);
+            const status = getSmartStatus(att);
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>
+                    <div class="worker-cell">
+                        ${emp.avatar_url ? `<img src="${emp.avatar_url}" class="worker-avatar">` : `<div class="worker-avatar-placeholder">${emp.full_name.charAt(0)}</div>`}
+                        <div>
+                            <div class="worker-name">${emp.full_name}</div>
+                            <div class="worker-id">ID: ${emp.id.substring(0, 8)}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>${emp.role || 'Xodim'}</td>
+                <td>${emp.department || emp.dept || 'Ofis'}</td>
+                <td>${emp.phone || '-'}</td>
+                <td>
+                    <span class="status-badge" style="background:${status.glow}; color:${status.color}; border:1px solid ${status.color}44; box-shadow: 0 0 10px ${status.glow}">
+                        <span style="width:6px; height:6px; border-radius:50%; background:${status.color}; margin-right:8px; display:inline-block"></span>
+                        ${status.text}
+                    </span>
+                </td>
+                <td>
+                    <button class="view-btn" onclick="window.viewDetails('${emp.id}')"><i data-lucide="eye"></i></button>
+                </td>
+            `;
+            container.appendChild(tr);
+        });
+        lucide.createIcons();
+    });
+}
+
 function updateGlobalStats() {
+    if (!employeesData) return;
     document.getElementById('totalEmployeesCount').textContent = employeesData.length;
     document.getElementById('todayArrivedCount').textContent = todayAtt.length;
     let totalPayroll = 0;
     employeesData.forEach(e => totalPayroll += parseInt(e.salary_info || 0));
     document.getElementById('payrollTotal').innerHTML = `${totalPayroll.toLocaleString()} <small>UZS</small>`;
-}
-
-function renderStaffList(listData) {
-    const tableBody = document.getElementById('employeeTableBody');
-    if (!tableBody) return;
-    tableBody.innerHTML = '';
-
-    listData.forEach(emp => {
-        const tr = document.createElement('tr');
-        tr.className = 'staff-row';
-        tr.innerHTML = `
-            <td>
-                <div class="t-user-cell">
-                    <img src="${emp.avatar_url || 'https://via.placeholder.com/150'}" class="t-avatar">
-                    <div>
-                        <div style="font-weight:900; color:#fff;">${emp.full_name}</div>
-                        <div style="font-size:0.7rem; color:var(--text-s);">ID: ${emp.id.substring(0, 8).toUpperCase()}</div>
-                    </div>
-                </div>
-            </td>
-            <td>${emp.role || 'Xodim'}</td>
-            <td>${emp.department || 'Ofis'}</td>
-            <td>${emp.phone || '---'}</td>
-            <td><span class="t-status-pill">ISHDA</span></td>
-            <td style="text-align:right;">
-                <button class="eye-btn" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; width:35px; height:35px; border-radius:10px; cursor:pointer;" onclick="event.stopPropagation(); window.showEmployeeDetail('${emp.id}')">
-                    <i data-lucide="eye" style="width:16px; height:16px;"></i>
-                </button>
-            </td>
-        `;
-        tr.onclick = () => window.showEmployeeDetail(emp.id);
-        tableBody.appendChild(tr);
-    });
-    lucide.createIcons();
 }
 
 window.showEmployeeDetail = async function (id) {

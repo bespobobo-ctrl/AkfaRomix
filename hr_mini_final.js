@@ -35,10 +35,31 @@ async function loadMiniData() {
 
 function updateMiniStats(staff, att) {
     const total = staff.length;
-    const present = att.filter(a => a.status === 'ISHDA').length;
+    // 🧠 SMART LATE COUNTER: Arrived after 08:00
+    const lateCount = att.filter(a => {
+        if (!a.check_in) return false;
+        const time = new Date(a.check_in).getHours() * 60 + new Date(a.check_in).getMinutes();
+        return time > 480; // 480 mins = 08:00
+    }).length;
 
-    document.getElementById('activeStaffCount').innerText = present;
-    document.getElementById('todayArrived').innerText = att.length;
+    document.getElementById('activeStaffCount').innerText = att.filter(a => a.status === 'ISHDA').length;
+    document.getElementById('todayArrived').innerText = lateCount;
+}
+
+function getSmartStatus(att) {
+    if (!att) return { text: 'KELMAGAN', color: '#ff4d4f', glow: 'rgba(255, 77, 79, 0.2)' };
+    if (att.status === 'KETGAN') return { text: 'KETGAN', color: '#8a8f98', glow: 'transparent' };
+    if (att.status === 'RUHSAT') return { text: 'RUHSAT', color: '#ffa940', glow: 'rgba(255, 169, 64, 0.2)' };
+
+    if (!att.check_in) return { text: 'KELMAGAN', color: '#ff4d4f', glow: 'rgba(255, 77, 79, 0.2)' };
+
+    const checkTime = new Date(att.check_in);
+    const mins = checkTime.getHours() * 60 + checkTime.getMinutes();
+
+    if (mins <= 480) return { text: 'VAQTIDA', color: '#00ff88', glow: 'rgba(0, 255, 136, 0.3)' }; // 08:00
+    if (mins <= 495) return { text: 'KECHIKISH', color: '#ffec3d', glow: 'rgba(255, 236, 61, 0.2)' }; // 08:15
+    if (mins <= 510) return { text: 'KECH QOLDI', color: '#ff7875', glow: 'rgba(255, 120, 117, 0.2)' }; // 08:30
+    return { text: 'JUDA KECH', color: '#820014', glow: 'rgba(130, 0, 20, 0.3)' }; // > 08:30
 }
 
 function renderMiniStaff(staff, attendance) {
@@ -50,18 +71,17 @@ function renderMiniStaff(staff, attendance) {
 
     container.innerHTML = staff.map(emp => {
         const attRec = attendance.find(a => a.id === emp.id);
-        const statusColor = attRec ? (attRec.status === 'ISHDA' ? '#00ff88' : '#ff4d4f') : 'rgba(255,255,255,0.2)';
-        const statusText = attRec ? attRec.status : 'KELMAGAN';
+        const status = getSmartStatus(attRec);
 
         return `
             <div class="staff-mini-card" onclick="window.miniShowProfile('${emp.id}')">
                 <div style="position:relative">
                     <img src="${emp.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(emp.full_name)}" class="avatar-mini">
-                    <div style="position:absolute; bottom:0; right:0; width:12px; height:12px; border-radius:50%; background:${statusColor}; border:2px solid #05080c"></div>
+                    <div style="position:absolute; bottom:0; right:0; width:12px; height:12px; border-radius:50%; background:${status.color}; border:2px solid #05080c; box-shadow:0 0 5px ${status.color}"></div>
                 </div>
                 <div class="info-mini">
                     <h4>${emp.full_name}</h4>
-                    <p>${emp.role || 'Xodim'} • <span style="color:${statusColor}">${statusText}</span></p>
+                    <p>${emp.role || 'Xodim'} • <span style="color:${status.color}; font-weight:900; font-size:0.65rem;">${status.text}</span></p>
                 </div>
                 <i data-lucide="chevron-right" style="margin-left:auto; width:16px; color:rgba(255,255,255,0.3)"></i>
             </div>
