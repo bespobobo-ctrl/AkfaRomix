@@ -210,33 +210,45 @@ function renderStaffList(data) {
     updateStatsHeader(employeesData, todayAtt);
 
     data.forEach(emp => {
-        // 🔍 FIX: Use employee_id to link attendance
         const att = todayAtt.find(a => a.employee_id === emp.id);
         const status = getSmartStatus(att);
 
         const tr = document.createElement('tr');
+        tr.style.borderBottom = "1px solid rgba(255,255,255,0.03)";
         tr.innerHTML = `
-            <td>
-                <div class="worker-cell">
-                    ${emp.avatar_url ? `<img src="${emp.avatar_url}" class="worker-avatar">` : `<div class="worker-avatar-placeholder">${emp.full_name.charAt(0)}</div>`}
+            <td style="padding: 15px 20px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="position:relative;">
+                        <img src="${emp.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(emp.full_name)}" 
+                             style="width:40px; height:40px; border-radius:12px; object-fit:cover; border:1px solid rgba(255,255,255,0.1);">
+                        <div style="position:absolute; bottom:-2px; right:-2px; width:10px; height:10px; border-radius:50%; background:${status.color}; border:2px solid #05080c;"></div>
+                    </div>
                     <div>
-                        <div class="worker-name">${emp.full_name}</div>
-                        <div class="worker-id">ID: ${emp.id.substring(0, 8)}</div>
-                        <div style="font-size:0.6rem; opacity:0.3;">DB: bespobobo-ctrfs</div>
+                        <div style="font-weight:700; font-size:0.85rem; color:#fff;">${emp.full_name}</div>
+                        <div style="font-size:0.65rem; color:var(--text-s); font-family:monospace;">ID: ${emp.id.substring(0, 8).toUpperCase()}</div>
                     </div>
                 </div>
             </td>
-            <td>${emp.role || 'Xodim'}</td>
-            <td>${emp.department || emp.dept || 'Ofis'}</td>
-            <td>${emp.phone || '-'}</td>
-            <td>
-                <span class="status-badge" style="background:${status.glow}; color:${status.color}; border:1px solid ${status.color}44; box-shadow: 0 0 10px ${status.glow}">
-                    <span style="width:6px; height:6px; border-radius:50%; background:${status.color}; margin-right:8px; display:inline-block"></span>
+            <td style="padding: 15px 20px; font-size:0.8rem; font-weight:600; color:var(--text-s);">${emp.role || 'Xodim'}</td>
+            <td style="padding: 15px 20px;">
+                <span style="font-size:0.7rem; font-weight:800; background:rgba(255,255,255,0.03); padding:4px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.05); color:var(--text-s); text-transform:uppercase;">
+                    ${emp.department || emp.dept || 'Ofis'}
+                </span>
+            </td>
+            <td style="padding: 15px 20px; font-size:0.8rem; font-weight:600; color:var(--text-s); font-family:monospace;">${emp.phone || '---'}</td>
+            <td style="padding: 15px 20px;">
+                <span style="display:inline-flex; align-items:center; gap:8px; background:${status.glow}; color:${status.color}; padding:6px 14px; border-radius:12px; font-size:0.65rem; font-weight:900; letter-spacing:0.5px; border:1px solid ${status.color}33;">
+                    <span style="width:5px; height:5px; border-radius:50%; background:${status.color};"></span>
                     ${status.text}
                 </span>
             </td>
-            <td>
-                <button class="view-btn" onclick="window.viewDetails('${emp.id}')"><i data-lucide="eye"></i></button>
+            <td style="padding: 15px 20px; text-align:right;">
+                <button onclick="window.viewDetails('${emp.id}')" 
+                        style="width:35px; height:35px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); color:var(--text-s); cursor:pointer; transition:0.3s; display:inline-flex; align-items:center; justify-content:center;"
+                        onmouseover="this.style.background='var(--accent)'; this.style.color='#000'; this.style.borderColor='var(--accent)'"
+                        onmouseout="this.style.background='rgba(255,255,255,0.03)'; this.style.color='var(--text-s)'; this.style.borderColor='rgba(255,255,255,0.08)'">
+                    <i data-lucide="chevron-right" size="18"></i>
+                </button>
             </td>
         `;
         container.appendChild(tr);
