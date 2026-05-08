@@ -1252,19 +1252,25 @@ window.clearAllKitchenData = function () {
 };
 
 let historyFilter = 'all';
+let historyAttSub = 'all';
 let historyData = [];
+
+window.clearHistDates = function () {
+    document.getElementById('histDateFrom').value = '';
+    document.getElementById('histDateTo').value = '';
+    window.loadHistoryData();
+};
 
 window.logActivity = function (type, action, target) {
     const logs = JSON.parse(localStorage.getItem('romix_system_logs') || '[]');
     logs.unshift({
         id: Date.now(),
-        type: type, // 'admin', 'kitchen', 'attendance'
+        type: type, // 'admin', 'kitchen'
         action: action,
         target: target,
         time: new Date().toISOString()
     });
-    // Keep last 100 logs
-    localStorage.setItem('romix_system_logs', JSON.stringify(logs.slice(0, 100)));
+    localStorage.setItem('romix_system_logs', JSON.stringify(logs.slice(0, 150)));
 };
 
 async function loadHistoryData() {
@@ -1272,44 +1278,49 @@ async function loadHistoryData() {
     if (!list) return;
     list.innerHTML = '<div style="text-align:center; padding:100px;"><div class="loader" style="margin:0 auto;"></div></div>';
 
-    // 1. Load Attendance (Supabase)
-    const { data: attLogs } = await supabase.from('attendance')
-        .select(`*, employees(full_name)`)
-        .order('check_in', { ascending: false })
-        .limit(50);
+    const from = document.getElementById('histDateFrom').value;
+    const to = document.getElementById('histDateTo').value;
 
-    // 2. Load Kitchen (LocalStorage)
+    let q = supabase.from('attendance').select(`*, employees(full_name)`).order('date', { ascending: false });
+    if (from) q = q.gte('date', from);
+    if (to) q = q.lte('date', to);
+    const { data: attLogs } = await q.limit(200);
+
     const kitchenLogs = [];
     Object.keys(localStorage).forEach(key => {
         if (key.startsWith('kitchen_')) {
             const data = JSON.parse(localStorage.getItem(key));
+            if (from && data.date < from) return;
+            if (to && data.date > to) return;
             kitchenLogs.push({
                 type: 'kitchen',
                 action: "Oshxona hisoboti saqlandi",
-                target: `${data.date}: ${data.count} kishi, ${data.total || (data.count * data.price)} UZS`,
+                target: `${data.date}: ${data.count} kishi`,
                 time: data.savedAt || data.date + "T12:00:00Z"
             });
         }
     });
 
-    // 3. Load Admin Logs (LocalStorage)
-    const adminLogs = JSON.parse(localStorage.getItem('romix_system_logs') || '[]');
+    const adminLogs = JSON.parse(localStorage.getItem('romix_system_logs') || '[]').filter(l => {
+        const d = l.time.split('T')[0];
+        if (from && d < from) return false;
+        if (to && d > to) return false;
+        return true;
+    });
 
-    // Combine & Sort
     historyData = [
-        ...(attLogs || []).map(l => ({
-            type: 'attendance',
-            action: l.status === 'ISHDA' ? 'Kash keldi' : 'Ishdan ketti',
-            target: l.employees?.full_name || 'Noma\'lum xodim',
-            time: l.check_in || l.check_out || l.date + "T08:00:00Z"
-        })),
+        ...(attLogs || []).flatMap(l => {
+            const arr = [];
+            if (l.check_in) arr.push({ type: 'attendance', subtype: 'in', action: 'Ishga keldi', target: l.employees?.full_name || 'Xodim', time: l.check_in });
+            if (l.check_out) arr.push({ type: 'attendance', subtype: 'out', action: 'Ishdan ketti', target: l.employees?.full_name || 'Xodim', time: l.check_out });
+            return arr;
+        }),
         ...kitchenLogs,
         ...adminLogs
     ];
 
     historyData.sort((a, b) => new Date(b.time) - new Date(a.time));
 
-    // Summary Stats
     document.getElementById('hist_total_count').textContent = historyData.length;
     document.getElementById('hist_today_att').textContent = (attLogs || []).filter(a => a.date === new Date().toISOString().split('T')[0]).length;
     document.getElementById('hist_kitchen_count').textContent = kitchenLogs.length;
@@ -1322,21 +1333,32 @@ window.filterHistory = function (filter) {
     historyFilter = filter;
     document.querySelectorAll('.hist-tab').forEach(t => t.classList.remove('active'));
     document.getElementById('histTab_' + filter).classList.add('active');
+    document.getElementById('histSubTabs_attendance').style.display = filter === 'attendance' ? 'flex' : 'none';
+    renderHistory();
+};
+
+window.filterAttSub = function (sub) {
+    historyAttSub = sub;
+    document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('attSubTab_' + sub).classList.add('active');
     renderHistory();
 };
 
 window.searchHistory = function (val) {
     const q = val.toLowerCase();
     const filtered = historyData.filter(h =>
-        h.action.toLowerCase().includes(q) ||
-        h.target.toLowerCase().includes(q)
+        h.action.toLowerCase().includes(q) || h.target.toLowerCase().includes(q)
     );
     renderHistory(filtered);
 };
 
 function renderHistory(customData = null) {
     const list = document.getElementById('historyList');
-    const data = customData || (historyFilter === 'all' ? historyData : historyData.filter(h => h.type === historyFilter));
+    let data = customData || (historyFilter === 'all' ? historyData : historyData.filter(h => h.type === historyFilter));
+
+    if (!customData && historyFilter === 'attendance' && historyAttSub !== 'all') {
+        data = data.filter(h => h.subtype === historyAttSub);
+    }
 
     if (data.length === 0) {
         list.innerHTML = '<div style="text-align:center; padding:100px; color:var(--text-s);">Ma\'lumotlar topilmadi.</div>';
@@ -1344,13 +1366,10 @@ function renderHistory(customData = null) {
     }
 
     list.innerHTML = data.map(h => {
-        let icon = 'clock';
-        let color = '#00ff88';
-        let bg = 'rgba(0,255,136,0.1)';
-
+        let icon = 'clock'; let color = '#00ff88'; let bg = 'rgba(0,255,136,0.1)';
         if (h.type === 'kitchen') { icon = 'utensils'; color = '#ffa940'; bg = 'rgba(255,169,64,0.1)'; }
         if (h.type === 'admin') { icon = 'shield'; color = '#ff4d4f'; bg = 'rgba(255,77,79,0.1)'; }
-        if (h.action.includes('ketti')) { icon = 'log-out'; color = '#ff4d4f'; bg = 'rgba(255,77,79,0.1)'; }
+        if (h.subtype === 'out') { icon = 'log-out'; color = '#ff4d4f'; bg = 'rgba(255,77,79,0.1)'; }
 
         return `
             <div class="history-row">
@@ -1362,7 +1381,7 @@ function renderHistory(customData = null) {
                     <p style="font-size:0.7rem; color:var(--text-s); margin-top:4px;">${h.action.toUpperCase()}</p>
                 </div>
                 <div style="font-size:0.75rem; color:#fff; font-weight:700;">
-                    ${new Date(h.time).toLocaleDateString()}
+                    ${new Date(h.time).toLocaleDateString('uz-UZ', { day: 'numeric', month: 'short' })}
                 </div>
                 <div style="font-family:'Outfit'; font-weight:900; color:var(--accent); text-align:right;">
                     ${new Date(h.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
