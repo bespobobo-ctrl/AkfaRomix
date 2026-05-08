@@ -888,9 +888,7 @@ function switchTab(tab) {
         loadHistoryData();
     } else if (tab === 'kitchen') {
         sections.kitchen.style.display = 'flex';
-        // Set default date to today
-        document.getElementById('kitchenDate').value = new Date().toISOString().split('T')[0];
-        window.handleKitchenDateChange();
+        renderKitchenCalendar();
     } else if (tab === 'dashboard') {
         sections.dashboard.style.display = 'flex';
         stopScanner();
@@ -900,33 +898,101 @@ function switchTab(tab) {
     lucide.createIcons();
 }
 
-// 🍽️ KITCHEN CORE ENGINE
+// 🍽️ LUXURY KITCHEN CALENDAR ENGINE
+let kitchenCurrentDate = new Date();
+let kitchenSelectedDate = new Date();
 let currentKitchenStatus = 'debt';
 
-window.handleKitchenDateChange = async function () {
-    const selectedDate = document.getElementById('kitchenDate').value;
-    if (!selectedDate) return;
+window.renderKitchenCalendar = function () {
+    const grid = document.getElementById('kitchenCalendarGrid');
+    const title = document.getElementById('kitchenCalendarTitle');
+    if (!grid || !title) return;
 
-    // Fetch unique people present on that day
-    const { data: att, error } = await supabase.from('attendance')
+    grid.innerHTML = '';
+    const months = ["Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun", "Iyul", "Avgust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr"];
+    title.textContent = `${months[kitchenCurrentDate.getMonth()]} ${kitchenCurrentDate.getFullYear()}`;
+
+    // Days Labels
+    ["Du", "Se", "Ch", "Pa", "Ju", "Sh", "Ya"].forEach(day => {
+        const el = document.createElement('div');
+        el.className = 'cal-day-label';
+        el.textContent = day;
+        grid.appendChild(el);
+    });
+
+    const firstDay = new Date(kitchenCurrentDate.getFullYear(), kitchenCurrentDate.getMonth(), 1).getDay();
+    const daysInMonth = new Date(kitchenCurrentDate.getFullYear(), kitchenCurrentDate.getMonth() + 1, 0).getDate();
+
+    let offset = firstDay === 0 ? 6 : firstDay - 1;
+
+    for (let i = 0; i < offset; i++) {
+        const empty = document.createElement('div');
+        empty.className = 'cal-date other-month';
+        grid.appendChild(empty);
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+        const el = document.createElement('div');
+        el.className = 'cal-date';
+        el.textContent = d;
+
+        const dateStr = `${kitchenCurrentDate.getFullYear()}-${String(kitchenCurrentDate.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const selStr = `${kitchenSelectedDate.getFullYear()}-${String(kitchenSelectedDate.getMonth() + 1).padStart(2, '0')}-${String(kitchenSelectedDate.getDate()).padStart(2, '0')}`;
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        if (dateStr === selStr) el.classList.add('active');
+        if (dateStr === todayStr) el.classList.add('today');
+
+        el.onclick = () => window.selectKitchenDate(d);
+        grid.appendChild(el);
+    }
+
+    document.getElementById('kitchenSelectedDateLabel').textContent =
+        `${String(kitchenSelectedDate.getDate()).padStart(2, '0')}.${String(kitchenSelectedDate.getMonth() + 1).padStart(2, '0')}.${kitchenSelectedDate.getFullYear()}`;
+
+    window.handleKitchenDateChange();
+};
+
+window.changeKitchenMonth = function (dir) {
+    kitchenCurrentDate.setMonth(kitchenCurrentDate.getMonth() + dir);
+    renderKitchenCalendar();
+};
+
+window.selectKitchenDate = function (day) {
+    kitchenSelectedDate = new Date(kitchenCurrentDate.getFullYear(), kitchenCurrentDate.getMonth(), day);
+    renderKitchenCalendar();
+};
+
+window.adjustKitchenCount = function (val) {
+    const input = document.getElementById('kitchenCountInput');
+    let curr = parseInt(input.value) || 0;
+    input.value = Math.max(0, curr + val);
+    window.calcKitchenTotal();
+};
+
+window.handleKitchenDateChange = async function () {
+    const sel = kitchenSelectedDate;
+    const dateKey = `${sel.getFullYear()}-${String(sel.getMonth() + 1).padStart(2, '0')}-${String(sel.getDate()).padStart(2, '0')}`;
+
+    const { data: att } = await supabase.from('attendance')
         .select('employee_id')
-        .eq('date', selectedDate)
+        .eq('date', dateKey)
         .eq('status', 'ISHDA');
 
-    const count = att ? new Set(att.map(a => a.employee_id)).size : 0;
-    document.getElementById('kitchenCountDisplay').textContent = count;
+    const dbCount = att ? new Set(att.map(a => a.employee_id)).size : 0;
 
-    // Check if we have saved data for this date in localStorage (Mocking persistence)
-    const saved = JSON.parse(localStorage.getItem('kitchen_' + selectedDate));
+    const saved = JSON.parse(localStorage.getItem('kitchen_' + dateKey));
     if (saved) {
+        document.getElementById('kitchenCountInput').value = saved.count;
         document.getElementById('kitchenPrice').value = saved.price;
         window.setKitchenPayStatus(saved.status);
-        document.getElementById('kitchenSaveStatus').textContent = "SAQLANGAN";
+        document.getElementById('kitchenSaveStatus').textContent = "BAZADA MAVJUD ✅";
         document.getElementById('kitchenSaveStatus').style.color = "var(--accent)";
     } else {
+        document.getElementById('kitchenCountInput').value = dbCount;
         document.getElementById('kitchenPrice').value = 25000;
         window.setKitchenPayStatus('debt');
-        document.getElementById('kitchenSaveStatus').textContent = "SAQLANMAGAN";
+        document.getElementById('kitchenSaveStatus').textContent = "YANGI HISOBOT 📝";
         document.getElementById('kitchenSaveStatus').style.color = "#8a8f98";
     }
 
@@ -934,10 +1000,10 @@ window.handleKitchenDateChange = async function () {
 };
 
 window.calcKitchenTotal = function () {
-    const count = parseInt(document.getElementById('kitchenCountDisplay').textContent) || 0;
+    const count = parseInt(document.getElementById('kitchenCountInput').value) || 0;
     const price = parseInt(document.getElementById('kitchenPrice').value) || 0;
     const total = count * price;
-    document.getElementById('kitchenTotalSum').innerHTML = `${total.toLocaleString()} <small style="font-size:1rem; color:var(--text-s)">UZS</small>`;
+    document.getElementById('kitchenTotalSum').innerHTML = `${total.toLocaleString()} <small style="font-size:1.2rem; color:var(--text-s); font-weight:400; letter-spacing:0;">UZS</small>`;
 };
 
 window.setKitchenPayStatus = function (status) {
@@ -946,43 +1012,38 @@ window.setKitchenPayStatus = function (status) {
     const dBtn = document.getElementById('payStatusDebt');
 
     if (status === 'paid') {
-        pBtn.style.background = 'rgba(0, 255, 136, 0.1)';
-        pBtn.style.borderColor = 'rgba(0, 255, 136, 0.3)';
-        pBtn.style.color = 'var(--accent)';
-        dBtn.style.background = 'rgba(255, 255, 255, 0.05)';
-        dBtn.style.borderColor = 'transparent';
+        pBtn.style.background = '#ffa940';
+        pBtn.style.color = '#000';
+        dBtn.style.background = 'rgba(255,255,255,0.05)';
         dBtn.style.color = 'var(--text-s)';
     } else {
-        dBtn.style.background = 'rgba(255, 77, 79, 0.1)';
-        dBtn.style.borderColor = 'rgba(255, 77, 79, 0.3)';
-        dBtn.style.color = '#ff4d4f';
-        pBtn.style.background = 'rgba(255, 255, 255, 0.05)';
-        pBtn.style.borderColor = 'transparent';
+        dBtn.style.background = '#ff4d4f';
+        dBtn.style.color = '#fff';
+        pBtn.style.background = 'rgba(255,255,255,0.05)';
         pBtn.style.color = 'var(--text-s)';
     }
 };
 
 window.saveKitchenData = function () {
-    const date = document.getElementById('kitchenDate').value;
+    const sel = kitchenSelectedDate;
+    const dateKey = `${sel.getFullYear()}-${String(sel.getMonth() + 1).padStart(2, '0')}-${String(sel.getDate()).padStart(2, '0')}`;
     const price = document.getElementById('kitchenPrice').value;
-    const count = document.getElementById('kitchenCountDisplay').textContent;
-
-    if (!date) return;
+    const count = document.getElementById('kitchenCountInput').value;
 
     const data = {
-        date,
+        date: dateKey,
         price,
         count,
         status: currentKitchenStatus,
         savedAt: new Date().toISOString()
     };
 
-    localStorage.setItem('kitchen_' + date, JSON.stringify(data));
+    localStorage.setItem('kitchen_' + dateKey, JSON.stringify(data));
 
-    document.getElementById('kitchenSaveStatus').textContent = "SAQLANDI!";
+    document.getElementById('kitchenSaveStatus').textContent = "SAQLANDI! ✅";
     document.getElementById('kitchenSaveStatus').style.color = "var(--accent)";
 
-    alert(`${date} sanasi uchun oshxona hisob-kitobi muvaffaqiyatli saqlandi!`);
+    gsap.to("#saveKitchenBtn", { scale: 0.95, duration: 0.1, yoyo: true, repeat: 1 });
 };
 
 async function loadHistoryData() {

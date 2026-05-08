@@ -1541,11 +1541,11 @@
     </div>
 
     <!-- 🍽️ KITCHEN SECTION (Premium Finance & Attendance) -->
+    <!-- 🍽️ KITCHEN SECTION (Bespoke Luxury Architecture) -->
     <div id="kitchenSection"
         style="display:none; position:fixed; inset:0; z-index:9000; background:#070b12; flex-direction:column; padding:40px; overflow-y:auto;">
         <div style="max-width:1200px; margin:0 auto; width:100%;">
 
-            <!-- Kitchen Header -->
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:40px;">
                 <div style="display:flex; align-items:center; gap:20px;">
                     <div
@@ -1555,85 +1555,161 @@
                     <div>
                         <h2 style="font-family:'Outfit'; font-size:2rem; font-weight:900;"><span
                                 style="color:#ffa940">OSHXONA</span> MOLIYASI</h2>
-                        <p style="font-size:0.8rem; color:var(--text-s); margin-top:5px;">Kunlik ovqatlanish va to'lov
-                            nazorati</p>
+                        <p style="font-size:0.8rem; color:var(--text-s); margin-top:5px;">Eksklyuziv nazorat tizimi</p>
                     </div>
                 </div>
                 <button onclick="window.switchTab('dashboard')" class="mgmt-btn"
-                    style="background:rgba(255,255,255,0.05); color:#fff; border:1px solid rgba(255,255,255,0.1);">ASOSIYGA
-                    QAYTISH</button>
+                    style="background:rgba(255,255,255,0.05); color:#fff; border:1px solid rgba(255,255,255,0.1);">YOPISH</button>
             </div>
 
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap:40px;">
+            <div style="display:grid; grid-template-columns: 450px 1fr; gap:40px;">
 
-                <!-- Col 1: Premium Calendar & Meta -->
-                <div class="bento-card" style="padding:35px; background:rgba(255, 169, 64, 0.02);">
-                    <label
-                        style="font-size:0.7rem; font-weight:800; color:#ffa940; letter-spacing:2px; display:block; margin-bottom:20px;">SANA
-                        TANLASH</label>
-                    <input type="date" id="kitchenDate" onchange="window.handleKitchenDateChange()"
-                        style="width:100%; padding:20px; background:rgba(255,255,255,0.03); border:2px solid rgba(255,169,64,0.3); border-radius:20px; color:#fff; font-size:1.2rem; font-weight:900; outline:none; text-align:center;">
+                <!-- Col 1: HANDCRAFTED CALENDAR -->
+                <div class="bento-card"
+                    style="padding:30px; background:rgba(255, 169, 64, 0.02); border:1px solid rgba(255,169,64,0.1); backdrop-filter:blur(20px);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+                        <button onclick="window.changeKitchenMonth(-1)"
+                            style="background:none; border:none; color:#ffa940; cursor:pointer;"><i
+                                data-lucide="chevron-left"></i></button>
+                        <h3 id="kitchenCalendarTitle"
+                            style="font-size:1.1rem; font-weight:900; letter-spacing:2px; color:#fff; text-transform:uppercase;">
+                            MAY 2026</h3>
+                        <button onclick="window.changeKitchenMonth(1)"
+                            style="background:none; border:none; color:#ffa940; cursor:pointer;"><i
+                                data-lucide="chevron-right"></i></button>
+                    </div>
 
-                    <div style="margin-top:40px; border-top:1px solid rgba(255,255,255,0.05); padding-top:30px;">
-                        <h4
-                            style="color:var(--text-s); font-size:0.8rem; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px;">
-                            KUNLIK HISOBOT</h4>
-                        <div
-                            style="display:flex; justify-content:space-between; margin-bottom:15px; background:rgba(255,255,255,0.02); padding:15px; border-radius:15px;">
-                            <span style="color:var(--text-s)">Odamlar soni:</span>
-                            <b id="kitchenCountDisplay" style="color:#ffa940; font-size:1.2rem;">0</b>
-                        </div>
-                        <div
-                            style="display:flex; justify-content:space-between; margin-bottom:15px; background:rgba(255,255,255,0.02); padding:15px; border-radius:15px;">
-                            <span style="color:var(--text-s)">Status:</span>
-                            <span id="kitchenSaveStatus"
-                                style="font-size:0.8rem; font-weight:800; color:#8a8f98;">SAQLANMAGAN</span>
+                    <div id="kitchenCalendarGrid"
+                        style="display:grid; grid-template-columns: repeat(7, 1fr); gap:8px; text-align:center;">
+                        <!-- JS Loaded Calendar -->
+                    </div>
+
+                    <div
+                        style="margin-top:30px; padding:25px; border-radius:20px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05);">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span
+                                style="font-size:0.75rem; color:var(--text-s); font-weight:800; letter-spacing:1px;">TANLANGAN:</span>
+                            <span id="kitchenSelectedDateLabel"
+                                style="color:#ffa940; font-weight:900; font-size:1.1rem; font-family:'Outfit';">--.--.----</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Col 2: Finance & Calculations -->
+                <!-- Col 2: FINANCE ENGINE -->
                 <div class="bento-card" style="padding:40px; background:rgba(255,255,255,0.01);">
-                    <div style="display:grid; grid-template-columns: 1fr; gap:30px;">
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:30px; margin-bottom:30px;">
+                        <div class="bento-card"
+                            style="background:rgba(255,255,255,0.02); padding:25px; border:1px solid rgba(255,255,255,0.05);">
+                            <label
+                                style="font-size:0.75rem; font-weight:900; color:var(--text-s); display:block; margin-bottom:15px; letter-spacing:1px;">ODAMLAR
+                                SONI</label>
+                            <div style="display:flex; align-items:center; justify-content:center; gap:20px;">
+                                <button onclick="window.adjustKitchenCount(-1)"
+                                    style="width:45px; height:45px; border-radius:15px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.02); color:#fff; cursor:pointer; font-size:1.2rem; font-weight:900;">-</button>
+                                <input type="number" id="kitchenCountInput" value="0"
+                                    oninput="window.calcKitchenTotal()"
+                                    style="width:100px; background:none; border:none; color:#ffa940; font-size:2.8rem; font-weight:1000; text-align:center; outline:none; font-family:'Outfit';">
+                                <button onclick="window.adjustKitchenCount(1)"
+                                    style="width:45px; height:45px; border-radius:15px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.02); color:#fff; cursor:pointer; font-size:1.2rem; font-weight:900;">+</button>
+                            </div>
+                        </div>
+
+                        <div class="bento-card"
+                            style="background:rgba(255,255,255,0.02); padding:25px; border:1px solid rgba(255,255,255,0.05);">
+                            <label
+                                style="font-size:0.75rem; font-weight:900; color:var(--text-s); display:block; margin-bottom:15px; letter-spacing:1px;">NARXI
+                                (KISHI/UZS)</label>
+                            <input type="number" id="kitchenPrice" value="25000" oninput="window.calcKitchenTotal()"
+                                style="width:100%; background:none; border:none; color:#fff; font-size:2.2rem; font-weight:1000; outline:none; text-align:center; font-family:'Outfit';">
+                        </div>
+                    </div>
+
+                    <div
+                        style="background:linear-gradient(135deg, rgba(0,255,136,0.08), rgba(0,255,136,0.02)); padding:40px; border-radius:30px; border:1px solid rgba(0,255,136,0.15); margin-bottom:35px; position:relative; text-align:center;">
+                        <label
+                            style="font-size:0.8rem; font-weight:900; color:var(--accent); letter-spacing:3px; display:block; margin-bottom:15px; text-transform:uppercase;">UMUMIY
+                            TO'LOV SUMMASI</label>
+                        <div id="kitchenTotalSum"
+                            style="font-size:4.5rem; font-weight:1000; color:#fff; letter-spacing:-3px; line-height:1; font-family:'Outfit';">
+                            0 <small
+                                style="font-size:1.4rem; color:var(--text-s); font-weight:400; letter-spacing:0;">UZS</small>
+                        </div>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:25px; align-items: flex-end;">
                         <div>
                             <label
-                                style="font-size:0.75rem; font-weight:800; color:var(--text-s); letter-spacing:1px; display:block; margin-bottom:12px;">KISHI
-                                BOSHIGA NARX (UZS)</label>
-                            <input type="number" id="kitchenPrice" value="25000" oninput="window.calcKitchenTotal()"
-                                style="width:100%; padding:18px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:15px; color:#fff; font-size:1.4rem; font-weight:900; border-left:4px solid #ffa940;">
+                                style="font-size:0.75rem; font-weight:900; color:var(--text-s); margin-bottom:12px; display:block; letter-spacing:1px;">TO'LOV
+                                HOLATI</label>
+                            <div
+                                style="display:flex; gap:12px; background:rgba(255,255,255,0.03); padding:8px; border-radius:20px; border:1px solid rgba(255,255,255,0.05);">
+                                <button id="payStatusPaid" onclick="window.setKitchenPayStatus('paid')"
+                                    style="flex:1; padding:15px; border-radius:15px; border:none; cursor:pointer; font-weight:900; transition:0.3s; font-size:0.75rem; letter-spacing:1px;">TO'LANDI</button>
+                                <button id="payStatusDebt" onclick="window.setKitchenPayStatus('debt')"
+                                    style="flex:1; padding:15px; border-radius:15px; border:none; cursor:pointer; font-weight:900; transition:0.3s; font-size:0.75rem; letter-spacing:1px;">QARZ</button>
+                            </div>
                         </div>
-                        <div
-                            style="background:rgba(0,255,136,0.03); padding:25px; border-radius:20px; border:1px solid rgba(0,255,136,0.1);">
-                            <label
-                                style="font-size:0.75rem; font-weight:800; color:var(--accent); letter-spacing:1px; display:block; margin-bottom:10px;">UMUMIY
-                                SUMMA</label>
-                            <div id="kitchenTotalSum" style="font-size:2.8rem; font-weight:950; color:#fff;">0 <small
-                                    style="font-size:1rem; color:var(--text-s)">UZS</small></div>
-                        </div>
+                        <button onclick="window.saveKitchenData()" id="saveKitchenBtn"
+                            style="width:100%; padding:22px; background:#ffa940; color:#000; border:none; border-radius:22px; font-weight:1000; font-size:1.1rem; cursor:pointer; transition:0.3s; box-shadow:0 15px 30px rgba(255,169,64,0.3);">
+                            MA'LUMOTNI SAQLASH
+                        </button>
                     </div>
 
-                    <div style="margin-top:35px;">
-                        <h4
-                            style="margin-bottom:15px; font-weight:900; font-size:0.8rem; color:var(--text-s); letter-spacing:1px;">
-                            TO'LOV HOLATI</h4>
-                        <div style="display:flex; gap:15px;">
-                            <button id="payStatusPaid" onclick="window.setKitchenPayStatus('paid')"
-                                style="flex:1; padding:18px; border-radius:15px; border:1px solid transparent; background:rgba(255,255,255,0.05); color:var(--text-s); cursor:pointer; font-weight:800; transition:0.3s; display:flex; align-items:center; justify-content:center; gap:10px;">
-                                <i data-lucide="check-circle"></i> TO'LANDI
-                            </button>
-                            <button id="payStatusDebt" onclick="window.setKitchenPayStatus('debt')"
-                                style="flex:1; padding:18px; border-radius:15px; border:1px solid rgba(255,77,79,0.3); background:rgba(255,77,79,0.1); color:#ff4d4f; cursor:pointer; font-weight:800; transition:0.3s; display:flex; align-items:center; justify-content:center; gap:10px;">
-                                <i data-lucide="alert-circle"></i> QARZ
-                            </button>
-                        </div>
-                    </div>
-
-                    <button onclick="window.saveKitchenData()" id="saveKitchenBtn"
-                        style="width:100%; margin-top:35px; padding:22px; background:#ffa940; color:#000; border:none; border-radius:20px; font-weight:950; font-size:1.1rem; cursor:pointer; transition:0.3s; box-shadow:0 15px 30px rgba(255,169,64,0.2);">
-                        MUVAFFAQIYATLI SAQLASH
-                    </button>
+                    <p id="kitchenSaveStatus"
+                        style="text-align:center; margin-top:25px; font-size:0.85rem; font-weight:900; color:#8a8f98; letter-spacing:2px; text-transform:uppercase;">
+                        -- TAYYOR --</p>
                 </div>
             </div>
+
+            <style>
+                .cal-day-label {
+                    font-size: 0.7rem;
+                    font-weight: 950;
+                    color: var(--text-s);
+                    padding-bottom: 12px;
+                    opacity: 0.5;
+                }
+
+                .cal-date {
+                    aspect-ratio: 1;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 1rem;
+                    font-weight: 800;
+                    border-radius: 14px;
+                    cursor: pointer;
+                    transition: 0.25s all ease;
+                    border: 1px solid transparent;
+                    color: rgba(255, 255, 255, 0.5);
+                    font-family: 'Outfit';
+                }
+
+                .cal-date:hover {
+                    background: rgba(255, 255, 255, 0.08);
+                    color: #fff;
+                    transform: scale(1.1);
+                }
+
+                .cal-date.active {
+                    background: #ffa940;
+                    color: #000 !important;
+                    font-weight: 1000;
+                    box-shadow: 0 10px 25px rgba(255, 169, 64, 0.5);
+                    transform: scale(1.15);
+                    z-index: 2;
+                }
+
+                .cal-date.today {
+                    border: 2px solid #ffa940;
+                    color: #ffa940;
+                }
+
+                .cal-date.other-month {
+                    opacity: 0;
+                    pointer-events: none;
+                }
+            </style>
         </div>
     </div>
 
