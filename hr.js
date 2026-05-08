@@ -950,9 +950,13 @@ window.renderAnalyticsBoard = function () {
         targetEmps = employeesData.filter(e => ((e.department || '').trim().toLowerCase() === activeAnaDept.trim().toLowerCase() || (e.dept || '').trim().toLowerCase() === activeAnaDept.trim().toLowerCase()));
     }
 
+    const manualEdits = JSON.parse(localStorage.getItem('analytics_edits') || '{}');
+
     targetEmps.forEach(emp => {
-        // Demofied calculations for professional display - DETERMINISTIC HASHING
-        const baseSalary = parseInt(emp.salary_info?.toString().replace(/\D/g, '') || 5000000);
+        const edit = manualEdits[emp.id] || {};
+
+        // 1. Oylik STAVKA - Agar tahrirlangan bo'lsa edit.salary, aks holda emp.salary_info
+        const baseSalary = edit.salary || parseInt(emp.salary_info?.toString().replace(/\D/g, '') || 5000000);
         const dayRate = baseSalary / 26;
         const hourRate = dayRate / 10;
 
@@ -964,14 +968,16 @@ window.renderAnalyticsBoard = function () {
             hash3 = (hashStr.charCodeAt(i) * 17 + ((hash3 << 5) - hash3)) | 0;
         }
 
-        const deterministicHours = Math.abs(hash1 % 51) + 180; // 180-230
-        const deterministicLates = Math.abs(hash2 % 4); // 0-3
+        const deterministicHours = Math.abs(hash1 % 51) + 180;
+        const deterministicLates = Math.abs(hash2 % 4);
         const deterministicBonus = Math.abs(hash3 % 10) > 7 ? 500000 : 0;
 
         const mockWorkedHours = deterministicHours;
         const mockLates = deterministicLates;
-        const mockBonus = deterministicBonus;
-        const mockFine = mockLates * 50000;
+
+        // PREMYA va JARIMA - Agar tahrirlangan (override) bo'lsa o'shani olamiz
+        const mockBonus = (edit.bonus !== undefined) ? edit.bonus : deterministicBonus;
+        const mockFine = (edit.fine !== undefined) ? edit.fine : (mockLates * 50000);
 
         const finalCalculated = Math.round((mockWorkedHours * hourRate) + mockBonus - mockFine);
 
