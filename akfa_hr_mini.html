@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AKFA ROMIX | HR MINI APP</title>
+    <!-- Fonts & Icons -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Internal+Outfit:wght@300;400;600;800;900&family=Outfit:wght@300;400;600;800;900&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <style>
+        :root {
+            --bg: #05080c;
+            --card: rgba(255, 255, 255, 0.03);
+            --accent: #00ff88;
+            --text: #ffffff;
+            --text-s: #8a8f98;
+            --border: rgba(255, 255, 255, 0.06);
+            --glass: blur(25px);
+            --radius: 24px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            overflow-x: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 🌌 BACKGROUND EFFECTS */
+        .glow-sphere {
+            position: fixed;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(0, 255, 136, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            z-index: -1;
+            filter: blur(50px);
+        }
+
+        /* 🏠 MAIN CONTENT CONTAINER */
+        .app-container {
+            flex: 1;
+            padding: 20px;
+            padding-bottom: 100px;
+            overflow-y: auto;
+        }
+
+        /* 💎 PREMIUM HEADER */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .brand h1 {
+            font-size: 1.4rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+        }
+
+        .brand span {
+            color: var(--accent);
+        }
+
+        .profile-trigger {
+            width: 45px;
+            height: 45px;
+            border-radius: 15px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: var(--glass);
+        }
+
+        /* 📊 BENTO STATS MINI */
+        .bento-mini {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card-mini {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            backdrop-filter: var(--glass);
+        }
+
+        .stat-card-mini span {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-s);
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .stat-card-mini b {
+            font-size: 1.6rem;
+            font-weight: 900;
+        }
+
+        /* 📋 RECENT ACTIVITY */
+        .section-title {
+            font-size: 1rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-title a {
+            color: var(--accent);
+            font-size: 0.7rem;
+            text-decoration: none;
+        }
+
+        .staff-mini-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 12px;
+            transition: 0.3s;
+        }
+
+        .staff-mini-card:active {
+            transform: scale(0.97);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .avatar-mini {
+            width: 50px;
+            height: 50px;
+            border-radius: 16px;
+            object-fit: cover;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-mini h4 {
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        .info-mini p {
+            font-size: 0.7rem;
+            color: var(--text-s);
+            font-weight: 600;
+        }
+
+        /* 📱 BOTTOM NAVIGATION */
+        .bottom-nav {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            height: 75px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding: 0 10px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .nav-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-s);
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .nav-link.active {
+            color: var(--accent);
+        }
+
+        .nav-link i {
+            width: 22px;
+            height: 22px;
+        }
+
+        .nav-link span {
+            font-size: 0.6rem;
+            font-weight: 800;
+            margin-top: 5px;
+            text-transform: uppercase;
+        }
+
+        .scan-fab {
+            width: 70px;
+            height: 70px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: -50px;
+            box-shadow: 0 15px 35px rgba(0, 255, 136, 0.3);
+            border: 5px solid var(--bg);
+            transition: 0.3s;
+        }
+
+        .scan-fab:active {
+            transform: scale(0.9);
+        }
+
+        .scan-fab i {
+            color: #000;
+            width: 30px;
+            height: 30px;
+        }
+
+        /* 📷 SCANNER VIEW */
+        #scannerView {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+        }
+
+        .scan-header {
+            padding: 40px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #mobileReader {
+            width: 100%;
+            height: 70vh;
+            pointer-events: none;
+        }
+
+        /* Custom Modal for Mini App */
+        .mini-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(15px);
+            z-index: 3000;
+            display: none;
+            align-items: flex-end;
+        }
+
+        .mini-modal {
+            width: 100%;
+            background: #0e121a;
+            border-top: 1px solid var(--border);
+            border-radius: 35px 35px 0 0;
+            padding: 40px 20px;
+            transform: translateY(100%);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="glow-sphere" style="top: -100px; right: -100px;"></div>
+    <div class="glow-sphere"
+        style="bottom: -100px; left: -100px; background: radial-gradient(circle, rgba(0, 210, 255, 0.1) 0%, transparent 70%);">
+    </div>
+
+    <div class="app-container" id="homeView">
+        <header class="header">
+            <div class="brand">
+                <h1>ROMIX <span>STAFF</span></h1>
+            </div>
+            <div class="profile-trigger" id="miniLogout">
+                <i data-lucide="log-out" style="width:20px; height:20px; color:#ff4d4f"></i>
+            </div>
+        </header>
+
+        <div class="bento-mini">
+            <div class="stat-card-mini">
+                <span>ISHDA</span>
+                <b id="activeStaffCount">0</b>
+            </div>
+            <div class="stat-card-mini">
+                <span>BUGUN KELDI</span>
+                <b id="todayArrived">0</b>
+            </div>
+        </div>
+
+        <div class="section-title">
+            DAVOMAT MONITORI
+            <a href="#" onclick="window.switchMiniTab('staff')">Barchasi</a>
+        </div>
+        <div id="miniStaffList">
+            <div style="text-align:center; padding:40px; color:var(--text-s); font-size:0.8rem;">Yuklanmoqda...</div>
+        </div>
+    </div>
+
+    <div class="app-container" id="staffView" style="display:none;">
+        <header class="header">
+            <div class="brand">
+                <h1>XODIMLAR</h1>
+            </div>
+        </header>
+        <div id="fullMiniStaffList"></div>
+    </div>
+
+    <!-- 📷 FULLSCREEN SCANNER -->
+    <div id="scannerView">
+        <div class="scan-header">
+            <h2 style="font-size:1.5rem; font-weight:900; letter-spacing:5px;">SCANNER</h2>
+            <button onclick="window.closeMiniScanner()" style="background:none; border:none; color:#fff;"><i
+                    data-lucide="x-circle" style="width:34px; height:34px"></i></button>
+        </div>
+        <div style="flex:1; display:flex; align-items:center; justify-content:center; position:relative;">
+            <div id="mobileReader" style="width:100%; height:100%;"></div>
+            <div
+                style="position:absolute; width:250px; height:250px; border:2px solid var(--accent); border-radius:40px; box-shadow:0 0 0 1000px rgba(0,0,0,0.5);">
+            </div>
+        </div>
+        <div
+            style="height:120px; display:flex; align-items:center; justify-content:center; padding:20px; background:linear-gradient(to top, #000, transparent);">
+            <p style="text-align:center; color:var(--accent); font-size:0.9rem; font-weight:800; letter-spacing:1px;">
+                QR-KODNI ORTIGA QARATING</p>
+        </div>
+    </div>
+
+    <!-- 📱 NAVIGATION BAR -->
+    <nav class="bottom-nav">
+        <div class="nav-link active" id="nav-home" onclick="window.switchMiniTab('home')">
+            <i data-lucide="layout-grid"></i>
+            <span>Bosh sahifa</span>
+        </div>
+        <div class="scan-fab" onclick="window.openMiniScanner()">
+            <i data-lucide="qr-code"></i>
+        </div>
+        <div class="nav-link" id="nav-staff" onclick="window.switchMiniTab('staff')">
+            <i data-lucide="users"></i>
+            <span>Xodimlar</span>
+        </div>
+    </nav>
+
+    <!-- 🧱 MINI APP LOGIC -->
+    <script type="module" src="hr_mini.js"></script>
+    <script>
+        window.switchMiniTab = function (tab) {
+            document.getElementById('homeView').style.display = (tab === 'home' ? 'block' : 'none');
+            document.getElementById('staffView').style.display = (tab === 'staff' ? 'block' : 'none');
+
+            document.getElementById('nav-home').classList.toggle('active', tab === 'home');
+            document.getElementById('nav-staff').classList.toggle('active', tab === 'staff');
+
+            gsap.from(`#${tab}View`, { opacity: 0, y: 20, duration: 0.4 });
+        }
+    </script>
+</body>
+
+</html>
