@@ -623,113 +623,222 @@ window.handleReport = function () {
 window.startExport = async function (format) {
     if (!currentEmp) return;
     const modal = document.getElementById('reportSelectionModal');
-    modal.style.display = 'none';
+    if (modal) modal.style.display = 'none';
 
-    // Show processing status
-    alert(`${format.toUpperCase()} hisobot tayyorlanmoqda...`);
+    // Calculation Constants
+    const periodDays = { 'day': 1, 'week': 7, 'month': 30, 'year': 365 };
+    const daysLimit = periodDays[selectedPeriod] || 30;
 
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - daysLimit);
+    const startStr = startDate.toISOString().split('T')[0];
+
+    // 1. Fetch Real Data
+    const { data: attendance, error } = await supabase.from('attendance')
+        .select('*')
+        .eq('employee_id', currentEmp.id)
+        .gte('date', startStr)
+        .order('date', { ascending: true });
+
+    if (error || !attendance || attendance.length === 0) {
+        alert("Ushbu davr uchun ma'lumot topilmadi.");
+        return;
+    }
+
+    // 2. Data Processing & Calculations
+    const salaryText = currentEmp.salary_info || '0';
+    const monthlySalary = parseInt(String(salaryText).replace(/\D/g, '')) || 0;
+    const dayRate = monthlySalary / 26; // Assume 26 working days
+    const hourRate = dayRate / 10; // Assume 10h workday
+
+    let totalWorkedHours = 0;
+    let totalEarned = 0;
+    let totalBonuses = 0;
+    let totalFines = 0;
+    let daysWorked = 0;
+
+    const reportRows = attendance.map(a => {
+        let hours = 0;
+        let earned = 0;
+        let bonus = 0;
+        let fine = 0;
+
+        // Parse Time
+        let timeIn = '--:--';
+        let timeOut = '--:--';
+        if (a.check_in) {
+            const dIn = new Date(a.check_in);
+            timeIn = dIn.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', hour12: false });
+        }
+        if (a.check_out) {
+            const dOut = new Date(a.check_out);
+            timeOut = dOut.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+            // Calc hours
+            const diff = new Date(a.check_out) - new Date(a.check_in);
+            hours = diff / (1000 * 60 * 60);
+        } else if (a.check_in && (a.status.includes('Keldi') || a.status.includes('Vaqtida'))) {
+            hours = 10; // Fixed 10h if no checkout
+        }
+
+        // Parse Bonus/Fine from status
+        if (a.status.includes('Premya')) {
+            bonus = parseInt(a.status.replace(/\D/g, '')) || 0;
+        }
+        if (a.status.includes('Jarima')) {
+            fine = parseInt(a.status.replace(/\D/g, '')) || 0;
+        }
+
+        earned = (hours * hourRate) + bonus - fine;
+
+        // Accumulate totals
+        totalWorkedHours += hours;
+        totalBonuses += bonus;
+        totalFines += fine;
+        totalEarned += earned;
+        if (hours > 0) daysWorked++;
+
+        return {
+            date: a.date,
+            in: timeIn,
+            out: timeOut,
+            hours: hours.toFixed(1) + ' s',
+            status: a.status,
+            earned: Math.round(earned).toLocaleString() + ' UZS'
+        };
+    });
+
+    // 3. Export Logic
     if (format === 'pdf') {
-        await generateProfessionalPDF();
+        generateProfessionalPDF(reportRows, totalEarned, totalBonuses, totalFines, daysWorked);
     } else if (format === 'excel') {
-        generateExcelReport();
-    } else {
-        alert("Hozirda faqat PDF va EXCEL mavjud. Word yaqin orada qo'shiladi.");
+        generateExcelReport(reportRows, totalEarned, totalBonuses, totalFines, daysWorked);
+    } else if (format === 'word') {
+        generateWordReport(reportRows, totalEarned, totalBonuses, totalFines, daysWorked);
     }
 };
 
-async function generateProfessionalPDF() {
+function generateProfessionalPDF(rows, totalEarned, bonuses, fines, days) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const emp = currentEmp;
-    const accent = [0, 210, 255]; // Blue-ish
 
-    // 🎨 DESIGN - Header Blobs (Visual Simulation)
-    doc.setFillColor(255, 204, 153, 0.2); // Soft orange like the image
-    doc.circle(200, 20, 40, 'F');
-    doc.circle(10, 280, 50, 'F');
+    // Design Header
+    doc.setFillColor(13, 22, 34);
+    doc.rect(0, 0, 210, 40, 'F');
 
-    // 🏢 BRANDING
-    doc.setFont("Outfit", "bold");
     doc.setFontSize(22);
+    doc.setTextColor(0, 210, 255);
+    doc.text("AKFA ROMIX ENTERPRISE", 20, 25);
+    doc.setFontSize(10);
+    doc.setTextColor(255, 255, 255);
+    doc.text("HR BO'LIMI RASMIY HISOBOTI", 20, 32);
+
+    // Employee Meta
     doc.setTextColor(40, 40, 40);
-    doc.text("ROMIX HR REPORT", 20, 30);
-
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text("\"Modern Workforce, Elite Management.\"", 20, 38);
-
-    // 📋 EMPLOYEE INFO
-    doc.setDrawColor(200, 200, 200);
-    doc.line(20, 50, 190, 50);
-
     doc.setFontSize(11);
-    doc.setTextColor(150, 150, 150);
-    doc.text("Report For:", 20, 65);
+    doc.text(`Xodim: ${emp.full_name}`, 20, 55);
+    doc.text(`Lavozimi: ${emp.role || 'Xodim'}`, 20, 62);
+    doc.text(`Bo'limi: ${emp.department || 'Ofis'}`, 20, 69);
+    doc.text(`Sana: ${new Date().toLocaleDateString()}`, 150, 55);
 
-    doc.setFontSize(16);
-    doc.setTextColor(0, 0, 0);
-    doc.text(emp.full_name.toUpperCase(), 20, 75);
-
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Role: ${emp.role || 'Xodim'}`, 20, 82);
-    doc.text(`Dept: ${emp.department || 'Ofis'}`, 20, 87);
-    doc.text(`Period: ${selectedPeriod.toUpperCase()} (2026)`, 20, 92);
-
-    // 📅 TABLE DATA (Attendance Simulation)
-    const tableData = [
-        ["2026-05-01", "Vaqtida", "08:15", "18:05", "9.8h"],
-        ["2026-05-02", "Kechikish", "09:30", "18:30", "9.0h"],
-        ["2026-05-03", "Vaqtida", "08:20", "18:00", "9.6h"],
-        ["2026-05-04", "Vaqtida", "08:10", "18:15", "10.0h"],
-        ["2026-05-05", "Yo'q", "---", "---", "0.0h"],
-    ];
-
+    // Main Table
     doc.autoTable({
-        startY: 110,
-        head: [['Sana', 'Status', 'Kelish', 'Ketish', 'Ish Soati']],
-        body: tableData,
+        startY: 80,
+        head: [['SANA', 'KELISH', 'KETISH', 'ISH SOATI', 'HOLAT', 'HAQ (UZS)']],
+        body: rows.map(r => [r.date, r.in, r.out, r.hours, r.status, r.earned]),
         theme: 'striped',
-        headStyles: { fillColor: [13, 22, 34], textColor: [255, 255, 255], fontStyle: 'bold' },
-        styles: { font: 'Inter', fontSize: 9 },
-        margin: { left: 20, right: 20 }
+        headStyles: { fillColor: [13, 22, 34], textColor: [0, 210, 255], fontStyle: 'bold' },
+        styles: { fontSize: 8, cellPadding: 3, halign: 'center' },
+        columnStyles: { 0: { halign: 'left' }, 4: { halign: 'left' }, 5: { halign: 'right' } }
     });
 
-    // 💰 SUMMARY
-    const finalY = doc.lastAutoTable.finalY + 20;
-    doc.setFontSize(12);
-    doc.text("Summary:", 140, finalY);
+    // Summary Box
+    const finalY = doc.lastAutoTable.finalY + 15;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, finalY - 5, 190, finalY - 5);
 
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Jami ish kunlari: ${days} kun`, 20, finalY + 5);
+    doc.text(`Jami premya: ${bonuses.toLocaleString()} UZS`, 20, finalY + 12);
+    doc.text(`Jami jarima: ${fines.toLocaleString()} UZS`, 20, finalY + 19);
+
+    doc.setFontSize(14);
+    doc.setTextColor(0, 124, 82);
+    doc.text(`JAMI TO'LANADIGAN HAQ:`, 110, finalY + 10);
     doc.setFontSize(18);
-    doc.setTextColor(0, 210, 255);
-    doc.text(`Score: 92%`, 140, finalY + 10);
+    doc.text(`${Math.round(totalEarned).toLocaleString()} UZS`, 110, finalY + 20);
 
-    // 🛡️ FOOTER
+    // Footer
     doc.setFontSize(8);
     doc.setTextColor(180, 180, 180);
-    const footerText = "ROMIX HR Portal | Automated Corporate Reporting System 2026";
-    doc.text(footerText, 105, 285, { align: 'center' });
+    doc.text("Ushbu hujjat AKFA Romix HR tizimi tomonidan avtomatik ravishda tayyorlandi.", 105, 285, { align: 'center' });
 
-    doc.save(`ROMIX_Report_${emp.full_name}_${selectedPeriod}.pdf`);
+    doc.save(`AKFA_HR_Report_${emp.full_name}_${selectedPeriod}.pdf`);
 }
 
-function generateExcelReport() {
+function generateExcelReport(rows, totalEarned, bonuses, fines, days) {
     const emp = currentEmp;
     const data = [
-        ["ROMIX HR REPORT", "", "", ""],
-        ["Employee:", emp.full_name, "", ""],
-        ["Period:", selectedPeriod.toUpperCase(), "", ""],
-        ["", "", "", ""],
-        ["Date", "Status", "Arrival", "Leave"],
-        ["2026-05-01", "Vaqtida", "08:15", "18:05"],
-        ["2026-05-02", "Kechikish", "09:30", "18:30"],
-        ["2026-05-03", "Vaqtida", "08:20", "18:00"]
+        ["AKFA ROMIX ENTERPRISE - HR HISOBOTI"],
+        [`Xodim: ${emp.full_name}`],
+        [`Lavozimi: ${emp.role}`],
+        [`Davr: ${selectedPeriod.toUpperCase()}`],
+        [],
+        ["SANA", "KELISH", "KETISH", "ISH SOATI", "HOLAT", "HAQ (UZS)"],
+        ...rows.map(r => [r.date, r.in, r.out, r.hours, r.status, r.earned]),
+        [],
+        ["JAMI ISH KUNLARI", days, "", "", "JAMI PREMYA", bonuses],
+        ["", "", "", "", "JAMI JARIMA", fines],
+        ["", "", "", "", "JAMI TO'LANADIGAN HAQ", Math.round(totalEarned)]
     ];
 
     const ws = XLSX.utils.aoa_to_sheet(data);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Report");
-    XLSX.writeFile(wb, `ROMIX_Report_${emp.full_name}.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, "Hisobot");
+    XLSX.writeFile(wb, `AKFA_HR_Hisobot_${emp.full_name}.xlsx`);
+}
+
+function generateWordReport(rows, totalEarned, bonuses, fines, days) {
+    const emp = currentEmp;
+    let tableHtml = `<table border="1" style="width:100%; border-collapse: collapse;">
+        <tr style="background:#0d1622; color:#00d2ff;">
+            <th>Sana</th><th>Kelish</th><th>Ketish</th><th>Ish Soati</th><th>Holat</th><th>Haq</th>
+        </tr>`;
+
+    rows.forEach(r => {
+        tableHtml += `<tr>
+            <td>${r.date}</td><td>${r.in}</td><td>${r.out}</td><td>${r.hours}</td><td>${r.status}</td><td>${r.earned}</td>
+        </tr>`;
+    });
+    tableHtml += "</table>";
+
+    const content = `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+            <h1 style="color:#0d1622; border-bottom: 2px solid #00d2ff;">AKFA ROMIX ENTERPRISE</h1>
+            <h3>XODIMNING RASMIY HISOBOTI</h3>
+            <p><b>Xodim:</b> ${emp.full_name}</p>
+            <p><b>Lavozimi:</b> ${emp.role}</p>
+            <p><b>Bo'limi:</b> ${emp.department}</p>
+            <hr/>
+            ${tableHtml}
+            <div style="margin-top:20px; padding:15px; background:#f4f4f4;">
+                <p><b>Ish kunlari:</b> ${days} kun</p>
+                <p><b>Premya:</b> ${bonuses.toLocaleString()} UZS</p>
+                <p><b>Jarima:</b> ${fines.toLocaleString()} UZS</p>
+                <h3 style="color:#007c52;">JAMI TO'LANADIGAN HAQ: ${Math.round(totalEarned).toLocaleString()} UZS</h3>
+            </div>
+            <p style="font-size:10px; color:#999; margin-top:50px;">Hujjat raqamli imzo bilan tasdiqlangan.</p>
+        </div>
+    `;
+
+    const blob = new Blob(['\ufeff', content], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `AKFA_HR_Hisobot_${emp.full_name}.doc`;
+    link.click();
 }
 
 function handleDelete() {
