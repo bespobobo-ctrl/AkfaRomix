@@ -284,19 +284,23 @@ function updateGlobalStats() {
 }
 
 async function showEmployeeDetail(id) {
-    const emp = employeesData.find(e => e.id === id);
-    if (!emp) return;
-    currentEmp = emp;
+    // 1. FRESH DATA FETCH
+    const { data: freshEmp, error: empErr } = await supabase.from('employees').select('*').eq('id', id).single();
+    if (empErr || !freshEmp) return;
 
+    const emp = freshEmp;
+    currentEmployee = emp; // Consistent naming
+
+    // UI Fill
     document.getElementById('detailModalOverlay').style.display = 'flex';
     document.getElementById('profileDetail').style.display = 'flex';
 
-    document.getElementById('dt-photo').src = emp.avatar_url;
+    document.getElementById('dt-photo').src = emp.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(emp.full_name);
     document.getElementById('dt-name').textContent = emp.full_name;
-    document.getElementById('dt-role').textContent = emp.role || 'Xodim';
+    document.getElementById('dt-role').textContent = (emp.department || 'Ofis').toUpperCase();
     document.getElementById('dt-phone').textContent = emp.phone || '---';
-    document.getElementById('dt-dept').textContent = emp.department || emp.dept || 'Ofis';
-    document.getElementById('dt-experience').textContent = (emp.joined_year ? (2026 - emp.joined_year) + " yil" : "---");
+    document.getElementById('dt-dept').textContent = emp.department || 'Ofis';
+    document.getElementById('dt-staj').textContent = emp.staj || 'Yangi xodim';
     document.getElementById('dt-sum').textContent = (parseInt(emp.salary_info || 0) / 1000000).toFixed(1) + 'M';
 
     // QR
@@ -306,13 +310,20 @@ async function showEmployeeDetail(id) {
     // Attendance Info
     const _now = new Date();
     const todayStr = _now.getFullYear() + '-' + String(_now.getMonth() + 1).padStart(2, '0') + '-' + String(_now.getDate()).padStart(2, '0');
-    const { data: att } = await supabase.from('attendance').select('*').eq('employee_id', emp.id).eq('date', todayStr).maybeSingle();
+
+    const { data: att } = await supabase.from('attendance')
+        .select('*')
+        .eq('employee_id', emp.id)
+        .eq('date', todayStr)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
     updateProfileAttendance(att);
 
     gsap.fromTo("#profileDetail", { scale: 0.95, opacity: 0, y: 30 }, { scale: 1, opacity: 1, y: 0, duration: 0.5 });
     lucide.createIcons();
-};
+}
 
 function updateProfileAttendance(att) {
     if (workInterval) clearInterval(workInterval);
