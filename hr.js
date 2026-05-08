@@ -281,12 +281,10 @@ function prepareBadge() {
     const parts = (emp.full_name || '').split(' ');
     document.getElementById('badgeModalOverlay').style.display = 'flex';
 
-    // Ensure photo works in PNG export by converting to DataURL (CORS bypass)
     const photoImg = document.getElementById('badgePreviewPhoto');
     if (emp.avatar_url) {
-        toDataURL(emp.avatar_url, function (dataUrl) {
-            photoImg.src = dataUrl;
-        });
+        photoImg.crossOrigin = "anonymous";
+        photoImg.src = emp.avatar_url;
     }
 
     document.getElementById('badgePreviewSideName').textContent = (parts[0] || '').toUpperCase();
@@ -294,7 +292,7 @@ function prepareBadge() {
     document.getElementById('badgePreviewRole').textContent = (emp.department || 'OFIS').toUpperCase() + " XODIMI";
 
     const idEl = document.getElementById('badgePreviewID');
-    if (idEl) idEl.textContent = 'ROMIX-' + emp.id.substring(0, 8).toUpperCase();
+    if (idEl) idEl.textContent = 'ID: ROMIX-' + emp.id.substring(0, 8).toUpperCase();
 
     // Offline QR Generation (Stable for PNG Export)
     const qrContainer = document.getElementById('badgePreviewQRReal');
@@ -309,21 +307,6 @@ function prepareBadge() {
             correctLevel: QRCode.CorrectLevel.H
         });
     }
-}
-
-// HELPER FOR 100% PNG EXPORT STABILITY
-function toDataURL(url, callback) {
-    var xhr = new XMLHttpRequest();
-    xhr.onload = function () {
-        var reader = new FileReader();
-        reader.onloadend = function () {
-            callback(reader.result);
-        }
-        reader.readAsDataURL(xhr.response);
-    };
-    xhr.open('GET', url);
-    xhr.responseType = 'blob';
-    xhr.send();
 }
 
 function closeBadgeModal() {
