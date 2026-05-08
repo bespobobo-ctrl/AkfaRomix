@@ -1572,80 +1572,103 @@
                 </div>
             </div>
 
-            <!-- Activity Tabs & Content -->
+            <!-- 💎 ELITE COMMAND CENTER: HISTORY -->
             <div class="bento-card"
-                style="padding:40px; background:rgba(255,255,255,0.01); min-height:700px; position:relative;">
+                style="padding:0; background:rgba(255,255,255,0.01); min-height:800px; border:1px solid rgba(255,255,255,0.05); overflow:hidden;">
 
-                <!-- TOP FILTER BAR -->
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <div style="display:flex; gap:10px;">
-                        <button onclick="window.filterHistory('all')" id="histTab_all"
-                            class="hist-tab active">HAMMASI</button>
-                        <button onclick="window.filterHistory('attendance')" id="histTab_attendance"
-                            class="hist-tab">DAVOMAT</button>
-                        <button onclick="window.filterHistory('kitchen')" id="histTab_kitchen"
-                            class="hist-tab">OSHXONA</button>
-                        <button onclick="window.filterHistory('admin')" id="histTab_admin" class="hist-tab">BOSHQARUV
-                            (HR)</button>
-                    </div>
-
-                    <!-- Date Filter Bar -->
-                    <div
-                        style="display:flex; align-items:center; gap:15px; background:rgba(255,255,255,0.03); padding:8px 15px; border-radius:15px; border:1px solid rgba(255,255,255,0.05);">
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <i data-lucide="calendar" style="width:14px; color:var(--accent);"></i>
-                            <input type="date" id="histDateFrom" onchange="window.loadHistoryData()"
-                                style="background:none; border:none; color:#fff; font-size:0.75rem; outline:none; font-family:'Outfit';">
-                            <span style="color:var(--text-s); font-size:0.7rem;">—</span>
-                            <input type="date" id="histDateTo" onchange="window.loadHistoryData()"
-                                style="background:none; border:none; color:#fff; font-size:0.75rem; outline:none; font-family:'Outfit';">
-                        </div>
-                        <div style="width:1px; height:20px; background:rgba(255,255,255,0.1);"></div>
-                        <button onclick="window.clearHistDates()"
-                            style="background:none; border:none; color:var(--accent); cursor:pointer; font-size:0.65rem; font-weight:900; letter-spacing:1px;">TOZALASH</button>
-                    </div>
-                </div>
-
-                <!-- QUICK PERIODS -->
+                <!-- Advanced Unified Toolbar -->
                 <div
-                    style="display:flex; gap:10px; margin-bottom:30px; background:rgba(255,255,255,0.02); padding:10px; border-radius:15px; width:fit-content; border:1px solid rgba(255,255,255,0.05);">
-                    <button onclick="window.setHistPeriod('today')" class="period-btn">BUGUNLIK</button>
-                    <button onclick="window.setHistPeriod('week')" class="period-btn">HAFTALIK</button>
-                    <button onclick="window.setHistPeriod('month')" class="period-btn">OYLIK</button>
-                    <button onclick="window.setHistPeriod('year')" class="period-btn">YILLIK</button>
+                    style="background:rgba(255,255,255,0.02); border-bottom:1px solid rgba(255,255,255,0.05); padding:30px 40px;">
+                    <div
+                        style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:30px;">
+                        <div style="display:flex; flex-direction:column; gap:10px;">
+                            <span
+                                style="font-size:0.65rem; font-weight:900; color:var(--accent); letter-spacing:3px; text-transform:uppercase;">Tizim
+                                Arxivi</span>
+                            <div
+                                style="display:flex; gap:8px; background:rgba(0,0,0,0.3); padding:6px; border-radius:18px; border:1px solid rgba(255,255,255,0.05);">
+                                <button onclick="window.filterHistory('all')" id="histTab_all"
+                                    class="hist-tab-lux active">HAMMASI</button>
+                                <button onclick="window.filterHistory('attendance')" id="histTab_attendance"
+                                    class="hist-tab-lux">DAVOMAT</button>
+                                <button onclick="window.filterHistory('kitchen')" id="histTab_kitchen"
+                                    class="hist-tab-lux">OSHXONA</button>
+                                <button onclick="window.filterHistory('admin')" id="histTab_admin"
+                                    class="hist-tab-lux">BOSHQARUV (HR)</button>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:10px;">
+                            <span
+                                style="font-size:0.65rem; font-weight:900; color:var(--text-s); letter-spacing:2px; text-transform:uppercase;">Vaqt
+                                oralig'i</span>
+                            <div
+                                style="display:flex; align-items:center; gap:15px; background:rgba(0,0,0,0.3); padding:8px 20px; border-radius:18px; border:1px solid rgba(255,255,255,0.05);">
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <i data-lucide="calendar" style="width:14px; color:var(--accent);"></i>
+                                    <input type="date" id="histDateFrom" onchange="window.loadHistoryData()"
+                                        class="lux-date-input">
+                                    <span style="color:var(--text-s); opacity:0.3; font-size:0.8rem;">—</span>
+                                    <input type="date" id="histDateTo" onchange="window.loadHistoryData()"
+                                        class="lux-date-input">
+                                </div>
+                                <div style="width:1px; height:20px; background:rgba(255,255,255,0.1);"></div>
+                                <button onclick="window.clearHistDates()"
+                                    style="background:none; border:none; color:var(--accent); cursor:pointer; font-size:0.65rem; font-weight:900; letter-spacing:1px;">TOZALASH</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Secondary Layer: Quick Presets & Sub-filters -->
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <span
+                                style="font-size:0.65rem; font-weight:900; color:var(--text-s); margin-right:10px;">PRESETLAR:</span>
+                            <button onclick="window.setHistPeriod('today')" class="period-pill">BUGUN</button>
+                            <button onclick="window.setHistPeriod('week')" class="period-pill">HAFTA</button>
+                            <button onclick="window.setHistPeriod('month')" class="period-pill">OY</button>
+                            <button onclick="window.setHistPeriod('year')" class="period-pill">YIL</button>
+                        </div>
+
+                        <div id="histSubTabs_attendance"
+                            style="display:none; gap:8px; background:rgba(0,210,255,0.05); padding:5px; border-radius:12px; border:1px solid rgba(0,210,255,0.1);">
+                            <button onclick="window.filterAttSub('all')" id="attSubTab_all"
+                                class="sub-pill active">BARCHASI</button>
+                            <button onclick="window.filterAttSub('in')" id="attSubTab_in"
+                                class="sub-pill">KELGANLAR</button>
+                            <button onclick="window.filterAttSub('out')" id="attSubTab_out"
+                                class="sub-pill">KETGANLAR</button>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- SUB-TABS (Only for Attendance) -->
-                <div id="histSubTabs_attendance"
-                    style="display:none; gap:10px; margin-bottom:30px; padding-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.05);">
-                    <button onclick="window.filterAttSub('all')" id="attSubTab_all"
-                        class="sub-tab active">BARCHASI</button>
-                    <button onclick="window.filterAttSub('in')" id="attSubTab_in" class="sub-tab">KELGANLAR
-                        (IN)</button>
-                    <button onclick="window.filterAttSub('out')" id="attSubTab_out" class="sub-tab">KETGANLAR
-                        (OUT)</button>
-                </div>
-
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
-                    <div style="display:flex; align-items:center; gap:10px; color:var(--text-s);">
-                        <i data-lucide="info" style="width:14px;"></i>
-                        <span style="font-size:0.7rem; font-weight:700; letter-spacing:1px;">HISOBOT: <span
-                                id="histLogUser" style="color:#fff;">HR MANAGER</span></span>
+                <!-- Search & Status Bar -->
+                <div
+                    style="padding:20px 40px; background:rgba(0,0,0,0.1); border-bottom:1px solid rgba(255,255,255,0.03); display:flex; justify-content:space-between; align-items:center;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div
+                            style="width:8px; height:8px; background:var(--accent); border-radius:50%; box-shadow:0 0 10px var(--accent);">
+                        </div>
+                        <span
+                            style="font-size:0.7rem; font-weight:800; color:var(--text-s); text-transform:uppercase;">HISOBOT:
+                            <span id="histLogUser" style="color:#fff;">HR MANAGER</span></span>
                     </div>
                     <div style="position:relative;">
                         <i data-lucide="search"
-                            style="position:absolute; left:15px; top:50%; transform:translateY(-50%); width:16px; color:var(--text-s);"></i>
+                            style="position:absolute; left:18px; top:50%; transform:translateY(-50%); width:16px; color:var(--text-s);"></i>
                         <input type="text" id="historySearch" oninput="window.searchHistory(this.value)"
-                            placeholder="Filtr bo'yicha qidirish..."
-                            style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:12px 20px 12px 45px; color:#fff; width:350px; outline:none; font-size:0.8rem;">
+                            placeholder="Tarixiy yozuvlarni qidirish..."
+                            style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:30px; padding:12px 25px 12px 50px; color:#fff; width:450px; outline:none; font-size:0.8rem; transition:0.3s; font-family:'Outfit';"
+                            onfocus="this.style.width='550px'; this.style.borderColor='var(--accent)';"
+                            onblur="this.style.width='450px'; this.style.borderColor='rgba(255,255,255,0.1)';">
                     </div>
                 </div>
 
-                <div id="historyList" style="display:flex; flex-direction:column; gap:15px;">
-                    <!-- Rows will be injected here -->
-                    <div style="text-align:center; padding:100px; color:var(--text-s);">
+                <!-- List Content -->
+                <div id="historyList" style="padding:40px; display:flex; flex-direction:column; gap:12px;">
+                    <div style="text-align:center; padding:150px; color:var(--text-s);">
                         <div class="loader" style="margin:0 auto 20px;"></div>
-                        Ma'lumotlar yuklanmoqda...
+                        Arxiv yozuvlari yuklanmoqda...
                     </div>
                 </div>
             </div>
@@ -1653,78 +1676,116 @@
     </div>
 
     <style>
-        .hist-tab {
+        .hist-tab-lux {
             background: none;
             border: none;
             padding: 12px 25px;
-            border-radius: 12px;
+            border-radius: 14px;
             color: var(--text-s);
             font-weight: 800;
             font-size: 0.75rem;
             cursor: pointer;
-            transition: 0.3s;
-            letter-spacing: 1px;
+            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            letter-spacing: 1.5px;
         }
 
-        .hist-tab:hover {
-            background: rgba(255, 255, 255, 0.03);
+        .hist-tab-lux:hover {
             color: #fff;
+            background: rgba(255, 255, 255, 0.03);
         }
 
-        .hist-tab.active {
+        .hist-tab-lux.active {
             background: var(--accent);
             color: #000;
             font-weight: 1000;
-            padding: 12px 30px;
-            box-shadow: 0 10px 20px rgba(0, 255, 136, 0.2);
+            box-shadow: 0 10px 25px rgba(0, 255, 136, 0.4);
+            transform: translateY(-2px);
         }
 
-        .sub-tab {
+        .period-pill {
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid rgba(255, 255, 255, 0.05);
-            padding: 8px 20px;
-            border-radius: 10px;
+            padding: 8px 18px;
+            border-radius: 25px;
             color: var(--text-s);
             font-weight: 800;
             font-size: 0.65rem;
             cursor: pointer;
             transition: 0.3s;
+            letter-spacing: 1px;
         }
 
-        .sub-tab:hover {
-            border-color: var(--accent-sec);
+        .period-pill:hover {
+            border-color: var(--accent);
             color: #fff;
+            background: rgba(0, 255, 136, 0.05);
         }
 
-        .sub-tab.active {
+        .period-pill.active {
+            background: #fff;
+            color: #000;
+            border-color: #fff;
+            font-weight: 1000;
+            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
+        }
+
+        .sub-pill {
+            background: none;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 10px;
+            color: var(--text-s);
+            font-weight: 800;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .sub-pill.active {
             background: var(--accent-sec);
             color: #000;
-            border-color: var(--accent-sec);
             font-weight: 1000;
+            box-shadow: 0 5px 15px rgba(0, 210, 255, 0.3);
+        }
+
+        .lux-date-input {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 0.85rem;
+            outline: none;
+            font-family: 'Outfit';
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .lux-date-input::-webkit-calendar-picker-indicator {
+            filter: invert(1) brightness(1.5);
+            cursor: pointer;
         }
 
         .history-row {
             display: grid;
             grid-template-columns: 80px 1fr 180px 150px;
             align-items: center;
-            padding: 20px 30px;
-            background: rgba(255, 255, 255, 0.015);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            transition: 0.3s;
+            padding: 22px 35px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 25px;
+            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .history-row:hover {
-            background: rgba(255, 255, 255, 0.05);
-            transform: translateX(8px);
+            background: rgba(255, 255, 255, 0.06);
+            transform: translateX(12px) scale(1.005);
             border-color: var(--accent);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.5);
         }
 
         .hist-icon {
-            width: 45px;
-            height: 45px;
-            border-radius: 15px;
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;

@@ -1274,7 +1274,7 @@ window.setHistPeriod = function (period) {
     from.value = start.toISOString().split('T')[0];
     to.value = now.toISOString().split('T')[0];
 
-    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.period-pill').forEach(b => b.classList.remove('active'));
     event.target.classList.add('active');
 
     window.loadHistoryData();
@@ -1356,7 +1356,7 @@ async function loadHistoryData() {
 
 window.filterHistory = function (filter) {
     historyFilter = filter;
-    document.querySelectorAll('.hist-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.hist-tab-lux').forEach(t => t.classList.remove('active'));
     document.getElementById('histTab_' + filter).classList.add('active');
     document.getElementById('histSubTabs_attendance').style.display = filter === 'attendance' ? 'flex' : 'none';
     renderHistory();
@@ -1364,7 +1364,7 @@ window.filterHistory = function (filter) {
 
 window.filterAttSub = function (sub) {
     historyAttSub = sub;
-    document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.sub-pill').forEach(t => t.classList.remove('active'));
     document.getElementById('attSubTab_' + sub).classList.add('active');
     renderHistory();
 };
@@ -1398,18 +1398,23 @@ function renderHistory(customData = null) {
 
         return `
             <div class="history-row">
-                <div class="hist-icon" style="background:${bg}; color:${color};">
+                <div class="hist-icon" style="background:${bg}; color:${color}; box-shadow: 0 0 20px ${bg};">
                     <i data-lucide="${icon}" style="width:20px;"></i>
                 </div>
-                <div>
-                    <h4 style="font-size:0.9rem; font-weight:800; color:#fff;">${h.target}</h4>
-                    <p style="font-size:0.7rem; color:var(--text-s); margin-top:4px;">${h.action.toUpperCase()}</p>
+                <div style="padding-left:10px;">
+                    <h4 style="font-size:0.95rem; font-weight:800; color:#fff; letter-spacing:-0.4px;">${h.target}</h4>
+                    <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+                        <span style="font-size:0.6rem; font-weight:900; color:${color}; opacity:0.8; letter-spacing:1px; background:${bg}; padding:2px 8px; border-radius:4px;">${h.type.toUpperCase()}</span>
+                        <p style="font-size:0.65rem; color:var(--text-s); font-weight:700;">${h.action}</p>
+                    </div>
                 </div>
-                <div style="font-size:0.75rem; color:#fff; font-weight:700;">
-                    ${new Date(h.time).toLocaleDateString('uz-UZ', { day: 'numeric', month: 'short' })}
+                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+                    <span style="font-size:0.75rem; color:#fff; font-weight:800;">${new Date(h.time).toLocaleDateString('uz-UZ', { day: 'numeric', month: 'short' })}</span>
+                    <span style="font-size:0.6rem; color:var(--text-s); font-weight:600;">SANASI</span>
                 </div>
-                <div style="font-family:'Outfit'; font-weight:900; color:var(--accent); text-align:right;">
-                    ${new Date(h.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:1px; padding-left:20px;">
+                    <span style="font-family:'Outfit'; font-size:1.1rem; font-weight:1000; color:var(--accent); letter-spacing:-0.5px;">${new Date(h.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span style="font-size:0.6rem; color:var(--text-s); font-weight:900; opacity:0.5; letter-spacing:1px;">AMAL VAQTI</span>
                 </div>
             </div>
         `;
