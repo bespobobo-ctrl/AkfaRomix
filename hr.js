@@ -1085,6 +1085,7 @@ window.setReportRange = function (range) {
 };
 
 window.genKitchenReport = function (format) {
+    console.log(">>> OSHXONA HISOBOTI: Professional Engine v3.0 (format: " + format + ")");
     const months = ["Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun", "Iyul", "Avgust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr"];
     const monthName = months[kitchenCurrentDate.getMonth()];
     const year = kitchenCurrentDate.getFullYear();
