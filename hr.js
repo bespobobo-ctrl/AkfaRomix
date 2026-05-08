@@ -444,6 +444,7 @@ async function saveWorker() {
     const { data, error } = await supabase.from('employees').insert([{
         full_name: fullName,
         role: role,
+        department: dept,
         salary_info: salary || '0',
         phone: phone || '',
         birth_year: birthYear || null,
