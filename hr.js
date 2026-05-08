@@ -242,9 +242,11 @@ function renderStaffList(data) {
                     </div>
                 </div>
             </td>
+            <td style="padding: 16px 20px; font-size:0.8rem; font-weight:600; color:var(--text-p);">${emp.role || 'Xodim'}</td>
             <td style="padding: 16px 20px;">
-                <div style="font-size:0.8rem; font-weight:600; color:var(--text-p);">${emp.role || 'Xodim'}</div>
-                <div style="font-size:0.65rem; color:var(--accent); font-weight:700; text-transform:uppercase; margin-top:2px;">${emp.department || emp.dept || 'Ofis'}</div>
+                <span style="font-size:0.65rem; color:var(--accent); font-weight:700; text-transform:uppercase; background:rgba(0,255,136,0.05); padding:4px 10px; border-radius:8px;">
+                    ${emp.department || emp.dept || 'Ofis'}
+                </span>
             </td>
             <td style="padding: 16px 20px; font-size:0.8rem; color:var(--text-s); font-family:monospace;">${emp.phone || '---'}</td>
             <td style="padding: 16px 20px;">
@@ -736,9 +738,17 @@ function handleDelete() {
 
 function filterAndRender() {
     let filtered = employeesData;
-    if (activeDept !== 'all') {
+
+    if (activeDept === 'at_work') {
+        // Filter: Show only those who have checked in today and haven't checked out yet (or just present today)
+        filtered = employeesData.filter(e => {
+            const att = todayAtt.find(a => a.employee_id === e.id);
+            return att && att.check_in && !att.check_out;
+        });
+    } else if (activeDept !== 'all') {
         filtered = employeesData.filter(e => (e.department === activeDept || e.dept === activeDept));
     }
+
     renderStaffList(filtered);
 }
 
