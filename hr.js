@@ -283,7 +283,7 @@ function updateGlobalStats() {
     if (payrollEl) payrollEl.innerHTML = `${totalPayroll.toLocaleString()} <small>UZS</small>`;
 }
 
-async function showEmployeeDetail(id) {
+window.viewDetails = async function (id) {
     // 1. FRESH DATA FETCH
     const { data: freshEmp, error: empErr } = await supabase.from('employees').select('*').eq('id', id).single();
     if (empErr || !freshEmp) return;
