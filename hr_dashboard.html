@@ -1590,6 +1590,33 @@
                 </div>
             </div>
 
+            <!-- 🧪 DEMO PREVIEW BLOCK -->
+            <div
+                style="margin-top:25px; text-align:center; padding:20px; border-radius:25px; background:rgba(0,255,136,0.02); border:1px dashed rgba(0,255,136,0.1);">
+                <div style="display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:10px;">
+                    <i data-lucide="beaker" style="color:var(--accent); width:16px; height:16px;"></i>
+                    <span style="font-size:0.7rem; font-weight:800; color:var(--accent); letter-spacing:1px;">DEMO REJIM
+                        (NAMUNA)</span>
+                </div>
+                <p style="font-size:0.65rem; color:var(--text-s); margin-bottom:15px; line-height:1.4;">Hali bazada
+                    xodimning to'liq 1 oylik ma'lumotlari yo'q bo'lsa, quyidagi namunaviy hisobotlarni yuklab
+                    ko'rishingiz mumkin:</p>
+                <div style="display:flex; justify-content:center; gap:10px;">
+                    <button onclick="window.demoExportReport('pdf')"
+                        style="flex:1; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:var(--text-p); font-size:0.65rem; font-weight:700; padding:10px; border-radius:12px; cursor:pointer; transition:0.3s;"
+                        onmouseover="this.style.borderColor='var(--accent)'"
+                        onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'">PDF NAMUNA</button>
+                    <button onclick="window.demoExportReport('excel')"
+                        style="flex:1; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:var(--text-p); font-size:0.65rem; font-weight:700; padding:10px; border-radius:12px; cursor:pointer; transition:0.3s;"
+                        onmouseover="this.style.borderColor='var(--accent)'"
+                        onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'">EXCEL NAMUNA</button>
+                    <button onclick="window.demoExportReport('word')"
+                        style="flex:1; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:var(--text-p); font-size:0.65rem; font-weight:700; padding:10px; border-radius:12px; cursor:pointer; transition:0.3s;"
+                        onmouseover="this.style.borderColor='var(--accent)'"
+                        onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'">WORD NAMUNA</button>
+                </div>
+            </div>
+
             <style>
                 .report-option {
                     background: rgba(255, 255, 255, 0.02);
