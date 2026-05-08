@@ -621,7 +621,10 @@ function prepareBadge(emp) {
         emp.last_name = parts.slice(1).join(' ') || '';
     }
 
-    document.getElementById('badgePreviewPhoto').src = emp.avatar_url;
+    const photoNode = document.getElementById('badgePreviewPhoto');
+    if (photoNode) {
+        photoNode.src = emp.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=1a7b7c&color=fff`;
+    }
 
     // Yozuvlarni yangi dizayn ID'lariga moslab joylashtiramiz
     const sideNameNode = document.getElementById('badgePreviewSideName');
@@ -630,13 +633,21 @@ function prepareBadge(emp) {
 
     if (sideNameNode) sideNameNode.textContent = (emp.first_name || '').toUpperCase();
     if (fullNameNode) fullNameNode.textContent = (emp.full_name || '').toUpperCase();
-    if (roleNode) roleNode.textContent = (emp.role || '').toUpperCase();
+
+    // Bo'lim xodimi deb yozish
+    if (roleNode) {
+        const deptName = emp.department || 'OFFIS';
+        roleNode.textContent = `${deptName.toUpperCase()} XODIMI`;
+    }
 
     const workerId = emp.id.substring(0, 8).toUpperCase();
     const idNode = document.getElementById('badgePreviewID');
-    if (idNode) idNode.textContent = `AKFA-${workerId}`;
+    if (idNode) idNode.textContent = `ROMIX-${workerId}`;
 
-    document.getElementById('badgePreviewQR').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=AKFA-STAFF-${emp.id}`;
+    const qrNode = document.getElementById('badgePreviewQR');
+    if (qrNode) {
+        qrNode.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=ROMIX-STAFF-${emp.id}`;
+    }
 
     badgeModal.style.display = 'flex';
     gsap.fromTo(".id-badge",
