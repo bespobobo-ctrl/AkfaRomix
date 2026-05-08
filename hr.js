@@ -7,6 +7,9 @@ let currentEmp = null;
 let currentEditId = null;
 let activeDept = 'all';
 let tempPhotoData = null;
+let html5QrCode = null;
+let workInterval = null;
+let currentTab = 'dashboard';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // 🛡️ AUTH GUARD
@@ -34,6 +37,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.downloadBadge = downloadBadge;
     window.printBadgeReal = printBadgeReal;
     window.closeActionModal = closeActionModal;
+    window.switchTab = switchTab;
+    window.stopScanner = stopScanner;
     window.closeActionModal = closeActionModal;
 
     // Logout
@@ -159,7 +164,7 @@ function renderStaffList(listData) {
     lucide.createIcons();
 }
 
-window.showEmployeeDetail = function (id) {
+window.showEmployeeDetail = async function (id) {
     const emp = employeesData.find(e => e.id === id);
     if (!emp) return;
     currentEmp = emp;
@@ -171,16 +176,76 @@ window.showEmployeeDetail = function (id) {
     document.getElementById('dt-name').textContent = emp.full_name;
     document.getElementById('dt-role').textContent = emp.role || 'Xodim';
     document.getElementById('dt-phone').textContent = emp.phone || '---';
-    document.getElementById('dt-dept').textContent = emp.department || 'Ofis';
-    document.getElementById('dt-experience').textContent = (emp.joined_year ? (2026 - emp.joined_year) + " yil" : "Yangi xodim");
+    document.getElementById('dt-dept').textContent = emp.department || emp.dept || 'Ofis';
+    document.getElementById('dt-experience').textContent = (emp.joined_year ? (2026 - emp.joined_year) + " yil" : "---");
     document.getElementById('dt-sum').textContent = (parseInt(emp.salary_info || 0) / 1000000).toFixed(1) + 'M';
-    document.getElementById('dt-qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent('ROMIX-' + emp.id)}`;
+
+    // QR
+    const qrEl = document.getElementById('dt-qr');
+    if (qrEl) qrEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent('ROMIX-STAFF-' + emp.id)}`;
+
+    // Attendance Info
+    const todayStr = new Date().toISOString().split('T')[0];
+    const { data: att } = await supabase.from('attendance').select('*').eq('id', emp.id).eq('date', todayStr).maybeSingle();
+
+    updateProfileAttendance(att);
 
     gsap.fromTo("#profileDetail", { scale: 0.95, opacity: 0, y: 30 }, { scale: 1, opacity: 1, y: 0, duration: 0.5 });
     lucide.createIcons();
 };
 
+function updateProfileAttendance(att) {
+    if (workInterval) clearInterval(workInterval);
+
+    const arrivedEl = document.getElementById('dt-arrived');
+    const leftEl = document.getElementById('dt-left');
+    const timeEl = document.getElementById('dt-worktime');
+    const progressEl = document.getElementById('timeProgress');
+
+    if (!att || !att.check_in) {
+        arrivedEl.textContent = '--:--';
+        leftEl.textContent = '--:--';
+        timeEl.textContent = '00:00';
+        if (progressEl) progressEl.style.strokeDashoffset = '597';
+        return;
+    }
+
+    const start = new Date(att.check_in);
+    arrivedEl.textContent = start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    if (att.check_out) {
+        const end = new Date(att.check_out);
+        leftEl.textContent = end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        calculateDuration(start, end);
+    } else {
+        leftEl.textContent = '--:--';
+        workInterval = setInterval(() => calculateDuration(start, new Date()), 1000);
+        calculateDuration(start, new Date());
+    }
+}
+
+function calculateDuration(start, end) {
+    const diff = Math.abs(end - start);
+    const hrs = Math.floor(diff / 3600000);
+    const mins = Math.floor((diff % 3600000) / 60000);
+    const secs = Math.floor((diff % 60000) / 1000);
+
+    const timeStr = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+    document.getElementById('dt-worktime').textContent = timeStr;
+
+    // Progress Circle (Max 8 hours)
+    const progressEl = document.getElementById('timeProgress');
+    if (progressEl) {
+        const totalSecs = hrs * 3600 + mins * 60 + secs;
+        const maxSecs = 8 * 3600;
+        const percent = Math.min(totalSecs / maxSecs, 1);
+        const offset = 597 - (597 * percent);
+        progressEl.style.strokeDashoffset = offset;
+    }
+}
+
 function closeDetailModal() {
+    if (workInterval) clearInterval(workInterval);
     document.getElementById('detailModalOverlay').style.display = 'none';
 }
 
@@ -546,9 +611,115 @@ function handleDelete() {
 function filterAndRender() {
     let filtered = employeesData;
     if (activeDept !== 'all') {
-        filtered = employeesData.filter(e => e.department === activeDept);
+        filtered = employeesData.filter(e => (e.department === activeDept || e.dept === activeDept));
     }
     renderStaffList(filtered);
+}
+
+// 📡 TABS & SCANNER SYSTEM
+function switchTab(tab) {
+    currentTab = tab;
+
+    // UI Feedback
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+
+    const sections = {
+        'dashboard': document.querySelector('.main-container'),
+        'scanner': document.getElementById('scannerSection'),
+        'reports': document.getElementById('reportSelectionModal') // Special case
+    };
+
+    if (tab === 'scanner') {
+        document.getElementById('scannerSection').style.display = 'flex';
+        startScanner();
+    } else {
+        stopScanner();
+        document.getElementById('scannerSection').style.display = 'none';
+    }
+
+    if (tab === 'reports') handleReport();
+}
+
+function startScanner() {
+    if (html5QrCode) stopScanner();
+    html5QrCode = new Html5Qrcode("qrReader");
+    html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        onScanSuccess
+    );
+}
+
+function stopScanner() {
+    if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+            html5QrCode = null;
+        }).catch(err => console.error("Scanner stop error:", err));
+    }
+}
+
+async function onScanSuccess(decodedText) {
+    // Expected: ROMIX-STAFF-{id}
+    if (!decodedText.startsWith('ROMIX-STAFF-')) return;
+
+    stopScanner(); // Pause scanner
+    const empId = decodedText.split('ROMIX-STAFF-')[1];
+    const emp = employeesData.find(e => e.id === empId);
+
+    if (!emp) {
+        alert("Xodim topilmadi!");
+        startScanner();
+        return;
+    }
+
+    showActionModal({
+        title: emp.full_name,
+        desc: "DAVOMATNI BELGILANG:",
+        icon: "clock",
+        confirmText: "ISHGA KELDI",
+        onConfirm: () => processAttendance(emp, 'in'),
+        customContent: `
+            <div style="display:grid; grid-template-columns:1fr; gap:10px; margin-top:20px;">
+                <button onclick="window.processAttendanceExternal('${emp.id}', 'out')" class="mgmt-btn" style="background:#ff4d4f; color:#fff;">ISHdan KETDI</button>
+            </div>
+        `
+    });
+}
+
+// Global hook for the custom button
+window.processAttendanceExternal = (id, type) => {
+    const emp = employeesData.find(e => e.id === id);
+    processAttendance(emp, type);
+};
+
+async function processAttendance(emp, type) {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const nowIso = new Date().toISOString();
+
+    let payload = {
+        id: emp.id,
+        full_name: emp.full_name,
+        date: todayStr
+    };
+
+    if (type === 'in') {
+        payload.check_in = nowIso;
+        payload.status = 'ISHDA';
+    } else {
+        payload.check_out = nowIso;
+        payload.status = 'KETGAN';
+    }
+
+    const { error } = await supabase.from('attendance').upsert(payload, { onConflict: 'id,date' });
+
+    if (!error) {
+        closeActionModal();
+        alert(`Muvaffaqiyatli: ${emp.full_name} - ${type === 'in' ? 'Kash keldi' : 'Ishdan ketti'}`);
+        await loadInitialData(); // Refresh counts
+        switchTab('dashboard');
+    } else {
+        alert("Xatolik: " + error.message);
+    }
 }
 
 window.downloadBadge = async function () {
