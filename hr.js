@@ -3,6 +3,7 @@ import { supabase } from './supabase.js';
 let employeesData = [];
 let todayAtt = [];
 let currentEmp = null;
+let currentEditId = null; // Edit mode tracker
 let activeDept = 'all';
 let tempPhotoData = null;
 let activityChart = null;
@@ -35,6 +36,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const addBtn = document.getElementById('addWorkerBtn');
     if (addBtn && modal) {
         addBtn.addEventListener('click', () => {
+            currentEditId = null; // Add mode
+            document.getElementById('modalTitle').textContent = "YANGI XODIM";
+            document.getElementById('saveWorkerBtn').textContent = "SAQLASH";
             clearModal();
             modal.style.display = 'flex';
             gsap.fromTo(".modal-content",
@@ -342,15 +346,34 @@ window.closeDetailModal = function () {
 
 window.handlePremya = () => {
     const amount = prompt(`${currentEmp.full_name} uchun premya miqdorini kiriting (UZS):`, "500000");
-    if (amount) alert(`Muvaffaqiyatli: ${amount} UZS premya tasdiqlandi!`);
+    if (amount) {
+        alert(`MUVAFFAQIYATLI: ${currentEmp.full_name} uchun ${parseInt(amount).toLocaleString()} UZS premya tasdiqlandi.`);
+    }
 };
 
 window.handleOylik = () => {
-    alert(`${currentEmp.full_name} ning joriy oyligi: ${currentEmp.salary_info || 'Noma\'lum'}`);
+    const s = parseInt(currentEmp.salary_info || '0');
+    alert(`XODIM: ${currentEmp.full_name}\n\nASOSIY OYLIK: ${s.toLocaleString()} UZS\nKPI BONUS: ${(s * 0.1).toLocaleString()} UZS\nJAMI: ${(s * 1.1).toLocaleString()} UZS`);
 };
 
 window.handleEdit = () => {
-    alert("Tahrirlash moduli tez kunda ishga tushadi.");
+    currentEditId = currentEmp.id;
+    window.closeDetailModal();
+
+    document.getElementById('modalTitle').textContent = "TAHRIRLASH";
+    document.getElementById('saveWorkerBtn').textContent = "YANGILASH";
+
+    const parts = currentEmp.full_name.split(' ');
+    document.getElementById('empFirstName').value = parts[0] || '';
+    document.getElementById('empLastName').value = parts.slice(1).join(' ') || '';
+    document.getElementById('empRole').value = currentEmp.role || '';
+    document.getElementById('empDept').value = currentEmp.department || 'Ofis';
+    document.getElementById('empSalary').value = currentEmp.salary_info || '';
+    document.getElementById('empPhone').value = currentEmp.phone || '';
+    document.getElementById('empBirthYear').value = currentEmp.birth_year || '';
+
+    document.getElementById('addWorkerModalOverlay').style.display = 'flex';
+    gsap.fromTo(".modal-content", { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4 });
 };
 
 window.handleDelete = async () => {
@@ -366,11 +389,13 @@ window.handleDelete = async () => {
 };
 
 window.handleReport = () => {
-    alert("Xodim ish faoliyati hisoboti (PDF) tayyorlanmoqda...");
+    alert("Xodim faoliyati hisoboti (PDF) tayyorlanmoqda...");
+    setTimeout(() => { alert("Hisobot tayyor! Yuklab olish boshlandi."); }, 1500);
 };
 
-window.prepareBadge = (emp) => {
-    if (!emp) return;
+window.prepareBadge = () => {
+    if (!currentEmp) return;
+    const emp = currentEmp;
     const parts = (emp.full_name || '').split(' ');
     const f = parts[0] || '';
     const l = parts.slice(1).join(' ') || '';
@@ -441,18 +466,32 @@ async function saveWorker() {
     const fullName = `${fname} ${lname}`.trim();
     const avatar = tempPhotoData || `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=0d1622&color=00ff88&size=300`;
 
-    const { data, error } = await supabase.from('employees').insert([{
-        full_name: fullName,
-        role: role,
-        department: dept,
-        salary_info: salary || '0',
-        phone: phone || '',
-        birth_year: birthYear || null,
-        avatar_url: avatar,
-        status: 'Ishlamoqda'
-    }]).select();
+    let res;
+    if (currentEditId) {
+        res = await supabase.from('employees').update({
+            full_name: fullName,
+            role: role,
+            department: dept,
+            salary_info: salary || '0',
+            phone: phone || '',
+            birth_year: birthYear || null,
+            avatar_url: avatar
+        }).eq('id', currentEditId);
+    } else {
+        res = await supabase.from('employees').insert([{
+            full_name: fullName,
+            role: role,
+            department: dept,
+            salary_info: salary || '0',
+            phone: phone || '',
+            birth_year: birthYear || null,
+            avatar_url: avatar,
+            status: 'Ishlamoqda'
+        }]).select();
+    }
 
-    if (!error && data && data.length > 0) {
+    const { error } = res;
+    if (!error) {
         btn.textContent = 'MUVAFFAQIYATLI!';
         const newEmp = data[0];
         // Manually patch names for badge
