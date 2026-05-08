@@ -7,8 +7,8 @@ import { Telegraf, Markup } from 'telegraf';
 
 const bot = new Telegraf('8736726197:AAHysZwqLIH2vgvv2ngLb7rl0_t33zGobTg');
 
-// TAVSIYA: Vercel yoki boshqa hostingdagi asosiy URL ni bu yerga yozing
-const WEB_APP_URL = 'https://akfa-romix.vercel.app';
+// 🚀 TO'G'RI MANZIL: Mobil foydalanuvchilar uchun Mini App versiyasi
+const WEB_APP_URL = 'https://akfa-romix.vercel.app/akfa_hr_mini.html';
 
 bot.start((ctx) => {
     ctx.replyWithHTML(
