@@ -1050,46 +1050,61 @@ window.saveKitchenData = function () {
 window.showKitchenReportOptions = function () {
     const suite = document.getElementById('kitchenReportSuite');
     if (!suite) return;
-    suite.style.display = suite.style.display === 'none' ? 'grid' : 'none';
+    suite.style.display = suite.style.display === 'none' ? 'flex' : 'none';
 };
 
 window.genKitchenReport = function (format) {
+    const range = document.getElementById('kitchenReportRange').value;
     const months = ["Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun", "Iyul", "Avgust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr"];
     const monthName = months[kitchenCurrentDate.getMonth()];
     const year = kitchenCurrentDate.getFullYear();
-    const fileName = `OSHXONA_HISOBOTI_${monthName}_${year}`;
+    const fileName = `OSHXONA_HISOBOTI_${range.toUpperCase()}_${monthName}_${year}`;
 
-    // Collect month data
     let records = [];
-    let totalMonthSum = 0;
 
-    for (let d = 1; d <= 31; d++) {
-        const dateKey = `${year}-${String(kitchenCurrentDate.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        const saved = JSON.parse(localStorage.getItem('kitchen_' + dateKey));
-        if (saved) {
-            const rowTotal = parseInt(saved.count) * parseInt(saved.price);
-            records.push({
-                date: dateKey,
-                count: saved.count,
-                price: saved.price,
-                total: rowTotal,
-                status: saved.status === 'paid' ? 'TO\'LANDI' : 'QARZ'
-            });
-            totalMonthSum += rowTotal;
+    if (range === 'weekly') {
+        const sel = new Date(kitchenSelectedDate);
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(sel);
+            d.setDate(sel.getDate() - i);
+            const dKey = d.toISOString().split('T')[0];
+            const s = JSON.parse(localStorage.getItem('kitchen_' + dKey));
+            if (s) records.push(s);
+        }
+    } else if (range === 'yearly') {
+        for (let m = 1; m <= 12; m++) {
+            for (let d = 1; d <= 31; d++) {
+                const dKey = `${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const s = JSON.parse(localStorage.getItem('kitchen_' + dKey));
+                if (s) records.push(s);
+            }
+        }
+    } else {
+        for (let d = 1; d <= 31; d++) {
+            const dateKey = `${year}-${String(kitchenCurrentDate.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const saved = JSON.parse(localStorage.getItem('kitchen_' + dateKey));
+            if (saved) records.push(saved);
         }
     }
 
     if (records.length === 0) {
-        alert("Ushbu oy uchun saqlangan ma'lumotlar topilmadi!");
+        alert("Tanlangan muddat uchun saqlangan ma'lumotlar topilmadi!");
         return;
     }
+
+    records.sort((a, b) => new Date(a.date) - new Date(b.date));
+    records = records.map(r => ({
+        ...r,
+        total: parseInt(r.count) * parseInt(r.price)
+    }));
+    const totalSum = records.reduce((acc, r) => acc + r.total, 0);
 
     if (format === 'excel') {
         let csvContent = "Sana,Odam soni,Narxi,Jami Summa,Holati\n";
         records.forEach(r => {
-            csvContent += `${r.date},${r.count},${r.price},${r.total},${r.status}\n`;
+            csvContent += `${r.date},${r.count},${r.price},${r.total},${r.status.toUpperCase()}\n`;
         });
-        csvContent += `\nJAMI OYLIQ HARAJAT,,,${totalMonthSum},`;
+        csvContent += `\nJAMI HARAJAT,,,${totalSum},`;
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
@@ -1098,14 +1113,14 @@ window.genKitchenReport = function (format) {
         link.click();
     } else {
         const docContent = `
-AKFA ROMIX - OSHXONA MOLIYAVIY HISOBOTI
-Davr: ${monthName} ${year}
+AKFA ROMIX - OSHXONA MOLIYAVIY HISOBOTI (${range.toUpperCase()})
+Davr: ${range === 'yearly' ? year : monthName + ' ' + year}
 --------------------------------------------------------------------------------
 Sana       | Odam soni | Narxi (UZS) | Jami (UZS)  | Holati
 --------------------------------------------------------------------------------
-${records.map(r => `${r.date} | ${String(r.count).padEnd(9)} | ${String(r.price).padEnd(11)} | ${String(r.total).padEnd(11)} | ${r.status}`).join('\n')}
+${records.map(r => `${r.date} | ${String(r.count).padEnd(9)} | ${String(r.price).padEnd(11)} | ${String(r.total).padEnd(11)} | ${r.status.toUpperCase()}`).join('\n')}
 --------------------------------------------------------------------------------
-UMUMIY OYLIK HARAJAT: ${totalMonthSum.toLocaleString()} UZS
+UMUMIY HARAJAT: ${totalSum.toLocaleString()} UZS
 
 Mas'ul shaxs (Buxgalter): _________________
 Sana: ${new Date().toLocaleDateString()}
@@ -1117,8 +1132,27 @@ Sana: ${new Date().toLocaleDateString()}
         link.setAttribute("download", `${fileName}.${format === 'pdf' ? 'pdf' : 'doc'}`);
         link.click();
     }
-
     alert(`${format.toUpperCase()} formatidagi hisobot tayyorlandi!`);
+};
+
+window.generateKitchenDemo = function () {
+    const today = new Date();
+    for (let i = 0; i < 30; i++) {
+        const d = new Date();
+        d.setDate(today.getDate() - i);
+        const dateKey = d.toISOString().split('T')[0];
+
+        const data = {
+            date: dateKey,
+            price: 25000,
+            count: Math.floor(Math.random() * 20) + 15,
+            status: Math.random() > 0.3 ? 'paid' : 'debt',
+            savedAt: new Date().toISOString()
+        };
+        localStorage.setItem('kitchen_' + dateKey, JSON.stringify(data));
+    }
+    alert("1 oylik DEMO ma'lumotlar yaratildi! Sahifani yangilab, hisobotni ko'rishingiz mumkin.");
+    window.renderKitchenCalendar();
 };
 
 async function loadHistoryData() {

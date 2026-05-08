@@ -1599,13 +1599,31 @@
                                 <i data-lucide="file-text" style="width:18px;"></i> HISOBOT TAYYORLASH
                             </button>
                             <div id="kitchenReportSuite"
-                                style="display:none; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:15px;">
-                                <button onclick="window.genKitchenReport('excel')"
-                                    style="background:#2ecc71; color:#fff; border:none; padding:12px; border-radius:10px; font-weight:800; font-size:0.7rem; cursor:pointer; transition:0.3s;">EXCEL</button>
-                                <button onclick="window.genKitchenReport('word')"
-                                    style="background:#3498db; color:#fff; border:none; padding:12px; border-radius:10px; font-weight:800; font-size:0.7rem; cursor:pointer; transition:0.3s;">WORD</button>
-                                <button onclick="window.genKitchenReport('pdf')"
-                                    style="background:#e74c3c; color:#fff; border:none; padding:12px; border-radius:10px; font-weight:800; font-size:0.7rem; cursor:pointer; transition:0.3s;">PDF</button>
+                                style="display:none; flex-direction:column; gap:15px; margin-top:20px; padding:20px; background:rgba(255,255,255,0.02); border-radius:15px; border:1px solid rgba(255,255,255,0.05);">
+                                <div style="display:flex; flex-direction:column; gap:10px;">
+                                    <label
+                                        style="font-size:0.65rem; font-weight:800; color:var(--text-s); letter-spacing:1px;">HISOBOT
+                                        DAVRI:</label>
+                                    <select id="kitchenReportRange"
+                                        style="width:100%; padding:10px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:8px; font-weight:700; outline:none;">
+                                        <option value="weekly">HAFTALIK</option>
+                                        <option value="monthly" selected>OYLIK</option>
+                                        <option value="yearly">YILLIK</option>
+                                    </select>
+                                </div>
+                                <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;">
+                                    <button onclick="window.genKitchenReport('excel')"
+                                        style="background:#2ecc71; color:#fff; border:none; padding:12px; border-radius:10px; font-weight:800; font-size:0.7rem; cursor:pointer;">EXCEL</button>
+                                    <button onclick="window.genKitchenReport('word')"
+                                        style="background:#3498db; color:#fff; border:none; padding:12px; border-radius:10px; font-weight:800; font-size:0.7rem; cursor:pointer;">WORD</button>
+                                    <button onclick="window.genKitchenReport('pdf')"
+                                        style="background:#e74c3c; color:#fff; border:none; padding:12px; border-radius:10px; font-weight:800; font-size:0.7rem; cursor:pointer;">PDF</button>
+                                </div>
+                                <button onclick="window.generateKitchenDemo()"
+                                    style="margin-top:10px; background:rgba(255,255,255,0.05); color:var(--text-s); border:1px dashed rgba(255,255,255,0.2); padding:10px; border-radius:10px; font-weight:800; font-size:0.65rem; cursor:pointer; transition:0.3s;"
+                                    onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+                                    onmouseout="this.style.background='rgba(255,255,255,0.05)'">DEMO MA'LUMOTLAR
+                                    YARATISH (1 OYLIK)</button>
                             </div>
                         </div>
                     </div>
