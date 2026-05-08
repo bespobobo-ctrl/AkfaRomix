@@ -167,31 +167,6 @@ async function loadInitialData() {
     }
 }
 
-function updateStatsHeader(staff, attendance) {
-    const total = staff.length;
-    const todayStr = new Date().toISOString().split('T')[0];
-
-    const present = attendance.filter(a => a.status === 'ISHDA').length;
-
-    // 🧠 SMART LATE COUNTER: Arrived after 08:00
-    const lateCount = attendance.filter(a => {
-        if (!a.check_in) return false;
-        const time = new Date(a.check_in).getHours() * 60 + new Date(a.check_in).getMinutes();
-        return time > 480; // 480 mins = 08:00
-    }).length;
-
-    document.getElementById('totalEmployeesCount').innerText = total || 0;
-    document.getElementById('todayArrivedCount').innerText = present || 0;
-    document.getElementById('todayLateCount').innerText = lateCount || 0;
-
-    // Monthly Fund (Simulation)
-    const fund = staff.reduce((acc, curr) => {
-        const val = parseInt(curr.salary_info?.toString().replace(/\D/g, '') || 0);
-        return acc + (isNaN(val) ? 0 : val);
-    }, 0);
-    document.getElementById('payrollTotal').innerText = (fund || 0).toLocaleString() + " UZS";
-}
-
 function getSmartStatus(att) {
     if (!att) return { text: 'KELMAGAN', color: '#ff4d4f', glow: 'rgba(255, 77, 79, 0.2)' };
     if (att.status === 'KETGAN') return { text: 'KETGAN', color: '#8a8f98', glow: 'transparent' };
@@ -271,11 +246,32 @@ function renderStaffList(data) {
 
 function updateGlobalStats() {
     if (!employeesData) return;
+
+    // 1. Total Employees
     document.getElementById('totalEmployeesCount').textContent = employeesData.length;
-    document.getElementById('todayArrivedCount').textContent = todayAtt.length;
+
+    // 2. Currently at work (Unique employees who have 'ISHDA' status today)
+    const uniquePresent = new Set(todayAtt.filter(a => a.status === 'ISHDA').map(a => a.employee_id));
+    document.getElementById('todayArrivedCount').textContent = uniquePresent.size;
+
+    // 3. Late arrivals (Unique employees who arrived after 08:00)
+    const lateCount = new Set(todayAtt.filter(a => {
+        if (!a.check_in) return false;
+        const time = new Date(a.check_in).getHours() * 60 + new Date(a.check_in).getMinutes();
+        return time > 480; // 480 mins = 08:00
+    }).map(a => a.employee_id)).size;
+
+    const lateEl = document.getElementById('todayLateCount');
+    if (lateEl) lateEl.textContent = lateCount;
+
+    // 4. Monthly Payroll Fund
     let totalPayroll = 0;
-    employeesData.forEach(e => totalPayroll += parseInt(e.salary_info || 0));
-    document.getElementById('payrollTotal').innerHTML = `${totalPayroll.toLocaleString()} <small>UZS</small>`;
+    employeesData.forEach(e => {
+        const val = parseInt(e.salary_info?.toString().replace(/\D/g, '') || 0);
+        totalPayroll += val;
+    });
+    const payrollEl = document.getElementById('payrollTotal');
+    if (payrollEl) payrollEl.innerHTML = `${totalPayroll.toLocaleString()} <small>UZS</small>`;
 }
 
 async function showEmployeeDetail(id) {
