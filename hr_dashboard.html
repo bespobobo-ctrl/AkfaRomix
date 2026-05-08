@@ -1157,13 +1157,23 @@
         </div>
     </div>
 
-    <script type="module" src="hr.js?v=final"></script>
+    <script type="module" src="hr.js?v=2.3"></script>
     <script>
         lucide.createIcons();
         gsap.from(".sidebar", { x: -100, opacity: 0, duration: 1 });
         gsap.from(".top-nav", { y: -50, opacity: 0, duration: 1, delay: 0.2 });
         gsap.from(".bento-card", { opacity: 0, y: 30, duration: 0.8, stagger: 0.1, delay: 0.4 });
     </script>
+    <style>
+        .staff-panel,
+        .staff-panel *,
+        .lux-table,
+        .lux-table * {
+            -webkit-mask-image: none !important;
+            mask-image: none !important;
+            opacity: 1 !important;
+        }
+    </style>
 </body>
 
 </html>
