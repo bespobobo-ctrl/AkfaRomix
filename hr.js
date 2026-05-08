@@ -230,21 +230,22 @@ async function saveWorker() {
     btn.disabled = true;
 
     const fullName = `${fname} ${lname}`.trim();
-    // 🧠 SMART PAYLOAD: Automatically use the correct column name found in employeesData
-    const isDeptShort = employeesData.length > 0 && ('dept' in employeesData[0]);
-
     const payload = {
         full_name: fullName,
+        first_name: fname,
+        last_name: lname,
         role: role,
         salary_info: salary || '0',
         phone: phone || '',
         birth_year: birthYear || null,
-        joined_year: joinedYear || null,
         avatar_url: tempPhotoData || (currentEditId ? currentEmp.avatar_url : `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=1a7b7c&color=fff`)
     };
 
-    if (isDeptShort) payload.dept = dept;
-    else payload.department = dept;
+    // 🛡️ Safe checks for columns that might be missing
+    const firstRow = employeesData[0] || {};
+    if ('department' in firstRow) payload.department = dept;
+    if ('dept' in firstRow) payload.dept = dept;
+    if ('joined_year' in firstRow) payload.joined_year = joinedYear;
 
     let res;
     try {
@@ -271,11 +272,7 @@ async function saveWorker() {
         }, 1500);
     } else {
         const errMsg = res ? res.error.message : "Noma'lum xato";
-        const availableKeys = employeesData.length > 0 ? Object.keys(employeesData[0]).join(', ') : "Ma'lumot yo'q";
-
-        console.error("Supabase Error:", res ? res.error : "No response");
-        alert(`XATOLIK: ${errMsg}\n\nBAZADAGI USTUNLAR: ${availableKeys}\n\nIltimos, ushbu yozuvni nusxalab menga yuboring!`);
-
+        alert(`SAQLASHDA XATO: ${errMsg}\n\nEslatma: 'department' va 'joined_year' bazada yo'qligi sababli hozircha faqat asosiy ma'lumotlar saqlanadi.`);
         btn.disabled = false;
         btn.textContent = 'QAYTA URINISH';
     }
