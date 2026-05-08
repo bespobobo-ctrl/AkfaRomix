@@ -872,18 +872,57 @@ function switchTab(tab) {
     const sections = {
         'dashboard': document.querySelector('.main-container'),
         'scanner': document.getElementById('scannerSection'),
-        'reports': document.getElementById('reportSelectionModal') // Special case
+        'reports': document.getElementById('reportSelectionModal'),
+        'history': document.getElementById('historySection'),
+        'kitchen': document.getElementById('kitchenSection')
     };
 
+    // Hide all sections
+    Object.values(sections).forEach(s => { if (s) s.style.display = 'none'; });
+
     if (tab === 'scanner') {
-        document.getElementById('scannerSection').style.display = 'flex';
+        sections.scanner.style.display = 'flex';
         startScanner();
-    } else {
+    } else if (tab === 'history') {
+        sections.history.style.display = 'flex';
+        loadHistoryData();
+    } else if (tab === 'kitchen') {
+        sections.kitchen.style.display = 'flex';
+        document.getElementById('kitchenPresentCount').textContent = document.getElementById('todayArrivedCount').textContent;
+    } else if (tab === 'dashboard') {
+        sections.dashboard.style.display = 'flex';
         stopScanner();
-        document.getElementById('scannerSection').style.display = 'none';
     }
 
     if (tab === 'reports') handleReport();
+}
+
+async function loadHistoryData() {
+    const tbody = document.getElementById('historyTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px; color:var(--accent);">⏳ Yuklanmoqda...</td></tr>';
+
+    const { data: logs, error } = await supabase.from('attendance')
+        .select(`*, employees(full_name)`)
+        .order('check_in', { ascending: false })
+        .limit(50);
+
+    if (error || !logs) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#ff4d4f;">❌ Xato: ${error?.message || 'Yuklab bo\'lmadi'}</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = logs.map(l => {
+        const time = l.check_in ? new Date(l.check_in).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+        return `
+            <tr>
+                <td>${l.date}</td>
+                <td style="font-weight:800;">${l.employees?.full_name || 'Noma\'lum'}</td>
+                <td><span class="t-status-pill" style="background:rgba(0,255,136,0.1); color:var(--accent);">${l.status}</span></td>
+                <td style="font-family:'Outfit'; font-weight:900;">${time}</td>
+            </tr>
+        `;
+    }).join('');
 }
 
 function startScanner() {
