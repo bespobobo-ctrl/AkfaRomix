@@ -304,7 +304,8 @@ async function showEmployeeDetail(id) {
     if (qrEl) qrEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent('ROMIX-STAFF-' + emp.id)}`;
 
     // Attendance Info
-    const todayStr = new Date().toISOString().split('T')[0];
+    const _now = new Date();
+    const todayStr = _now.getFullYear() + '-' + String(_now.getMonth() + 1).padStart(2, '0') + '-' + String(_now.getDate()).padStart(2, '0');
     const { data: att } = await supabase.from('attendance').select('*').eq('employee_id', emp.id).eq('date', todayStr).maybeSingle();
 
     updateProfileAttendance(att);
