@@ -955,10 +955,12 @@ window.renderAnalyticsBoard = function () {
     targetEmps.forEach(emp => {
         const edit = manualEdits[emp.id] || {};
 
-        // 1. Oylik STAVKA - Agar tahrirlangan bo'lsa edit.salary, aks holda emp.salary_info
+        // 1. Oylik STAVKA
         const baseSalary = edit.salary || parseInt(emp.salary_info?.toString().replace(/\D/g, '') || 5000000);
-        const dayRate = baseSalary / 26;
-        const hourRate = dayRate / 10;
+
+        // FOYDALANUVCHI TALABI: 1 oyda 26 ish kuni, 1 kunda 9 soat sof ish vaqti (jami 234 soat)
+        const totalMonthlyHours = 234;
+        const hourRate = baseSalary / totalMonthlyHours;
 
         let hash1 = 0, hash2 = 0, hash3 = 0;
         const hashStr = String(emp.id || emp.full_name);
@@ -968,17 +970,17 @@ window.renderAnalyticsBoard = function () {
             hash3 = (hashStr.charCodeAt(i) * 17 + ((hash3 << 5) - hash3)) | 0;
         }
 
-        const deterministicHours = Math.abs(hash1 % 51) + 180;
+        const deterministicHours = Math.abs(hash1 % 55) + 179; // 179-234 oralig'i
         const deterministicLates = Math.abs(hash2 % 4);
-        const deterministicBonus = Math.abs(hash3 % 10) > 7 ? 500000 : 0;
 
         const mockWorkedHours = deterministicHours;
         const mockLates = deterministicLates;
 
         // PREMYA va JARIMA - Agar tahrirlangan (override) bo'lsa o'shani olamiz
-        const mockBonus = (edit.bonus !== undefined) ? edit.bonus : deterministicBonus;
+        const mockBonus = (edit.bonus !== undefined) ? edit.bonus : 0;
         const mockFine = (edit.fine !== undefined) ? edit.fine : (mockLates * 50000);
 
+        // FORMULA: (Ishlangan soat * Soatlik haq) + Premya - Jarima
         const finalCalculated = Math.round((mockWorkedHours * hourRate) + mockBonus - mockFine);
 
         totalFund += finalCalculated;
