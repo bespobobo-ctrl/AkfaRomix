@@ -1000,8 +1000,11 @@ window.renderAnalyticsBoard = function () {
             <td style="font-weight:900; font-size:0.9rem; color:#00ff88;">${finalCalculated.toLocaleString()} UZS</td>
             <td style="border-radius:0;">
                 <div style="display:flex; justify-content:flex-end; gap:8px;">
-                    <button onclick="window.openAnalyticsReport('${emp.id}')" title="Oylik hisobot (PDF, Excel, Word)" style="background:rgba(255,255,255,0.05); color:#fff; border:1px solid rgba(255,255,255,0.1); padding:8px; border-radius:10px; cursor:pointer; transition:0.3s; display:flex; align-items:center; justify-content:center;" onmouseover="this.style.background='rgba(0,210,255,0.2)'; this.style.borderColor='rgba(0,210,255,0.4)'; this.style.color='#00d2ff'" onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.borderColor='rgba(255,255,255,0.1)'; this.style.color='#fff'">
+                    <button onclick="window.openAnalyticsReport('${emp.id}')" title="Hisobot" style="background:rgba(255,255,255,0.05); color:#fff; border:1px solid rgba(255,255,255,0.1); padding:8px; border-radius:10px; cursor:pointer; transition:0.3s; display:flex; align-items:center; justify-content:center;" onmouseover="this.style.background='rgba(0,210,255,0.2)'; this.style.borderColor='rgba(0,210,255,0.4)'; this.style.color='#00d2ff'" onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.borderColor='rgba(255,255,255,0.1)'; this.style.color='#fff'">
                         <i data-lucide="file-text" style="width:16px; height:16px;"></i>
+                    </button>
+                    <button onclick="window.openAnalyticsEdit('${emp.id}')" title="Tahrirlash" style="background:rgba(165,94,234,0.1); color:#a55eea; border:1px solid rgba(165,94,234,0.2); padding:8px; border-radius:10px; cursor:pointer; transition:0.3s; display:flex; align-items:center; justify-content:center;" onmouseover="this.style.background='rgba(165,94,234,0.25)'; this.style.borderColor='rgba(165,94,234,0.5)'" onmouseout="this.style.background='rgba(165,94,234,0.1)'; this.style.borderColor='rgba(165,94,234,0.2)'">
+                        <i data-lucide="pencil" style="width:16px; height:16px;"></i>
                     </button>
                     <button onclick="alert('Ushbu oylik to\\'landi deb belgilandi.')" style="background:rgba(0,210,255,0.1); color:#00d2ff; border:1px solid rgba(0,210,255,0.2); padding:8px 15px; border-radius:10px; font-weight:800; font-size:0.65rem; cursor:pointer; transition:0.3s;" onmouseover="this.style.background='rgba(0,210,255,0.2)'" onmouseout="this.style.background='rgba(0,210,255,0.1)'">TO'LASH</button>
                 </div>
@@ -1016,6 +1019,129 @@ window.renderAnalyticsBoard = function () {
     document.getElementById('analyticTotalFines').innerHTML = `${totalFinesAll.toLocaleString()} <small style="font-size:1rem; opacity:0.5">UZS</small>`;
     lucide.createIcons();
 };
+
+// 💎 ANALYTICS EDIT MODAL ENGINE
+window.openAnalyticsEdit = function (id) {
+    const emp = employeesData.find(e => e.id === id);
+    if (!emp) return;
+
+    const baseSalary = parseInt(emp.salary_info?.toString().replace(/\D/g, '') || 0);
+
+    // Remove old modal if exists
+    const old = document.getElementById('analyticsEditOverlay');
+    if (old) old.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'analyticsEditOverlay';
+    overlay.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(20px); z-index:10000; display:flex; align-items:center; justify-content:center;';
+
+    overlay.innerHTML = `
+        <div id="anaEditModal" style="width:500px; background:#0a0f1a; border:1px solid rgba(255,255,255,0.1); border-radius:35px; padding:40px; box-shadow:0 40px 100px rgba(0,0,0,0.6);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
+                <div>
+                    <h2 style="font-family:'Outfit'; font-weight:900; font-size:1.4rem; letter-spacing:-0.5px;">
+                        <span style="color:#a55eea;">TAHRIRLASH</span>
+                    </h2>
+                    <p style="font-size:0.75rem; color:var(--text-s); margin-top:5px;">${emp.full_name} — ${emp.department || 'Ofis'}</p>
+                </div>
+                <button onclick="document.getElementById('analyticsEditOverlay').remove()"
+                    style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; width:42px; height:42px; border-radius:14px; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+                    <i data-lucide="x" style="width:18px;"></i>
+                </button>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:20px;">
+                <!-- Oylik -->
+                <div style="position:relative;">
+                    <label style="position:absolute; top:-8px; left:14px; font-size:0.6rem; color:#a55eea; background:#0a0f1a; padding:0 6px; font-weight:800; z-index:1;">OYLIK STAVKA (UZS)</label>
+                    <input type="number" id="anaEditSalary" value="${baseSalary}"
+                        style="width:100%; padding:18px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:16px; color:#fff; font-size:1.1rem; font-weight:700; outline:none; font-family:'Outfit';"
+                        onfocus="this.style.borderColor='#a55eea'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+                </div>
+
+                <!-- Premya -->
+                <div style="position:relative;">
+                    <label style="position:absolute; top:-8px; left:14px; font-size:0.6rem; color:#ffa940; background:#0a0f1a; padding:0 6px; font-weight:800; z-index:1;">PREMYA (UZS)</label>
+                    <input type="number" id="anaEditBonus" value="0" placeholder="0"
+                        style="width:100%; padding:18px; background:rgba(255,169,64,0.03); border:1px solid rgba(255,169,64,0.15); border-radius:16px; color:#ffa940; font-size:1.1rem; font-weight:700; outline:none; font-family:'Outfit';"
+                        onfocus="this.style.borderColor='#ffa940'" onblur="this.style.borderColor='rgba(255,169,64,0.15)'">
+                </div>
+
+                <!-- Jarima -->
+                <div style="position:relative;">
+                    <label style="position:absolute; top:-8px; left:14px; font-size:0.6rem; color:#ff4d4f; background:#0a0f1a; padding:0 6px; font-weight:800; z-index:1;">JARIMA (UZS)</label>
+                    <input type="number" id="anaEditFine" value="0" placeholder="0"
+                        style="width:100%; padding:18px; background:rgba(255,77,79,0.03); border:1px solid rgba(255,77,79,0.15); border-radius:16px; color:#ff4d4f; font-size:1.1rem; font-weight:700; outline:none; font-family:'Outfit';"
+                        onfocus="this.style.borderColor='#ff4d4f'" onblur="this.style.borderColor='rgba(255,77,79,0.15)'">
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-top:30px;">
+                <button onclick="document.getElementById('analyticsEditOverlay').remove()"
+                    style="padding:18px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:18px; color:#fff; font-weight:800; cursor:pointer; font-size:0.85rem;">
+                    BEKOR QILISH
+                </button>
+                <button id="anaEditSaveBtn" onclick="window.saveAnalyticsEdit('${emp.id}')"
+                    style="padding:18px; background:linear-gradient(135deg, #a55eea, #7c3aed); border:none; border-radius:18px; color:#fff; font-weight:900; cursor:pointer; font-size:0.85rem; box-shadow:0 10px 25px rgba(165,94,234,0.3); transition:0.3s;"
+                    onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+                    SAQLASH
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+    lucide.createIcons();
+    gsap.fromTo("#anaEditModal", { scale: 0.9, opacity: 0, y: 30 }, { scale: 1, opacity: 1, y: 0, duration: 0.4, ease: "back.out(1.5)" });
+};
+
+window.saveAnalyticsEdit = async function (id) {
+    const btn = document.getElementById('anaEditSaveBtn');
+    const salary = document.getElementById('anaEditSalary').value.trim();
+    const bonus = parseInt(document.getElementById('anaEditBonus').value) || 0;
+    const fine = parseInt(document.getElementById('anaEditFine').value) || 0;
+
+    if (!salary) { alert("Oylik stavkani kiriting!"); return; }
+
+    btn.textContent = 'SAQLANMOQDA...';
+    btn.disabled = true;
+
+    // 1. Oylikni yangilash
+    const { error: salaryErr } = await supabase.from('employees')
+        .update({ salary_info: salary })
+        .eq('id', id);
+
+    if (salaryErr) {
+        alert("Oylik saqlashda xato: " + salaryErr.message);
+        btn.textContent = 'SAQLASH';
+        btn.disabled = false;
+        return;
+    }
+
+    // 2. Premya/Jarima logga yozish
+    if (bonus > 0 || fine > 0) {
+        const emp = employeesData.find(e => e.id === id);
+        if (bonus > 0) logActivity('admin', 'Premya berildi', `${emp?.full_name}: +${bonus.toLocaleString()} UZS`);
+        if (fine > 0) logActivity('admin', 'Jarima qo\'yildi', `${emp?.full_name}: -${fine.toLocaleString()} UZS`);
+    }
+
+    // 3. Local xotirada saqlash (analitika uchun)
+    const editData = JSON.parse(localStorage.getItem('analytics_edits') || '{}');
+    editData[id] = { salary: parseInt(salary), bonus, fine, updatedAt: new Date().toISOString() };
+    localStorage.setItem('analytics_edits', JSON.stringify(editData));
+
+    btn.textContent = 'SAQLANDI! ✅';
+    btn.style.background = '#00ff88';
+    btn.style.color = '#000';
+
+    // Refresh
+    await loadInitialData();
+    setTimeout(() => {
+        document.getElementById('analyticsEditOverlay')?.remove();
+        renderAnalyticsBoard();
+    }, 1000);
+};
+
 
 // 🍽️ LUXURY KITCHEN CALENDAR ENGINE
 let kitchenCurrentDate = new Date();
