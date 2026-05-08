@@ -453,6 +453,7 @@ async function saveWorker() {
     }
 
     if (res && !res.error) {
+        logActivity('admin', currentEditId ? 'Xodim tahrirlandi' : 'Yangi xodim qo\'shildi', fullName);
         btn.textContent = 'MUVAFFAQIYATLI!';
         btn.style.background = '#00ff88';
         setTimeout(async () => {
@@ -839,7 +840,9 @@ function generateWordReport(rows, totalEarned, bonuses, fines, days) {
 
 function handleDelete() {
     if (confirm(`${currentEmp.full_name}ni o'chirishni tasdiqlaysizmi?`)) {
+        const name = currentEmp.full_name;
         supabase.from('employees').delete().eq('id', currentEmp.id).then(() => {
+            logActivity('admin', 'Xodim o\'chirildi', name);
             closeDetailModal();
             loadInitialData();
         });
@@ -1039,6 +1042,7 @@ window.saveKitchenData = function () {
     };
 
     localStorage.setItem('kitchen_' + dateKey, JSON.stringify(data));
+    logActivity('kitchen', 'Oshxona hisoboti saqlandi', `${dateKey}: ${count} kishi`);
 
     document.getElementById('kitchenSaveStatus').textContent = "SAQLANDI! ✅";
     document.getElementById('kitchenSaveStatus').style.color = "var(--accent)";
@@ -1247,32 +1251,126 @@ window.clearAllKitchenData = function () {
     window.closeKitchenReportModal();
 };
 
-async function loadHistoryData() {
-    const tbody = document.getElementById('historyTableBody');
-    if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px; color:var(--accent);">⏳ Yuklanmoqda...</td></tr>';
+let historyFilter = 'all';
+let historyData = [];
 
-    const { data: logs, error } = await supabase.from('attendance')
+window.logActivity = function (type, action, target) {
+    const logs = JSON.parse(localStorage.getItem('romix_system_logs') || '[]');
+    logs.unshift({
+        id: Date.now(),
+        type: type, // 'admin', 'kitchen', 'attendance'
+        action: action,
+        target: target,
+        time: new Date().toISOString()
+    });
+    // Keep last 100 logs
+    localStorage.setItem('romix_system_logs', JSON.stringify(logs.slice(0, 100)));
+};
+
+async function loadHistoryData() {
+    const list = document.getElementById('historyList');
+    if (!list) return;
+    list.innerHTML = '<div style="text-align:center; padding:100px;"><div class="loader" style="margin:0 auto;"></div></div>';
+
+    // 1. Load Attendance (Supabase)
+    const { data: attLogs } = await supabase.from('attendance')
         .select(`*, employees(full_name)`)
         .order('check_in', { ascending: false })
         .limit(50);
 
-    if (error || !logs) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#ff4d4f;">❌ Xato: ${error?.message || 'Yuklab bo\'lmadi'}</td></tr>`;
+    // 2. Load Kitchen (LocalStorage)
+    const kitchenLogs = [];
+    Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('kitchen_')) {
+            const data = JSON.parse(localStorage.getItem(key));
+            kitchenLogs.push({
+                type: 'kitchen',
+                action: "Oshxona hisoboti saqlandi",
+                target: `${data.date}: ${data.count} kishi, ${data.total || (data.count * data.price)} UZS`,
+                time: data.savedAt || data.date + "T12:00:00Z"
+            });
+        }
+    });
+
+    // 3. Load Admin Logs (LocalStorage)
+    const adminLogs = JSON.parse(localStorage.getItem('romix_system_logs') || '[]');
+
+    // Combine & Sort
+    historyData = [
+        ...(attLogs || []).map(l => ({
+            type: 'attendance',
+            action: l.status === 'ISHDA' ? 'Kash keldi' : 'Ishdan ketti',
+            target: l.employees?.full_name || 'Noma\'lum xodim',
+            time: l.check_in || l.check_out || l.date + "T08:00:00Z"
+        })),
+        ...kitchenLogs,
+        ...adminLogs
+    ];
+
+    historyData.sort((a, b) => new Date(b.time) - new Date(a.time));
+
+    // Summary Stats
+    document.getElementById('hist_total_count').textContent = historyData.length;
+    document.getElementById('hist_today_att').textContent = (attLogs || []).filter(a => a.date === new Date().toISOString().split('T')[0]).length;
+    document.getElementById('hist_kitchen_count').textContent = kitchenLogs.length;
+    document.getElementById('hist_admin_count').textContent = adminLogs.length;
+
+    renderHistory();
+}
+
+window.filterHistory = function (filter) {
+    historyFilter = filter;
+    document.querySelectorAll('.hist-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('histTab_' + filter).classList.add('active');
+    renderHistory();
+};
+
+window.searchHistory = function (val) {
+    const q = val.toLowerCase();
+    const filtered = historyData.filter(h =>
+        h.action.toLowerCase().includes(q) ||
+        h.target.toLowerCase().includes(q)
+    );
+    renderHistory(filtered);
+};
+
+function renderHistory(customData = null) {
+    const list = document.getElementById('historyList');
+    const data = customData || (historyFilter === 'all' ? historyData : historyData.filter(h => h.type === historyFilter));
+
+    if (data.length === 0) {
+        list.innerHTML = '<div style="text-align:center; padding:100px; color:var(--text-s);">Ma\'lumotlar topilmadi.</div>';
         return;
     }
 
-    tbody.innerHTML = logs.map(l => {
-        const time = l.check_in ? new Date(l.check_in).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+    list.innerHTML = data.map(h => {
+        let icon = 'clock';
+        let color = '#00ff88';
+        let bg = 'rgba(0,255,136,0.1)';
+
+        if (h.type === 'kitchen') { icon = 'utensils'; color = '#ffa940'; bg = 'rgba(255,169,64,0.1)'; }
+        if (h.type === 'admin') { icon = 'shield'; color = '#ff4d4f'; bg = 'rgba(255,77,79,0.1)'; }
+        if (h.action.includes('ketti')) { icon = 'log-out'; color = '#ff4d4f'; bg = 'rgba(255,77,79,0.1)'; }
+
         return `
-            <tr>
-                <td>${l.date}</td>
-                <td style="font-weight:800;">${l.employees?.full_name || 'Noma\'lum'}</td>
-                <td><span class="t-status-pill" style="background:rgba(0,255,136,0.1); color:var(--accent);">${l.status}</span></td>
-                <td style="font-family:'Outfit'; font-weight:900;">${time}</td>
-            </tr>
+            <div class="history-row">
+                <div class="hist-icon" style="background:${bg}; color:${color};">
+                    <i data-lucide="${icon}" style="width:20px;"></i>
+                </div>
+                <div>
+                    <h4 style="font-size:0.9rem; font-weight:800; color:#fff;">${h.target}</h4>
+                    <p style="font-size:0.7rem; color:var(--text-s); margin-top:4px;">${h.action.toUpperCase()}</p>
+                </div>
+                <div style="font-size:0.75rem; color:#fff; font-weight:700;">
+                    ${new Date(h.time).toLocaleDateString()}
+                </div>
+                <div style="font-family:'Outfit'; font-weight:900; color:var(--accent); text-align:right;">
+                    ${new Date(h.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
+            </div>
         `;
     }).join('');
+    lucide.createIcons();
 }
 
 function startScanner() {
