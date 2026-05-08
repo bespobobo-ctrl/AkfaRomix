@@ -1577,7 +1577,7 @@
                 style="padding:40px; background:rgba(255,255,255,0.01); min-height:700px; position:relative;">
 
                 <!-- TOP FILTER BAR -->
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                     <div style="display:flex; gap:10px;">
                         <button onclick="window.filterHistory('all')" id="histTab_all"
                             class="hist-tab active">HAMMASI</button>
@@ -1586,7 +1586,7 @@
                         <button onclick="window.filterHistory('kitchen')" id="histTab_kitchen"
                             class="hist-tab">OSHXONA</button>
                         <button onclick="window.filterHistory('admin')" id="histTab_admin" class="hist-tab">BOSHQARUV
-                            (CRUD)</button>
+                            (HR)</button>
                     </div>
 
                     <!-- Date Filter Bar -->
@@ -1595,15 +1595,24 @@
                         <div style="display:flex; align-items:center; gap:8px;">
                             <i data-lucide="calendar" style="width:14px; color:var(--accent);"></i>
                             <input type="date" id="histDateFrom" onchange="window.loadHistoryData()"
-                                style="background:none; border:none; color:#fff; font-size:0.7rem; outline:none;">
+                                style="background:none; border:none; color:#fff; font-size:0.75rem; outline:none; font-family:'Outfit';">
                             <span style="color:var(--text-s); font-size:0.7rem;">—</span>
                             <input type="date" id="histDateTo" onchange="window.loadHistoryData()"
-                                style="background:none; border:none; color:#fff; font-size:0.7rem; outline:none;">
+                                style="background:none; border:none; color:#fff; font-size:0.75rem; outline:none; font-family:'Outfit';">
                         </div>
-                        <div style="width:1px; height:15px; background:rgba(255,255,255,0.1);"></div>
+                        <div style="width:1px; height:20px; background:rgba(255,255,255,0.1);"></div>
                         <button onclick="window.clearHistDates()"
-                            style="background:none; border:none; color:var(--text-s); cursor:pointer; font-size:0.6rem; font-weight:800;">TOZALASH</button>
+                            style="background:none; border:none; color:var(--accent); cursor:pointer; font-size:0.65rem; font-weight:900; letter-spacing:1px;">TOZALASH</button>
                     </div>
+                </div>
+
+                <!-- QUICK PERIODS -->
+                <div
+                    style="display:flex; gap:10px; margin-bottom:30px; background:rgba(255,255,255,0.02); padding:10px; border-radius:15px; width:fit-content; border:1px solid rgba(255,255,255,0.05);">
+                    <button onclick="window.setHistPeriod('today')" class="period-btn">BUGUNLIK</button>
+                    <button onclick="window.setHistPeriod('week')" class="period-btn">HAFTALIK</button>
+                    <button onclick="window.setHistPeriod('month')" class="period-btn">OYLIK</button>
+                    <button onclick="window.setHistPeriod('year')" class="period-btn">YILLIK</button>
                 </div>
 
                 <!-- SUB-TABS (Only for Attendance) -->

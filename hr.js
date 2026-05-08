@@ -533,6 +533,7 @@ function handlePremya() {
         input: true,
         confirmText: "PREMYANI TASDIQLASH",
         onConfirm: (val) => {
+            logActivity('admin', 'Premya berildi', `${currentEmp.full_name}: ${val} UZS`);
             alert(`${val} UZS premya muvaffaqiyatli qo'shildi!`);
             closeActionModal();
         }
@@ -541,6 +542,7 @@ function handlePremya() {
 
 function handleOylik() {
     if (!currentEmp) return;
+    logActivity('admin', 'Maosh ko\'rildi', currentEmp.full_name);
     showActionModal({
         title: "OYLIK MA'LUMOT",
         desc: `${currentEmp.full_name}ning joriy oylik maoshi:`,
@@ -1253,7 +1255,30 @@ window.clearAllKitchenData = function () {
 
 let historyFilter = 'all';
 let historyAttSub = 'all';
-let historyData = [];
+window.setHistPeriod = function (period) {
+    const from = document.getElementById('histDateFrom');
+    const to = document.getElementById('histDateTo');
+    const now = new Date();
+    let start = new Date();
+
+    if (period === 'today') {
+        start = now;
+    } else if (period === 'week') {
+        start.setDate(now.getDate() - 7);
+    } else if (period === 'month') {
+        start.setMonth(now.getMonth() - 1);
+    } else if (period === 'year') {
+        start.setFullYear(now.getFullYear() - 1);
+    }
+
+    from.value = start.toISOString().split('T')[0];
+    to.value = now.toISOString().split('T')[0];
+
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+
+    window.loadHistoryData();
+};
 
 window.clearHistDates = function () {
     document.getElementById('histDateFrom').value = '';
@@ -1486,12 +1511,14 @@ window.downloadBadge = async function () {
         link.download = `ROMIX_Badge_${currentEmp ? currentEmp.full_name : 'Staff'}.png`;
         link.href = canvas.toDataURL('image/png', 1.0);
         link.click();
+        logActivity('admin', 'Bejik yuklab olindi', currentEmp?.full_name);
     } catch (e) {
         alert("Xatolik: Rasm yuklab bo'lmadi.");
     }
 };
 
 window.printBadgeReal = function () {
+    logActivity('admin', 'Bejik chop etildi', currentEmp?.full_name);
     window.print();
 };
 
@@ -1557,5 +1584,39 @@ window.demoExportReport = async function (format) {
         generateExcelReport(demoRows, totalEarned, totalBonuses, totalFines, demoRows.length - 1);
     } else if (format === 'word') {
         generateWordReport(demoRows, totalEarned, totalBonuses, totalFines, demoRows.length - 1);
+    }
+};
+
+window.generateKitchenDemo = function () {
+    logActivity('kitchen', 'Demo ma\'lumotlar yaratildi', '1 oylik namuna');
+    const today = new Date();
+    for (let i = 0; i < 30; i++) {
+        const d = new Date();
+        d.setDate(today.getDate() - i);
+        const dateKey = d.toISOString().split('T')[0];
+        const count = Math.floor(Math.random() * 20) + 30;
+        const price = 25000;
+        const data = {
+            date: dateKey,
+            count: count,
+            price: price,
+            total: count * price,
+            status: Math.random() > 0.3 ? 'paid' : 'debt',
+            savedAt: new Date().toISOString()
+        };
+        localStorage.setItem('kitchen_' + dateKey, JSON.stringify(data));
+    }
+    alert("30 kunlik demo ma'lumotlar yaratildi!");
+    window.renderKitchenCalendar();
+};
+
+window.clearAllKitchenData = function () {
+    if (confirm("DIQQAT: Barcha saqlangan oshxona ma'lumotlarini o'chirishni tasdiqlaysizmi?")) {
+        logActivity('kitchen', 'Barcha ma\'lumotlar tozalandi', 'Tizimni tozalash');
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('kitchen_')) localStorage.removeItem(key);
+        });
+        alert("Barcha oshxona ma'lumotlari o'chirildi.");
+        window.renderKitchenCalendar();
     }
 };
