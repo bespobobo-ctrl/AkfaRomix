@@ -709,7 +709,7 @@ async function processAttendance(emp, type) {
         payload.status = 'KETGAN';
     }
 
-    const { error } = await supabase.from('attendance').upsert(payload, { onConflict: 'id,date' });
+    const { error } = await supabase.from('attendance').upsert(payload);
 
     if (!error) {
         closeActionModal();
