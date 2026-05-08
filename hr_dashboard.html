@@ -14,6 +14,11 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
+    <!-- PDF & Excel Core Engines -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
     <style>
         /* ═══════════════════════════════════════════
            AKFA ROMIX — NIXTIO ELITE DESIGN SYSTEM 
@@ -1442,6 +1447,147 @@
             opacity: 1 !important;
         }
     </style>
+    <!-- 📊 PREMIUM REPORT SELECTION MODAL -->
+    <div class="modal-blur" id="reportSelectionModal"
+        style="z-index:9000; display:none; align-items:center; justify-content:center;">
+        <div class="modal-content"
+            style="max-width:600px; width:95%; background:rgba(7,11,18,0.98); padding:40px; border-radius:40px; border:1px solid rgba(255,255,255,0.1); backdrop-filter:blur(50px); box-shadow:0 100px 200px rgba(0,0,0,0.8);">
+
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:35px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:20px;">
+                <div>
+                    <h2 style="font-family:'Outfit'; font-size:1.6rem; font-weight:900; letter-spacing:-0.5px;">HISOBOT
+                        <span style="color:var(--accent)">PARAMETRLARI</span></h2>
+                    <p style="font-size:0.75rem; color:var(--text-s); margin-top:5px;">Hujjat turini va vaqt oralig'ini
+                        tanlang</p>
+                </div>
+                <button onclick="document.getElementById('reportSelectionModal').style.display='none'"
+                    style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:#fff; width:40px; height:40px; border-radius:12px; cursor:pointer;">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+
+            <!-- Step 1: Period Selection -->
+            <div style="margin-bottom:30px;">
+                <label
+                    style="font-size:0.7rem; font-weight:800; color:var(--accent); letter-spacing:2px; display:block; margin-bottom:15px; text-transform:uppercase;">1.
+                    VAQT ORALIG'I</label>
+                <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:12px;">
+                    <div class="report-option" id="period-day" onclick="window.selectPeriod('day')">
+                        <i data-lucide="calendar"></i>
+                        <span>Kunlik</span>
+                    </div>
+                    <div class="report-option" id="period-week" onclick="window.selectPeriod('week')">
+                        <i data-lucide="calendar-days"></i>
+                        <span>Haftalik</span>
+                    </div>
+                    <div class="report-option active" id="period-month" onclick="window.selectPeriod('month')">
+                        <i data-lucide="calendar-range"></i>
+                        <span>Oylik</span>
+                    </div>
+                    <div class="report-option" id="period-year" onclick="window.selectPeriod('year')">
+                        <i data-lucide="calendar-check-2"></i>
+                        <span>Yillik</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Format Selection -->
+            <div style="margin-bottom:20px;">
+                <label
+                    style="font-size:0.7rem; font-weight:800; color:var(--accent-sec); letter-spacing:2px; display:block; margin-bottom:15px; text-transform:uppercase;">2.
+                    HUJJAT FORMATI</label>
+                <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:12px;">
+                    <button class="format-card" onclick="window.startExport('pdf')">
+                        <i data-lucide="file-text" style="color:#ff4d4f"></i>
+                        <b>Adobe PDF</b>
+                    </button>
+                    <button class="format-card" onclick="window.startExport('excel')">
+                        <i data-lucide="sheet" style="color:#00ff88"></i>
+                        <b>MS Excel</b>
+                    </button>
+                    <button class="format-card" onclick="window.startExport('word')">
+                        <i data-lucide="file-signature" style="color:#00d2ff"></i>
+                        <b>MS Word</b>
+                    </button>
+                </div>
+            </div>
+
+            <style>
+                .report-option {
+                    background: rgba(255, 255, 255, 0.02);
+                    border: 1px solid rgba(255, 255, 255, 0.05);
+                    padding: 20px 10px;
+                    border-radius: 20px;
+                    text-align: center;
+                    cursor: pointer;
+                    transition: 0.3s;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 10px;
+                }
+
+                .report-option i {
+                    color: var(--text-s);
+                    width: 24px;
+                    height: 24px;
+                }
+
+                .report-option span {
+                    font-size: 0.75rem;
+                    font-weight: 700;
+                    color: var(--text-p);
+                }
+
+                .report-option:hover {
+                    background: rgba(255, 255, 255, 0.05);
+                    border-color: var(--accent);
+                }
+
+                .report-option.active {
+                    background: rgba(0, 255, 136, 0.1);
+                    border-color: var(--accent);
+                }
+
+                .report-option.active i {
+                    color: var(--accent);
+                }
+
+                .format-card {
+                    background: rgba(255, 255, 255, 0.03);
+                    border: 1px solid rgba(255, 255, 255, 0.06);
+                    padding: 25px 15px;
+                    border-radius: 24px;
+                    text-align: center;
+                    cursor: pointer;
+                    transition: 0.4s;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 12px;
+                    color: #fff;
+                }
+
+                .format-card i {
+                    width: 32px !important;
+                    height: 32px !important;
+                }
+
+                .format-card b {
+                    font-size: 0.85rem;
+                    font-weight: 800;
+                }
+
+                .format-card:hover {
+                    transform: translateY(-5px);
+                    background: rgba(255, 255, 255, 0.08);
+                    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+                    border-color: var(--accent-sec);
+                }
+            </style>
+        </div>
+    </div>
 </body>
 
 </html>

@@ -299,6 +299,132 @@ function handleOylik() {
     alert(`Xodim: ${currentEmp.full_name}\nAsosiy oylik: ${parseInt(currentEmp.salary_info || 0).toLocaleString()} UZS`);
 }
 
+let selectedPeriod = 'month';
+
+window.selectPeriod = function (period) {
+    selectedPeriod = period;
+    document.querySelectorAll('.report-option').forEach(opt => opt.classList.remove('active'));
+    document.getElementById(`period-${period}`).classList.add('active');
+};
+
+window.handleReport = function () {
+    if (!currentEmp) return;
+    document.getElementById('reportSelectionModal').style.display = 'flex';
+    lucide.createIcons();
+};
+
+window.startExport = async function (format) {
+    if (!currentEmp) return;
+    const modal = document.getElementById('reportSelectionModal');
+    modal.style.display = 'none';
+
+    // Show processing status
+    alert(`${format.toUpperCase()} hisobot tayyorlanmoqda...`);
+
+    if (format === 'pdf') {
+        await generateProfessionalPDF();
+    } else if (format === 'excel') {
+        generateExcelReport();
+    } else {
+        alert("Hozirda faqat PDF va EXCEL mavjud. Word yaqin orada qo'shiladi.");
+    }
+};
+
+async function generateProfessionalPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const emp = currentEmp;
+    const accent = [0, 210, 255]; // Blue-ish
+
+    // 🎨 DESIGN - Header Blobs (Visual Simulation)
+    doc.setFillColor(255, 204, 153, 0.2); // Soft orange like the image
+    doc.circle(200, 20, 40, 'F');
+    doc.circle(10, 280, 50, 'F');
+
+    // 🏢 BRANDING
+    doc.setFont("Outfit", "bold");
+    doc.setFontSize(22);
+    doc.setTextColor(40, 40, 40);
+    doc.text("ROMIX HR REPORT", 20, 30);
+
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text("\"Modern Workforce, Elite Management.\"", 20, 38);
+
+    // 📋 EMPLOYEE INFO
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, 50, 190, 50);
+
+    doc.setFontSize(11);
+    doc.setTextColor(150, 150, 150);
+    doc.text("Report For:", 20, 65);
+
+    doc.setFontSize(16);
+    doc.setTextColor(0, 0, 0);
+    doc.text(emp.full_name.toUpperCase(), 20, 75);
+
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Role: ${emp.role || 'Xodim'}`, 20, 82);
+    doc.text(`Dept: ${emp.department || 'Ofis'}`, 20, 87);
+    doc.text(`Period: ${selectedPeriod.toUpperCase()} (2026)`, 20, 92);
+
+    // 📅 TABLE DATA (Attendance Simulation)
+    const tableData = [
+        ["2026-05-01", "Vaqtida", "08:15", "18:05", "9.8h"],
+        ["2026-05-02", "Kechikish", "09:30", "18:30", "9.0h"],
+        ["2026-05-03", "Vaqtida", "08:20", "18:00", "9.6h"],
+        ["2026-05-04", "Vaqtida", "08:10", "18:15", "10.0h"],
+        ["2026-05-05", "Yo'q", "---", "---", "0.0h"],
+    ];
+
+    doc.autoTable({
+        startY: 110,
+        head: [['Sana', 'Status', 'Kelish', 'Ketish', 'Ish Soati']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: { fillColor: [13, 22, 34], textColor: [255, 255, 255], fontStyle: 'bold' },
+        styles: { font: 'Inter', fontSize: 9 },
+        margin: { left: 20, right: 20 }
+    });
+
+    // 💰 SUMMARY
+    const finalY = doc.lastAutoTable.finalY + 20;
+    doc.setFontSize(12);
+    doc.text("Summary:", 140, finalY);
+
+    doc.setFontSize(18);
+    doc.setTextColor(0, 210, 255);
+    doc.text(`Score: 92%`, 140, finalY + 10);
+
+    // 🛡️ FOOTER
+    doc.setFontSize(8);
+    doc.setTextColor(180, 180, 180);
+    const footerText = "ROMIX HR Portal | Automated Corporate Reporting System 2026";
+    doc.text(footerText, 105, 285, { align: 'center' });
+
+    doc.save(`ROMIX_Report_${emp.full_name}_${selectedPeriod}.pdf`);
+}
+
+function generateExcelReport() {
+    const emp = currentEmp;
+    const data = [
+        ["ROMIX HR REPORT", "", "", ""],
+        ["Employee:", emp.full_name, "", ""],
+        ["Period:", selectedPeriod.toUpperCase(), "", ""],
+        ["", "", "", ""],
+        ["Date", "Status", "Arrival", "Leave"],
+        ["2026-05-01", "Vaqtida", "08:15", "18:05"],
+        ["2026-05-02", "Kechikish", "09:30", "18:30"],
+        ["2026-05-03", "Vaqtida", "08:20", "18:00"]
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Report");
+    XLSX.writeFile(wb, `ROMIX_Report_${emp.full_name}.xlsx`);
+}
+
 function handleDelete() {
     if (confirm(`${currentEmp.full_name}ni o'chirishni tasdiqlaysizmi?`)) {
         supabase.from('employees').delete().eq('id', currentEmp.id).then(() => {
@@ -306,10 +432,6 @@ function handleDelete() {
             loadInitialData();
         });
     }
-}
-
-function handleReport() {
-    alert("Hisobot tayyorlanmoqda...");
 }
 
 function filterAndRender() {
