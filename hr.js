@@ -1,12 +1,12 @@
+// 💎 ROMIX HR - Core Engine v4.1 (Ultra Stable)
 import { supabase } from './supabase.js';
 
 let employeesData = [];
 let todayAtt = [];
 let currentEmp = null;
-let currentEditId = null; // Edit mode tracker
+let currentEditId = null;
 let activeDept = 'all';
 let tempPhotoData = null;
-let activityChart = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     // 🛡️ AUTH GUARD
@@ -16,533 +16,197 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Header Info
+    // Header Branding
     const nameEl = document.getElementById('userNameLabel');
     const initEl = document.getElementById('userInitials');
     if (nameEl) nameEl.textContent = user.username || 'HR Admin';
-    if (initEl) initEl.textContent = (user.username || 'A')[0].toUpperCase();
+    if (initEl) initEl.textContent = (user.username || 'R')[0].toUpperCase();
+
+    // Global Functions for HTML
+    window.handleEdit = handleEdit;
+    window.handleDelete = handleDelete;
+    window.handlePremya = handlePremya;
+    window.handleOylik = handleOylik;
+    window.handleReport = handleReport;
+    window.prepareBadge = prepareBadge;
+    window.closeDetailModal = closeDetailModal;
+    window.closeBadgeModal = closeBadgeModal;
 
     // Logout
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
+        logoutBtn.onclick = () => {
             localStorage.removeItem('currentUser');
             window.location.href = '/';
-        });
-    }
-
-    // 🍱 MODAL CONTROL (GSAP NIxtio Style)
-    const modal = document.getElementById('addWorkerModalOverlay');
-    const addBtn = document.getElementById('addWorkerBtn');
-    if (addBtn && modal) {
-        addBtn.addEventListener('click', () => {
-            currentEditId = null; // Add mode
-            document.getElementById('modalTitle').textContent = "YANGI XODIM";
-            document.getElementById('saveWorkerBtn').textContent = "SAQLASH";
-            clearModal();
-            modal.style.display = 'flex';
-            gsap.fromTo(".modal-content",
-                { scale: 0.8, opacity: 0, y: 40 },
-                { scale: 1, opacity: 1, y: 0, duration: 0.6, ease: "power4.out" }
-            );
-        });
-    }
-
-    const closeAddBtn = document.getElementById('closeAddWorkerBtn');
-    if (closeAddBtn && modal) {
-        closeAddBtn.addEventListener('click', () => {
-            gsap.to(".modal-content", {
-                scale: 0.9, opacity: 0, y: 20, duration: 0.3,
-                onComplete: () => modal.style.display = 'none'
-            });
-        });
-    }
-
-    // 🎫 BADGE MODAL
-    const closeBadgeBtn = document.getElementById('closeBadgeBtn');
-    if (closeBadgeBtn) {
-        closeBadgeBtn.onclick = () => {
-            gsap.to(".id-badge", {
-                scale: 0.8, opacity: 0, duration: 0.3, stagger: 0.1, onComplete: () => {
-                    document.getElementById('badgeModalOverlay').style.display = 'none';
-                }
-            });
         };
     }
 
-    // 📸 ADVANCED PHOTO HANDLER (Nixtio Image Engine)
-    const photoInput = document.getElementById('empPhotoFile');
-    if (photoInput) {
-        photoInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            // Validate format
-            const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
-            if (!validTypes.includes(file.type)) {
-                alert("Iltimos, faqat JPG yoki PNG formatidagi rasm yuklang!");
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const img = new Image();
-                img.onload = () => {
-                    // Create virtual canvas for resizing
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    const size = 300; // Perfect for badges
-                    canvas.width = size;
-                    canvas.height = size;
-
-                    // Square Crop Logic
-                    const min = Math.min(img.width, img.height);
-                    const sx = (img.width - min) / 2;
-                    const sy = (img.height - min) / 2;
-
-                    ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
-
-                    // Optimize quality
-                    tempPhotoData = canvas.toDataURL('image/jpeg', 0.85);
-
-                    const preview = document.getElementById('modalPhotoPreview');
-                    if (preview) {
-                        preview.src = tempPhotoData;
-                        preview.style.display = 'block';
-                        gsap.from(preview, { scale: 0.5, opacity: 0, duration: 0.5, ease: "back.out(1.7)" });
-                        document.getElementById('plusIcon').style.display = 'none';
-                    }
-                };
-                img.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
-        });
+    // Modal Control
+    const addBtn = document.getElementById('addWorkerBtn');
+    if (addBtn) {
+        addBtn.onclick = () => {
+            currentEditId = null;
+            document.getElementById('modalTitle').textContent = "YANGI XODIM";
+            document.getElementById('saveWorkerBtn').textContent = "SAQLASH";
+            clearModal();
+            document.getElementById('addWorkerModalOverlay').style.display = 'flex';
+        };
     }
 
-    document.getElementById('saveWorkerBtn').addEventListener('click', saveWorker);
+    const closeAddBtn = document.getElementById('closeAddWorkerBtn');
+    if (closeAddBtn) {
+        closeAddBtn.onclick = () => {
+            document.getElementById('addWorkerModalOverlay').style.display = 'none';
+        }
+    }
 
-    // 🔍 SEARCH SYSTEM
-    document.getElementById('hrSearchInput').addEventListener('input', (e) => {
-        const val = e.target.value.toLowerCase();
-        const filtered = employeesData.filter(emp =>
-            emp.full_name.toLowerCase().includes(val) ||
-            (emp.role && emp.role.toLowerCase().includes(val))
-        );
-        renderStaffList(filtered);
-    });
+    // photo logic
+    const photoInput = document.getElementById('empPhotoFile');
+    if (photoInput) {
+        photoInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                tempPhotoData = event.target.result;
+                const preview = document.getElementById('modalPhotoPreview');
+                preview.src = tempPhotoData;
+                preview.style.display = 'block';
+                document.getElementById('plusIcon').style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        };
+    }
 
-    // 💊 DEPARTMENT TABS
+    document.getElementById('saveWorkerBtn').onclick = saveWorker;
+
+    // Search
+    const searchInput = document.getElementById('hrSearchInput');
+    if (searchInput) {
+        searchInput.oninput = (e) => {
+            const val = e.target.value.toLowerCase();
+            const filtered = employeesData.filter(emp => emp.full_name.toLowerCase().includes(val));
+            renderStaffList(filtered);
+        };
+    }
+
+    // Pill Filtering
     document.querySelectorAll('.pill').forEach(pill => {
-        pill.addEventListener('click', () => {
+        pill.onclick = () => {
             document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
             pill.classList.add('active');
             activeDept = pill.dataset.dept;
             filterAndRender();
-        });
+        };
     });
 
-    // 🏗️ DATA INITIALIZATION
     await loadInitialData();
-    initHomeDashboard();
-
-    // 🔄 PROFESSIONAL SYNC HEARTBEAT (Every 60s)
-    setInterval(loadInitialData, 60000);
 });
-
-function initHomeDashboard() {
-    const homeCtx = document.getElementById('homeTotalChart');
-    if (!homeCtx) return;
-    new Chart(homeCtx, {
-        type: 'line',
-        data: {
-            labels: ['Yan', 'Feb', 'Mar', 'Apr', 'May', 'Iyun'],
-            datasets: [{
-                label: 'Oylik Fond O\'sishi',
-                data: [45, 52, 48, 70, 75, 85],
-                borderColor: '#00ff88',
-                backgroundColor: 'rgba(0, 255, 136, 0.1)',
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: { y: { display: false }, x: { display: false } }
-        }
-    });
-}
 
 async function loadInitialData() {
     const todayStr = new Date().toISOString().split('T')[0];
-    const tableBody = document.getElementById('employeeTableBody');
-
-    // Skeleton placeholder for Table
-    if (tableBody && employeesData.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:40px;"><div class="skeleton" style="height:200px;"></div></td></tr>`;
-    }
-
-    const { data: staff, error: e1 } = await supabase
-        .from('employees').select('*').order('created_at', { ascending: false });
-
-    const { data: att, error: e2 } = await supabase
-        .from('attendance').select('*').eq('date', todayStr);
-
-    if (!e1) employeesData = staff || [];
-    if (!e2) todayAtt = att || [];
-
-    updateGlobalStats();
+    const { data: staff } = await supabase.from('employees').select('*').order('created_at', { ascending: false });
+    const { data: att } = await supabase.from('attendance').select('*').eq('date', todayStr);
+    employeesData = staff || [];
+    todayAtt = att || [];
     renderStaffList(employeesData);
-}
-
-function filterAndRender() {
-    let filtered = employeesData;
-    if (activeDept !== 'all') {
-        filtered = employeesData.filter(e => {
-            const d = (e.department || '').toLowerCase();
-            const r = (e.role || '').toLowerCase();
-            const target = activeDept.toLowerCase();
-
-            if (target === 'ustalar') {
-                return d.includes('usta') || d.includes('ishlab') || r.includes('usta');
-            } else if (target === 'ombor') {
-                return d.includes('ombor') || r.includes('ombor');
-            } else if (target === 'ofis') {
-                return d.includes('ofis') || r.includes('manager');
-            }
-            return d === target;
-        });
-    }
-    renderStaffList(filtered);
+    updateGlobalStats();
 }
 
 function updateGlobalStats() {
-    const total = employeesData.length;
-    animateCounter('totalEmployeesCount', total);
-
-    const present = todayAtt.filter(a => a.status === 'Vaqtida keldi').length;
-    const late = todayAtt.filter(a => a.status === 'Kechikib keldi').length;
-
-    animateCounter('todayArrivedCount', present + late);
-    animateCounter('todayLateCount', late);
-
+    document.getElementById('totalEmployeesCount').textContent = employeesData.length;
+    document.getElementById('todayArrivedCount').textContent = todayAtt.length;
     let totalPayroll = 0;
-    employeesData.forEach(e => {
-        const sal = parseInt(String(e.salary_info || '0').replace(/[^0-9]/g, '')) || 0;
-        totalPayroll += sal;
-    });
-    document.getElementById('payrollTotal').innerHTML = `${totalPayroll.toLocaleString()} <small style="font-size:0.7rem">UZS</small>`;
-}
-
-function animateCounter(id, target) {
-    const obj = { val: 0 };
-    const el = document.getElementById(id);
-    if (!el) return;
-    gsap.to(obj, {
-        val: target,
-        duration: 1.5,
-        ease: "power3.out",
-        onUpdate: () => { el.textContent = Math.floor(obj.val); }
-    });
+    employeesData.forEach(e => totalPayroll += parseInt(e.salary_info || 0));
+    document.getElementById('payrollTotal').innerHTML = `${totalPayroll.toLocaleString()} <small>UZS</small>`;
 }
 
 function renderStaffList(listData) {
     const tableBody = document.getElementById('employeeTableBody');
+    if (!tableBody) return;
     tableBody.innerHTML = '';
 
-    if (!listData || listData.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:50px; color:var(--text-s); font-size:0.9rem;">Hozircha xodimlar mavjud emas</td></tr>`;
-        return;
-    }
-
     listData.forEach(emp => {
-        const att = todayAtt.find(a => a.employee_id === emp.id);
-        const statusHTML = att
-            ? `<span class="t-status-pill" style="background:rgba(0,255,136,0.1); color:var(--accent);">ISHDA</span>`
-            : `<span class="t-status-pill" style="background:rgba(255,255,255,0.05); color:var(--text-s);">KELMAGAN</span>`;
-
         const tr = document.createElement('tr');
         tr.className = 'staff-row';
         tr.innerHTML = `
             <td>
                 <div class="t-user-cell">
-                    <img src="${emp.avatar_url}" class="t-avatar">
+                    <img src="${emp.avatar_url || 'https://via.placeholder.com/150'}" class="t-avatar">
                     <div>
-                        <div style="font-weight:900; font-size:0.95rem; color:#fff;">${emp.full_name}</div>
-                        <div style="font-size:0.65rem; color:var(--text-s); letter-spacing:0.5px;">ID: ${emp.id.split('-')[0].toUpperCase()}</div>
+                        <div style="font-weight:900; color:#fff;">${emp.full_name}</div>
+                        <div style="font-size:0.7rem; color:var(--text-s);">ID: ${emp.id.substring(0, 8).toUpperCase()}</div>
                     </div>
                 </div>
             </td>
-            <td style="font-size:0.85rem; font-weight:700; color:rgba(255,255,255,0.9);">${emp.role || 'HR Coordinator'}</td>
-            <td style="font-size:0.85rem; font-weight:700; color:var(--accent-sec);">${emp.department || 'Bosh Ofis'}</td>
-            <td style="font-size:0.85rem; font-weight:600; color:rgba(255,255,255,0.7); letter-spacing:0.5px;">${emp.phone || '+998 --- -- --'}</td>
-            <td>${statusHTML}</td>
-            <td style="text-align:right; padding-right:25px;">
-                <button style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; width:35px; height:35px; border-radius:10px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition:0.3s;" onmouseover="this.style.background='var(--accent)'; this.style.color='#000';">
+            <td>${emp.role || 'Xodim'}</td>
+            <td>${emp.department || 'Ofis'}</td>
+            <td>${emp.phone || '---'}</td>
+            <td><span class="t-status-pill">ISHDA</span></td>
+            <td style="text-align:right;">
+                <button class="eye-btn" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; width:35px; height:35px; border-radius:10px; cursor:pointer;" onclick="event.stopPropagation(); window.showEmployeeDetail('${emp.id}')">
                     <i data-lucide="eye" style="width:16px; height:16px;"></i>
                 </button>
             </td>
         `;
-
-        tr.onclick = () => showEmployeeDetail(emp);
+        tr.onclick = () => window.showEmployeeDetail(emp.id);
         tableBody.appendChild(tr);
     });
-
     lucide.createIcons();
-    gsap.from(".staff-row", { opacity: 0, x: -15, duration: 0.5, stagger: 0.04, ease: "power2.out" });
 }
 
-function showEmployeeDetail(emp) {
+window.showEmployeeDetail = function (id) {
+    const emp = employeesData.find(e => e.id === id);
+    if (!emp) return;
     currentEmp = emp;
-    const modal = document.getElementById('detailModalOverlay');
-    const profileView = document.getElementById('profileDetail');
 
-    modal.style.display = 'flex';
-    profileView.style.display = 'flex';
+    document.getElementById('detailModalOverlay').style.display = 'flex';
+    document.getElementById('profileDetail').style.display = 'flex';
 
-    // Populate data
     document.getElementById('dt-photo').src = emp.avatar_url;
     document.getElementById('dt-name').textContent = emp.full_name;
     document.getElementById('dt-role').textContent = emp.role || 'Xodim';
     document.getElementById('dt-phone').textContent = emp.phone || '---';
     document.getElementById('dt-dept').textContent = emp.department || 'Ofis';
-    document.getElementById('dt-experience').textContent = emp.experience || 'Yangi xodim';
+    document.getElementById('dt-experience').textContent = (emp.joined_year ? (2026 - emp.joined_year) + " yil" : "Yangi xodim");
+    document.getElementById('dt-sum').textContent = (parseInt(emp.salary_info || 0) / 1000000).toFixed(1) + 'M';
+    document.getElementById('dt-qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=ROMIX-${emp.id}`;
 
-    const salary = parseInt(String(emp.salary_info || '0').replace(/[^0-9]/g, '')) || 0;
-    document.getElementById('dt-sum').textContent = (salary / 1000000).toFixed(1) + 'M';
-
-    document.getElementById('dt-qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(emp.id)}`;
-
-    const att = todayAtt.find(a => a.employee_id === emp.id);
-    if (att) {
-        document.getElementById('dt-arrived').textContent = att.arrival_time || '--:--';
-        document.getElementById('dt-left').textContent = att.leave_time || '--:--';
-        const offset = 597 - (597 * 85) / 100;
-        gsap.to("#timeProgress", { strokeDashoffset: offset, duration: 1.5, ease: "power2.out" });
-        document.getElementById('dt-worktime').textContent = "08:15";
-    } else {
-        document.getElementById('dt-arrived').textContent = '--:--';
-        document.getElementById('dt-left').textContent = '--:--';
-        gsap.to("#timeProgress", { strokeDashoffset: 597, duration: 1 });
-        document.getElementById('dt-worktime').textContent = "00:00";
-    }
-
-    gsap.fromTo(profileView, { scale: 0.95, opacity: 0, y: 30 }, { scale: 1, opacity: 1, y: 0, duration: 0.5, ease: "power4.out" });
-
-    // Safety check for charts or other UI
+    gsap.fromTo("#profileDetail", { scale: 0.95, opacity: 0, y: 30 }, { scale: 1, opacity: 1, y: 0, duration: 0.5 });
     lucide.createIcons();
+};
+
+function closeDetailModal() {
+    document.getElementById('detailModalOverlay').style.display = 'none';
 }
 
-window.closeDetailModal = function () {
-    const modal = document.getElementById('detailModalOverlay');
-    gsap.to("#profileDetail", {
-        scale: 0.95, opacity: 0, y: 20, duration: 0.3, onComplete: () => {
-            modal.style.display = 'none';
-            currentEmp = null;
-        }
-    });
-};
-
-// 💎 LUXURY ACTION MODAL LOGIC
-window.openActionModal = function ({ title, desc, icon, showInput, inputLabel, confirmText, onConfirm }) {
-    const modal = document.getElementById('actionModalOverlay');
-    document.getElementById('actionModalTitle').textContent = title || "TASDIQLASH";
-    document.getElementById('actionModalDesc').textContent = desc || "";
-    document.getElementById('actionInputBox').style.display = showInput ? 'block' : 'none';
-    if (inputLabel) document.getElementById('actionInputLabel').textContent = inputLabel;
-
-    const iconInner = document.getElementById('actionIconInner');
-    iconInner.setAttribute('data-lucide', icon || 'check-circle');
-    lucide.createIcons();
-
-    const mainBtn = document.getElementById('actionMainBtn');
-    mainBtn.textContent = confirmText || "TASDIQLASH";
-    mainBtn.onclick = () => {
-        const val = document.getElementById('actionInput').value;
-        onConfirm(val);
-    };
-
-    modal.style.display = 'flex';
-    gsap.fromTo("#actionModalOverlay .modal-content",
-        { scale: 0.8, opacity: 0, y: 30 },
-        { scale: 1, opacity: 1, y: 0, duration: 0.5, ease: "back.out(1.7)" }
-    );
-};
-
-window.closeActionModal = function () {
-    gsap.to("#actionModalOverlay .modal-content", {
-        scale: 0.9, opacity: 0, y: 20, duration: 0.3, onComplete: () => {
-            document.getElementById('actionModalOverlay').style.display = 'none';
-            document.getElementById('actionInput').value = '';
-        }
-    });
-};
-
-window.handlePremya = () => {
-    window.openActionModal({
-        title: "PREMYA BERISH",
-        desc: `${currentEmp.full_name} uchun rag'batlantirish miqdorini kiriting.`,
-        icon: "award",
-        showInput: true,
-        inputLabel: "PREMYA MIQDORI (UZS)",
-        confirmText: "PREMYA BERISH",
-        onConfirm: (val) => {
-            if (!val) return;
-            window.closeActionModal();
-            setTimeout(() => {
-                window.openActionModal({
-                    title: "TASDIQLANDI",
-                    desc: `${currentEmp.full_name} uchun ${parseInt(val).toLocaleString()} UZS premya muvaffaqiyatli saqlandi.`,
-                    icon: "check-circle",
-                    showInput: false,
-                    confirmText: "YOPISH",
-                    onConfirm: () => window.closeActionModal()
-                });
-            }, 500);
-        }
-    });
-};
-
-window.handleOylik = () => {
-    const s = parseInt(currentEmp.salary_info || '0');
-    window.openActionModal({
-        title: "OYLIK TAHLILI",
-        desc: `Xodim: ${currentEmp.full_name}\nAsosiy: ${s.toLocaleString()} UZS | Bonus: ${(s * 0.1).toLocaleString()} UZS | Jami: ${(s * 1.1).toLocaleString()} UZS`,
-        icon: "wallet",
-        showInput: false,
-        confirmText: "TUSHUNARLI",
-        onConfirm: () => window.closeActionModal()
-    });
-};
-
-window.handleEdit = () => {
+function handleEdit() {
     if (!currentEmp) return;
-    const emp = { ...currentEmp };
+    const emp = currentEmp;
     currentEditId = emp.id;
 
-    window.closeDetailModal();
+    closeDetailModal();
 
     document.getElementById('modalTitle').textContent = "TAHRIRLASH";
     document.getElementById('saveWorkerBtn').textContent = "YANGILASH";
 
-    const parts = emp.full_name.split(' ');
+    const parts = (emp.full_name || '').split(' ');
     document.getElementById('empFirstName').value = parts[0] || '';
     document.getElementById('empLastName').value = parts.slice(1).join(' ') || '';
     document.getElementById('empRole').value = emp.role || '';
     document.getElementById('empDept').value = emp.department || 'Ofis';
-    document.getElementById('empSalary').value = emp.salary_info || '';
+    document.getElementById('empSalary').value = parseInt(emp.salary_info || 0);
     document.getElementById('empPhone').value = emp.phone || '';
     document.getElementById('empBirthYear').value = emp.birth_year || '';
     document.getElementById('empJoinedYear').value = emp.joined_year || '';
 
+    if (emp.avatar_url) {
+        document.getElementById('modalPhotoPreview').src = emp.avatar_url;
+        document.getElementById('modalPhotoPreview').style.display = 'block';
+        document.getElementById('plusIcon').style.display = 'none';
+    }
+
     document.getElementById('addWorkerModalOverlay').style.display = 'flex';
-    gsap.fromTo("#addWorkerModalOverlay .modal-content", { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4 });
-    lucide.createIcons();
-};
-
-window.handleDelete = async () => {
-    window.openActionModal({
-        title: "O'CHIRISH",
-        desc: `${currentEmp.full_name} ni tizimdan butkul o'chirishni tasdiqlaysizmi? Bu amalni ortga qaytarib bo'lmaydi.`,
-        icon: "trash-2",
-        showInput: false,
-        confirmText: "O'CHIRISH",
-        onConfirm: async () => {
-            const { error } = await supabase.from('employees').delete().eq('id', currentEmp.id);
-            window.closeActionModal();
-            if (!error) {
-                window.closeDetailModal();
-                loadInitialData();
-            } else {
-                window.openActionModal({
-                    title: "XATOLIK",
-                    desc: "O'chirishda xatolik yuz berdi: " + error.message,
-                    icon: "alert-circle",
-                    showInput: false,
-                    confirmText: "YOPISH",
-                    onConfirm: () => window.closeActionModal()
-                });
-            }
-        }
-    });
-};
-
-window.handleReport = () => {
-    window.openActionModal({
-        title: "HISOBOT TAYYORLASH",
-        desc: "Xodim faoliyati va davomat hisoboti generatsiya qilinmoqda. Yuklab olish manzili tayyorlanmoqda.",
-        icon: "file-text",
-        showInput: false,
-        confirmText: "YUKLAB OLISH",
-        onConfirm: () => {
-            window.closeActionModal();
-            setTimeout(() => {
-                window.openActionModal({
-                    title: "HISOBOT TAYYOR",
-                    desc: "Barcha ko'rsatkichlar tahlili yakunlandi va PDF formatida yuklab olishga tayyor.",
-                    icon: "check-circle",
-                    showInput: false,
-                    confirmText: "YUKLAB OLISH",
-                    onConfirm: () => window.closeActionModal()
-                });
-            }, 800);
-        }
-    });
-};
-
-window.prepareBadge = () => {
-    if (!currentEmp) return;
-    const emp = currentEmp;
-    const parts = (emp.full_name || '').split(' ');
-    const f = parts[0] || '';
-    const l = parts.slice(1).join(' ') || '';
-
-    document.getElementById('badgeModalOverlay').style.display = 'flex';
-    document.getElementById('badgePreviewPhoto').src = emp.avatar_url;
-    document.getElementById('badgePreviewName').textContent = f.toUpperCase();
-    document.getElementById('badgePreviewSurname').textContent = l.toUpperCase();
-    document.getElementById('badgePreviewRole').textContent = (emp.role || 'XODIM').toUpperCase();
-    document.getElementById('badgePreviewID').textContent = 'AKFA-' + emp.id.split('-')[0].toUpperCase();
-    document.getElementById('badgePreviewQR').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(emp.id)}`;
-
-    gsap.from(".id-badge", { scale: 0.8, opacity: 0, duration: 0.5, ease: "back.out(1.7)" });
-};
-
-
-function initActivityChart() {
-    const ctx = document.getElementById('detailActivityChart').getContext('2d');
-    if (activityChart) activityChart.destroy();
-
-    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-    const accentColor = '#00ff88';
-
-    activityChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'],
-            datasets: [{
-                label: 'Ish soati',
-                data: [8, 8.5, 7.8, 9, 8.2, 0, 0],
-                backgroundColor: accentColor,
-                borderRadius: 10,
-                barThickness: 12
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { display: false, beginAtZero: true },
-                x: {
-                    grid: { display: false },
-                    border: { display: false },
-                    ticks: { color: isLight ? '#64748b' : 'rgba(255,255,255,0.4)', font: { weight: '800', size: 10 } }
-                }
-            }
-        }
-    });
 }
 
 async function saveWorker() {
@@ -552,166 +216,106 @@ async function saveWorker() {
     const role = document.getElementById('empRole').value.trim();
     const dept = document.getElementById('empDept').value;
     const salary = document.getElementById('empSalary').value.trim();
-    const joinedYear = document.getElementById('empJoinedYear').value.trim();
     const phone = document.getElementById('empPhone').value.trim();
     const birthYear = document.getElementById('empBirthYear').value.trim();
+    const joinedYear = document.getElementById('empJoinedYear').value.trim();
 
     if (!fname || !role) { alert("Ism va Lavozim majburiy!"); return; }
 
-    btn.textContent = 'PROSESSING...';
+    btn.textContent = 'SAQLANMOQDA...';
     btn.disabled = true;
 
     const fullName = `${fname} ${lname}`.trim();
-    const avatar = tempPhotoData || `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=0d1622&color=00ff88&size=300`;
+    const payload = {
+        full_name: fullName,
+        role: role,
+        department: dept,
+        salary_info: salary || '0',
+        phone: phone || '',
+        birth_year: birthYear || null,
+        joined_year: joinedYear || null,
+        avatar_url: tempPhotoData || (currentEditId ? currentEmp.avatar_url : `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=1a7b7c&color=fff`)
+    };
 
     let res;
     if (currentEditId) {
-        res = await supabase.from('employees').update({
-            full_name: fullName,
-            role: role,
-            department: dept,
-            salary_info: salary || '0',
-            phone: phone || '',
-            birth_year: birthYear || null,
-            avatar_url: avatar
-        }).eq('id', currentEditId);
+        res = await supabase.from('employees').update(payload).eq('id', currentEditId).select();
     } else {
-        res = await supabase.from('employees').insert([{
-            full_name: fullName,
-            role: role,
-            department: dept,
-            salary_info: salary || '0',
-            phone: phone || '',
-            birth_year: birthYear || null,
-            avatar_url: avatar,
-            status: 'Ishlamoqda'
-        }]).select();
+        res = await supabase.from('employees').insert([payload]).select();
     }
 
-    const { error } = res;
-    if (!error) {
-        btn.textContent = 'MUVAFFAQIYATLI!';
-        const newEmp = data[0];
-        // Manually patch names for badge
-        newEmp.first_name = fname;
-        newEmp.last_name = lname;
-
+    if (!res.error) {
+        btn.textContent = 'TAYYOR!';
         setTimeout(async () => {
             document.getElementById('addWorkerModalOverlay').style.display = 'none';
             await loadInitialData();
             clearModal();
-            prepareBadge(newEmp);
-            btn.textContent = 'TASDIQLASH VA SAQLASH';
+            btn.textContent = 'SAQLASH';
             btn.disabled = false;
-        }, 800);
+        }, 1000);
     } else {
-        alert("Xatolik: " + (error ? error.message : "Ma'lumot qaytmadi"));
-        btn.textContent = 'TASDIQLASH VA SAQLASH';
+        alert("Xatolik: " + res.error.message);
         btn.disabled = false;
+        btn.textContent = 'QAYTA URINISH';
     }
 }
-
-function prepareBadge(emp) {
-    const badgeModal = document.getElementById('badgeModalOverlay');
-
-    // Safety: ensure first/last names exist
-    if (!emp.first_name || !emp.last_name) {
-        const parts = emp.full_name.split(' ');
-        emp.first_name = parts[0] || '';
-        emp.last_name = parts.slice(1).join(' ') || '';
-    }
-
-    const photoNode = document.getElementById('badgePreviewPhoto');
-    if (photoNode) {
-        photoNode.src = emp.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=1a7b7c&color=fff`;
-    }
-
-    // Yozuvlarni yangi dizayn ID'lariga moslab joylashtiramiz
-    const sideNameNode = document.getElementById('badgePreviewSideName');
-    const fullNameNode = document.getElementById('badgePreviewFullName');
-    const roleNode = document.getElementById('badgePreviewRole');
-
-    if (sideNameNode) sideNameNode.textContent = (emp.first_name || '').toUpperCase();
-    if (fullNameNode) fullNameNode.textContent = (emp.full_name || '').toUpperCase();
-
-    // Bo'lim xodimi deb yozish
-    if (roleNode) {
-        const deptName = emp.department || 'OFFIS';
-        roleNode.textContent = `${deptName.toUpperCase()} XODIMI`;
-    }
-
-    const workerId = emp.id.substring(0, 8).toUpperCase();
-    const idNode = document.getElementById('badgePreviewID');
-    if (idNode) idNode.textContent = `ROMIX-${workerId}`;
-
-    const qrNode = document.getElementById('badgePreviewQR');
-    if (qrNode) {
-        qrNode.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=ROMIX-STAFF-${emp.id}`;
-    }
-
-    badgeModal.style.display = 'flex';
-    gsap.fromTo(".id-badge",
-        { scale: 0.5, opacity: 0, y: 50 },
-        { scale: 1, opacity: 1, y: 0, duration: 0.8, stagger: 0.2, ease: "back.out(1.7)" }
-    );
-}
-
-window.downloadBadge = () => {
-    const badge = document.getElementById('badgePrintArea');
-    const btn = event.target;
-    const originalText = btn.textContent;
-    btn.textContent = 'YUKLANMOQDA...';
-
-    html2canvas(badge, { scale: 3, useCORS: true, backgroundColor: null }).then(canvas => {
-        const link = document.createElement('a');
-        link.download = `AKFA-Badge-${document.getElementById('badgePreviewSurname').textContent}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-        btn.textContent = originalText;
-    });
-};
-
-window.printBadgeReal = () => {
-    const badgeHtml = document.getElementById('badgePrintArea').innerHTML;
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
-    printWindow.document.write(`
-        <html>
-            <head>
-                <title>Print Badge</title>
-                <style>
-                    body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #fff; }
-                    .badge-presentation { display: flex; gap: 40px; transform: scale(1.2); }
-                    .id-badge { width: 260px; height: 410px; background: #fff; border-radius: 12px; position: relative; overflow: hidden; border: 1px solid #ddd; display: flex; flex-direction: column; font-family: sans-serif; }
-                    .badge-lanyard { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 30px; height: 60px; background: #1a7b7c; border-radius: 4px; }
-                    .badge-header { margin-top: 65px; padding: 0 15px; display: flex; justify-content: space-between; }
-                    .logo-box { font-weight: 800; font-size: 1.1rem; color: #1a7b7c; }
-                    .badge-photo-container { flex: 1; display: flex; justify-content: center; align-items: flex-end; }
-                    .badge-photo { width: 90%; height: 200px; object-fit: cover; border-radius: 8px; border: 3px solid #fff; }
-                    .badge-bottom-box { background: #4ab3b4; height: 80px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #fff; }
-                    .badge-surname { font-size: 1.8rem; font-weight: 900; }
-                    .badge-qr-container { flex: 1; display: flex; justify-content: center; align-items: center; }
-                    .badge-qr-large { width: 140px; height: 140px; border: 6px solid #1a7b7c; }
-                    .badge-very-bottom-text { background: #1a7b7c; color: #8fd5d5; font-size: 0.5rem; text-align: center; }
-                    @media print { .no-print { display: none; } }
-                </style>
-            </head>
-            <body>
-                <div class="badge-presentation">${badgeHtml}</div>
-                <script>
-                    setTimeout(() => { window.print(); window.close(); }, 500);
-                </script>
-            </body>
-        </html>
-    `);
-    printWindow.document.close();
-};
 
 function clearModal() {
-    ['empFirstName', 'empLastName', 'empRole', 'empSalary', 'empJoinedYear', 'empPhone', 'empBirthYear'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = '';
-    });
     tempPhotoData = null;
+    document.getElementById('empFirstName').value = '';
+    document.getElementById('empLastName').value = '';
+    document.getElementById('empRole').value = '';
+    document.getElementById('empSalary').value = '';
+    document.getElementById('empPhone').value = '';
+    document.getElementById('empBirthYear').value = '';
+    document.getElementById('empJoinedYear').value = '';
     document.getElementById('modalPhotoPreview').style.display = 'none';
     document.getElementById('plusIcon').style.display = 'block';
+}
+
+function prepareBadge() {
+    if (!currentEmp) return;
+    const emp = currentEmp;
+    const parts = (emp.full_name || '').split(' ');
+    document.getElementById('badgeModalOverlay').style.display = 'flex';
+    document.getElementById('badgePreviewPhoto').src = emp.avatar_url;
+    document.getElementById('badgePreviewSideName').textContent = (parts[0] || '').toUpperCase();
+    document.getElementById('badgePreviewFullName').textContent = (emp.full_name || '').toUpperCase();
+    document.getElementById('badgePreviewRole').textContent = (emp.department || 'OFIS').toUpperCase() + " XODIMI";
+    document.getElementById('badgePreviewID').textContent = 'ROMIX-' + emp.id.substring(0, 8).toUpperCase();
+    document.getElementById('badgePreviewQR').src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=ROMIX-STAFF-${emp.id}`;
+}
+
+function closeBadgeModal() {
+    document.getElementById('badgeModalOverlay').style.display = 'none';
+}
+
+function handlePremya() {
+    const val = prompt(`${currentEmp.full_name} uchun premya miqdorini kiriting:`);
+    if (val) alert(`${val} UZS muvaffaqiyatli saqlandi!`);
+}
+
+function handleOylik() {
+    alert(`Xodim: ${currentEmp.full_name}\nAsosiy oylik: ${parseInt(currentEmp.salary_info || 0).toLocaleString()} UZS`);
+}
+
+function handleDelete() {
+    if (confirm(`${currentEmp.full_name}ni o'chirishni tasdiqlaysizmi?`)) {
+        supabase.from('employees').delete().eq('id', currentEmp.id).then(() => {
+            closeDetailModal();
+            loadInitialData();
+        });
+    }
+}
+
+function handleReport() {
+    alert("Hisobot tayyorlanmoqda...");
+}
+
+function filterAndRender() {
+    let filtered = employeesData;
+    if (activeDept !== 'all') {
+        filtered = employeesData.filter(e => e.department === activeDept);
+    }
+    renderStaffList(filtered);
 }
