@@ -882,7 +882,7 @@ function switchTab(tab) {
     const sections = {
         'dashboard': document.querySelector('.main-container'),
         'scanner': document.getElementById('scannerSection'),
-        'reports': document.getElementById('reportSelectionModal'),
+        'reports': document.getElementById('analyticsSection'),
         'history': document.getElementById('historySection'),
         'kitchen': document.getElementById('kitchenSection')
     };
@@ -903,11 +903,75 @@ function switchTab(tab) {
         sections.dashboard.style.display = 'flex';
         stopScanner();
         filterAndRender();
+    } else if (tab === 'reports') {
+        sections.reports.style.display = 'flex';
+        renderAnalyticsBoard();
     }
 
-    if (tab === 'reports') handleReport();
     lucide.createIcons();
 }
+
+// 📈 PROFESSIONAL ACCOUNTANT ANALYTICS ENGINE
+window.renderAnalyticsBoard = function () {
+    const tbody = document.getElementById('analyticsTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    let totalFund = 0;
+    let totalHoursAll = 0;
+    let totalBonusAll = 0;
+    let totalFinesAll = 0;
+
+    employeesData.forEach(emp => {
+        // Demofied calculations for professional display
+        const baseSalary = parseInt(emp.salary_info?.toString().replace(/\D/g, '') || 5000000);
+        const dayRate = baseSalary / 26;
+        const hourRate = dayRate / 10;
+
+        // Mock data logic (normally from db)
+        const mockWorkedHours = Math.floor(Math.random() * 50) + 180; // 180-230 hours
+        const mockLates = Math.floor(Math.random() * 4);
+        const mockBonus = Math.random() > 0.8 ? 500000 : 0;
+        const mockFine = mockLates * 50000;
+
+        const finalCalculated = Math.round((mockWorkedHours * hourRate) + mockBonus - mockFine);
+
+        totalFund += finalCalculated;
+        totalHoursAll += mockWorkedHours;
+        totalBonusAll += mockBonus;
+        totalFinesAll += mockFine;
+
+        const tr = document.createElement('tr');
+        tr.style.cursor = 'default';
+        tr.innerHTML = `
+            <td style="padding:15px; border-radius:0;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <img src="${emp.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(emp.full_name)}" style="width:35px; height:35px; border-radius:10px; object-fit:cover;">
+                    <div>
+                        <div style="font-weight:700; font-size:0.8rem;">${emp.full_name}</div>
+                        <div style="font-size:0.6rem; color:var(--text-s);">${emp.department || 'Ofis'}</div>
+                    </div>
+                </div>
+            </td>
+            <td style="font-weight:800; font-size:0.8rem; color:var(--text-s);">${baseSalary.toLocaleString()}</td>
+            <td style="font-weight:700; font-size:0.8rem; color:#fff;">${mockWorkedHours} <small style="color:var(--text-s)">s</small></td>
+            <td style="font-weight:700; font-size:0.8rem; color:var(--text-s);">${mockLates} ms</td>
+            <td style="font-weight:800; font-size:0.8rem; color:#ffa940;">+${mockBonus.toLocaleString()}</td>
+            <td style="font-weight:800; font-size:0.8rem; color:#ff4d4f;">-${mockFine.toLocaleString()}</td>
+            <td style="font-weight:900; font-size:0.9rem; color:#00ff88;">${finalCalculated.toLocaleString()} UZS</td>
+            <td style="text-align:right; border-radius:0;">
+                <button onclick="alert('Ushbu oylik to\\'landi deb belgilandi.')" style="background:rgba(0,210,255,0.1); color:#00d2ff; border:1px solid rgba(0,210,255,0.2); padding:8px 15px; border-radius:10px; font-weight:800; font-size:0.65rem; cursor:pointer; transition:0.3s;" onmouseover="this.style.background='rgba(0,210,255,0.2)'" onmouseout="this.style.background='rgba(0,210,255,0.1)'">TO'LASH</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    document.getElementById('analyticTotalPayroll').innerHTML = `${totalFund.toLocaleString()} <small style="font-size:1rem; opacity:0.5">UZS</small>`;
+    document.getElementById('analyticTotalHours').innerHTML = `${totalHoursAll.toLocaleString()} <small style="font-size:1rem; opacity:0.5">soat</small>`;
+    document.getElementById('analyticTotalBonus').innerHTML = `${totalBonusAll.toLocaleString()} <small style="font-size:1rem; opacity:0.5">UZS</small>`;
+    document.getElementById('analyticTotalFines').innerHTML = `${totalFinesAll.toLocaleString()} <small style="font-size:1rem; opacity:0.5">UZS</small>`;
+    lucide.createIcons();
+};
 
 // 🍽️ LUXURY KITCHEN CALENDAR ENGINE
 let kitchenCurrentDate = new Date();
