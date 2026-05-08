@@ -161,47 +161,44 @@ function getSmartStatus(att) {
 }
 
 function renderStaffList(data) {
-    const todayStr = new Date().toISOString().split('T')[0];
     const container = document.getElementById('employeeTableBody');
     if (!container) return;
     container.innerHTML = '';
 
-    // Join with Attendance
-    supabase.from('attendance').select('*').eq('date', todayStr).then(({ data: attData }) => {
-        updateStatsHeader(employeesData, attData || []);
+    // Update Headers (using cached data)
+    updateStatsHeader(employeesData, todayAtt);
 
-        data.forEach(emp => {
-            const att = (attData || []).find(a => a.id === emp.id);
-            const status = getSmartStatus(att);
+    data.forEach(emp => {
+        const att = todayAtt.find(a => a.id === emp.id);
+        const status = getSmartStatus(att);
 
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>
-                    <div class="worker-cell">
-                        ${emp.avatar_url ? `<img src="${emp.avatar_url}" class="worker-avatar">` : `<div class="worker-avatar-placeholder">${emp.full_name.charAt(0)}</div>`}
-                        <div>
-                            <div class="worker-name">${emp.full_name}</div>
-                            <div class="worker-id">ID: ${emp.id.substring(0, 8)}</div>
-                        </div>
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>
+                <div class="worker-cell">
+                    ${emp.avatar_url ? `<img src="${emp.avatar_url}" class="worker-avatar">` : `<div class="worker-avatar-placeholder">${emp.full_name.charAt(0)}</div>`}
+                    <div>
+                        <div class="worker-name">${emp.full_name}</div>
+                        <div class="worker-id">ID: ${emp.id.substring(0, 8)}</div>
                     </div>
-                </td>
-                <td>${emp.role || 'Xodim'}</td>
-                <td>${emp.department || emp.dept || 'Ofis'}</td>
-                <td>${emp.phone || '-'}</td>
-                <td>
-                    <span class="status-badge" style="background:${status.glow}; color:${status.color}; border:1px solid ${status.color}44; box-shadow: 0 0 10px ${status.glow}">
-                        <span style="width:6px; height:6px; border-radius:50%; background:${status.color}; margin-right:8px; display:inline-block"></span>
-                        ${status.text}
-                    </span>
-                </td>
-                <td>
-                    <button class="view-btn" onclick="window.viewDetails('${emp.id}')"><i data-lucide="eye"></i></button>
-                </td>
-            `;
-            container.appendChild(tr);
-        });
-        lucide.createIcons();
+                </div>
+            </td>
+            <td>${emp.role || 'Xodim'}</td>
+            <td>${emp.department || emp.dept || 'Ofis'}</td>
+            <td>${emp.phone || '-'}</td>
+            <td>
+                <span class="status-badge" style="background:${status.glow}; color:${status.color}; border:1px solid ${status.color}44; box-shadow: 0 0 10px ${status.glow}">
+                    <span style="width:6px; height:6px; border-radius:50%; background:${status.color}; margin-right:8px; display:inline-block"></span>
+                    ${status.text}
+                </span>
+            </td>
+            <td>
+                <button class="view-btn" onclick="window.viewDetails('${emp.id}')"><i data-lucide="eye"></i></button>
+            </td>
+        `;
+        container.appendChild(tr);
     });
+    lucide.createIcons();
 }
 
 function updateGlobalStats() {
