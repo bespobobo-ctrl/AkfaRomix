@@ -31,6 +31,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.prepareBadge = prepareBadge;
     window.closeDetailModal = closeDetailModal;
     window.closeBadgeModal = closeBadgeModal;
+    window.downloadBadge = downloadBadge;
+    window.printBadgeReal = printBadgeReal;
 
     // Logout
     const logoutBtn = document.getElementById('logoutBtn');
@@ -443,3 +445,25 @@ function filterAndRender() {
     }
     renderStaffList(filtered);
 }
+
+window.downloadBadge = async function () {
+    const area = document.getElementById('badgePrintArea');
+    if (!area) return;
+    try {
+        const canvas = await html2canvas(area, {
+            scale: 3,
+            useCORS: true,
+            backgroundColor: null
+        });
+        const link = document.createElement('a');
+        link.download = `ROMIX_Badge_${currentEmp ? currentEmp.full_name : 'Staff'}.png`;
+        link.href = canvas.toDataURL('image/png', 1.0);
+        link.click();
+    } catch (e) {
+        alert("Xatolik: Rasm yuklab bo'lmadi.");
+    }
+};
+
+window.printBadgeReal = function () {
+    window.print();
+};
