@@ -1047,22 +1047,52 @@ window.saveKitchenData = function () {
 };
 
 // 📑 PROFESSIONAL KITCHEN ACCOUNTING REPORTS
-window.showKitchenReportOptions = function () {
-    const suite = document.getElementById('kitchenReportSuite');
-    if (!suite) return;
-    suite.style.display = suite.style.display === 'none' ? 'flex' : 'none';
+let currentReportRange = 'monthly';
+
+window.openKitchenReportModal = function () {
+    const modal = document.getElementById('kitchenReportModal');
+    modal.style.display = 'flex';
+    gsap.from(modal.querySelector('.bento-card'), {
+        scale: 0.8, opacity: 0, duration: 0.5, ease: "back.out(1.7)"
+    });
+    lucide.createIcons();
+};
+
+window.closeKitchenReportModal = function () {
+    gsap.to("#kitchenReportModal .bento-card", {
+        scale: 0.8, opacity: 0, duration: 0.3, onComplete: () => {
+            document.getElementById('kitchenReportModal').style.display = 'none';
+        }
+    });
+};
+
+window.setReportRange = function (range) {
+    currentReportRange = range;
+    const tabs = ['weekly', 'monthly', 'yearly', 'custom'];
+    tabs.forEach(t => {
+        const btn = document.getElementById('rangeTab_' + t);
+        if (t === range) {
+            btn.style.background = '#ffa940';
+            btn.style.color = '#000';
+            btn.style.fontWeight = '900';
+        } else {
+            btn.style.background = 'none';
+            btn.style.color = 'var(--text-s)';
+            btn.style.fontWeight = '800';
+        }
+    });
+    document.getElementById('customRangeBox').style.display = range === 'custom' ? 'grid' : 'none';
 };
 
 window.genKitchenReport = function (format) {
-    const range = document.getElementById('kitchenReportRange').value;
     const months = ["Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun", "Iyul", "Avgust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr"];
     const monthName = months[kitchenCurrentDate.getMonth()];
     const year = kitchenCurrentDate.getFullYear();
-    const fileName = `OSHXONA_HISOBOTI_${range.toUpperCase()}_${monthName}_${year}`;
 
     let records = [];
+    let titleRange = currentReportRange.toUpperCase();
 
-    if (range === 'weekly') {
+    if (currentReportRange === 'weekly') {
         const sel = new Date(kitchenSelectedDate);
         for (let i = 0; i < 7; i++) {
             const d = new Date(sel);
@@ -1071,13 +1101,29 @@ window.genKitchenReport = function (format) {
             const s = JSON.parse(localStorage.getItem('kitchen_' + dKey));
             if (s) records.push(s);
         }
-    } else if (range === 'yearly') {
+    } else if (currentReportRange === 'yearly') {
         for (let m = 1; m <= 12; m++) {
             for (let d = 1; d <= 31; d++) {
                 const dKey = `${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                 const s = JSON.parse(localStorage.getItem('kitchen_' + dKey));
                 if (s) records.push(s);
             }
+        }
+    } else if (currentReportRange === 'custom') {
+        const start = document.getElementById('reportStart').value;
+        const end = document.getElementById('reportEnd').value;
+        if (!start || !end) {
+            alert("Iltimos, sanalarni tanlang!");
+            return;
+        }
+        titleRange = `${start} dan ${end} gacha`;
+        let cur = new Date(start);
+        const stop = new Date(end);
+        while (cur <= stop) {
+            const dKey = cur.toISOString().split('T')[0];
+            const s = JSON.parse(localStorage.getItem('kitchen_' + dKey));
+            if (s) records.push(s);
+            cur.setDate(cur.getDate() + 1);
         }
     } else {
         for (let d = 1; d <= 31; d++) {
@@ -1088,7 +1134,7 @@ window.genKitchenReport = function (format) {
     }
 
     if (records.length === 0) {
-        alert("Tanlangan muddat uchun saqlangan ma'lumotlar topilmadi!");
+        alert("Tanlangan muddat uchun ma'lumotlar topilmadi!");
         return;
     }
 
@@ -1098,6 +1144,7 @@ window.genKitchenReport = function (format) {
         total: parseInt(r.count) * parseInt(r.price)
     }));
     const totalSum = records.reduce((acc, r) => acc + r.total, 0);
+    const exportName = `OSHXONA_HISOBOTI_${format.toUpperCase()}_${new Date().getTime()}`;
 
     if (format === 'excel') {
         let csvContent = "Sana,Odam soni,Narxi,Jami Summa,Holati\n";
@@ -1105,34 +1152,36 @@ window.genKitchenReport = function (format) {
             csvContent += `${r.date},${r.count},${r.price},${r.total},${r.status.toUpperCase()}\n`;
         });
         csvContent += `\nJAMI HARAJAT,,,${totalSum},`;
-
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.setAttribute("download", `${fileName}.csv`);
+        link.setAttribute("download", `${exportName}.csv`);
         link.click();
     } else {
         const docContent = `
-AKFA ROMIX - OSHXONA MOLIYAVIY HISOBOTI (${range.toUpperCase()})
-Davr: ${range === 'yearly' ? year : monthName + ' ' + year}
+AKFA ROMIX - PROFESSIONAL MOLIYAVIY HISOBOT
 --------------------------------------------------------------------------------
-Sana       | Odam soni | Narxi (UZS) | Jami (UZS)  | Holati
+HISOBLANGAN DAVR: ${titleRange}
+HISOBOT TURI: ${format.toUpperCase()}
+YARATILGAN VAQT: ${new Date().toLocaleString()}
 --------------------------------------------------------------------------------
-${records.map(r => `${r.date} | ${String(r.count).padEnd(9)} | ${String(r.price).padEnd(11)} | ${String(r.total).padEnd(11)} | ${r.status.toUpperCase()}`).join('\n')}
+Sana        | Odam soni | Narxi (UZS) | Jami (UZS)  | Holati
 --------------------------------------------------------------------------------
-UMUMIY HARAJAT: ${totalSum.toLocaleString()} UZS
+${records.map(r => `${r.date}  | ${String(r.count).padEnd(9)} | ${String(r.price).padEnd(11)} | ${String(r.total).padEnd(11)} | ${r.status.toUpperCase()}`).join('\n')}
+--------------------------------------------------------------------------------
+UMUMIY SUMMA: ${totalSum.toLocaleString()} UZS
 
-Mas'ul shaxs (Buxgalter): _________________
-Sana: ${new Date().toLocaleDateString()}
+Ushbu hujjat AKFA Romix HR tizimi tomonidan buxgalteriya talablari asosida
+avtomatik shakllantirildi.
+
+Mas'ul shaxs: _________________ (Imzo)
         `;
-
         const blob = new Blob([docContent], { type: 'text/plain;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.setAttribute("download", `${fileName}.${format === 'pdf' ? 'pdf' : 'doc'}`);
+        link.setAttribute("download", `${exportName}.${format === 'pdf' ? 'pdf' : 'doc'}`);
         link.click();
     }
-    alert(`${format.toUpperCase()} formatidagi hisobot tayyorlandi!`);
 };
 
 window.generateKitchenDemo = function () {
@@ -1151,7 +1200,12 @@ window.generateKitchenDemo = function () {
         };
         localStorage.setItem('kitchen_' + dateKey, JSON.stringify(data));
     }
-    alert("1 oylik DEMO ma'lumotlar yaratildi! Sahifani yangilab, hisobotni ko'rishingiz mumkin.");
+
+    // Auto-trigger a monthly report download to show the format
+    setReportRange('monthly');
+    window.genKitchenReport('excel');
+
+    alert("DEMO ma'lumotlar yaratildi va 1 oylik EXCEL hisoboti avtomatik yuklab olindi! Endi boshqa formatlarni ham tekshirishingiz mumkin.");
     window.renderKitchenCalendar();
 };
 

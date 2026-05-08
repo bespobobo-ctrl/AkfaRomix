@@ -1594,37 +1594,10 @@
                                 style="color:#ffa940; font-weight:900; font-size:1.1rem; font-family:'Outfit';">--.--.----</span>
                         </div>
                         <div style="border-top:1px solid rgba(255,255,255,0.05); padding-top:20px;">
-                            <button onclick="window.showKitchenReportOptions()" class="mgmt-btn"
-                                style="width:100%; justify-content:center; gap:10px; background:rgba(255,169,64,0.1); color:#ffa940; border:1px solid rgba(255,169,64,0.2); font-weight:900;">
-                                <i data-lucide="file-text" style="width:18px;"></i> HISOBOT TAYYORLASH
+                            <button onclick="window.openKitchenReportModal()" class="mgmt-btn"
+                                style="width:100%; justify-content:center; gap:12px; background:linear-gradient(to right, #ffa940, #ff7a18); color:#000; border:none; font-weight:1000; box-shadow:0 10px 20px rgba(255,169,64,0.3); border-radius:15px; padding:18px;">
+                                <i data-lucide="printer" style="width:20px;"></i> HISOBOTLARNI BOSHQARISH
                             </button>
-                            <div id="kitchenReportSuite"
-                                style="display:none; flex-direction:column; gap:15px; margin-top:20px; padding:20px; background:rgba(255,255,255,0.02); border-radius:15px; border:1px solid rgba(255,255,255,0.05);">
-                                <div style="display:flex; flex-direction:column; gap:10px;">
-                                    <label
-                                        style="font-size:0.65rem; font-weight:800; color:var(--text-s); letter-spacing:1px;">HISOBOT
-                                        DAVRI:</label>
-                                    <select id="kitchenReportRange"
-                                        style="width:100%; padding:10px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:8px; font-weight:700; outline:none;">
-                                        <option value="weekly">HAFTALIK</option>
-                                        <option value="monthly" selected>OYLIK</option>
-                                        <option value="yearly">YILLIK</option>
-                                    </select>
-                                </div>
-                                <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;">
-                                    <button onclick="window.genKitchenReport('excel')"
-                                        style="background:#2ecc71; color:#fff; border:none; padding:12px; border-radius:10px; font-weight:800; font-size:0.7rem; cursor:pointer;">EXCEL</button>
-                                    <button onclick="window.genKitchenReport('word')"
-                                        style="background:#3498db; color:#fff; border:none; padding:12px; border-radius:10px; font-weight:800; font-size:0.7rem; cursor:pointer;">WORD</button>
-                                    <button onclick="window.genKitchenReport('pdf')"
-                                        style="background:#e74c3c; color:#fff; border:none; padding:12px; border-radius:10px; font-weight:800; font-size:0.7rem; cursor:pointer;">PDF</button>
-                                </div>
-                                <button onclick="window.generateKitchenDemo()"
-                                    style="margin-top:10px; background:rgba(255,255,255,0.05); color:var(--text-s); border:1px dashed rgba(255,255,255,0.2); padding:10px; border-radius:10px; font-weight:800; font-size:0.65rem; cursor:pointer; transition:0.3s;"
-                                    onmouseover="this.style.background='rgba(255,255,255,0.1)'"
-                                    onmouseout="this.style.background='rgba(255,255,255,0.05)'">DEMO MA'LUMOTLAR
-                                    YARATISH (1 OYLIK)</button>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -1803,14 +1776,112 @@
         gsap.from(".top-nav", { y: -50, opacity: 0, duration: 1, delay: 0.2 });
         gsap.from(".bento-card", { opacity: 0, y: 30, duration: 0.8, stagger: 0.1, delay: 0.4 });
     </script>
+    <!-- 📊 PREMIUM KITCHEN REPORT MODAL -->
+    <div class="modal-blur" id="kitchenReportModal"
+        style="z-index:9999; display:none; align-items:center; justify-content:center; background:rgba(7,11,18,0.85); backdrop-filter:blur(20px);">
+        <div class="bento-card"
+            style="width:90%; max-width:600px; padding:45px; position:relative; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.1); overflow:visible;">
+            <button onclick="window.closeKitchenReportModal()"
+                style="position:absolute; top:25px; right:25px; background:none; border:none; color:var(--text-s); cursor:pointer;"><i
+                    data-lucide="x"></i></button>
+
+            <div style="text-align:center; margin-bottom:40px;">
+                <div
+                    style="width:70px; height:70px; background:rgba(255,169,64,0.1); border-radius:20px; display:flex; align-items:center; justify-content:center; margin:0 auto 20px;">
+                    <i data-lucide="file-text" style="color:#ffa940; width:35px; height:35px;"></i>
+                </div>
+                <h2 style="font-family:'Outfit'; font-weight:1000; letter-spacing:2px; font-size:1.8rem; color:#fff;">
+                    HISOBOT MARKAZI</h2>
+                <p style="color:var(--text-s); font-size:0.85rem; margin-top:8px;">Buhgalteriya darajasidagi moliya
+                    hujjatlari</p>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:25px;">
+                <!-- Range Selection Tabs -->
+                <div style="display:flex; background:rgba(255,255,255,0.03); padding:6px; border-radius:15px; gap:5px;">
+                    <button id="rangeTab_weekly" onclick="window.setReportRange('weekly')"
+                        style="flex:1; padding:12px; border-radius:10px; border:none; background:none; color:var(--text-s); font-weight:800; cursor:pointer; font-size:0.75rem;">HAFTALIK</button>
+                    <button id="rangeTab_monthly" onclick="window.setReportRange('monthly')"
+                        style="flex:1; padding:12px; border-radius:10px; border:none; background:#ffa940; color:#000; font-weight:900; cursor:pointer; font-size:0.75rem;">OYLIK</button>
+                    <button id="rangeTab_yearly" onclick="window.setReportRange('yearly')"
+                        style="flex:1; padding:12px; border-radius:10px; border:none; background:none; color:var(--text-s); font-weight:800; cursor:pointer; font-size:0.75rem;">YILLIK</button>
+                    <button id="rangeTab_custom" onclick="window.setReportRange('custom')"
+                        style="flex:1; padding:12px; border-radius:10px; border:none; background:none; color:var(--text-s); font-weight:800; cursor:pointer; font-size:0.75rem;">CUSTOM</button>
+                </div>
+
+                <!-- Custom Range Inputs (Hidden by default) -->
+                <div id="customRangeBox" style="display:none; grid-template-columns: 1fr 1fr; gap:15px;">
+                    <div>
+                        <label
+                            style="font-size:0.65rem; color:var(--text-s); display:block; margin-bottom:8px;">BOSHLANISH:</label>
+                        <input type="date" id="reportStart"
+                            style="width:100%; padding:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#fff; outline:none;">
+                    </div>
+                    <div>
+                        <label
+                            style="font-size:0.65rem; color:var(--text-s); display:block; margin-bottom:8px;">YAKUNLANISH:</label>
+                        <input type="date" id="reportEnd"
+                            style="width:100%; padding:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#fff; outline:none;">
+                    </div>
+                </div>
+
+                <div
+                    style="background:rgba(255,255,255,0.02); padding:25px; border-radius:20px; border:1px solid rgba(255,255,255,0.05); text-align:center;">
+                    <label
+                        style="font-size:0.65rem; color:var(--text-s); font-weight:900; display:block; margin-bottom:20px; letter-spacing:2px;">FORMATNI
+                        TANLANG</label>
+                    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:15px;">
+                        <button onclick="window.genKitchenReport('excel')" class="report-btn-lux"
+                            style="border-color:#2ecc71; color:#2ecc71; background:rgba(46,204,113,0.05);">
+                            <i data-lucide="table-2"></i> EXCEL
+                        </button>
+                        <button onclick="window.genKitchenReport('word')" class="report-btn-lux"
+                            style="border-color:#3498db; color:#3498db; background:rgba(52,152,219,0.05);">
+                            <i data-lucide="file-edit"></i> WORD
+                        </button>
+                        <button onclick="window.genKitchenReport('pdf')" class="report-btn-lux"
+                            style="border-color:#e74c3c; color:#e74c3c; background:rgba(231,76,60,0.05);">
+                            <i data-lucide="file-down"></i> PDF
+                        </button>
+                    </div>
+                </div>
+
+                <div style="margin-top:10px;">
+                    <button onclick="window.generateKitchenDemo()"
+                        style="width:100%; padding:20px; background:rgba(255,255,255,0.03); color:var(--text-s); border:1px dashed rgba(255,255,255,0.1); border-radius:15px; font-weight:800; font-size:0.75rem; cursor:pointer; transition:0.3s; display:flex; align-items:center; justify-content:center; gap:10px;"
+                        onmouseover="this.style.borderColor='#ffa940'; this.style.color='#fff';"
+                        onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.color='var(--text-s)';">
+                        <i data-lucide="database-zap"></i> 1 OYLIK DEMO MA'LUMOTLAR YARATISH
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <style>
-        .staff-panel,
-        .staff-panel *,
-        .lux-table,
-        .lux-table * {
-            -webkit-mask-image: none !important;
-            mask-image: none !important;
-            opacity: 1 !important;
+        .report-btn-lux {
+            flex-direction: column;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 20px 10px;
+            border-radius: 15px;
+            border: 1px solid;
+            cursor: pointer;
+            transition: 0.3s;
+            font-weight: 900;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+        }
+
+        .report-btn-lux i {
+            width: 24px;
+            height: 24px;
+        }
+
+        .report-btn-lux:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
         }
     </style>
     <!-- 📊 PREMIUM REPORT SELECTION MODAL -->
