@@ -157,8 +157,7 @@ async function loadInitialData() {
         }
 
         // STEP 4: Render
-        renderStaffList(employeesData);
-        updateGlobalStats();
+        filterAndRender();
 
     } catch (err) {
         console.error("💥 Critical Exception:", err);
