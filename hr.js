@@ -124,11 +124,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Analytics Dashboard Pill Filtering
     document.querySelectorAll('.pill[data-ana-dept]').forEach(pill => {
-        pill.onclick = () => {
+        pill.onclick = async () => {
             document.querySelectorAll('.pill[data-ana-dept]').forEach(p => p.classList.remove('active'));
             pill.classList.add('active');
             activeAnaDept = pill.dataset.anaDept;
-            renderAnalyticsBoard();
+            await renderAnalyticsBoard();
         };
     });
 
@@ -896,7 +896,7 @@ function filterAndRender() {
 }
 
 // 📡 TABS & SCANNER SYSTEM
-function switchTab(tab) {
+async function switchTab(tab) {
     currentTab = tab;
 
     // UI Feedback
@@ -928,14 +928,14 @@ function switchTab(tab) {
         filterAndRender();
     } else if (tab === 'reports') {
         sections.reports.style.display = 'flex';
-        renderAnalyticsBoard();
+        await renderAnalyticsBoard();
     }
 
     lucide.createIcons();
 }
 
 // 📈 PROFESSIONAL ACCOUNTANT ANALYTICS ENGINE
-window.renderAnalyticsBoard = function () {
+window.renderAnalyticsBoard = async function () {
     const tbody = document.getElementById('analyticsTableBody');
     if (!tbody) return;
     tbody.innerHTML = '';
@@ -950,41 +950,51 @@ window.renderAnalyticsBoard = function () {
         targetEmps = employeesData.filter(e => ((e.department || '').trim().toLowerCase() === activeAnaDept.trim().toLowerCase() || (e.dept || '').trim().toLowerCase() === activeAnaDept.trim().toLowerCase()));
     }
 
+    // 1. Joriy oyni aniqlash
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    const { data: monthAtt } = await supabase.from('attendance')
+        .select('*')
+        .gte('date', firstDay);
+
     const manualEdits = JSON.parse(localStorage.getItem('analytics_edits') || '{}');
 
     targetEmps.forEach(emp => {
         const edit = manualEdits[emp.id] || {};
-
-        // 1. Oylik STAVKA
         const baseSalary = edit.salary || parseInt(emp.salary_info?.toString().replace(/\D/g, '') || 5000000);
 
-        // FOYDALANUVCHI TALABI: 1 oyda 26 ish kuni, 1 kunda 9 soat sof ish vaqti (jami 234 soat)
         const totalMonthlyHours = 234;
         const hourRate = baseSalary / totalMonthlyHours;
 
-        let hash1 = 0, hash2 = 0, hash3 = 0;
-        const hashStr = String(emp.id || emp.full_name);
-        for (let i = 0; i < hashStr.length; i++) {
-            hash1 = (hashStr.charCodeAt(i) + ((hash1 << 5) - hash1)) | 0;
-            hash2 = (hashStr.charCodeAt(i) * 31 + ((hash2 << 5) - hash2)) | 0;
-            hash3 = (hashStr.charCodeAt(i) * 17 + ((hash3 << 5) - hash3)) | 0;
+        // REAL DAVOMAT - Bazadan hisoblash
+        let totalWorkedMinutes = 0;
+        let totalLates = 0;
+
+        if (monthAtt) {
+            const empAtt = monthAtt.filter(a => a.employee_id === emp.id);
+            empAtt.forEach(a => {
+                if (a.check_in && a.check_out) {
+                    const diff = (new Date(a.check_out) - new Date(a.check_in)) / (1000 * 60);
+                    // 1 soat abetni chegirib tashlash (8:00 - 18:00 oralig'ida bo'lsa)
+                    totalWorkedMinutes += (diff > 300 ? diff - 60 : diff);
+                }
+                if (a.check_in) {
+                    const cin = new Date(a.check_in);
+                    if (cin.getHours() > 8 || (cin.getHours() === 8 && cin.getMinutes() > 5)) totalLates++;
+                }
+            });
         }
 
-        const deterministicHours = Math.abs(hash1 % 55) + 179; // 179-234 oralig'i
-        const deterministicLates = Math.abs(hash2 % 4);
+        const actualHours = Math.round(totalWorkedMinutes / 60);
+        const actualLates = totalLates;
 
-        const mockWorkedHours = deterministicHours;
-        const mockLates = deterministicLates;
-
-        // PREMYA va JARIMA - Agar tahrirlangan (override) bo'lsa o'shani olamiz
         const mockBonus = (edit.bonus !== undefined) ? edit.bonus : 0;
-        const mockFine = (edit.fine !== undefined) ? edit.fine : (mockLates * 50000);
+        const mockFine = (edit.fine !== undefined) ? edit.fine : (actualLates * 50000);
 
-        // FORMULA: (Ishlangan soat * Soatlik haq) + Premya - Jarima
-        const finalCalculated = Math.round((mockWorkedHours * hourRate) + mockBonus - mockFine);
+        const finalCalculated = Math.round((actualHours * hourRate) + mockBonus - mockFine);
 
         totalFund += finalCalculated;
-        totalHoursAll += mockWorkedHours;
+        totalHoursAll += actualHours;
         totalBonusAll += mockBonus;
         totalFinesAll += mockFine;
 
