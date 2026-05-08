@@ -1051,16 +1051,19 @@ let currentReportRange = 'monthly';
 
 window.openKitchenReportModal = function () {
     const modal = document.getElementById('kitchenReportModal');
+    if (!modal) return;
+    gsap.killTweensOf("#kitchenReportModal .bento-card");
     modal.style.display = 'flex';
-    gsap.from(modal.querySelector('.bento-card'), {
-        scale: 0.8, opacity: 0, duration: 0.5, ease: "back.out(1.7)"
-    });
+    gsap.fromTo(modal.querySelector('.bento-card'),
+        { scale: 0.8, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.4, ease: "power2.out" }
+    );
     lucide.createIcons();
 };
 
 window.closeKitchenReportModal = function () {
     gsap.to("#kitchenReportModal .bento-card", {
-        scale: 0.8, opacity: 0, duration: 0.3, onComplete: () => {
+        scale: 0.8, opacity: 0, duration: 0.3, ease: "power2.in", onComplete: () => {
             document.getElementById('kitchenReportModal').style.display = 'none';
         }
     });
@@ -1071,17 +1074,15 @@ window.setReportRange = function (range) {
     const tabs = ['weekly', 'monthly', 'yearly', 'custom'];
     tabs.forEach(t => {
         const btn = document.getElementById('rangeTab_' + t);
+        if (!btn) return;
         if (t === range) {
-            btn.style.background = '#ffa940';
-            btn.style.color = '#000';
-            btn.style.fontWeight = '900';
+            btn.style.background = '#ffa940'; btn.style.color = '#000'; btn.style.fontWeight = '900';
         } else {
-            btn.style.background = 'none';
-            btn.style.color = 'var(--text-s)';
-            btn.style.fontWeight = '800';
+            btn.style.background = 'none'; btn.style.color = 'var(--text-s)'; btn.style.fontWeight = '800';
         }
     });
-    document.getElementById('customRangeBox').style.display = range === 'custom' ? 'grid' : 'none';
+    const cBox = document.getElementById('customRangeBox');
+    if (cBox) cBox.style.display = range === 'custom' ? 'grid' : 'none';
 };
 
 window.genKitchenReport = function (format) {
@@ -1230,6 +1231,20 @@ window.generateKitchenDemo = function () {
 
     alert("DEMO ma'lumotlar yaratildi va 1 oylik EXCEL hisoboti avtomatik yuklab olindi! Endi boshqa formatlarni ham tekshirishingiz mumkin.");
     window.renderKitchenCalendar();
+};
+
+window.clearAllKitchenData = function () {
+    if (!confirm("Barcha oshxona ma'lumotlarini (Demo va Real) o'chirishni tasdiqlaysizmi? Bu amalni ortga qaytarib bo'lmaydi.")) return;
+
+    Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('kitchen_')) {
+            localStorage.removeItem(key);
+        }
+    });
+
+    alert("Barcha oshxona ma'lumotlari tozalandi!");
+    window.renderKitchenCalendar();
+    window.closeKitchenReportModal();
 };
 
 async function loadHistoryData() {
