@@ -568,6 +568,7 @@ function showActionModal(cfg) {
     desc.textContent = cfg.desc;
     iconInner.setAttribute('data-lucide', cfg.icon || 'check-circle');
     mainBtn.textContent = cfg.confirmText || 'TASDIQLASH';
+    lucide.createIcons();
 
     if (cfg.input) {
         inputBox.style.display = 'block';
@@ -1616,12 +1617,26 @@ window.generateKitchenDemo = function () {
 };
 
 window.clearAllKitchenData = function () {
-    if (confirm("DIQQAT: Barcha saqlangan oshxona ma'lumotlarini o'chirishni tasdiqlaysizmi?")) {
-        logActivity('kitchen', 'Barcha ma\'lumotlar tozalandi', 'Tizimni tozalash');
-        Object.keys(localStorage).forEach(key => {
-            if (key.startsWith('kitchen_')) localStorage.removeItem(key);
-        });
-        alert("Barcha oshxona ma'lumotlari o'chirildi.");
-        window.renderKitchenCalendar();
-    }
+    showActionModal({
+        title: "XAVFSIZLIK TEKSHIRUVI",
+        desc: "Tizim ma'lumotlarini tozalash uchun parolni kiriting:",
+        icon: "shield-alert",
+        input: true,
+        confirmText: "TOZALASHNI TASDIQLASH",
+        onConfirm: (val) => {
+            if (val === "123") {
+                if (confirm("DIQQAT: Barcha saqlangan oshxona ma'lumotlarini o'chirishni tasdiqlaysizmi?")) {
+                    logActivity('kitchen', 'Barcha ma\'lumotlar tozalandi', 'Tizimni tozalash');
+                    Object.keys(localStorage).forEach(key => {
+                        if (key.startsWith('kitchen_')) localStorage.removeItem(key);
+                    });
+                    alert("Barcha oshxona ma'lumotlari muvaffaqiyatli o'chirildi.");
+                    window.renderKitchenCalendar();
+                    closeActionModal();
+                }
+            } else {
+                alert("Xato parol! Ruxsat etilmadi.");
+            }
+        }
+    });
 };
