@@ -188,13 +188,8 @@ function getSmartStatus(att) {
 
     if (!att.check_in) return { text: 'KELMAGAN', color: '#ff4d4f', glow: 'rgba(255, 77, 79, 0.2)' };
 
-    const checkTime = new Date(att.check_in);
-    const mins = checkTime.getHours() * 60 + checkTime.getMinutes();
-
-    if (mins <= 480) return { text: 'VAQTIDA', color: '#00ff88', glow: 'rgba(0, 255, 136, 0.3)' }; // 08:00
-    if (mins <= 495) return { text: 'KECHIKISH', color: '#ffec3d', glow: 'rgba(255, 236, 61, 0.2)' }; // 08:15
-    if (mins <= 510) return { text: 'KECH QOLDI', color: '#ff7875', glow: 'rgba(255, 120, 117, 0.2)' }; // 08:30
-    return { text: 'JUDA KECH', color: '#820014', glow: 'rgba(130, 0, 20, 0.3)' }; // > 08:30
+    // Agar xodim kelgan bo'lsa va hali ketmagan bo'lsa - STATUS: ISHDA
+    return { text: 'ISHDA', color: '#00ff88', glow: 'rgba(0, 255, 136, 0.3)' };
 }
 
 function renderStaffList(data) {
@@ -264,8 +259,8 @@ function updateGlobalStats() {
     // 1. Total Employees
     document.getElementById('totalEmployeesCount').textContent = employeesData.length;
 
-    // 2. Currently at work (Unique employees who have 'ISHDA' status today)
-    const uniquePresent = new Set(todayAtt.filter(a => a.status === 'ISHDA').map(a => a.employee_id));
+    // 2. Currently at work (Unique employees who have check_in but no check_out, or status ISHDA)
+    const uniquePresent = new Set(todayAtt.filter(a => (a.status === 'ISHDA' || (a.check_in && !a.check_out))).map(a => a.employee_id));
     document.getElementById('todayArrivedCount').textContent = uniquePresent.size;
 
     // 3. Late arrivals (Unique employees who arrived after 08:00)
@@ -310,7 +305,7 @@ async function showEmployeeDetail(id) {
 
     // Attendance Info
     const todayStr = new Date().toISOString().split('T')[0];
-    const { data: att } = await supabase.from('attendance').select('*').eq('id', emp.id).eq('date', todayStr).maybeSingle();
+    const { data: att } = await supabase.from('attendance').select('*').eq('employee_id', emp.id).eq('date', todayStr).maybeSingle();
 
     updateProfileAttendance(att);
 
@@ -1601,7 +1596,7 @@ async function processAttendance(emp, type) {
         .select('id')
         .eq('employee_id', emp.id)
         .eq('date', todayStr)
-        .single();
+        .maybeSingle();
 
     let payload = {
         employee_id: emp.id,
