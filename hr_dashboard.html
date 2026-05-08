@@ -18,6 +18,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
         /* ═══════════════════════════════════════════
@@ -1196,13 +1197,17 @@
                 left: 15px;
                 top: 120px;
                 writing-mode: vertical-rl;
-                transform: rotate(180deg);
+                transform: rotate(-180deg);
                 color: #e0e0e0;
                 font-weight: 900;
-                font-size: 2rem;
+                font-size: 2.2rem;
                 letter-spacing: 5px;
-                opacity: 0.6;
+                opacity: 0.4;
                 pointer-events: none;
+                white-space: nowrap;
+                height: auto;
+                width: 300px;
+                text-align: left;
             }
 
             .side-text-right {
@@ -1376,8 +1381,9 @@
                 </div>
                 <div class="back-header">TIZIMGA ULANISH</div>
                 <div class="badge-main-body">
-                    <div class="qr-wrapper">
-                        <img src="" id="badgePreviewQR" class="qr-img-real">
+                    <div class="qr-wrapper"
+                        style="padding:10px; background:#fff; border-radius:15px; border:8px solid #1a7b7c;">
+                        <div id="badgePreviewQRReal" style="width:140px; height:140px;"></div>
                     </div>
                     <div class="connect-section">
                         <div class="connect-text">BOG'LANISH</div>
@@ -1431,7 +1437,7 @@
         </div>
     </div>
 
-    <script type="module" src="hr.js?v=4.9"></script>
+    <script type="module" src="hr.js?v=5.0"></script>
     <script>
         lucide.createIcons();
         gsap.from(".sidebar", { x: -100, opacity: 0, duration: 1 });

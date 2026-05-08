@@ -280,14 +280,50 @@ function prepareBadge() {
     const emp = currentEmp;
     const parts = (emp.full_name || '').split(' ');
     document.getElementById('badgeModalOverlay').style.display = 'flex';
-    document.getElementById('badgePreviewPhoto').src = emp.avatar_url;
+
+    // Ensure photo works in PNG export by converting to DataURL (CORS bypass)
+    const photoImg = document.getElementById('badgePreviewPhoto');
+    if (emp.avatar_url) {
+        toDataURL(emp.avatar_url, function (dataUrl) {
+            photoImg.src = dataUrl;
+        });
+    }
+
     document.getElementById('badgePreviewSideName').textContent = (parts[0] || '').toUpperCase();
     document.getElementById('badgePreviewFullName').textContent = (emp.full_name || '').toUpperCase();
     document.getElementById('badgePreviewRole').textContent = (emp.department || 'OFIS').toUpperCase() + " XODIMI";
+
     const idEl = document.getElementById('badgePreviewID');
     if (idEl) idEl.textContent = 'ROMIX-' + emp.id.substring(0, 8).toUpperCase();
 
-    document.getElementById('badgePreviewQR').src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent('ROMIX-STAFF-' + emp.id)}`;
+    // Offline QR Generation (Stable for PNG Export)
+    const qrContainer = document.getElementById('badgePreviewQRReal');
+    if (qrContainer) {
+        qrContainer.innerHTML = ''; // Clear old
+        new QRCode(qrContainer, {
+            text: 'ROMIX-STAFF-' + emp.id,
+            width: 140,
+            height: 140,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    }
+}
+
+// HELPER FOR 100% PNG EXPORT STABILITY
+function toDataURL(url, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.onload = function () {
+        var reader = new FileReader();
+        reader.onloadend = function () {
+            callback(reader.result);
+        }
+        reader.readAsDataURL(xhr.response);
+    };
+    xhr.open('GET', url);
+    xhr.responseType = 'blob';
+    xhr.send();
 }
 
 function closeBadgeModal() {
