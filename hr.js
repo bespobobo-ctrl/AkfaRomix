@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.switchTab = switchTab;
     window.stopScanner = stopScanner;
     window.closeActionModal = closeActionModal;
+    window.viewDetails = showEmployeeDetail;
 
     // Logout
     const logoutBtn = document.getElementById('logoutBtn');
@@ -87,7 +88,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     }
 
-    document.getElementById('saveWorkerBtn').onclick = saveWorker;
+    const saveBtn = document.getElementById('saveWorkerBtn');
+    if (saveBtn) saveBtn.onclick = saveWorker;
 
     // Search
     const searchInput = document.getElementById('hrSearchInput');
@@ -113,13 +115,49 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function loadInitialData() {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const { data: staff } = await supabase.from('employees').select('*').order('created_at', { ascending: false });
-    const { data: att } = await supabase.from('attendance').select('*').eq('date', todayStr);
-    employeesData = staff || [];
-    todayAtt = att || [];
-    renderStaffList(employeesData);
-    updateGlobalStats();
+    const table = document.getElementById('employeeTableBody');
+
+    // STEP 1: Show loading
+    if (table) table.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--accent);">⏳ Bazaga ulanilmoqda...</td></tr>`;
+
+    try {
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        // STEP 2: Fetch employees
+        if (table) table.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--accent);">⏳ Xodimlar yuklanmoqda...</td></tr>`;
+
+        const { data: staff, error: staffError } = await supabase.from('employees').select('*').order('full_name', { ascending: true });
+
+        if (staffError) {
+            console.error("Staff Fetch Error:", staffError);
+            if (table) table.innerHTML = `<tr><td colspan="6" style="color:#ff4d4f; text-align:center; padding:30px; font-size:0.9rem;">❌ XATOLIK: ${staffError.message}<br><small style="color:var(--text-s)">Supabase URL: ${supabase.supabaseUrl || 'noaniq'}</small></td></tr>`;
+            return;
+        }
+
+        // STEP 3: Fetch attendance
+        const { data: att, error: attError } = await supabase.from('attendance').select('*').eq('date', todayStr);
+        if (attError) {
+            console.error("Attendance Fetch Error:", attError);
+        }
+
+        employeesData = staff || [];
+        todayAtt = att || [];
+
+        console.log("✅ Xodimlar soni:", employeesData.length);
+
+        if (employeesData.length === 0) {
+            if (table) table.innerHTML = `<tr><td colspan="6" style="color:#ffa940; text-align:center; padding:30px;">⚠️ Bazada xodimlar topilmadi (0 ta)<br><small style="color:var(--text-s)">Bazaga ulanish muvaffaqiyatli, lekin 'employees' jadvali bo'sh.</small></td></tr>`;
+            return;
+        }
+
+        // STEP 4: Render
+        renderStaffList(employeesData);
+        updateGlobalStats();
+
+    } catch (err) {
+        console.error("💥 Critical Exception:", err);
+        if (table) table.innerHTML = `<tr><td colspan="6" style="color:#ff4d4f; text-align:center; padding:30px;">💥 JIDDIY XATO: ${err.message}<br><small style="color:var(--text-s)">Stack: ${err.stack?.substring(0, 200)}</small></td></tr>`;
+    }
 }
 
 function updateStatsHeader(staff, attendance) {
@@ -135,13 +173,16 @@ function updateStatsHeader(staff, attendance) {
         return time > 480; // 480 mins = 08:00
     }).length;
 
-    document.getElementById('totalStaffCount').innerText = total;
-    document.getElementById('activeStaffCount').innerText = present;
-    document.getElementById('lateCount').innerText = lateCount;
+    document.getElementById('totalEmployeesCount').innerText = total || 0;
+    document.getElementById('todayArrivedCount').innerText = present || 0;
+    document.getElementById('todayLateCount').innerText = lateCount || 0;
 
     // Monthly Fund (Simulation)
-    const fund = staff.reduce((acc, curr) => acc + parseInt(curr.salary_info?.replace(/\D/g, '') || 0), 0);
-    document.getElementById('totalSalaryFund').innerText = fund.toLocaleString() + " UZS";
+    const fund = staff.reduce((acc, curr) => {
+        const val = parseInt(curr.salary_info?.toString().replace(/\D/g, '') || 0);
+        return acc + (isNaN(val) ? 0 : val);
+    }, 0);
+    document.getElementById('payrollTotal').innerText = (fund || 0).toLocaleString() + " UZS";
 }
 
 function getSmartStatus(att) {
@@ -169,7 +210,8 @@ function renderStaffList(data) {
     updateStatsHeader(employeesData, todayAtt);
 
     data.forEach(emp => {
-        const att = todayAtt.find(a => a.id === emp.id);
+        // 🔍 FIX: Use employee_id to link attendance
+        const att = todayAtt.find(a => a.employee_id === emp.id);
         const status = getSmartStatus(att);
 
         const tr = document.createElement('tr');
@@ -180,6 +222,7 @@ function renderStaffList(data) {
                     <div>
                         <div class="worker-name">${emp.full_name}</div>
                         <div class="worker-id">ID: ${emp.id.substring(0, 8)}</div>
+                        <div style="font-size:0.6rem; opacity:0.3;">DB: bespobobo-ctrfs</div>
                     </div>
                 </div>
             </td>
@@ -210,7 +253,7 @@ function updateGlobalStats() {
     document.getElementById('payrollTotal').innerHTML = `${totalPayroll.toLocaleString()} <small>UZS</small>`;
 }
 
-window.showEmployeeDetail = async function (id) {
+async function showEmployeeDetail(id) {
     const emp = employeesData.find(e => e.id === id);
     if (!emp) return;
     currentEmp = emp;
