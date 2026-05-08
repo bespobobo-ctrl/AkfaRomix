@@ -944,15 +944,26 @@ window.renderAnalyticsBoard = function () {
     }
 
     targetEmps.forEach(emp => {
-        // Demofied calculations for professional display
+        // Demofied calculations for professional display - DETERMINISTIC HASHING
         const baseSalary = parseInt(emp.salary_info?.toString().replace(/\D/g, '') || 5000000);
         const dayRate = baseSalary / 26;
         const hourRate = dayRate / 10;
 
-        // Mock data logic (normally from db)
-        const mockWorkedHours = Math.floor(Math.random() * 50) + 180; // 180-230 hours
-        const mockLates = Math.floor(Math.random() * 4);
-        const mockBonus = Math.random() > 0.8 ? 500000 : 0;
+        let hash1 = 0, hash2 = 0, hash3 = 0;
+        const hashStr = String(emp.id || emp.full_name);
+        for (let i = 0; i < hashStr.length; i++) {
+            hash1 = (hashStr.charCodeAt(i) + ((hash1 << 5) - hash1)) | 0;
+            hash2 = (hashStr.charCodeAt(i) * 31 + ((hash2 << 5) - hash2)) | 0;
+            hash3 = (hashStr.charCodeAt(i) * 17 + ((hash3 << 5) - hash3)) | 0;
+        }
+
+        const deterministicHours = Math.abs(hash1 % 51) + 180; // 180-230
+        const deterministicLates = Math.abs(hash2 % 4); // 0-3
+        const deterministicBonus = Math.abs(hash3 % 10) > 7 ? 500000 : 0;
+
+        const mockWorkedHours = deterministicHours;
+        const mockLates = deterministicLates;
+        const mockBonus = deterministicBonus;
         const mockFine = mockLates * 50000;
 
         const finalCalculated = Math.round((mockWorkedHours * hourRate) + mockBonus - mockFine);
