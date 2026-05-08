@@ -698,7 +698,6 @@ async function processAttendance(emp, type) {
 
     let payload = {
         id: emp.id,
-        full_name: emp.full_name,
         date: todayStr
     };
 

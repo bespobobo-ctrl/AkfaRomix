@@ -156,7 +156,6 @@ window.miniProcessAttendance = async function (type) {
 
     const payload = {
         id: emp.id,
-        full_name: emp.full_name,
         date: todayStr
     };
 
