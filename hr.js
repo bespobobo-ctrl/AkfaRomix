@@ -1597,10 +1597,18 @@ async function processAttendance(emp, type) {
     const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
     const nowIso = new Date().toISOString();
 
+    const { data: existing } = await supabase.from('attendance')
+        .select('id')
+        .eq('employee_id', emp.id)
+        .eq('date', todayStr)
+        .single();
+
     let payload = {
-        id: emp.id,
+        employee_id: emp.id,
         date: todayStr
     };
+
+    if (existing) payload.id = existing.id;
 
     if (type === 'in') {
         payload.check_in = nowIso;
