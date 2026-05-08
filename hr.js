@@ -283,7 +283,7 @@ function prepareBadge() {
     document.getElementById('badgePreviewFullName').textContent = (emp.full_name || '').toUpperCase();
     document.getElementById('badgePreviewRole').textContent = (emp.department || 'OFIS').toUpperCase() + " XODIMI";
     document.getElementById('badgePreviewID').textContent = 'ROMIX-' + emp.id.substring(0, 8).toUpperCase();
-    document.getElementById('badgePreviewQR').src = `https://quickchart.io/qr?text=ROMIX-STAFF-${emp.id}&size=250&margin=0`;
+    document.getElementById('badgePreviewQR').src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=ROMIX-STAFF-${emp.id}`;
 }
 
 function closeBadgeModal() {
