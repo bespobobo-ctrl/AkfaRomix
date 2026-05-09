@@ -350,6 +350,9 @@ function updateProfileAttendance(att) {
         leftEl.textContent = '--:--';
         timeEl.textContent = '00:00';
         if (progressEl) progressEl.style.strokeDashoffset = '597';
+        // Reset salary if they haven't worked today
+        const payEl = document.getElementById('dt-today-pay');
+        if (payEl) payEl.innerHTML = `0 <small style="font-size:0.8rem; color:var(--text-s);">UZS</small>`;
         return;
     }
 
