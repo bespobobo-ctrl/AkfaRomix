@@ -136,14 +136,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadInitialData() {
     const table = document.getElementById('employeeTableBody');
-    // Force clear search to prevent browser auto-fill bugs (the "Ombor" issue)
-    setTimeout(() => {
+    // Force clear search multiple times to fight aggressive browser auto-fill
+    let clearCount = 0;
+    const clearInt = setInterval(() => {
         const searchInput = document.getElementById('hrSearchPrimary');
         if (searchInput) {
             searchInput.value = '';
-            // Also notify filterAndRender if it has already run
             filterAndRender();
         }
+        clearCount++;
+        if (clearCount > 6) clearInterval(clearInt); // Clear for 3 seconds total (500ms * 6)
     }, 500);
 
     // STEP 1: Show loading
@@ -220,6 +222,8 @@ function renderStaffList(data) {
         const status = getSmartStatus(att);
 
         const tr = document.createElement('tr');
+        tr.style.cursor = 'pointer';
+        tr.onclick = () => window.viewDetails(emp.id);
         tr.style.background = "rgba(255,255,255,0.01)";
         tr.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
 
