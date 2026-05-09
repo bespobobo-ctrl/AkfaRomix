@@ -301,7 +301,7 @@ window.viewDetails = async function (id) {
     if (empErr || !freshEmp) return;
 
     const emp = freshEmp;
-    currentEmployee = emp; // Consistent naming
+    currentEmp = emp; // Consistent naming
 
     // UI Fill
     document.getElementById('detailModalOverlay').style.display = 'flex';
