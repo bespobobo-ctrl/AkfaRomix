@@ -37,11 +37,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.closeBadgeModal = closeBadgeModal;
     window.downloadBadge = downloadBadge;
     window.printBadgeReal = printBadgeReal;
-    window.closeActionModal = closeActionModal;
     window.switchTab = switchTab;
     window.stopScanner = stopScanner;
     window.closeActionModal = closeActionModal;
-    window.viewDetails = showEmployeeDetail;
+    // window.viewDetails is assigned at its definition below
 
     // Logout
     const logoutBtn = document.getElementById('logoutBtn');
