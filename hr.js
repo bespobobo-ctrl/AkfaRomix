@@ -136,6 +136,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadInitialData() {
     const table = document.getElementById('employeeTableBody');
+    const searchInput = document.getElementById('hrSearchInput');
+
+    // Force clear search to prevent browser auto-fill bugs (the "Ombor" issue)
+    if (searchInput) searchInput.value = '';
 
     // STEP 1: Show loading
     if (table) table.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--accent);">⏳ Bazaga ulanilmoqda...</td></tr>`;
@@ -911,6 +915,9 @@ async function switchTab(tab) {
 
     // UI Feedback
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    // Highlight the clicked tab bar button
+    const activeBtn = document.querySelector(`.nav-btn[onclick*="'${tab}'"]`) || (event && event.currentTarget);
+    if (activeBtn && activeBtn.classList) activeBtn.classList.add('active');
 
     const sections = {
         'dashboard': document.querySelector('.main-container'),
