@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (saveBtn) saveBtn.onclick = saveWorker;
 
     // Search
-    const searchInput = document.getElementById('hrSearchInput');
+    const searchInput = document.getElementById('hrSearchPrimary');
     if (searchInput) {
         searchInput.oninput = () => {
             filterAndRender();
@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             activeDept = pill.dataset.dept;
 
             // UX Fix: Clear search bar when explicitly selecting a category
-            const searchInput = document.getElementById('hrSearchInput');
+            const searchInput = document.getElementById('hrSearchPrimary');
             if (searchInput) searchInput.value = '';
 
             filterAndRender();
@@ -138,7 +138,7 @@ async function loadInitialData() {
     const table = document.getElementById('employeeTableBody');
     // Force clear search to prevent browser auto-fill bugs (the "Ombor" issue)
     setTimeout(() => {
-        const searchInput = document.getElementById('hrSearchInput');
+        const searchInput = document.getElementById('hrSearchPrimary');
         if (searchInput) {
             searchInput.value = '';
             // Also notify filterAndRender if it has already run
@@ -896,7 +896,7 @@ function filterAndRender() {
     let filtered = employeesData;
 
     // Apply Search Input
-    const searchInput = document.getElementById('hrSearchInput');
+    const searchInput = document.getElementById('hrSearchPrimary');
     if (searchInput && searchInput.value) {
         const val = searchInput.value.toLowerCase();
         filtered = filtered.filter(emp => (emp.full_name || '').toLowerCase().includes(val) || (emp.department || '').toLowerCase().includes(val) || (emp.role || '').toLowerCase().includes(val));
