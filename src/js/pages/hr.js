@@ -191,8 +191,10 @@ async function loadInitialData() {
             return;
         }
 
-        // STEP 4: Render
-        filterAndRender();
+        // STEP 4: Render with a tiny delay to ensure global vars are fully set
+        setTimeout(() => {
+            filterAndRender();
+        }, 150);
 
     } catch (err) {
         console.error("💥 Critical Exception:", err);
@@ -1003,24 +1005,38 @@ function handleDelete() {
 }
 
 function filterAndRender() {
-    let filtered = employeesData;
+    let filtered = [...employeesData];
+    console.log("🛠 Filter boshlandi. Jami xodimlar:", filtered.length, "Faol bo'lim:", activeDept);
 
     // Apply Search Input
     const searchInput = document.getElementById('hrSearchPrimary');
     if (searchInput && searchInput.value) {
-        const val = searchInput.value.toLowerCase();
-        filtered = filtered.filter(emp => (emp.full_name || '').toLowerCase().includes(val) || (emp.department || '').toLowerCase().includes(val) || (emp.role || '').toLowerCase().includes(val));
+        const val = searchInput.value.toLowerCase().trim();
+        filtered = filtered.filter(emp =>
+            (emp.full_name || '').toLowerCase().includes(val) ||
+            (emp.department || '').toLowerCase().includes(val) ||
+            (emp.role || '').toLowerCase().includes(val) ||
+            (emp.phone || '').includes(val)
+        );
     }
+
+    // Apply Department Filter
+    const normalize = (s) => (s || '').toString().toLowerCase().trim();
 
     if (activeDept === 'at_work') {
         filtered = filtered.filter(e => {
             const att = todayAtt.find(a => a.employee_id === e.id);
-            return att && att.status === 'ISHDA';
+            return att && (att.status === 'ISHDA' || (att.check_in && !att.check_out));
         });
-    } else if (activeDept !== 'all') {
-        filtered = filtered.filter(e => ((e.department || '').trim().toLowerCase() === activeDept.trim().toLowerCase() || (e.dept || '').trim().toLowerCase() === activeDept.trim().toLowerCase()));
+    } else if (activeDept !== 'all' && activeDept !== '') {
+        filtered = filtered.filter(e => {
+            const empDept = normalize(e.department || e.dept || 'Ofis');
+            const targetDept = normalize(activeDept);
+            return empDept === targetDept;
+        });
     }
 
+    console.log("✅ Filter yakunlandi. Ko'rsatilmoqda:", filtered.length);
     renderStaffList(filtered);
 }
 
