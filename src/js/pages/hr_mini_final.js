@@ -128,6 +128,21 @@ window.miniShowAction = async function (emp) {
     const now = new Date();
     const todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
 
+    // 🧠 SMART TIME DETECTION
+    const hours = now.getHours();
+    const mins = now.getMinutes();
+    const totalMins = hours * 60 + mins;
+
+    let smartRecommendation = '';
+    // 07:45 (465) - 09:00 (540)
+    if (totalMins >= 465 && totalMins <= 540) smartRecommendation = 'in';
+    // 12:20 (740) - 13:00 (780)
+    else if (totalMins >= 740 && totalMins <= 780) smartRecommendation = 'lunch_out';
+    // 13:01 (781) - 14:00 (840)
+    else if (totalMins > 780 && totalMins <= 840) smartRecommendation = 'lunch_in';
+    // 17:45 (1065) - 18:45 (1125)
+    else if (totalMins >= 1065 && totalMins <= 1125) smartRecommendation = 'out';
+
     // Joriy davomatni tekshirish
     const { data: att } = await supabase.from('attendance')
         .select('*')
@@ -142,50 +157,65 @@ window.miniShowAction = async function (emp) {
 
     let buttons = '';
 
+    const btnStyle = (type) => {
+        const isRec = smartRecommendation === type;
+        return `height:70px; border-radius:24px; font-weight:900; font-size:1.1rem; display:flex; align-items:center; justify-content:center; gap:12px; width:100%; border:none; transition:0.3s; ${isRec ? 'transform: scale(1.05); outline: 3px solid var(--accent); outline-offset: 4px;' : 'opacity:0.8;'}`;
+    };
+
     if (!att || !att.check_in) {
-        // 🟢 Faqat Kelish
         buttons = `
-            <button onclick="window.miniProcessAttendance('in')" style="height:70px; background:var(--accent); color:#000; border:none; border-radius:24px; font-weight:900; font-size:1.1rem; display:flex; align-items:center; justify-content:center; gap:12px; width:100%;">
-                <i data-lucide="log-in"></i> ISHGA KELDI
-            </button>
-        `;
-    } else if (att.status === 'ISHDA' && !att.lunch_start) {
-        // 🥪 Tushlikka chiqish yoki Ketish
-        buttons = `
-            <button onclick="window.miniProcessAttendance('lunch_out')" style="height:70px; background:#ffa940; color:#000; border:none; border-radius:24px; font-weight:900; font-size:1.1rem; display:flex; align-items:center; justify-content:center; gap:12px; width:100%;">
-                <i data-lucide="coffee"></i> TUSHLIKKA KETDI
-            </button>
-            <button onclick="window.miniProcessAttendance('out')" style="height:70px; background:rgba(255,77,79,0.1); color:#ff4d4f; border:1px solid rgba(255,77,79,0.2); border-radius:24px; font-weight:900; font-size:1.1rem; display:flex; align-items:center; justify-content:center; gap:12px; width:100%; margin-top:15px;">
-                <i data-lucide="log-out"></i> ISHdan KETDI
-            </button>
-        `;
-    } else if (att.lunch_start && !att.lunch_end) {
-        // 🥗 Tushlikdan Qaytish
-        buttons = `
-            <button onclick="window.miniProcessAttendance('lunch_in')" style="height:70px; background:var(--accent); color:#000; border:none; border-radius:24px; font-weight:900; font-size:1.1rem; display:flex; align-items:center; justify-content:center; gap:12px; width:100%;">
-                <i data-lucide="utensils"></i> TUSHLIKDAN QAYTDI
+            <button onclick="window.miniProcessAttendance('in')" style="${btnStyle('in')} background:var(--accent); color:#000;">
+                <i data-lucide="log-in"></i> ISHGA KELDI ${smartRecommendation === 'in' ? '✨' : ''}
             </button>
         `;
     } else {
-        // ✅ Ish yakunlangan bo'lsa
-        buttons = `
-            <div style="text-align:center; padding:20px; background:rgba(255,255,255,0.03); border-radius:20px; border:1px dashed var(--accent);">
-                <p style="color:var(--accent); font-weight:900;">BUGUNGI ISH YAKUNLANDI</p>
-            </div>
-            <button onclick="window.miniProcessAttendance('out')" style="height:50px; background:none; border:1px solid rgba(255,77,79,0.2); color:#ff4d4f; border-radius:20px; margin-top:15px; width:100%; font-weight:700;">Ketishni yangilash</button>
-        `;
+        // Tushlik holati
+        const showLunchOut = !att.lunch_start;
+        const showLunchIn = att.lunch_start && !att.lunch_end;
+        const showWorkOut = att.status === 'ISHDA' || (att.lunch_end);
+
+        if (showLunchOut) {
+            buttons += `
+                <button onclick="window.miniProcessAttendance('lunch_out')" style="${btnStyle('lunch_out')} background:#ffa940; color:#000;">
+                    <i data-lucide="coffee"></i> TUSHLIKKA KETDI ${smartRecommendation === 'lunch_out' ? '✨' : ''}
+                </button>
+            `;
+        }
+
+        if (showLunchIn) {
+            buttons += `
+                <button onclick="window.miniProcessAttendance('lunch_in')" style="${btnStyle('lunch_in')} background:var(--accent); color:#000;">
+                    <i data-lucide="utensils"></i> TUSHLIKDAN QAYTDI ${smartRecommendation === 'lunch_in' ? '✨' : ''}
+                </button>
+            `;
+        }
+
+        if (showWorkOut) {
+            buttons += `
+                <button onclick="window.miniProcessAttendance('out')" style="${btnStyle('out')} background:rgba(255,77,79,0.1); color:#ff4d4f; border:1px solid rgba(255,77,79,0.2); margin-top:15px;">
+                    <i data-lucide="log-out"></i> ISHDAN KETDI ${smartRecommendation === 'out' ? '✨' : ''}
+                </button>
+            `;
+        }
     }
 
     overlay.innerHTML = `
-        <div class="mini-modal" id="miniModalContent" style="transform: translateY(100%);">
+        <div class="mini-modal" id="miniModalContent">
             <div style="width:40px; height:5px; background:rgba(255,255,255,0.1); border-radius:10px; margin:0 auto 25px auto;"></div>
+            
+            ${smartRecommendation ? `
+                <div style="background:rgba(0,255,136,0.1); padding:10px; border-radius:15px; margin-bottom:20px; text-align:center; border:1px dashed var(--accent);">
+                    <span style="color:var(--accent); font-size:0.75rem; font-weight:900; letter-spacing:1px;">🚀 SMART TAVSIYA ANIQLANDI!</span>
+                </div>
+            ` : ''}
+
             <div style="text-align:center; margin-bottom:30px;">
                 <img src="${emp.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(emp.full_name)}" style="width:80px; height:80px; border-radius:25px; margin-bottom:15px; border:2px solid var(--accent);">
                 <h2 style="font-size:1.5rem; font-weight:900;">${emp.full_name}</h2>
-                <p style="color:var(--text-s); font-size:0.8rem; margin-top:5px;">DAVOMATNI BELGILANG</p>
+                <p style="color:var(--text-s); font-size:0.8rem; margin-top:5px;">DAVOMATNI TANLANG</p>
             </div>
             
-            <div style="display:flex; flex-direction:column;">
+            <div style="display:flex; flex-direction:column; gap:12px;">
                 ${buttons}
                 <button onclick="window.miniCloseAction()" style="height:60px; background:none; border:none; color:var(--text-s); font-weight:700; margin-top:10px;">BEKOR QILISH</button>
             </div>
