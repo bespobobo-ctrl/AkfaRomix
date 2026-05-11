@@ -1,19 +1,10 @@
 node_modules
-.DS_Store
 dist
-dist-ssr
-*.local
 .env
-.env.*
-!.env.example
-.vscode
-.gemini
-.agents
-.agent
-_agents
-_agent
-brain
-logs
-tmp
-workflows
+.DS_Store
+
+# Logs
+logs/
 *.log
+debug_output.txt
+output.txt

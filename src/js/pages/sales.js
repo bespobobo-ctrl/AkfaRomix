@@ -1,4 +1,4 @@
-import { supabase } from './supabase.js';
+import { supabase } from '../core/supabase.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const user = JSON.parse(localStorage.getItem('currentUser'));

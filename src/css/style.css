@@ -34,6 +34,10 @@ body.dark-mode {
     box-sizing: border-box;
 }
 
+html {
+    scrollbar-gutter: stable;
+}
+
 body {
     font-family: 'Outfit', sans-serif;
     background-color: var(--bg-core);

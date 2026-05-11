@@ -1,10 +1,17 @@
-import { supabase } from './supabase.js';
+import { supabase } from '@/core/supabase.js';
+import { inventoryService } from '@/services/inventoryService.js';
+import { LayoutService } from '@/components/LayoutService.js';
+import { authService } from '@/services/auth/authService.js';
+import { ROLES } from '@/constants';
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const user = JSON.parse(localStorage.getItem('currentUser'));
-    if (!user || (user.role !== 'manager' && user.role !== 'admin')) {
-        window.location.href = '/';
+    const user = authService.getCurrentUser();
+    if (!user || (user.role !== ROLES.MANAGER && user.role !== ROLES.ADMIN)) {
+        authService.logout();
+        return;
     }
+
+    LayoutService.init('OMBOR');
 
     // Elements
     const inventoryTable = document.getElementById('inventoryTable');
@@ -44,8 +51,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Inventory Logic ---
     async function loadInventory() {
-        const { data, error } = await supabase.from('warehouse_products').select('*').order('created_at', { ascending: false });
-        if (error) return;
+        const data = await inventoryService.getProducts();
+        if (!data) return;
 
         inventoryTable.innerHTML = '';
         data.forEach(p => {

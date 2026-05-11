@@ -8,11 +8,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 export function checkAuth(roles = []) {
     const user = JSON.parse(localStorage.getItem('currentUser'));
     if (!user) {
-        window.location.href = 'index.html';
+        window.location.href = '/index.html';
         return null;
     }
     if (roles.length > 0 && !roles.includes(user.role)) {
-        window.location.href = 'generic_dashboard.html';
+        window.location.href = '/src/pages/generic_dashboard.html';
         return null;
     }
     return user;
@@ -20,5 +20,5 @@ export function checkAuth(roles = []) {
 
 export function logout() {
     localStorage.removeItem('currentUser');
-    window.location.href = 'index.html';
+    window.location.href = '/index.html';
 }

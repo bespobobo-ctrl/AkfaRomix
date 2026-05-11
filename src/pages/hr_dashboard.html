@@ -1012,20 +1012,66 @@
                                                     style="font-size:0.8rem; color:var(--text-s);">UZS</small></div>
                                         </div>
 
-                                        <div style="display:flex; gap:20px; width:100%;">
+                                        <!-- WORK TIMES (CHECK-IN / CHECK-OUT) -->
+                                        <div style="display:flex; gap:20px; width:100%; margin-top:20px;">
                                             <div style="flex:1; text-align:center;">
                                                 <span
-                                                    style="font-size:0.7rem; color:var(--text-s); display:block; margin-bottom:5px;">KELISH
+                                                    style="font-size:0.65rem; color:var(--text-s); display:block; margin-bottom:5px; font-weight:800; letter-spacing:1px;">KELISH
                                                     VAQTI</span>
-                                                <b id="dt-arrived" style="font-size:1.4rem;">--:--</b>
+                                                <b id="dt-arrived" style="font-size:1.2rem; color:#fff;">--:--</b>
                                             </div>
-                                            <div style="width:1px; height:45px; background:rgba(255,255,255,0.08);">
+                                            <div style="width:1px; height:35px; background:rgba(255,255,255,0.08);">
                                             </div>
                                             <div style="flex:1; text-align:center;">
                                                 <span
-                                                    style="font-size:0.7rem; color:var(--text-s); display:block; margin-bottom:5px;">KETISH
+                                                    style="font-size:0.65rem; color:var(--text-s); display:block; margin-bottom:5px; font-weight:800; letter-spacing:1px;">KETISH
                                                     VAQTI</span>
-                                                <b id="dt-left" style="font-size:1.4rem;">--:--</b>
+                                                <b id="dt-left" style="font-size:1.2rem; color:#fff;">--:--</b>
+                                            </div>
+                                        </div>
+
+                                        <!-- COLLAPSIBLE LUNCH SECTION -->
+                                        <div style="width:100%; margin-top:15px;">
+                                            <button onclick="window.toggleLunchSection()"
+                                                style="width:100%; display:flex; justify-content:space-between; align-items:center; background:rgba(255,169,64,0.05); border:1px solid rgba(255,169,64,0.1); padding:10px 20px; border-radius:15px; cursor:pointer; transition:0.3s; outline:none;"
+                                                onmouseover="this.style.background='rgba(255,169,64,0.1)'"
+                                                onmouseout="this.style.background='rgba(255,169,64,0.05)'">
+                                                <div style="display:flex; align-items:center; gap:10px;">
+                                                    <i data-lucide="coffee" style="width:14px; color:#ffa940;"></i>
+                                                    <span
+                                                        style="font-size:0.65rem; color:#ffa940; font-weight:900; letter-spacing:1px;">TUSHLIK
+                                                        MA'LUMOTLARI</span>
+                                                </div>
+                                                <i id="lunchChevron" data-lucide="arrow-down"
+                                                    style="width:14px; color:var(--text-s); transition:0.3s;"></i>
+                                            </button>
+
+                                            <div id="lunchDetailsBody"
+                                                style="display:none; overflow:hidden; margin-top:10px; padding:15px; background:rgba(255,255,255,0.02); border-radius:20px; border:1px solid rgba(255,255,255,0.05);">
+                                                <div
+                                                    style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px;">
+                                                    <span
+                                                        style="font-size:0.6rem; color:var(--text-s); font-weight:800;">DAVOMIYLIGI:</span>
+                                                    <span id="dt-lunch-duration"
+                                                        style="font-size:0.75rem; color:var(--accent); font-weight:900; font-family:'Outfit';">00:00:00</span>
+                                                </div>
+                                                <div style="display:flex; gap:15px; align-items:center;">
+                                                    <div style="flex:1; text-align:center;">
+                                                        <small
+                                                            style="display:block; font-size:0.55rem; color:var(--text-s); margin-bottom:3px; opacity:0.5;">CHIQISH</small>
+                                                        <b id="dt-lunch-start"
+                                                            style="font-size:0.9rem; color:#fff;">--:--</b>
+                                                    </div>
+                                                    <div
+                                                        style="width:1px; height:20px; background:rgba(255,255,255,0.1);">
+                                                    </div>
+                                                    <div style="flex:1; text-align:center;">
+                                                        <small
+                                                            style="display:block; font-size:0.55rem; color:var(--text-s); margin-bottom:3px; opacity:0.5;">QAYTISH</small>
+                                                        <b id="dt-lunch-end"
+                                                            style="font-size:0.9rem; color:#fff;">--:--</b>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -2131,13 +2177,8 @@
         </div>
     </div>
 
-    <script type="module" src="hr.js?v=30.0"></script>
-    <script>
-        lucide.createIcons();
-        gsap.from(".sidebar", { x: -100, opacity: 0, duration: 1 });
-        gsap.from(".top-nav", { y: -50, opacity: 0, duration: 1, delay: 0.2 });
-        gsap.from(".bento-card", { opacity: 0, y: 30, duration: 0.8, stagger: 0.1, delay: 0.4 });
-    </script>
+    <script type="module" src="/src/js/pages/hr.js"></script>
+
     <!-- 📊 PREMIUM KITCHEN REPORT MODAL -->
     <div class="modal-blur" id="kitchenReportModal"
         style="z-index:9999; display:none; align-items:center; justify-content:center; background:rgba(7,11,18,0.85); backdrop-filter:blur(20px);">

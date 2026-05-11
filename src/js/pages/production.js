@@ -1,4 +1,4 @@
-import { supabase, checkAuth, logout } from './supabase.js';
+import { supabase, checkAuth, logout } from '../core/supabase.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     checkAuth(['admin', 'ishlab_chiqarish']);

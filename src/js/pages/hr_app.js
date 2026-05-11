@@ -1,4 +1,4 @@
-import { supabase } from './supabase.js';
+import { supabase } from '../core/supabase.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('AKFA HR Premium 2026 Loaded');

@@ -1,4 +1,4 @@
-import { supabase, checkAuth } from './supabase.js?v=mini';
+import { supabase, checkAuth } from '../core/supabase.js';
 
 let employees = [];
 let html5QrScanner = null;
@@ -123,30 +123,71 @@ async function onMiniScanSuccess(text) {
 }
 
 // 🎭 MINI UI ACTIONS (Bottom Sheet Style)
-window.miniShowAction = function (emp) {
+window.miniShowAction = async function (emp) {
     currentEmp = emp;
+    const now = new Date();
+    const todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+
+    // Joriy davomatni tekshirish
+    const { data: att } = await supabase.from('attendance')
+        .select('*')
+        .eq('employee_id', emp.id)
+        .eq('date', todayStr)
+        .maybeSingle();
+
     const overlay = document.createElement('div');
     overlay.className = 'mini-modal-overlay';
     overlay.id = 'miniActionSheet';
     overlay.style.display = 'flex';
 
+    let buttons = '';
+
+    if (!att || !att.check_in) {
+        // 🟢 Faqat Kelish
+        buttons = `
+            <button onclick="window.miniProcessAttendance('in')" style="height:70px; background:var(--accent); color:#000; border:none; border-radius:24px; font-weight:900; font-size:1.1rem; display:flex; align-items:center; justify-content:center; gap:12px; width:100%;">
+                <i data-lucide="log-in"></i> ISHGA KELDI
+            </button>
+        `;
+    } else if (att.status === 'ISHDA' && !att.lunch_start) {
+        // 🥪 Tushlikka chiqish yoki Ketish
+        buttons = `
+            <button onclick="window.miniProcessAttendance('lunch_out')" style="height:70px; background:#ffa940; color:#000; border:none; border-radius:24px; font-weight:900; font-size:1.1rem; display:flex; align-items:center; justify-content:center; gap:12px; width:100%;">
+                <i data-lucide="coffee"></i> TUSHLIKKA KETDI
+            </button>
+            <button onclick="window.miniProcessAttendance('out')" style="height:70px; background:rgba(255,77,79,0.1); color:#ff4d4f; border:1px solid rgba(255,77,79,0.2); border-radius:24px; font-weight:900; font-size:1.1rem; display:flex; align-items:center; justify-content:center; gap:12px; width:100%; margin-top:15px;">
+                <i data-lucide="log-out"></i> ISHdan KETDI
+            </button>
+        `;
+    } else if (att.lunch_start && !att.lunch_end) {
+        // 🥗 Tushlikdan Qaytish
+        buttons = `
+            <button onclick="window.miniProcessAttendance('lunch_in')" style="height:70px; background:var(--accent); color:#000; border:none; border-radius:24px; font-weight:900; font-size:1.1rem; display:flex; align-items:center; justify-content:center; gap:12px; width:100%;">
+                <i data-lucide="utensils"></i> TUSHLIKDAN QAYTDI
+            </button>
+        `;
+    } else {
+        // ✅ Ish yakunlangan bo'lsa
+        buttons = `
+            <div style="text-align:center; padding:20px; background:rgba(255,255,255,0.03); border-radius:20px; border:1px dashed var(--accent);">
+                <p style="color:var(--accent); font-weight:900;">BUGUNGI ISH YAKUNLANDI</p>
+            </div>
+            <button onclick="window.miniProcessAttendance('out')" style="height:50px; background:none; border:1px solid rgba(255,77,79,0.2); color:#ff4d4f; border-radius:20px; margin-top:15px; width:100%; font-weight:700;">Ketishni yangilash</button>
+        `;
+    }
+
     overlay.innerHTML = `
-        <div class="mini-modal" id="miniModalContent">
+        <div class="mini-modal" id="miniModalContent" style="transform: translateY(100%);">
             <div style="width:40px; height:5px; background:rgba(255,255,255,0.1); border-radius:10px; margin:0 auto 25px auto;"></div>
             <div style="text-align:center; margin-bottom:30px;">
-                <img src="${emp.avatar_url}" style="width:80px; height:80px; border-radius:25px; margin-bottom:15px; border:2px solid var(--accent);">
+                <img src="${emp.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(emp.full_name)}" style="width:80px; height:80px; border-radius:25px; margin-bottom:15px; border:2px solid var(--accent);">
                 <h2 style="font-size:1.5rem; font-weight:900;">${emp.full_name}</h2>
                 <p style="color:var(--text-s); font-size:0.8rem; margin-top:5px;">DAVOMATNI BELGILANG</p>
             </div>
             
-            <div style="display:grid; grid-template-columns:1fr; gap:15px;">
-                <button onclick="window.miniProcessAttendance('in')" style="height:70px; background:var(--accent); color:#000; border:none; border-radius:24px; font-weight:900; font-size:1.1rem; display:flex; align-items:center; justify-content:center; gap:12px;">
-                    <i data-lucide="log-in"></i> ISHGA KELDI
-                </button>
-                <button onclick="window.miniProcessAttendance('out')" style="height:70px; background:rgba(255,77,79,0.1); color:#ff4d4f; border:1px solid rgba(255,77,79,0.2); border-radius:24px; font-weight:900; font-size:1.1rem; display:flex; align-items:center; justify-content:center; gap:12px;">
-                    <i data-lucide="log-out"></i> ISHdan KETDI
-                </button>
-                <button onclick="window.miniCloseAction()" style="height:60px; background:none; border:none; color:var(--text-s); font-weight:700;">BEKOR QILISH</button>
+            <div style="display:flex; flex-direction:column;">
+                ${buttons}
+                <button onclick="window.miniCloseAction()" style="height:60px; background:none; border:none; color:var(--text-s); font-weight:700; margin-top:10px;">BEKOR QILISH</button>
             </div>
         </div>
     `;
@@ -187,9 +228,13 @@ window.miniProcessAttendance = async function (type) {
     if (type === 'in') {
         payload.check_in = nowIso;
         payload.status = 'ISHDA';
-    } else {
+    } else if (type === 'out') {
         payload.check_out = nowIso;
         payload.status = 'KETGAN';
+    } else if (type === 'lunch_out') {
+        payload.lunch_start = nowIso;
+    } else if (type === 'lunch_in') {
+        payload.lunch_end = nowIso;
     }
 
     const { error } = await supabase.from('attendance').upsert(payload);

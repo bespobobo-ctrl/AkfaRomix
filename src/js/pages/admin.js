@@ -1,14 +1,19 @@
-import { supabase } from './supabase.js';
+import { supabase } from '@/core/supabase.js';
+import { authService } from '@/services/auth/authService.js';
+import { LayoutService } from '@/components/LayoutService.js';
+import { ROLES } from '@/constants';
 
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('AKFA Rahbar Paneli v2 Logic Loaded');
     let editingUserId = null;
 
     // Auth Check
-    const user = JSON.parse(localStorage.getItem('currentUser'));
-    if (!user || user.role !== 'admin') {
-        window.location.href = '/';
+    const user = authService.getCurrentUser();
+    if (!user || user.role !== ROLES.ADMIN) {
+        authService.logout();
+        return;
     }
+    LayoutService.init();
 
     // Initialize Telegram WebApp if available
     const tg = window.Telegram ? window.Telegram.WebApp : null;

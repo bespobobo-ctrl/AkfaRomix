@@ -1,5 +1,8 @@
 // 💎 ROMIX HR - Core Engine v4.1 (Ultra Stable)
-import { supabase } from './supabase.js';
+import { supabase } from '@/core/supabase.js';
+import { authService } from '@/services/auth/authService.js';
+import { LayoutService } from '@/components/LayoutService.js';
+import { ROLES, ATTENDANCE_STATUS } from '@/constants';
 
 let employeesData = [];
 let todayAtt = [];
@@ -10,15 +13,33 @@ let activeAnaDept = 'all';
 let tempPhotoData = null;
 let html5QrCode = null;
 let workInterval = null;
+let lunchInterval = null;
 let currentTab = 'dashboard';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // 🛡️ AUTH GUARD
-    const user = JSON.parse(localStorage.getItem('currentUser'));
-    if (!user || (user.role !== 'hr' && user.role !== 'admin')) {
-        window.location.href = '/';
+    const user = authService.getCurrentUser();
+    if (!user || (user.role !== ROLES.HR && user.role !== ROLES.ADMIN)) {
+        authService.logout();
         return;
     }
+
+    // Initialize Layout (Sidebar, etc.)
+    const hrActions = `
+        <button class="add-btn-lux" id="addWorkerBtn" style="margin:0; width:auto; padding:0 25px; height:45px; border-radius:12px; font-size:0.75rem; white-space:nowrap;">
+            <i data-lucide="plus-circle" size="18"></i> <span>YANGI XODIM</span>
+        </button>
+    `;
+    LayoutService.init('HR', hrActions);
+
+    /*
+    // Animations
+    if (window.gsap) {
+        gsap.from(".sidebar", { x: -100, opacity: 0, duration: 1 });
+        gsap.from(".top-nav", { y: -50, opacity: 0, duration: 1, delay: 0.2 });
+        gsap.from(".bento-card", { opacity: 0, y: 30, duration: 0.8, stagger: 0.1, delay: 0.4 });
+    }
+    */
 
     // Header Branding
     const nameEl = document.getElementById('userNameLabel');
@@ -40,16 +61,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.switchTab = switchTab;
     window.stopScanner = stopScanner;
     window.closeActionModal = closeActionModal;
+    window.toggleLunchSection = toggleLunchSection;
     // window.viewDetails is assigned at its definition below
 
-    // Logout
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.onclick = () => {
-            localStorage.removeItem('currentUser');
-            window.location.href = '/';
-        };
-    }
+    // Logout (handled by LayoutService)
 
     // Modal Control
     const addBtn = document.getElementById('addWorkerBtn');
@@ -136,27 +151,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadInitialData() {
     const table = document.getElementById('employeeTableBody');
-    // Force clear search multiple times to fight aggressive browser auto-fill
-    let clearCount = 0;
-    const clearInt = setInterval(() => {
-        const searchInput = document.getElementById('hrSearchPrimary');
-        if (searchInput) {
-            searchInput.value = '';
-            filterAndRender();
-        }
-        clearCount++;
-        if (clearCount > 6) clearInterval(clearInt); // Clear for 3 seconds total (500ms * 6)
-    }, 500);
+    const searchInput = document.getElementById('hrSearchPrimary');
+
+    if (searchInput) {
+        searchInput.value = '';
+    }
 
     // STEP 1: Show loading
-    if (table) table.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--accent);">⏳ Bazaga ulanilmoqda...</td></tr>`;
+    if (table) table.innerHTML = `<tr><td colspan="6" style="text-align:center; height: 500px; padding:20px; color:var(--accent);">⏳ Bazaga ulanilmoqda...</td></tr>`;
 
     try {
         const today = new Date();
         const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
 
         // STEP 2: Fetch employees
-        if (table) table.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--accent);">⏳ Xodimlar yuklanmoqda...</td></tr>`;
+        if (table) table.innerHTML = `<tr><td colspan="6" style="text-align:center; height: 500px; padding:20px; color:var(--accent);">⏳ Xodimlar yuklanmoqda...</td></tr>`;
 
         const { data: staff, error: staffError } = await supabase.from('employees').select('*').order('full_name', { ascending: true });
 
@@ -295,15 +304,29 @@ function updateGlobalStats() {
     if (payrollEl) payrollEl.innerHTML = `${totalPayroll.toLocaleString()} <small>UZS</small>`;
 }
 
+let isFetchingDetails = false;
+
 window.viewDetails = async function (id) {
+    if (isFetchingDetails) return;
+    isFetchingDetails = true;
+
+    console.log("🔍 viewDetails calling for ID:", id);
     // 1. FRESH DATA FETCH
     const { data: freshEmp, error: empErr } = await supabase.from('employees').select('*').eq('id', id).single();
+
+    isFetchingDetails = false;
+
+    if (empErr) console.error("❌ viewDetails fetch error:", empErr);
+    if (!freshEmp) console.warn("⚠️ No fresh employee found for ID:", id);
     if (empErr || !freshEmp) return;
+
+    console.log("✅ freshEmp found:", freshEmp.full_name);
 
     const emp = freshEmp;
     currentEmp = emp; // Consistent naming
 
     // UI Fill
+    document.body.style.overflow = 'hidden'; // Lock scroll
     document.getElementById('detailModalOverlay').style.display = 'flex';
     document.getElementById('profileDetail').style.display = 'flex';
 
@@ -335,6 +358,7 @@ window.viewDetails = async function (id) {
 
     gsap.fromTo("#profileDetail", { scale: 0.95, opacity: 0, y: 30 }, { scale: 1, opacity: 1, y: 0, duration: 0.5 });
     lucide.createIcons();
+    console.log("🚀 Modal should be visible now.");
 }
 
 function updateProfileAttendance(att) {
@@ -342,13 +366,17 @@ function updateProfileAttendance(att) {
 
     const arrivedEl = document.getElementById('dt-arrived');
     const leftEl = document.getElementById('dt-left');
+    const lunchStartEl = document.getElementById('dt-lunch-start');
+    const lunchEndEl = document.getElementById('dt-lunch-end');
     const timeEl = document.getElementById('dt-worktime');
     const progressEl = document.getElementById('timeProgress');
 
     if (!att || !att.check_in) {
         arrivedEl.textContent = '--:--';
         leftEl.textContent = '--:--';
-        timeEl.textContent = '00:00';
+        if (lunchStartEl) lunchStartEl.textContent = '--:--';
+        if (lunchEndEl) lunchEndEl.textContent = '--:--';
+        timeEl.textContent = '00:00:00';
         if (progressEl) progressEl.style.strokeDashoffset = '597';
         // Reset salary if they haven't worked today
         const payEl = document.getElementById('dt-today-pay');
@@ -368,6 +396,37 @@ function updateProfileAttendance(att) {
         workInterval = setInterval(() => calculateDuration(start, new Date()), 1000);
         calculateDuration(start, new Date());
     }
+
+    // 🥗 LUNCH LOGIC
+    if (lunchInterval) clearInterval(lunchInterval);
+    const durationEl = document.getElementById('dt-lunch-duration');
+
+    if (att.lunch_start) {
+        const lStart = new Date(att.lunch_start);
+        if (lunchStartEl) lunchStartEl.textContent = lStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        if (att.lunch_end) {
+            const lEnd = new Date(att.lunch_end);
+            if (lunchEndEl) lunchEndEl.textContent = lEnd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            updateLunchDuration(lStart, lEnd);
+        } else {
+            if (lunchEndEl) lunchEndEl.textContent = '--:--';
+            lunchInterval = setInterval(() => updateLunchDuration(lStart, new Date()), 1000);
+            updateLunchDuration(lStart, new Date());
+        }
+    }
+}
+
+function updateLunchDuration(start, end) {
+    const diff = Math.abs(end - start);
+    const hrs = Math.floor(diff / 3600000);
+    const mins = Math.floor((diff % 3600000) / 60000);
+    const secs = Math.floor((diff % 60000) / 1000);
+
+    const durEl = document.getElementById('dt-lunch-duration');
+    if (durEl) {
+        durEl.textContent = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
 }
 
 function calculateDuration(start, end) {
@@ -376,20 +435,42 @@ function calculateDuration(start, end) {
     const mins = Math.floor((diff % 3600000) / 60000);
     const secs = Math.floor((diff % 60000) / 1000);
 
-    const timeStr = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-    document.getElementById('dt-worktime').textContent = timeStr;
+    // 🕒 Horizontal Digital Timer (Premium Style)
+    const timeStr = `
+        <div style="display:flex; align-items:baseline; justify-content:center; gap:5px; font-family:'Outfit';">
+            <span style="font-size:3.5rem; font-weight:900; color:#fff; letter-spacing:-2px;">${hrs.toString().padStart(2, '0')}</span>
+            <span style="font-size:2rem; font-weight:300; opacity:0.3; margin-bottom:10px;">:</span>
+            <span style="font-size:3.5rem; font-weight:900; color:#fff; letter-spacing:-2px;">${mins.toString().padStart(2, '0')}</span>
+            <span style="font-size:2rem; font-weight:300; opacity:0.3; margin-bottom:10px;">:</span>
+            <span style="font-size:3.5rem; font-weight:900; color:var(--accent); letter-spacing:-2px; text-shadow: 0 0 20px rgba(0,255,136,0.4);">${secs.toString().padStart(2, '0')}</span>
+        </div>
+    `;
+    const timeEl = document.getElementById('dt-worktime');
+    if (timeEl) {
+        timeEl.innerHTML = timeStr;
+        timeEl.style.fontSize = "1rem"; // Reset parent font size to let child styles take over
+    }
 
-    // 💰 SALARY CALCULATION ENGINE
+    // 💰 PREMIUM SALARY COUNTER (Corrected to 9 working hours)
     if (currentEmp && currentEmp.salary_info) {
-        const monthlySalary = parseInt(currentEmp.salary_info.toString().replace(/\D/g, '') || 0);
+        const monthlySalary = parseInt(currentEmp.salary_info.toString().replace(/\D/g, '') || 5000000);
         if (monthlySalary > 0) {
             const dailySalary = monthlySalary / 26;
-            const hourlySalary = dailySalary / 10; // 10 Working hours (08:00 - 18:00)
+            const hourlySalary = dailySalary / 9; // 1hour lunch excluded from 10h total
+            const secondSalary = hourlySalary / 3600;
 
-            const totalHours = diff / 3600000;
-            const todayPay = Math.floor(totalHours * hourlySalary);
+            const totalSeconds = diff / 1000;
+            const todayPay = totalSeconds * secondSalary;
 
-            document.getElementById('dt-today-pay').innerHTML = `${todayPay.toLocaleString()} <small style="font-size:0.8rem; color:var(--text-s);">UZS</small>`;
+            const payEl = document.getElementById('dt-today-pay');
+            if (payEl) {
+                payEl.innerHTML = `
+                    <span style="font-family:'Outfit'; font-weight:1000; font-size:2.8rem; letter-spacing:-1px; background:linear-gradient(to bottom, #fff, #888); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">
+                        ${Math.floor(todayPay).toLocaleString()}
+                    </span>
+                    <small style="font-size:0.9rem; color:var(--text-s); font-weight:400; margin-left:10px; letter-spacing:1px; opacity:0.6;">UZS</small>
+                `;
+            }
         }
     }
 
@@ -406,7 +487,29 @@ function calculateDuration(start, end) {
 
 function closeDetailModal() {
     if (workInterval) clearInterval(workInterval);
+    if (lunchInterval) clearInterval(lunchInterval);
     document.getElementById('detailModalOverlay').style.display = 'none';
+    document.body.style.overflow = 'auto'; // Unlock scroll
+}
+
+function toggleLunchSection() {
+    const body = document.getElementById('lunchDetailsBody');
+    const chevron = document.getElementById('lunchChevron');
+    if (!body) return;
+
+    if (body.style.display === 'none') {
+        body.style.display = 'block';
+        gsap.from(body, { height: 0, opacity: 0, duration: 0.4, ease: "power2.out" });
+        if (chevron) gsap.to(chevron, { rotation: 180, duration: 0.3 });
+    } else {
+        gsap.to(body, {
+            height: 0, opacity: 0, duration: 0.3, ease: "power2.in", onComplete: () => {
+                body.style.display = 'none';
+                body.style.height = 'auto'; // Reset for next open
+            }
+        });
+        if (chevron) gsap.to(chevron, { rotation: 0, duration: 0.3 });
+    }
 }
 
 function handleEdit() {
