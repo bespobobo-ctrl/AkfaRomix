@@ -21,8 +21,6 @@ export default defineConfig({
                 warehouse: resolve(__dirname, 'src/pages/warehouse_dashboard.html'),
                 production: resolve(__dirname, 'src/pages/production_dashboard.html'),
                 showroom: resolve(__dirname, 'src/pages/showroom_dashboard.html'),
-                generic: resolve(__dirname, 'src/pages/generic_dashboard.html'),
-                employee: resolve(__dirname, 'src/pages/employee_dashboard.html'),
                 scanner: resolve(__dirname, 'src/pages/scanner.html'),
                 akfa_hr_mini: resolve(__dirname, 'src/pages/akfa_hr_mini.html'),
             },
