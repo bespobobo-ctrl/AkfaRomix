@@ -32,7 +32,7 @@ export const authService = {
     },
 
     getRedirectUrl(role) {
-        const base = '/src/pages/';
+        const base = '/';
         switch (role) {
             case 'admin': return base + 'admin_dashboard.html';
             case 'hr': return base + 'hr_dashboard.html';
