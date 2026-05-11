@@ -439,12 +439,18 @@ function calculateDuration(start, end) {
 
     // 🕒 Horizontal Digital Timer (Premium Style)
     const timeStr = `
-        <div style="display:flex; align-items:baseline; justify-content:center; gap:5px; font-family:'Outfit';">
-            <span style="font-size:3.5rem; font-weight:900; color:#fff; letter-spacing:-2px;">${hrs.toString().padStart(2, '0')}</span>
-            <span style="font-size:2rem; font-weight:300; opacity:0.3; margin-bottom:10px;">:</span>
-            <span style="font-size:3.5rem; font-weight:900; color:#fff; letter-spacing:-2px;">${mins.toString().padStart(2, '0')}</span>
-            <span style="font-size:2rem; font-weight:300; opacity:0.3; margin-bottom:10px;">:</span>
-            <span style="font-size:3.5rem; font-weight:900; color:var(--accent); letter-spacing:-2px; text-shadow: 0 0 20px rgba(0,255,136,0.4);">${secs.toString().padStart(2, '0')}</span>
+        <div style="display:flex; align-items:center; justify-content:center; gap:2px; font-family:'Outfit';">
+            <div style="display:flex; flex-direction:column; align-items:center;">
+                <span style="font-size:3rem; font-weight:1000; color:#fff; letter-spacing:-1px; line-height:1;">${hrs.toString().padStart(2, '0')}</span>
+            </div>
+            <span style="font-size:1.8rem; font-weight:200; color:var(--accent); opacity:0.5; margin-bottom:5px; padding:0 4px;">:</span>
+            <div style="display:flex; flex-direction:column; align-items:center;">
+                <span style="font-size:3rem; font-weight:1000; color:#fff; letter-spacing:-1px; line-height:1;">${mins.toString().padStart(2, '0')}</span>
+            </div>
+            <span style="font-size:1.8rem; font-weight:200; color:var(--accent); opacity:0.5; margin-bottom:5px; padding:0 4px;">:</span>
+            <div style="display:flex; flex-direction:column; align-items:center;">
+                <span style="font-size:3rem; font-weight:1000; color:var(--accent); letter-spacing:-1px; line-height:1; text-shadow:0 0 15px rgba(0,255,136,0.3);">${secs.toString().padStart(2, '0')}</span>
+            </div>
         </div>
     `;
     const timeEl = document.getElementById('dt-worktime');
