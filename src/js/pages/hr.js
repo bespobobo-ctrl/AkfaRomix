@@ -365,6 +365,7 @@ window.viewDetails = async function (id) {
 
 function updateProfileAttendance(att) {
     if (workInterval) clearInterval(workInterval);
+    if (lunchInterval) clearInterval(lunchInterval);
 
     const arrivedEl = document.getElementById('dt-arrived');
     const leftEl = document.getElementById('dt-left');
@@ -372,6 +373,14 @@ function updateProfileAttendance(att) {
     const lunchEndEl = document.getElementById('dt-lunch-end');
     const timeEl = document.getElementById('dt-worktime');
     const progressEl = document.getElementById('timeProgress');
+    const statusBadge = document.getElementById('dt-status-badge');
+
+    // Reset Timeline Steps
+    const steps = ['step-arrived', 'step-lunch-out', 'step-lunch-in', 'step-left'];
+    steps.forEach(s => {
+        const el = document.getElementById(s);
+        if (el) el.classList.remove('completed');
+    });
 
     if (!att || !att.check_in) {
         arrivedEl.textContent = '--:--';
@@ -379,19 +388,42 @@ function updateProfileAttendance(att) {
         if (lunchStartEl) lunchStartEl.textContent = '--:--';
         if (lunchEndEl) lunchEndEl.textContent = '--:--';
         timeEl.textContent = '00:00:00';
-        if (progressEl) progressEl.style.strokeDashoffset = '597';
-        // Reset salary if they haven't worked today
+        if (progressEl) progressEl.style.strokeDashoffset = '1068';
+        if (statusBadge) {
+            statusBadge.textContent = 'OFFLINE';
+            statusBadge.style.color = 'var(--text-s)';
+        }
+        if (statusPulse) {
+            statusPulse.style.background = 'var(--text-s)';
+            statusPulse.style.boxShadow = 'none';
+        }
+
         const payEl = document.getElementById('dt-today-pay');
-        if (payEl) payEl.innerHTML = `0 <small style="font-size:0.8rem; color:var(--text-s);">UZS</small>`;
+        if (payEl) payEl.innerHTML = `<span style="font-family:'Outfit'; font-size:5.5rem; font-weight:1000; background:linear-gradient(to bottom, #fff, #999); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; letter-spacing:-4px;">0</span><span style="font-size:1.4rem; color:var(--accent); font-weight:900; margin-left:15px; letter-spacing:3px;">UZS</span>`;
         return;
+    }
+
+    // Set Active Status
+    const isOnline = !att.check_out;
+    if (statusBadge) {
+        statusBadge.textContent = isOnline ? 'ONLINE' : 'OFFLINE';
+        statusBadge.style.color = isOnline ? 'var(--accent)' : 'var(--text-s)';
+    }
+    if (statusPulse) {
+        statusPulse.style.background = isOnline ? 'var(--accent)' : 'var(--text-s)';
+        statusPulse.style.boxShadow = isOnline ? '0 0 12px var(--accent)' : 'none';
+        if (isOnline) statusPulse.style.animation = 'pulse 2s infinite';
+        else statusPulse.style.animation = 'none';
     }
 
     const start = new Date(att.check_in);
     arrivedEl.textContent = start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('step-arrived')?.classList.add('completed');
 
     if (att.check_out) {
         const end = new Date(att.check_out);
         leftEl.textContent = end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        document.getElementById('step-left')?.classList.add('completed');
         calculateDuration(start, end);
     } else {
         leftEl.textContent = '--:--';
@@ -399,17 +431,15 @@ function updateProfileAttendance(att) {
         calculateDuration(start, new Date());
     }
 
-    // 🥗 LUNCH LOGIC
-    if (lunchInterval) clearInterval(lunchInterval);
-    const durationEl = document.getElementById('dt-lunch-duration');
-
     if (att.lunch_start) {
         const lStart = new Date(att.lunch_start);
         if (lunchStartEl) lunchStartEl.textContent = lStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        document.getElementById('step-lunch-out')?.classList.add('completed');
 
         if (att.lunch_end) {
             const lEnd = new Date(att.lunch_end);
             if (lunchEndEl) lunchEndEl.textContent = lEnd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('step-lunch-in')?.classList.add('completed');
             updateLunchDuration(lStart, lEnd);
         } else {
             if (lunchEndEl) lunchEndEl.textContent = '--:--';
@@ -425,7 +455,7 @@ function updateLunchDuration(start, end) {
     const mins = Math.floor((diff % 3600000) / 60000);
     const secs = Math.floor((diff % 60000) / 1000);
 
-    const durEl = document.getElementById('dt-lunch-duration');
+    const durEl = document.getElementById('dt-lunch-duration-val');
     if (durEl) {
         durEl.textContent = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
@@ -437,58 +467,46 @@ function calculateDuration(start, end) {
     const mins = Math.floor((diff % 3600000) / 60000);
     const secs = Math.floor((diff % 60000) / 1000);
 
-    // 🕒 Horizontal Digital Timer (Premium Style)
-    const timeStr = `
-        <div style="display:flex; align-items:center; justify-content:center; gap:2px; font-family:'Outfit';">
-            <div style="display:flex; flex-direction:column; align-items:center;">
-                <span style="font-size:3rem; font-weight:1000; color:#fff; letter-spacing:-1px; line-height:1;">${hrs.toString().padStart(2, '0')}</span>
-            </div>
-            <span style="font-size:1.8rem; font-weight:200; color:var(--accent); opacity:0.5; margin-bottom:5px; padding:0 4px;">:</span>
-            <div style="display:flex; flex-direction:column; align-items:center;">
-                <span style="font-size:3rem; font-weight:1000; color:#fff; letter-spacing:-1px; line-height:1;">${mins.toString().padStart(2, '0')}</span>
-            </div>
-            <span style="font-size:1.8rem; font-weight:200; color:var(--accent); opacity:0.5; margin-bottom:5px; padding:0 4px;">:</span>
-            <div style="display:flex; flex-direction:column; align-items:center;">
-                <span style="font-size:3rem; font-weight:1000; color:var(--accent); letter-spacing:-1px; line-height:1; text-shadow:0 0 15px rgba(0,255,136,0.3);">${secs.toString().padStart(2, '0')}</span>
-            </div>
-        </div>
-    `;
     const timeEl = document.getElementById('dt-worktime');
     if (timeEl) {
-        timeEl.innerHTML = timeStr;
-        timeEl.style.fontSize = "1rem"; // Reset parent font size to let child styles take over
+        timeEl.innerHTML = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
 
-    // 💰 PREMIUM SALARY COUNTER (Corrected to 9 working hours)
+    // 💰 PREMIUM SALARY COUNTER
     if (currentEmp && currentEmp.salary_info) {
         const monthlySalary = parseInt(currentEmp.salary_info.toString().replace(/\D/g, '') || 5000000);
         if (monthlySalary > 0) {
             const dailySalary = monthlySalary / 26;
-            const hourlySalary = dailySalary / 9; // 1hour lunch excluded from 10h total
+            const hourlySalary = dailySalary / 9;
             const secondSalary = hourlySalary / 3600;
 
             const totalSeconds = diff / 1000;
             const todayPay = totalSeconds * secondSalary;
 
             const payEl = document.getElementById('dt-today-pay');
+            const rateEl = document.getElementById('dt-hourly-rate');
+
+            if (rateEl) rateEl.textContent = Math.round(hourlySalary).toLocaleString() + ' UZS';
+
             if (payEl) {
                 payEl.innerHTML = `
-                    <span style="font-family:'Outfit'; font-weight:1000; font-size:2.8rem; letter-spacing:-1px; background:linear-gradient(to bottom, #fff, #888); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">
+                    <span style="font-family:'Outfit'; font-size:6.8rem; font-weight:1000; background:linear-gradient(to bottom, #fff, #aaa); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; letter-spacing:-6px; line-height:1;">
                         ${Math.floor(todayPay).toLocaleString()}
                     </span>
-                    <small style="font-size:0.9rem; color:var(--text-s); font-weight:400; margin-left:10px; letter-spacing:1px; opacity:0.6;">UZS</small>
+                    <span style="font-size:2rem; color:var(--accent); font-weight:1000; margin-left:25px; letter-spacing:5px;">UZS</span>
                 `;
             }
         }
     }
 
-    // Progress Circle (Max 10 hours instead of 8)
+    // Progress Circle (Max 10 hours)
     const progressEl = document.getElementById('timeProgress');
     if (progressEl) {
         const totalSecs = hrs * 3600 + mins * 60 + secs;
-        const maxSecs = 10 * 3600; // 10 Working hours
+        const maxSecs = 10 * 3600;
         const percent = Math.min(totalSecs / maxSecs, 1);
-        const offset = 597 - (597 * percent);
+        const circumference = 974; // For R=155 in v7
+        const offset = circumference - (circumference * percent);
         progressEl.style.strokeDashoffset = offset;
     }
 }
@@ -780,34 +798,54 @@ window.startExport = async function (format) {
     const modal = document.getElementById('reportSelectionModal');
     if (modal) modal.style.display = 'none';
 
-    // To provide a consistent, breathtaking professional demo, we'll route directly to the deterministic demo generator for now until 30 days of real DB history exists. 
-    return window.demoExportReport(format);
-
     // Calculation Constants
     const periodDays = { 'day': 1, 'week': 7, 'month': 30, 'year': 365 };
     const daysLimit = periodDays[selectedPeriod] || 30;
 
+    const now = new Date();
     const startDate = new Date();
-    startDate.setDate(startDate.getDate() - daysLimit);
+    startDate.setDate(now.getDate() - daysLimit);
     const startStr = startDate.toISOString().split('T')[0];
+    const endStr = now.toISOString().split('T')[0];
 
-    // 1. Fetch Real Data
+    // 1. Fetch Real Data from Supabase
     const { data: attendance, error } = await supabase.from('attendance')
         .select('*')
         .eq('employee_id', currentEmp.id)
         .gte('date', startStr)
+        .lte('date', endStr)
         .order('date', { ascending: true });
 
+    // If no real data exists, generate empty report with employee info
     if (error || !attendance || attendance.length === 0) {
-        alert("Ushbu davr uchun ma'lumot topilmadi.");
+        console.log("⚠️ Haqiqiy davomat ma'lumoti topilmadi — bo'sh hisobot tayyorlanmoqda.");
+        const emptyRows = [{
+            date: endStr,
+            in: '--:--',
+            out: '--:--',
+            lunch_out: '--:--',
+            lunch_in: '--:--',
+            hours: '0.0 s',
+            status: 'MA\'LUMOT YO\'Q',
+            earned: '0 UZS'
+        }];
+        if (format === 'pdf') {
+            generateProfessionalPDF(emptyRows, 0, 0, 0, 0);
+        } else if (format === 'excel') {
+            generateExcelReport(emptyRows, 0, 0, 0, 0);
+        } else if (format === 'word') {
+            generateWordReport(emptyRows, 0, 0, 0, 0);
+        }
         return;
     }
 
-    // 2. Data Processing & Calculations
-    const salaryText = currentEmp.salary_info || '0';
-    const monthlySalary = parseInt(String(salaryText).replace(/\D/g, '')) || 0;
-    const dayRate = monthlySalary / 26; // Assume 26 working days
-    const hourRate = dayRate / 10; // Assume 10h workday
+    console.log(`📊 Haqiqiy hisobot: ${attendance.length} ta yozuv topildi (${startStr} → ${endStr})`);
+
+    // 2. Data Processing & Calculations 
+    const salaryText = currentEmp.salary_info || '5000000';
+    const monthlySalary = parseInt(String(salaryText).replace(/\D/g, '')) || 5000000;
+    const dayRate = monthlySalary / 26; // 26 ish kuni
+    const hourRate = dayRate / 9; // 9 soat ish (1 soat tushlik chiqarilgan)
 
     let totalWorkedHours = 0;
     let totalEarned = 0;
@@ -832,22 +870,70 @@ window.startExport = async function (format) {
             const dOut = new Date(a.check_out);
             timeOut = dOut.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', hour12: false });
 
-            // Calc hours
-            const diff = new Date(a.check_out) - new Date(a.check_in);
-            hours = diff / (1000 * 60 * 60);
-        } else if (a.check_in && (a.status.includes('Keldi') || a.status.includes('Vaqtida'))) {
-            hours = 10; // Fixed 10h if no checkout
+            // Calculate hours worked
+            let diff = new Date(a.check_out) - new Date(a.check_in);
+
+            // Subtract lunch break if exists
+            if (a.lunch_start && a.lunch_end) {
+                const lunchDiff = new Date(a.lunch_end) - new Date(a.lunch_start);
+                diff -= lunchDiff;
+            }
+
+            hours = Math.max(0, diff / (1000 * 60 * 60));
+        } else if (a.check_in && !a.check_out) {
+            // Still working — calculate up to now if today, else assume 9h
+            const today = new Date().toISOString().split('T')[0];
+            if (a.date === today) {
+                let diff = new Date() - new Date(a.check_in);
+                if (a.lunch_start && a.lunch_end) {
+                    diff -= (new Date(a.lunch_end) - new Date(a.lunch_start));
+                }
+                hours = Math.max(0, diff / (1000 * 60 * 60));
+            } else {
+                hours = 9; // Oldingi kunlar uchun standart ish vaqti
+            }
         }
 
-        // Parse Bonus/Fine from status
-        if (a.status.includes('Premya')) {
-            bonus = parseInt(a.status.replace(/\D/g, '')) || 0;
+        // Determine display status
+        let displayStatus = a.status || 'NOMA\'LUM';
+        if (a.check_in && !a.check_out && a.status === 'ISHDA') {
+            displayStatus = 'ISHDA';
         }
-        if (a.status.includes('Jarima')) {
-            fine = parseInt(a.status.replace(/\D/g, '')) || 0;
+
+        // Parse Bonus/Fine from status field
+        if (a.status && a.status.includes('Premya')) {
+            const match = a.status.match(/\d+/);
+            bonus = match ? parseInt(match[0]) : 0;
+        }
+        if (a.status && a.status.includes('Jarima')) {
+            const match = a.status.match(/\d+/);
+            fine = match ? parseInt(match[0]) : 0;
+        }
+        if (a.status && a.status.includes('Oylik oshirildi')) {
+            displayStatus = 'Oylik oshirildi';
         }
 
         earned = (hours * hourRate) + bonus - fine;
+
+        // Check late arrival (after 08:15)
+        let lateTag = '';
+        if (a.check_in) {
+            const arrivalTime = new Date(a.check_in);
+            const arrivalMins = arrivalTime.getHours() * 60 + arrivalTime.getMinutes();
+            if (arrivalMins > 495) { // 08:15 = 495 min
+                lateTag = ' ⏰';
+            }
+        }
+
+        // Parse Lunch Times
+        let lunchOut = '--:--';
+        let lunchIn = '--:--';
+        if (a.lunch_start) {
+            lunchOut = new Date(a.lunch_start).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', hour12: false });
+        }
+        if (a.lunch_end) {
+            lunchIn = new Date(a.lunch_end).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', hour12: false });
+        }
 
         // Accumulate totals
         totalWorkedHours += hours;
@@ -860,8 +946,10 @@ window.startExport = async function (format) {
             date: a.date,
             in: timeIn,
             out: timeOut,
+            lunch_out: lunchOut,
+            lunch_in: lunchIn,
             hours: hours.toFixed(1) + ' s',
-            status: a.status,
+            status: displayStatus + lateTag,
             earned: Math.round(earned).toLocaleString() + ' UZS'
         };
     });
@@ -880,35 +968,42 @@ function generateProfessionalPDF(rows, totalEarned, bonuses, fines, days) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const emp = currentEmp;
+    const periodLabels = { 'day': 'KUNLIK', 'week': 'HAFTALIK', 'month': 'OYLIK', 'year': 'YILLIK' };
+    const periodLabel = periodLabels[selectedPeriod] || 'OYLIK';
 
     // Design Header
     doc.setFillColor(13, 22, 34);
-    doc.rect(0, 0, 210, 40, 'F');
+    doc.rect(0, 0, 210, 45, 'F');
 
     doc.setFontSize(22);
     doc.setTextColor(0, 210, 255);
-    doc.text("AKFA ROMIX ENTERPRISE", 20, 25);
+    doc.text("AKFA ROMIX ENTERPRISE", 20, 22);
     doc.setFontSize(10);
     doc.setTextColor(255, 255, 255);
-    doc.text("HR BO'LIMI RASMIY HISOBOTI", 20, 32);
+    doc.text(`HR BO'LIMI — ${periodLabel} RASMIY HISOBOTI`, 20, 32);
+    doc.setFontSize(8);
+    doc.setTextColor(180, 180, 180);
+    doc.text(`Tayyorlangan: ${new Date().toLocaleString('uz-UZ')}`, 20, 40);
 
     // Employee Meta
     doc.setTextColor(40, 40, 40);
     doc.setFontSize(11);
-    doc.text(`Xodim: ${emp.full_name}`, 20, 55);
-    doc.text(`Lavozimi: ${emp.role || 'Xodim'}`, 20, 62);
-    doc.text(`Bo'limi: ${emp.department || 'Ofis'}`, 20, 69);
-    doc.text(`Sana: ${new Date().toLocaleDateString()}`, 150, 55);
+    doc.text(`Xodim: ${emp.full_name}`, 20, 60);
+    doc.text(`Lavozimi: ${emp.role || 'Xodim'}`, 20, 67);
+    doc.text(`Bo'limi: ${emp.department || 'Ofis'}`, 20, 74);
+    doc.text(`Oylik maoshi: ${emp.salary_info || 'Belgilanmagan'}`, 120, 60);
+    doc.text(`Hisobot davri: ${periodLabel}`, 120, 67);
+    doc.text(`Sana: ${new Date().toLocaleDateString()}`, 120, 74);
 
-    // Main Table
+    // Main Table (with lunch columns)
     doc.autoTable({
-        startY: 80,
-        head: [['SANA', 'KELISH', 'KETISH', 'ISH SOATI', 'HOLAT', 'HAQ (UZS)']],
-        body: rows.map(r => [r.date, r.in, r.out, r.hours, r.status, r.earned]),
+        startY: 85,
+        head: [['SANA', 'KELISH', 'T.CHIQISH', 'T.KIRISH', 'KETISH', 'SOAT', 'HOLAT', 'HAQ (UZS)']],
+        body: rows.map(r => [r.date, r.in, r.lunch_out, r.lunch_in, r.out, r.hours, r.status, r.earned]),
         theme: 'striped',
-        headStyles: { fillColor: [13, 22, 34], textColor: [0, 210, 255], fontStyle: 'bold' },
-        styles: { fontSize: 8, cellPadding: 3, halign: 'center' },
-        columnStyles: { 0: { halign: 'left' }, 4: { halign: 'left' }, 5: { halign: 'right' } }
+        headStyles: { fillColor: [13, 22, 34], textColor: [0, 210, 255], fontStyle: 'bold', fontSize: 7 },
+        styles: { fontSize: 7, cellPadding: 2.5, halign: 'center' },
+        columnStyles: { 0: { halign: 'left' }, 6: { halign: 'left' }, 7: { halign: 'right' } }
     });
 
     // Summary Box
@@ -919,75 +1014,118 @@ function generateProfessionalPDF(rows, totalEarned, bonuses, fines, days) {
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
     doc.text(`Jami ish kunlari: ${days} kun`, 20, finalY + 5);
-    doc.text(`Jami premya: ${bonuses.toLocaleString()} UZS`, 20, finalY + 12);
-    doc.text(`Jami jarima: ${fines.toLocaleString()} UZS`, 20, finalY + 19);
+    doc.text(`Jami ish soatlari: ${rows.reduce((s, r) => s + parseFloat(r.hours), 0).toFixed(1)} soat`, 20, finalY + 12);
+    doc.text(`Jami premya: ${bonuses.toLocaleString()} UZS`, 20, finalY + 19);
+    doc.text(`Jami jarima: ${fines.toLocaleString()} UZS`, 20, finalY + 26);
 
     doc.setFontSize(14);
     doc.setTextColor(0, 124, 82);
-    doc.text(`JAMI TO'LANADIGAN HAQ:`, 110, finalY + 10);
+    doc.text(`JAMI TO'LANADIGAN HAQ:`, 110, finalY + 12);
     doc.setFontSize(18);
-    doc.text(`${Math.round(totalEarned).toLocaleString()} UZS`, 110, finalY + 20);
+    doc.text(`${Math.round(totalEarned).toLocaleString()} UZS`, 110, finalY + 24);
+
+    // Signature area
+    const sigY = finalY + 45;
+    doc.setFontSize(9);
+    doc.setTextColor(80, 80, 80);
+    doc.text("Mas'ul shaxs: ___________________", 20, sigY);
+    doc.text("Imzo: ___________________", 120, sigY);
+    doc.text("Sana: " + new Date().toLocaleDateString(), 120, sigY + 7);
 
     // Footer
-    doc.setFontSize(8);
+    doc.setFontSize(7);
     doc.setTextColor(180, 180, 180);
-    doc.text("Ushbu hujjat AKFA Romix HR tizimi tomonidan avtomatik ravishda tayyorlandi.", 105, 285, { align: 'center' });
+    doc.text("Ushbu hujjat AKFA Romix HR tizimi tomonidan avtomatik ravishda tayyorlandi. Hujjat raqamli imzo bilan tasdiqlangan.", 105, 285, { align: 'center' });
 
-    doc.save(`AKFA_HR_Report_${emp.full_name}_${selectedPeriod}.pdf`);
+    doc.save(`AKFA_HR_${periodLabel}_${emp.full_name}_${new Date().toISOString().split('T')[0]}.pdf`);
 }
 
 function generateExcelReport(rows, totalEarned, bonuses, fines, days) {
     const emp = currentEmp;
+    const periodLabels = { 'day': 'KUNLIK', 'week': 'HAFTALIK', 'month': 'OYLIK', 'year': 'YILLIK' };
+    const periodLabel = periodLabels[selectedPeriod] || 'OYLIK';
+    const totalHours = rows.reduce((s, r) => s + parseFloat(r.hours), 0).toFixed(1);
+
     const data = [
-        ["AKFA ROMIX ENTERPRISE - HR HISOBOTI"],
-        [`Xodim: ${emp.full_name}`],
-        [`Lavozimi: ${emp.role}`],
-        [`Davr: ${selectedPeriod.toUpperCase()}`],
+        ["AKFA ROMIX ENTERPRISE — HR HISOBOTI"],
+        [`Xodim: ${emp.full_name}`, "", "", `Tayyorlangan: ${new Date().toLocaleString()}`],
+        [`Lavozimi: ${emp.role || 'Xodim'}`, "", "", `Bo'lim: ${emp.department || 'Ofis'}`],
+        [`Davr: ${periodLabel}`, "", "", `Oylik maosh: ${emp.salary_info || 'Belgilanmagan'}`],
         [],
-        ["SANA", "KELISH", "KETISH", "ISH SOATI", "HOLAT", "HAQ (UZS)"],
-        ...rows.map(r => [r.date, r.in, r.out, r.hours, r.status, r.earned]),
+        ["SANA", "KELISH", "T.CHIQISH", "T.KIRISH", "KETISH", "ISH SOATI", "HOLAT", "HAQ (UZS)"],
+        ...rows.map(r => [r.date, r.in, r.lunch_out, r.lunch_in, r.out, r.hours, r.status, r.earned]),
         [],
-        ["JAMI ISH KUNLARI", days, "", "", "JAMI PREMYA", bonuses],
-        ["", "", "", "", "JAMI JARIMA", fines],
-        ["", "", "", "", "JAMI TO'LANADIGAN HAQ", Math.round(totalEarned)]
+        ["JAMI ISH KUNLARI", days + " kun", "", "", "", "JAMI ISH SOATLARI", totalHours + " soat"],
+        ["", "", "", "", "", "JAMI PREMYA", bonuses.toLocaleString() + " UZS"],
+        ["", "", "", "", "", "JAMI JARIMA", fines.toLocaleString() + " UZS"],
+        ["", "", "", "", "", "JAMI TO'LANADIGAN HAQ", Math.round(totalEarned).toLocaleString() + " UZS"],
+        [],
+        ["Mas'ul shaxs: ___________", "", "", "", "", "Imzo: ___________"]
     ];
 
     const ws = XLSX.utils.aoa_to_sheet(data);
+    // Set column widths
+    ws['!cols'] = [
+        { wch: 14 }, { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 18 }, { wch: 16 }
+    ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Hisobot");
-    XLSX.writeFile(wb, `AKFA_HR_Hisobot_${emp.full_name}.xlsx`);
+    XLSX.writeFile(wb, `AKFA_HR_${periodLabel}_${emp.full_name}_${new Date().toISOString().split('T')[0]}.xlsx`);
 }
 
 function generateWordReport(rows, totalEarned, bonuses, fines, days) {
     const emp = currentEmp;
-    let tableHtml = `<table border="1" style="width:100%; border-collapse: collapse;">
+    const periodLabels = { 'day': 'KUNLIK', 'week': 'HAFTALIK', 'month': 'OYLIK', 'year': 'YILLIK' };
+    const periodLabel = periodLabels[selectedPeriod] || 'OYLIK';
+    const totalHours = rows.reduce((s, r) => s + parseFloat(r.hours), 0).toFixed(1);
+
+    let tableHtml = `<table border="1" style="width:100%; border-collapse: collapse; font-size:11px;">
         <tr style="background:#0d1622; color:#00d2ff;">
-            <th>Sana</th><th>Kelish</th><th>Ketish</th><th>Ish Soati</th><th>Holat</th><th>Haq</th>
+            <th style="padding:6px;">Sana</th><th style="padding:6px;">Kelish</th><th style="padding:6px;">T.Chiqish</th><th style="padding:6px;">T.Kirish</th><th style="padding:6px;">Ketish</th><th style="padding:6px;">Soat</th><th style="padding:6px;">Holat</th><th style="padding:6px;">Haq</th>
         </tr>`;
 
-    rows.forEach(r => {
-        tableHtml += `<tr>
-            <td>${r.date}</td><td>${r.in}</td><td>${r.out}</td><td>${r.hours}</td><td>${r.status}</td><td>${r.earned}</td>
+    rows.forEach((r, i) => {
+        const bg = i % 2 === 0 ? '#ffffff' : '#f8f9fa';
+        tableHtml += `<tr style="background:${bg};">
+            <td style="padding:5px;">${r.date}</td><td style="padding:5px; text-align:center;">${r.in}</td><td style="padding:5px; text-align:center; color:#ffa940;">${r.lunch_out}</td><td style="padding:5px; text-align:center; color:#ffa940;">${r.lunch_in}</td><td style="padding:5px; text-align:center;">${r.out}</td><td style="padding:5px; text-align:center;">${r.hours}</td><td style="padding:5px;">${r.status}</td><td style="padding:5px; text-align:right;">${r.earned}</td>
         </tr>`;
     });
     tableHtml += "</table>";
 
     const content = `
-        <div style="font-family: Arial, sans-serif; padding: 20px;">
-            <h1 style="color:#0d1622; border-bottom: 2px solid #00d2ff;">AKFA ROMIX ENTERPRISE</h1>
-            <h3>XODIMNING RASMIY HISOBOTI</h3>
-            <p><b>Xodim:</b> ${emp.full_name}</p>
-            <p><b>Lavozimi:</b> ${emp.role}</p>
-            <p><b>Bo'limi:</b> ${emp.department}</p>
-            <hr/>
-            ${tableHtml}
-            <div style="margin-top:20px; padding:15px; background:#f4f4f4;">
-                <p><b>Ish kunlari:</b> ${days} kun</p>
-                <p><b>Premya:</b> ${bonuses.toLocaleString()} UZS</p>
-                <p><b>Jarima:</b> ${fines.toLocaleString()} UZS</p>
-                <h3 style="color:#007c52;">JAMI TO'LANADIGAN HAQ: ${Math.round(totalEarned).toLocaleString()} UZS</h3>
+        <div style="font-family: Arial, sans-serif; padding: 30px;">
+            <div style="background:#0d1622; padding:20px; color:#fff; border-radius:8px; margin-bottom:25px;">
+                <h1 style="color:#00d2ff; margin:0;">AKFA ROMIX ENTERPRISE</h1>
+                <p style="color:#aaa; margin:5px 0 0 0;">HR BO'LIMI — ${periodLabel} RASMIY HISOBOTI</p>
             </div>
-            <p style="font-size:10px; color:#999; margin-top:50px;">Hujjat raqamli imzo bilan tasdiqlangan.</p>
+            <table style="width:100%; margin-bottom:20px; font-size:13px;">
+                <tr>
+                    <td><b>Xodim:</b> ${emp.full_name}</td>
+                    <td><b>Oylik maosh:</b> ${emp.salary_info || 'Belgilanmagan'}</td>
+                </tr>
+                <tr>
+                    <td><b>Lavozimi:</b> ${emp.role || 'Xodim'}</td>
+                    <td><b>Hisobot davri:</b> ${periodLabel}</td>
+                </tr>
+                <tr>
+                    <td><b>Bo'limi:</b> ${emp.department || 'Ofis'}</td>
+                    <td><b>Tayyorlangan:</b> ${new Date().toLocaleString()}</td>
+                </tr>
+            </table>
+            <hr style="border:1px solid #e0e0e0;"/>
+            ${tableHtml}
+            <div style="margin-top:25px; padding:20px; background:#f0fdf4; border:1px solid #86efac; border-radius:8px;">
+                <table style="width:100%; font-size:13px;">
+                    <tr><td><b>Jami ish kunlari:</b></td><td>${days} kun</td><td><b>Jami ish soatlari:</b></td><td>${totalHours} soat</td></tr>
+                    <tr><td><b>Jami premya:</b></td><td>${bonuses.toLocaleString()} UZS</td><td><b>Jami jarima:</b></td><td>${fines.toLocaleString()} UZS</td></tr>
+                </table>
+                <h2 style="color:#007c52; margin-top:15px; text-align:center;">JAMI TO'LANADIGAN HAQ: ${Math.round(totalEarned).toLocaleString()} UZS</h2>
+            </div>
+            <div style="margin-top:40px; display:flex; justify-content:space-between;">
+                <p>Mas'ul shaxs: ___________________</p>
+                <p>Imzo: ___________________</p>
+            </div>
+            <p style="font-size:9px; color:#999; margin-top:40px; text-align:center;">Ushbu hujjat AKFA Romix HR tizimi tomonidan avtomatik ravishda tayyorlandi. Hujjat raqamli imzo bilan tasdiqlangan.</p>
         </div>
     `;
 
@@ -995,7 +1133,7 @@ function generateWordReport(rows, totalEarned, bonuses, fines, days) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `AKFA_HR_Hisobot_${emp.full_name}.doc`;
+    link.download = `AKFA_HR_${periodLabel}_${emp.full_name}_${new Date().toISOString().split('T')[0]}.doc`;
     link.click();
 }
 

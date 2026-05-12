@@ -443,6 +443,43 @@
             text-align: center;
         }
 
+        /* 🏗️ AUTO LAYOUT SYSTEM */
+        .flex-auto {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .grid-auto {
+            display: grid;
+            gap: 20px;
+        }
+
+        .center-auto {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .premium-card {
+            background: var(--card-glass);
+            backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 40px;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.4);
+            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .premium-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-5px);
+            box-shadow: 0 50px 120px rgba(0, 255, 136, 0.1);
+        }
+
         .lux-stat-val {
             font-family: 'Outfit';
             font-size: 1.6rem;
@@ -454,6 +491,96 @@
             color: var(--text-s);
             font-weight: 800;
             margin-top: 5px;
+        }
+
+        /* 💎 ELITE V5 MODAL COMPONENTS */
+        .timeline-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            opacity: 0.2;
+            transition: 0.5s;
+            position: relative;
+        }
+
+        .timeline-step.completed {
+            opacity: 1;
+        }
+
+        .timeline-label {
+            font-size: 0.6rem;
+            font-weight: 900;
+            color: var(--text-s);
+            letter-spacing: 1px;
+        }
+
+        .timeline-icon {
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.4s;
+        }
+
+        .completed .timeline-icon {
+            background: var(--accent);
+            color: #000;
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+
+        .info-row-lux {
+            transition: 0.3s;
+        }
+
+        .info-row-lux:hover {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border-color: rgba(255, 255, 255, 0.2) !important;
+            transform: translateX(5px);
+        }
+
+        .live-stat-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 900;
+            color: var(--accent);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            text-align: center;
+            opacity: 0.8;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 0.8;
+            }
+
+            50% {
+                transform: scale(1.05);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 0.8;
+            }
+        }
+
+        /* Responsive Modal Fixes */
+        @media (max-width: 1400px) {
+            .modal-content {
+                max-width: 1100px !important;
+            }
+
+            #profileDetail {
+                padding: 40px !important;
+            }
         }
 
         /* MODALS */
@@ -614,10 +741,116 @@
             display: none;
         }
 
-        /* High Contrast Glass */
-        .bento-card {
-            background: rgba(10, 15, 25, 0.9);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+        /* HIGH-END PROFILE REDESIGN */
+        #profileDetail {
+            position: relative;
+            overflow: hidden;
+            background: rgba(7, 11, 24, 0.95);
+        }
+
+        .premium-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 30px;
+            padding: 25px;
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .premium-card:hover {
+            border-color: var(--accent);
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-5px);
+        }
+
+        .live-stat-label {
+            font-size: 0.75rem;
+            font-weight: 900;
+            color: var(--accent);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .live-earning-box {
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(0, 0, 0, 0));
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            padding: 30px;
+            border-radius: 35px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .live-earning-box::after {
+            content: 'LIVE TRACKER';
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 0.55rem;
+            font-weight: 900;
+            color: var(--accent);
+            opacity: 0.5;
+            letter-spacing: 2px;
+        }
+
+        .timeline-step {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            position: relative;
+        }
+
+        .timeline-step::after {
+            content: '';
+            position: absolute;
+            top: 22px;
+            right: -50%;
+            width: 100%;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.05);
+            z-index: -1;
+        }
+
+        .timeline-step:last-child::after {
+            display: none;
+        }
+
+        .timeline-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: 0.3s;
+        }
+
+        .timeline-step.completed .timeline-icon {
+            background: var(--accent);
+            color: #000;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 0.2;
+            }
+
+            50% {
+                transform: scale(1.05);
+                opacity: 0.4;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 0.2;
+            }
         }
 
         /* PROFILE DASHBOARD STYLES */
@@ -901,243 +1134,298 @@
             </div>
 
 
-            <!-- DETAIL MODAL OVERLAY (Premium Vision Pro Style) -->
+            <!-- DETAIL MODAL OVERLAY (Elite Vision Pro v7) -->
             <div class="modal-blur" id="detailModalOverlay" style="z-index:3000;">
                 <div class="modal-content"
-                    style="max-width:1200px; width:95%; background:transparent; border:none; box-shadow:none;">
+                    style="max-width:1450px; width:95%; background:transparent; border:none; box-shadow:none;">
                     <div id="profileDetail"
-                        style="display:none; flex-direction:column; gap:25px; width:100%; background:rgba(7,11,18,0.98); padding:40px; border-radius:45px; border:1px solid rgba(255,255,255,0.1); backdrop-filter:blur(80px); box-shadow:0 60px 120px rgba(0,0,0,0.9);">
+                        style="display:none; flex-direction:column; gap:35px; width:100%; padding:60px; border-radius:75px; border:1px solid rgba(255,255,255,0.1); backdrop-filter:blur(80px); box-shadow:0 100px 250px rgba(0,0,0,1); position:relative; overflow:hidden;">
 
-                        <!-- Modal Header -->
+                        <!-- Cinematic Ambient Glows -->
                         <div
-                            style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:20px;">
-                            <div>
-                                <h2
-                                    style="font-family:'Outfit'; font-size:1.6rem; font-weight:900; letter-spacing:-0.5px;">
-                                    XODIM <span style="color:var(--accent)">PROFILI</span></h2>
-                                <p style="font-size:0.75rem; color:var(--text-s); margin-top:5px;">Ma'lumotlar
-                                    markazlashgan boshqaruv tizimidan olindi</p>
+                            style="position:absolute; top:-20%; left:-10%; width:900px; height:900px; background:radial-gradient(circle, rgba(0,255,136,0.06) 0%, transparent 75%); pointer-events:none;">
+                        </div>
+                        <div
+                            style="position:absolute; bottom:-10%; right:-5%; width:700px; height:700px; background:radial-gradient(circle, rgba(0,210,255,0.05) 0%, transparent 75%); pointer-events:none;">
+                        </div>
+
+                        <!-- Precision Header -->
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:40px; position:relative; z-index:1;">
+                            <div style="display:flex; flex-direction:column; gap:12px;">
+                                <div style="display:flex; align-items:center; gap:18px;">
+                                    <div
+                                        style="width:30px; height:5px; background:linear-gradient(to right, var(--accent), var(--accent-sec)); border-radius:10px;">
+                                    </div>
+                                    <span
+                                        style="font-size:0.85rem; font-weight:1000; color:var(--accent); letter-spacing:8px; text-transform:uppercase;">NIXTIO
+                                        ELITE SYSTEM</span>
+                                </div>
+                                <h1
+                                    style="font-family:'Outfit'; font-size:4.2rem; font-weight:1000; letter-spacing:-4px; line-height:0.8; margin:0;">
+                                    XODIM <span
+                                        style="background:linear-gradient(135deg, #fff 40%, var(--accent) 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;">PROFILI</span>
+                                </h1>
                             </div>
                             <button onclick="window.closeDetailModal()"
-                                style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:#fff; width:50px; height:50px; border-radius:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:0.3s;"
-                                onmouseover="this.style.background='rgba(255,77,79,0.2)'; this.style.borderColor='rgba(255,77,79,0.3)'">
-                                <i data-lucide="x"></i>
+                                style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.12); color:#fff; width:75px; height:75px; border-radius:26px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:0.4s cubic-bezier(0.4, 0, 0.2, 1);">
+                                <i data-lucide="x" size="32"></i>
                             </button>
                         </div>
 
-                        <!-- Main Grid (3 Columns) -->
-                        <div class="profile-dashboard-grid"
-                            style="grid-template-columns: 320px 1fr 300px; display:grid; gap:20px; align-items:stretch;">
+                        <!-- Professional 3-Column Architect -->
+                        <div
+                            style="display:grid; grid-template-columns: 400px 1fr 400px; gap:35px; position:relative; z-index:1;">
 
-                            <!-- Col 1: Card & Bio -->
-                            <div class="dash-col" style="display:flex; flex-direction:column; gap:20px;">
-                                <div class="dash-card"
-                                    style="flex:1; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:25px; border-radius:30px; display:flex; flex-direction:column; align-items:center;">
-                                    <div style="position:relative;">
+                            <!-- LEFT: IDENTITY & CARD -->
+                            <div style="display:flex; flex-direction:column; gap:35px;">
+                                <div class="premium-card" style="padding:50px 35px; text-align:center;">
+                                    <div style="position:relative; display:inline-block; margin-bottom:45px;">
+                                        <div
+                                            style="position:absolute; inset:-18px; border:2px solid var(--accent); border-radius:60px; opacity:0.1; animation: pulse 3s infinite;">
+                                        </div>
                                         <img src="" id="dt-photo"
-                                            style="width:150px; height:150px; border-radius:40px; border:3px solid var(--accent); filter:drop-shadow(0 0 20px rgba(0,255,136,0.2)); object-fit:cover;">
-                                        <div style="position:absolute; bottom:-10px; right:-10px; background:var(--accent); color:#000; padding:6px 15px; border-radius:14px; font-weight:900; font-size:0.8rem; box-shadow:0 10px 20px rgba(0,255,136,0.3);"
-                                            id="dt-sum">0.0M</div>
+                                            style="width:220px; height:220px; border-radius:55px; object-fit:cover; border:4px solid rgba(255,255,255,0.1); box-shadow:0 40px 80px rgba(0,0,0,0.6);">
+                                        <div style="position:absolute; bottom:-12px; right:10px; background:linear-gradient(135deg, var(--accent), #1ed760); color:#000; padding:10px 28px; border-radius:20px; font-weight:1000; font-size:1rem; box-shadow:0 15px 30px rgba(0,255,136,0.4);"
+                                            id="dt-sum">---</div>
                                     </div>
                                     <h2 id="dt-name"
-                                        style="margin-top:25px; font-size:1.5rem; font-weight:900; text-align:center;">
+                                        style="font-family:'Outfit'; font-size:2.6rem; font-weight:1000; margin-bottom:12px; letter-spacing:-2px; line-height:1;">
                                         ---</h2>
-                                    <span id="dt-role"
-                                        style="color:var(--accent); font-weight:800; font-size:0.7rem; letter-spacing:2.5px; text-transform:uppercase; margin-top:5px;">---</span>
+                                    <p id="dt-role"
+                                        style="font-size:0.9rem; font-weight:1000; color:var(--accent); text-transform:uppercase; letter-spacing:5px; margin-bottom:45px;">
+                                        ---</p>
 
-                                    <div
-                                        style="width:100%; margin-top:35px; display:flex; flex-direction:column; gap:12px;">
+                                    <div style="display:flex; flex-direction:column; gap:15px; text-align:left;">
                                         <div
-                                            style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); padding:14px 18px; border-radius:20px; border:1px solid rgba(255,255,255,0.05); width:100%; box-sizing:border-box;">
+                                            style="background:rgba(255,255,255,0.02); padding:22px 25px; border-radius:22px; border:1px solid rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center;">
                                             <span
-                                                style="color:var(--text-s); font-size:0.7rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; flex-shrink:0;">Telefon</span>
+                                                style="font-size:0.65rem; font-weight:1000; color:var(--text-s); letter-spacing:2px; text-transform:uppercase;">CONTACT</span>
                                             <b id="dt-phone"
-                                                style="font-size:0.8rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-left:10px;">---</b>
+                                                style="font-size:1.1rem; color:#fff; font-family:'Outfit';">---</b>
                                         </div>
                                         <div
-                                            style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); padding:14px 18px; border-radius:20px; border:1px solid rgba(255,255,255,0.05); width:100%; box-sizing:border-box;">
+                                            style="background:rgba(255,255,255,0.02); padding:22px 25px; border-radius:22px; border:1px solid rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center;">
                                             <span
-                                                style="color:var(--text-s); font-size:0.7rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; flex-shrink:0;">Bo'lim</span>
+                                                style="font-size:0.65rem; font-weight:1000; color:var(--text-s); letter-spacing:2px; text-transform:uppercase;">UNIT</span>
                                             <b id="dt-dept"
-                                                style="color:var(--accent); font-size:0.8rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-left:10px;">---</b>
+                                                style="font-size:1.1rem; color:var(--accent); font-family:'Outfit';">---</b>
                                         </div>
                                         <div
-                                            style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); padding:14px 18px; border-radius:20px; border:1px solid rgba(255,255,255,0.05); width:100%; box-sizing:border-box;">
+                                            style="background:rgba(255,255,255,0.02); padding:22px 25px; border-radius:22px; border:1px solid rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center;">
                                             <span
-                                                style="color:var(--text-s); font-size:0.7rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; flex-shrink:0;">Staj</span>
+                                                style="font-size:0.65rem; font-weight:1000; color:var(--text-s); letter-spacing:2px; text-transform:uppercase;">SENIORITY</span>
                                             <b id="dt-staj"
-                                                style="font-size:0.8rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-left:10px;">---</b>
+                                                style="font-size:1.1rem; color:#fff; font-family:'Outfit';">---</b>
                                         </div>
                                     </div>
                                 </div>
+
+                                <div class="premium-card"
+                                    style="padding:35px; background:linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 100%);">
+                                    <div
+                                        style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+                                        <span class="live-stat-label" style="font-size:0.75rem;">SECURE ID</span>
+                                        <div id="statusBadgeContainer"
+                                            style="display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.05); padding:8px 18px; border-radius:20px; border:1px solid rgba(255,255,255,0.1);">
+                                            <div style="width:10px; height:10px; background:var(--accent); border-radius:50%; box-shadow:0 0 15px var(--accent);"
+                                                id="statusPulse"></div>
+                                            <span id="dt-status-badge"
+                                                style="font-size:0.75rem; font-weight:1000; color:#fff; letter-spacing:1px;">ONLINE</span>
+                                        </div>
+                                    </div>
+                                    <div
+                                        style="background:#fff; padding:25px; border-radius:35px; display:flex; align-items:center; justify-content:center; border:8px solid #1a1a1a; box-shadow: 0 40px 80px rgba(0,0,0,0.6);">
+                                        <img id="dt-qr" src="" style="width:160px; height:160px;">
+                                    </div>
+                                    <p
+                                        style="text-align:center; font-size:0.7rem; color:var(--text-s); font-weight:1000; margin-top:20px; letter-spacing:5px; opacity:0.3;">
+                                        ROMIX CORPORATION ID</p>
+                                </div>
                             </div>
 
-                            <!-- Col 2: Activity Center -->
-                            <div class="dash-col" style="display:flex; flex-direction:column; gap:20px;">
-                                <div class="dash-card"
-                                    style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:25px; border-radius:30px; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                                    <h3
-                                        style="font-size:1rem; font-weight:800; color:var(--text-s); width:100%; text-align:center; margin-bottom:20px;">
-                                        ISH FAOLIYATI <small>(BUGUN)</small></h3>
-                                    <div class="circle-progress-container"
-                                        style="width:220px; height:220px; position:relative;">
-                                        <svg width="220" height="220" style="transform:rotate(-90deg)">
-                                            <circle class="circle-bg" cx="110" cy="110" r="95"
-                                                style="fill:none; stroke:rgba(255,255,255,0.05); stroke-width:14;">
+                            <!-- CENTER: PERFORMANCE HUB -->
+                            <div style="display:flex; flex-direction:column; gap:35px;">
+                                <div class="premium-card"
+                                    style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px;">
+                                    <span class="live-stat-label"
+                                        style="margin-bottom:50px; letter-spacing:12px;">ACTIVE
+                                        SESSION ENGINE</span>
+
+                                    <div style="position:relative; width:340px; height:340px; margin-bottom:40px;">
+                                        <svg width="340" height="340" style="transform:rotate(-90deg)">
+                                            <circle cx="170" cy="170" r="155"
+                                                style="fill:none; stroke:rgba(255,255,255,0.02); stroke-width:30;">
                                             </circle>
-                                            <circle id="timeProgress" cx="110" cy="110" r="95"
-                                                style="fill:none; stroke:var(--accent); stroke-width:14; stroke-linecap:round; transition:1.5s;"
-                                                stroke-dasharray="597" stroke-dashoffset="597"></circle>
+                                            <circle id="timeProgress" cx="170" cy="170" r="155"
+                                                style="fill:none; stroke:var(--accent); stroke-width:30; stroke-linecap:round; transition:2.5s cubic-bezier(0.1, 0, 0, 1); filter: drop-shadow(0 0 40px rgba(0,255,136,0.4));"
+                                                stroke-dasharray="974" stroke-dashoffset="974"></circle>
                                         </svg>
                                         <div
-                                            style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center;">
-                                            <div style="font-size:3.2rem; font-weight:900; line-height:1;"
-                                                id="dt-worktime">00:00</div>
-                                            <div
-                                                style="font-size:0.9rem; color:var(--text-s); letter-spacing:4px; margin-top:8px;">
-                                                SOAT</div>
+                                            style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                                            <i data-lucide="cpu" size="50"
+                                                style="color:var(--accent); opacity:0.15;"></i>
                                         </div>
                                     </div>
-                                    <div
-                                        style="margin-top:40px; display:flex; gap:20px; width:100%; background:rgba(255,255,255,0.02); padding:25px; border-radius:30px; border:1px solid rgba(255,255,255,0.05); flex-direction:column; align-items:center;">
 
-                                        <!-- Real-time Salary Widget -->
+                                    <!-- HERO TIMER -->
+                                    <div style="text-align:center; margin-bottom:50px;">
+                                        <div id="dt-worktime"
+                                            style="font-size:6.2rem; font-weight:1000; font-family:'Outfit'; line-height:1; letter-spacing:-5px; margin-bottom:12px; color:#fff;">
+                                            00:00:00</div>
                                         <div
-                                            style="text-align:center; width:100%; padding-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.05);">
-                                            <span
-                                                style="font-size:0.75rem; color:var(--accent); font-weight:800; letter-spacing:2px; display:block; margin-bottom:10px;">BUGUNGI
-                                                ISH HAQI</span>
-                                            <div style="font-size:1.8rem; font-weight:900; color:#fff;"
-                                                id="dt-today-pay">0 <small
-                                                    style="font-size:0.8rem; color:var(--text-s);">UZS</small></div>
+                                            style="width:200px; height:2px; background:linear-gradient(to right, transparent, var(--accent), transparent); margin:0 auto 15px; opacity:0.3;">
                                         </div>
-
-                                        <!-- WORK TIMES (CHECK-IN / CHECK-OUT) -->
-                                        <div style="display:flex; gap:20px; width:100%; margin-top:20px;">
-                                            <div style="flex:1; text-align:center;">
-                                                <span
-                                                    style="font-size:0.65rem; color:var(--text-s); display:block; margin-bottom:5px; font-weight:800; letter-spacing:1px;">KELISH
-                                                    VAQTI</span>
-                                                <b id="dt-arrived" style="font-size:1.2rem; color:#fff;">--:--</b>
-                                            </div>
-                                            <div style="width:1px; height:35px; background:rgba(255,255,255,0.08);">
-                                            </div>
-                                            <div style="flex:1; text-align:center;">
-                                                <span
-                                                    style="font-size:0.65rem; color:var(--text-s); display:block; margin-bottom:5px; font-weight:800; letter-spacing:1px;">KETISH
-                                                    VAQTI</span>
-                                                <b id="dt-left" style="font-size:1.2rem; color:#fff;">--:--</b>
-                                            </div>
-                                        </div>
-
-                                        <!-- COLLAPSIBLE LUNCH SECTION -->
-                                        <div style="width:100%; margin-top:15px;">
-                                            <button onclick="window.toggleLunchSection()"
-                                                style="width:100%; display:flex; justify-content:space-between; align-items:center; background:rgba(255,169,64,0.05); border:1px solid rgba(255,169,64,0.1); padding:10px 20px; border-radius:15px; cursor:pointer; transition:0.3s; outline:none;"
-                                                onmouseover="this.style.background='rgba(255,169,64,0.1)'"
-                                                onmouseout="this.style.background='rgba(255,169,64,0.05)'">
-                                                <div style="display:flex; align-items:center; gap:10px;">
-                                                    <i data-lucide="coffee" style="width:14px; color:#ffa940;"></i>
-                                                    <span
-                                                        style="font-size:0.65rem; color:#ffa940; font-weight:900; letter-spacing:1px;">TUSHLIK
-                                                        MA'LUMOTLARI</span>
-                                                </div>
-                                                <i id="lunchChevron" data-lucide="arrow-down"
-                                                    style="width:14px; color:var(--text-s); transition:0.3s;"></i>
-                                            </button>
-
-                                            <div id="lunchDetailsBody"
-                                                style="display:none; overflow:hidden; margin-top:10px; padding:15px; background:rgba(255,255,255,0.02); border-radius:20px; border:1px solid rgba(255,255,255,0.05);">
-                                                <div
-                                                    style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px;">
-                                                    <span
-                                                        style="font-size:0.6rem; color:var(--text-s); font-weight:800;">DAVOMIYLIGI:</span>
-                                                    <span id="dt-lunch-duration"
-                                                        style="font-size:0.75rem; color:var(--accent); font-weight:900; font-family:'Outfit';">00:00:00</span>
-                                                </div>
-                                                <div style="display:flex; gap:15px; align-items:center;">
-                                                    <div style="flex:1; text-align:center;">
-                                                        <small
-                                                            style="display:block; font-size:0.55rem; color:var(--text-s); margin-bottom:3px; opacity:0.5;">CHIQISH</small>
-                                                        <b id="dt-lunch-start"
-                                                            style="font-size:0.9rem; color:#fff;">--:--</b>
-                                                    </div>
-                                                    <div
-                                                        style="width:1px; height:20px; background:rgba(255,255,255,0.1);">
-                                                    </div>
-                                                    <div style="flex:1; text-align:center;">
-                                                        <small
-                                                            style="display:block; font-size:0.55rem; color:var(--text-s); margin-bottom:3px; opacity:0.5;">QAYTISH</small>
-                                                        <b id="dt-lunch-end"
-                                                            style="font-size:0.9rem; color:#fff;">--:--</b>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Col 3: QR & Secondary Actions -->
-                            <div class="dash-col" style="display:flex; flex-direction:column; gap:20px;">
-                                <div class="dash-card"
-                                    style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:25px; border-radius:30px; height:100%; display:flex; flex-direction:column; align-items:center;">
-                                    <div
-                                        style="width:100%; display:flex; justify-content:space-between; align-items:center;">
                                         <span
-                                            style="font-size:0.75rem; font-weight:800; color:var(--text-s); text-transform:uppercase;">Umumiy
-                                            Reyting</span>
-                                        <span style="font-size:1.6rem; font-weight:900; color:var(--accent);">92%</span>
+                                            style="font-size:1.1rem; color:var(--text-s); font-weight:1000; letter-spacing:15px; text-transform:uppercase; opacity:0.4;">TIME
+                                            PROTOCOL</span>
+                                    </div>
+
+                                    <!-- TIMELINE NODES -->
+                                    <div
+                                        style="display:grid; grid-template-columns: repeat(4, 1fr); width:100%; gap:20px; padding:35px; background:rgba(255,255,255,0.03); border-radius:40px; border:1px solid rgba(255,255,255,0.08);">
+                                        <div class="timeline-step" id="step-arrived">
+                                            <span class="timeline-label">ENTRY</span>
+                                            <div class="timeline-icon"
+                                                style="background:rgba(0,255,136,0.08); color:var(--accent);"><i
+                                                    data-lucide="zap" size="20"></i></div>
+                                            <b id="dt-arrived" style="font-size:1.1rem; color:#fff;">--:--</b>
+                                        </div>
+                                        <div class="timeline-step" id="step-lunch-out">
+                                            <span class="timeline-label">BREAK</span>
+                                            <div class="timeline-icon"><i data-lucide="coffee" size="20"></i></div>
+                                            <b id="dt-lunch-start" style="font-size:1.1rem; color:#fff;">--:--</b>
+                                        </div>
+                                        <div class="timeline-step" id="step-lunch-in">
+                                            <span class="timeline-label">RECAP</span>
+                                            <div class="timeline-icon"><i data-lucide="utensils" size="20"></i></div>
+                                            <b id="dt-lunch-end" style="font-size:1.1rem; color:#fff;">--:--</b>
+                                        </div>
+                                        <div class="timeline-step" id="step-left">
+                                            <span class="timeline-label">SETTLE</span>
+                                            <div class="timeline-icon"><i data-lucide="log-out" size="20"></i></div>
+                                            <b id="dt-left" style="font-size:1.1rem; color:#fff;">--:--</b>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="premium-card"
+                                    style="padding:50px; background:linear-gradient(135deg, rgba(0,255,136,0.1) 0%, rgba(0,0,0,0.4) 100%);">
+                                    <span class="live-stat-label" style="text-align:left; margin-bottom:35px;">REVENUE
+                                        STREAMING</span>
+                                    <div id="dt-today-pay" style="margin-bottom:45px;">
+                                        <span
+                                            style="font-family:'Outfit'; font-size:6.8rem; font-weight:1000; background:linear-gradient(to bottom, #fff, #aaa); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; letter-spacing:-6px; line-height:1;">0</span>
+                                        <span
+                                            style="font-size:2rem; color:var(--accent); font-weight:1000; margin-left:25px; letter-spacing:5px;">UZS</span>
                                     </div>
                                     <div
-                                        style="margin-top:35px; background:rgba(255,255,255,0.03); border:2px dashed rgba(255,255,255,0.08); padding:25px; border-radius:35px; text-align:center;">
-                                        <img id="dt-qr" src="" style="width:150px; height:150px;">
-                                        <p
-                                            style="font-size:0.75rem; color:var(--text-s); margin-top:15px; font-weight:700; letter-spacing:1px;">
-                                            DIGITAL ID PASSPORT</p>
+                                        style="display:grid; grid-template-columns: 1fr 1fr; gap:60px; border-top:1px solid rgba(255,255,255,0.1); padding-top:40px;">
+                                        <div>
+                                            <span
+                                                style="display:block; font-size:0.8rem; color:var(--text-s); font-weight:1000; margin-bottom:10px; opacity:0.5; letter-spacing:3px;">RATE</span>
+                                            <b id="dt-hourly-rate"
+                                                style="font-size:1.4rem; color:#fff; font-family:'Outfit';">0</b>
+                                        </div>
+                                        <div>
+                                            <span
+                                                style="display:block; font-size:0.8rem; color:var(--text-s); font-weight:1000; margin-bottom:10px; opacity:0.5; letter-spacing:3px;">LUNCH</span>
+                                            <b id="dt-lunch-duration-val"
+                                                style="font-size:1.4rem; color:#ffa940; font-family:'Outfit';">00:00:00</b>
+                                        </div>
                                     </div>
-                                    <div
-                                        style="width:100%; margin-top:auto; display:flex; flex-direction:column; gap:12px; padding-top:20px;">
+                                </div>
+                            </div>
+
+                            <!-- RIGHT: ANALYTICS & HUB -->
+                            <div style="display:flex; flex-direction:column; gap:35px;">
+                                <div class="premium-card" style="padding:45px 35px;">
+                                    <span class="live-stat-label" style="display:block; margin-bottom:40px;">MONTHLY
+                                        MATRIX</span>
+                                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:25px;">
+                                        <div
+                                            style="background:rgba(255,255,255,0.03); padding:30px; border-radius:30px; border:1px solid rgba(255,255,255,0.07); text-align:center;">
+                                            <span
+                                                style="font-size:0.65rem; color:var(--text-s); font-weight:1000; display:block; margin-bottom:12px; letter-spacing:1px;">DAYS</span>
+                                            <b
+                                                style="font-size:2.4rem; color:var(--accent); font-family:'Outfit';">26</b>
+                                        </div>
+                                        <div
+                                            style="background:rgba(255,255,255,0.03); padding:30px; border-radius:30px; border:1px solid rgba(255,255,255,0.07); text-align:center;">
+                                            <span
+                                                style="font-size:0.65rem; color:var(--text-s); font-weight:1000; display:block; margin-bottom:12px; letter-spacing:1px;">HOURS</span>
+                                            <b style="font-size:2.4rem; color:#00d2ff; font-family:'Outfit';">234</b>
+                                        </div>
+                                        <div
+                                            style="background:rgba(255,255,255,0.03); padding:30px; border-radius:30px; border:1px solid rgba(255,255,255,0.07); text-align:center;">
+                                            <span
+                                                style="font-size:0.65rem; color:var(--text-s); font-weight:1000; display:block; margin-bottom:12px; letter-spacing:1px;">DELAY</span>
+                                            <b style="font-size:2.4rem; color:#ffcc00; font-family:'Outfit';">0</b>
+                                        </div>
+                                        <div
+                                            style="background:rgba(255,255,255,0.03); padding:30px; border-radius:30px; border:1px solid rgba(255,255,255,0.07); text-align:center;">
+                                            <span
+                                                style="font-size:0.65rem; color:var(--text-s); font-weight:1000; display:block; margin-bottom:12px; letter-spacing:1px;">FINE</span>
+                                            <b style="font-size:2.4rem; color:#ff4d4f; font-family:'Outfit';">0</b>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="premium-card" style="padding:45px 35px; flex:1;">
+                                    <span class="live-stat-label" style="display:block; margin-bottom:45px;">COMMAND
+                                        PROTOCOL</span>
+                                    <div style="display:flex; flex-direction:column; gap:22px;">
                                         <button onclick="window.prepareBadge()"
-                                            style="width:100%; padding:20px; border-radius:24px; background:var(--accent); border:none; color:#000; font-weight:900; cursor:pointer; font-size:0.9rem; box-shadow:0 12px 24px rgba(0,255,136,0.2); transition:0.3s;"
-                                            onmouseover="this.style.transform='translateY(-3px)'">BEJIK
-                                            TAYYORLASH</button>
+                                            style="width:100%; height:75px; background:linear-gradient(135deg, var(--accent), #00cc6a); color:#000; border:none; border-radius:24px; font-weight:1000; font-size:1.15rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:15px; box-shadow:0 20px 50px rgba(0,255,136,0.3); transition:0.4s;">
+                                            <i data-lucide="id-card" size="26"></i> PREPARE PASS
+                                        </button>
                                         <button onclick="window.handleReport()"
-                                            style="width:100%; padding:18px; border-radius:24px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; font-weight:800; cursor:pointer; font-size:0.85rem; transition:0.3s;">HISOBOT
-                                            YUKLASH</button>
+                                            style="width:100%; height:75px; background:rgba(255,255,255,0.03); color:#fff; border:1px solid rgba(255,255,255,0.1); border-radius:24px; font-weight:1000; font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:15px; transition:0.4s;">
+                                            <i data-lucide="file-down" size="26"></i> SYSTEM REPORT
+                                        </button>
+                                    </div>
+
+                                    <div style="margin-top:auto; padding-top:40px;">
+                                        <span class="live-stat-label"
+                                            style="font-size:0.7rem; margin-bottom:25px;">MANAGEMENT CONTROLS</span>
+                                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                                            <button onclick="window.handlePremya()"
+                                                style="height:60px; border-radius:18px; background:rgba(255,204,0,0.06); color:#ffcc00; font-weight:1000; border:1px solid rgba(255,204,0,0.2); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; font-size:0.9rem;">
+                                                <i data-lucide="award" size="20"></i> BONUS
+                                            </button>
+                                            <button onclick="window.handleOylik()"
+                                                style="height:60px; border-radius:18px; background:rgba(0,210,255,0.06); color:#00d2ff; font-weight:1000; border:1px solid rgba(0,210,255,0.2); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; font-size:0.9rem;">
+                                                <i data-lucide="piggy-bank" size="20"></i> PAYLOAD
+                                            </button>
+                                            <button onclick="window.handleEdit()"
+                                                style="height:60px; border-radius:18px; background:rgba(255,255,255,0.04); color:#fff; font-weight:1000; border:1px solid rgba(255,255,255,0.1); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; font-size:0.9rem;">
+                                                <i data-lucide="settings" size="20"></i> MODIFY
+                                            </button>
+                                            <button onclick="window.handleDelete()"
+                                                style="height:60px; border-radius:18px; background:rgba(255,77,79,0.06); color:#ff4d4f; font-weight:1000; border:1px solid rgba(255,77,79,0.2); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; font-size:0.9rem;">
+                                                <i data-lucide="trash-2" size="20"></i> ERASE
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Footer Action Buttons (Primary) -->
-                        <div
-                            style="display:flex; gap:15px; margin-top:10px; padding-top:30px; border-top:1px solid rgba(255,255,255,0.05);">
-                            <button onclick="window.handlePremya()"
-                                style="flex:1; height:65px; background:#ffcc00; color:#000; border:none; border-radius:22px; font-size:1rem; font-weight:900; cursor:pointer; transition:0.3s; display:flex; align-items:center; justify-content:center; gap:10px;"
-                                onmouseover="this.style.transform='translateY(-2px)'">
-                                <i data-lucide="award"></i> Premya Berish
-                            </button>
-                            <button onclick="window.handleOylik()"
-                                style="flex:1; height:65px; background:#00d2ff; color:#000; border:none; border-radius:22px; font-size:1rem; font-weight:900; cursor:pointer; transition:0.3s; display:flex; align-items:center; justify-content:center; gap:10px;"
-                                onmouseover="this.style.transform='translateY(-2px)'">
-                                <i data-lucide="wallet"></i> Oylik Ma'lumot
-                            </button>
-                            <button onclick="window.handleEdit()"
-                                style="flex:1; height:65px; background:#a55eea; color:#fff; border:none; border-radius:22px; font-size:1rem; font-weight:900; cursor:pointer; transition:0.3s; display:flex; align-items:center; justify-content:center; gap:10px;"
-                                onmouseover="this.style.transform='translateY(-2px)'">
-                                <i data-lucide="edit-3"></i> Tahrirlash
-                            </button>
-                            <button onclick="window.handleDelete()"
-                                style="flex:1; height:65px; background:rgba(255,77,79,0.1); color:#ff4d4f; border:1px solid rgba(255,77,79,0.3); border-radius:22px; font-size:1rem; font-weight:900; cursor:pointer; transition:0.3s; display:flex; align-items:center; justify-content:center; gap:10px;"
-                                onmouseover="this.style.background='rgba(255,77,79,0.2)'">
-                                <i data-lucide="trash-2"></i> O'chirish
-                            </button>
-                        </div>
                     </div>
                 </div>
             </div>
+
+            <!-- System Control Removed -->
         </div>
+    </div>
+
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
     </div>
 
     <!-- MOBILE NAV -->
