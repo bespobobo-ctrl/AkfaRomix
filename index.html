@@ -98,27 +98,46 @@
     <div class="bg-glow bg-glow-secondary"></div>
 
     <div class="auth-container">
-        <div class="auth-card glass-panel">
-            <!-- Logo -->
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
-                style="margin: 0 auto;">
-                <rect width="24" height="24" rx="4" fill="#00D2FF" />
-                <path d="M7 17L12 7L17 17" stroke="#001830" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round" />
+        <div class="auth-card glass-panel" id="roleSelector">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                style="margin: 0 auto 20px;">
+                <rect width="24" height="24" rx="6" fill="var(--accent-color)" />
+                <path d="M12 7V17M7 12H17" stroke="#001830" stroke-width="2" stroke-linecap="round" />
             </svg>
+            <h1 style="margin-bottom:10px;">Xush Kelibsiz!</h1>
+            <p style="margin-bottom:30px; opacity:0.7;">Tizimdan foydalanish turini tanlang</p>
+
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <button class="primary-btn" onclick="window.selectRole('management')"
+                    style="height:70px; border-radius:18px; font-weight:900; background:linear-gradient(90deg, var(--accent-color), #00d2ff); color:#000;">
+                    <i data-lucide="shield-check"></i> RAHBAR (ADMIN / HR)
+                </button>
+                <button class="primary-btn" onclick="window.selectRole('employee')"
+                    style="height:70px; border-radius:18px; font-weight:900; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff;">
+                    <i data-lucide="user"></i> ODDIY XODIM (USER)
+                </button>
+            </div>
+        </div>
+
+        <div class="auth-card glass-panel" id="loginCard" style="display:none; opacity:0;">
+            <!-- Back Button -->
+            <button onclick="window.goBackToRole()"
+                style="background:none; border:none; color:var(--text-secondary); display:flex; align-items:center; gap:5px; font-size:0.8rem; cursor:pointer; margin-bottom:20px;">
+                <i data-lucide="arrow-left" size="14"></i> ORTGA QAYTISH
+            </button>
 
             <div>
-                <h1>AKFA Romix</h1>
-                <p>Tizimga kirish uchun login va parolingizni kiriting</p>
+                <h1 id="loginTitle">AKFA Romix</h1>
+                <p id="loginSubtitle">Tizimga kirish uchun malumotlarni kiriting</p>
             </div>
 
             <form id="loginForm">
-                <div class="input-group">
-                    <label>Login (Username)</label>
-                    <input type="text" id="username" class="auth-input" placeholder="rahbar yoki usta..." required />
+                <div id="usernameGroup" class="input-group">
+                    <label id="usernameLabel">Login (Username)</label>
+                    <input type="text" id="username" class="auth-input" placeholder="..." required />
                 </div>
                 <br>
-                <div class="input-group">
+                <div id="passwordGroup" class="input-group">
                     <label>Parol</label>
                     <input type="password" id="password" class="auth-input" placeholder="••••••••" required />
                 </div>
@@ -129,6 +148,59 @@
             </form>
         </div>
     </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script>
+        lucide.createIcons();
+
+        window.selectRole = function (role) {
+            const roleSelector = document.getElementById('roleSelector');
+            const loginCard = document.getElementById('loginCard');
+            const usernameLabel = document.getElementById('usernameLabel');
+            const usernameInput = document.getElementById('username');
+            const passGroup = document.getElementById('passwordGroup');
+            const passInput = document.getElementById('password');
+
+            gsap.to(roleSelector, {
+                opacity: 0, y: -20, duration: 0.3, onComplete: () => {
+                    roleSelector.style.display = 'none';
+                    loginCard.style.display = 'flex';
+
+                    if (role === 'employee') {
+                        document.getElementById('loginTitle').innerText = 'Xodim Kirishi';
+                        document.getElementById('loginSubtitle').innerText = 'Sizga berilgan shaxsiy ID-ni kiriting';
+                        usernameLabel.innerText = 'Xodim ID raqami';
+                        usernameInput.placeholder = 'Masalan: 12345';
+                        passGroup.style.display = 'none';
+                        passInput.required = false;
+                        passInput.value = ''; // We will handle this in JS by cloning ID as pass
+                    } else {
+                        document.getElementById('loginTitle').innerText = 'Rahbar Kirishi';
+                        usernameLabel.innerText = 'Login (Username)';
+                        usernameInput.placeholder = 'rahbar yoki usta...';
+                        passGroup.style.display = 'flex';
+                        passInput.required = true;
+                    }
+
+                    gsap.to(loginCard, { opacity: 1, y: 0, duration: 0.4 });
+                    lucide.createIcons();
+                }
+            });
+        };
+
+        window.goBackToRole = function () {
+            const roleSelector = document.getElementById('roleSelector');
+            const loginCard = document.getElementById('loginCard');
+
+            gsap.to(loginCard, {
+                opacity: 0, y: 20, duration: 0.3, onComplete: () => {
+                    loginCard.style.display = 'none';
+                    roleSelector.style.display = 'flex';
+                    gsap.to(roleSelector, { opacity: 1, y: 0, duration: 0.4 });
+                }
+            });
+        };
+    </script>
 
     <script type="module" src="/src/js/core/auth.js?v=2026.update"></script>
 </body>
