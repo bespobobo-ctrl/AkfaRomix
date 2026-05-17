@@ -374,6 +374,17 @@ function updateProfileAttendance(att) {
     const timeEl = document.getElementById('dt-worktime');
     const progressEl = document.getElementById('timeProgress');
     const statusBadge = document.getElementById('dt-status-badge');
+    const statusPulse = document.getElementById('dt-status-pulse');
+
+    // Reset Daily Report Grid
+    const rIn = document.getElementById('dt-report-in');
+    const rLOut = document.getElementById('dt-report-lunch-out');
+    const rLIn = document.getElementById('dt-report-lunch-in');
+    const rOut = document.getElementById('dt-report-out');
+    if (rIn) rIn.textContent = '--:--';
+    if (rLOut) rLOut.textContent = '--:--';
+    if (rLIn) rLIn.textContent = '--:--';
+    if (rOut) rOut.textContent = '--:--';
 
     // Reset Timeline Steps
     const steps = ['step-arrived', 'step-lunch-out', 'step-lunch-in', 'step-left'];
@@ -398,6 +409,8 @@ function updateProfileAttendance(att) {
             statusPulse.style.boxShadow = 'none';
         }
 
+        updateLastActionUI('user-minus', 'Harakat yo\'q', new Date(), 'var(--text-s)');
+
         const payEl = document.getElementById('dt-today-pay');
         if (payEl) payEl.innerHTML = `<span style="font-family:'Outfit'; font-size:5.5rem; font-weight:1000; background:linear-gradient(to bottom, #fff, #999); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; letter-spacing:-4px;">0</span><span style="font-size:1.4rem; color:var(--accent); font-weight:900; margin-left:15px; letter-spacing:3px;">UZS</span>`;
         return;
@@ -416,37 +429,69 @@ function updateProfileAttendance(att) {
         else statusPulse.style.animation = 'none';
     }
 
-    const start = new Date(att.check_in);
-    arrivedEl.textContent = start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    document.getElementById('step-arrived')?.classList.add('completed');
+    if (att.check_in) {
+        const start = new Date(att.check_in);
+        const tIn = start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        arrivedEl.textContent = tIn;
+        if (rIn) rIn.textContent = tIn;
+        document.getElementById('step-arrived')?.classList.add('completed');
 
-    if (att.check_out) {
-        const end = new Date(att.check_out);
-        leftEl.textContent = end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        document.getElementById('step-left')?.classList.add('completed');
-        calculateDuration(start, end);
-    } else {
-        leftEl.textContent = '--:--';
-        workInterval = setInterval(() => calculateDuration(start, new Date()), 1000);
-        calculateDuration(start, new Date());
-    }
+        // Update Last Action (Initial)
+        updateLastActionUI('log-in', 'Tizimga kirish', start, 'var(--work)');
 
-    if (att.lunch_start) {
-        const lStart = new Date(att.lunch_start);
-        if (lunchStartEl) lunchStartEl.textContent = lStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        document.getElementById('step-lunch-out')?.classList.add('completed');
-
-        if (att.lunch_end) {
-            const lEnd = new Date(att.lunch_end);
-            if (lunchEndEl) lunchEndEl.textContent = lEnd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            document.getElementById('step-lunch-in')?.classList.add('completed');
-            updateLunchDuration(lStart, lEnd);
+        if (att.check_out) {
+            const end = new Date(att.check_out);
+            const tOut = end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            leftEl.textContent = tOut;
+            if (rOut) rOut.textContent = tOut;
+            document.getElementById('step-left')?.classList.add('completed');
+            calculateDuration(start, end);
+            updateLastActionUI('log-out', 'Ishdan ketti', end, '#ff4d4f');
         } else {
-            if (lunchEndEl) lunchEndEl.textContent = '--:--';
-            lunchInterval = setInterval(() => updateLunchDuration(lStart, new Date()), 1000);
-            updateLunchDuration(lStart, new Date());
+            leftEl.textContent = '--:--';
+            workInterval = setInterval(() => calculateDuration(start, new Date()), 1000);
+            calculateDuration(start, new Date());
+        }
+
+        if (att.lunch_start) {
+            const lStart = new Date(att.lunch_start);
+            const tLOut = lStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            if (lunchStartEl) lunchStartEl.textContent = tLOut;
+            if (rLOut) rLOut.textContent = tLOut;
+            document.getElementById('step-lunch-out')?.classList.add('completed');
+            updateLastActionUI('coffee', 'Tushlikka chiqdi', lStart, '#ffa940');
+
+            if (att.lunch_end) {
+                const lEnd = new Date(att.lunch_end);
+                const tLIn = lEnd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                if (lunchEndEl) lunchEndEl.textContent = tLIn;
+                if (rLIn) rLIn.textContent = tLIn;
+                document.getElementById('step-lunch-in')?.classList.add('completed');
+                updateLunchDuration(lStart, lEnd);
+                updateLastActionUI('arrow-right-circle', 'Tushlikdan qaytdi', lEnd, '#ffa940');
+            } else {
+                if (lunchEndEl) lunchEndEl.textContent = '--:--';
+                lunchInterval = setInterval(() => updateLunchDuration(lStart, new Date()), 1000);
+                updateLunchDuration(lStart, new Date());
+            }
         }
     }
+}
+
+function updateLastActionUI(icon, title, time, color) {
+    const iconEl = document.getElementById('dt-last-icon');
+    const titleEl = document.getElementById('dt-last-title');
+    const timeEl = document.getElementById('dt-last-time');
+    const bgEl = document.getElementById('dt-last-icon-bg');
+    const badgeEl = document.getElementById('dt-last-badge');
+
+    if (iconEl) iconEl.setAttribute('data-lucide', icon);
+    if (titleEl) titleEl.textContent = title;
+    if (timeEl) timeEl.textContent = `Bugun, ${time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    if (bgEl) bgEl.style.background = `${color}1A`;
+    if (iconEl) iconEl.style.color = color;
+    if (badgeEl) badgeEl.style.color = color;
+    lucide.createIcons();
 }
 
 function updateLunchDuration(start, end) {
@@ -490,10 +535,10 @@ function calculateDuration(start, end) {
 
             if (payEl) {
                 payEl.innerHTML = `
-                    <span style="font-family:'Outfit'; font-size:6.8rem; font-weight:1000; background:linear-gradient(to bottom, #fff, #aaa); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; letter-spacing:-6px; line-height:1;">
+                    <span style="font-size:2.8rem; font-weight:1000; color:#fff; font-family:'Outfit';">
                         ${Math.floor(todayPay).toLocaleString()}
                     </span>
-                    <span style="font-size:2rem; color:var(--accent); font-weight:1000; margin-left:25px; letter-spacing:5px;">UZS</span>
+                    <span style="font-size:0.9rem; font-weight:1000; color:var(--accent); margin-left:10px;">UZS</span>
                 `;
             }
         }
@@ -505,9 +550,21 @@ function calculateDuration(start, end) {
         const totalSecs = hrs * 3600 + mins * 60 + secs;
         const maxSecs = 10 * 3600;
         const percent = Math.min(totalSecs / maxSecs, 1);
-        const circumference = 974; // For R=155 in v7
+        const circumference = 628;
         const offset = circumference - (circumference * percent);
         progressEl.style.strokeDashoffset = offset;
+
+        // DYNAMIC COLOR LOGIC: Kok (Work) vs Sariq (Lunch)
+        const lunchStart = document.getElementById('dt-lunch-start')?.textContent;
+        const lunchEnd = document.getElementById('dt-lunch-end')?.textContent;
+
+        if (lunchStart && lunchStart !== '--:--' && lunchEnd === '--:--') {
+            progressEl.style.stroke = 'var(--lunch)';
+            progressEl.style.filter = 'drop-shadow(0 0 15px var(--lunch))';
+        } else {
+            progressEl.style.stroke = 'var(--work)';
+            progressEl.style.filter = 'drop-shadow(0 0 15px var(--work))';
+        }
     }
 }
 
@@ -525,13 +582,18 @@ function toggleLunchSection() {
 
     if (body.style.display === 'none') {
         body.style.display = 'block';
-        gsap.from(body, { height: 0, opacity: 0, duration: 0.4, ease: "power2.out" });
+        // Force reset before animation
+        gsap.set(body, { height: 'auto', opacity: 0 });
+        const height = body.offsetHeight;
+        gsap.fromTo(body,
+            { height: 0, opacity: 0 },
+            { height: height, opacity: 1, duration: 0.4, ease: "power2.out" }
+        );
         if (chevron) gsap.to(chevron, { rotation: 180, duration: 0.3 });
     } else {
         gsap.to(body, {
             height: 0, opacity: 0, duration: 0.3, ease: "power2.in", onComplete: () => {
                 body.style.display = 'none';
-                body.style.height = 'auto'; // Reset for next open
             }
         });
         if (chevron) gsap.to(chevron, { rotation: 0, duration: 0.3 });
@@ -1805,6 +1867,7 @@ window.clearAllKitchenData = function () {
 
 let historyFilter = 'all';
 let historyAttSub = 'all';
+let historyData = [];
 window.setHistPeriod = function (period) {
     const from = document.getElementById('histDateFrom');
     const to = document.getElementById('histDateTo');
@@ -1856,10 +1919,17 @@ async function loadHistoryData() {
     const from = document.getElementById('histDateFrom').value;
     const to = document.getElementById('histDateTo').value;
 
-    let q = supabase.from('attendance').select(`*, employees(full_name)`).order('date', { ascending: false });
-    if (from) q = q.gte('date', from);
-    if (to) q = q.lte('date', to);
-    const { data: attLogs } = await q.limit(200);
+    let q = supabase.from('attendance').select('*').order('date', { ascending: false });
+    if (from && from.length > 5) q = q.gte('date', from);
+    if (to && to.length > 5) q = q.lte('date', to);
+    const { data: attLogs, error: histErr } = await q.limit(500);
+
+    console.log("📊 History attLogs fetched:", attLogs ? attLogs.length : 0);
+    if (histErr) {
+        console.error("❌ History fetch error:", histErr);
+        list.innerHTML = `<div style="text-align:center; padding:100px; color:#ff4d4f;">Xatolik: ${histErr.message}</div>`;
+        return;
+    }
 
     const kitchenLogs = [];
     Object.keys(localStorage).forEach(key => {
@@ -1870,7 +1940,7 @@ async function loadHistoryData() {
             kitchenLogs.push({
                 type: 'kitchen',
                 action: "Oshxona hisoboti saqlandi",
-                target: `${data.date}: ${data.count} kishi`,
+                target: `Sana: ${data.date} (${data.count} kishi)`,
                 time: data.savedAt || data.date + "T12:00:00Z"
             });
         }
@@ -1883,13 +1953,36 @@ async function loadHistoryData() {
         return true;
     });
 
+    const todayStr = new Date().toISOString().split('T')[0];
+    const absentEntries = [];
+
+    // Auto-detect absentees for today if looking at current range
+    if (!from || from === todayStr) {
+        employeesData.forEach(emp => {
+            const hasAtt = (attLogs || []).some(a => a.employee_id === emp.id && a.date === todayStr);
+            if (!hasAtt) {
+                absentEntries.push({
+                    type: 'attendance',
+                    subtype: 'absent',
+                    action: 'Ishga kelmadi',
+                    target: emp.full_name,
+                    time: todayStr + "T09:00:00Z"
+                });
+            }
+        });
+    }
+
     historyData = [
         ...(attLogs || []).flatMap(l => {
             const arr = [];
-            if (l.check_in) arr.push({ type: 'attendance', subtype: 'in', action: 'Ishga keldi', target: l.employees?.full_name || 'Xodim', time: l.check_in });
-            if (l.check_out) arr.push({ type: 'attendance', subtype: 'out', action: 'Ishdan ketti', target: l.employees?.full_name || 'Xodim', time: l.check_out });
+            const empName = employeesData.find(e => e.id === l.employee_id)?.full_name || 'Noma\'lum xodim';
+            if (l.check_in) arr.push({ type: 'attendance', subtype: 'in', action: 'Ishga keldi', target: empName, time: l.check_in });
+            if (l.lunch_start) arr.push({ type: 'attendance', subtype: 'lunch_out', action: 'Tushlikka chiqdi', target: empName, time: l.lunch_start });
+            if (l.lunch_end) arr.push({ type: 'attendance', subtype: 'lunch_in', action: 'Tushlikdan qaytdi', target: empName, time: l.lunch_end });
+            if (l.check_out) arr.push({ type: 'attendance', subtype: 'out', action: 'Ishdan ketti', target: empName, time: l.check_out });
             return arr;
         }),
+        ...absentEntries,
         ...kitchenLogs,
         ...adminLogs
     ];
@@ -1897,7 +1990,7 @@ async function loadHistoryData() {
     historyData.sort((a, b) => new Date(b.time) - new Date(a.time));
 
     document.getElementById('hist_total_count').textContent = historyData.length;
-    document.getElementById('hist_today_att').textContent = (attLogs || []).filter(a => a.date === new Date().toISOString().split('T')[0]).length;
+    document.getElementById('hist_today_att').textContent = (attLogs || []).filter(a => a.date === todayStr).length;
     document.getElementById('hist_kitchen_count').textContent = kitchenLogs.length;
     document.getElementById('hist_admin_count').textContent = adminLogs.length;
 
@@ -1941,30 +2034,43 @@ function renderHistory(customData = null) {
     }
 
     list.innerHTML = data.map(h => {
-        let icon = 'clock'; let color = '#00ff88'; let bg = 'rgba(0,255,136,0.1)';
+        let icon = 'clock';
+        let color = 'var(--accent)';
+        let bg = 'rgba(0,255,136,0.1)';
+        let typeLabel = (h.subtype || h.type).toUpperCase();
+
         if (h.type === 'kitchen') { icon = 'utensils'; color = '#ffa940'; bg = 'rgba(255,169,64,0.1)'; }
         if (h.type === 'admin') { icon = 'shield'; color = '#ff4d4f'; bg = 'rgba(255,77,79,0.1)'; }
+
+        if (h.subtype === 'in') { icon = 'log-in'; color = 'var(--work)'; bg = 'rgba(0,210,255,0.1)'; }
         if (h.subtype === 'out') { icon = 'log-out'; color = '#ff4d4f'; bg = 'rgba(255,77,79,0.1)'; }
+        if (h.subtype === 'absent') { icon = 'user-x'; color = '#ff4d4f'; bg = 'rgba(255,77,79,0.15)'; typeLabel = 'KELMAGAN'; }
+        if (h.subtype === 'lunch_out') { icon = 'coffee'; color = '#ffa940'; bg = 'rgba(255,169,64,0.1)'; typeLabel = 'TUSHLIK (CHIQISH)'; }
+        if (h.subtype === 'lunch_in') { icon = 'arrow-right-circle'; color = '#ffa940'; bg = 'rgba(255,169,64,0.1)'; typeLabel = 'TUSHLIK (QAYTISH)'; }
+
+        const dateObj = new Date(h.time);
+        const dateStr = dateObj.toLocaleDateString('uz-UZ', { day: 'numeric', month: 'short', year: 'numeric' });
+        const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
         return `
-            <div class="history-row">
-                <div class="hist-icon" style="background:${bg}; color:${color}; box-shadow: 0 0 20px ${bg};">
+            <div class="history-row" style="display:grid; grid-template-columns: 60px 1fr 150px 120px; align-items:center; background:rgba(255,255,255,0.02); padding:15px 25px; border-radius:20px; border:1px solid rgba(255,255,255,0.04); margin-bottom:10px; transition:0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.04)'; this.style.borderColor='rgba(255,255,255,0.08)'" onmouseout="this.style.background='rgba(255,255,255,0.02)'; this.style.borderColor='rgba(255,255,255,0.04)'">
+                <div class="hist-icon" style="width:44px; height:44px; border-radius:12px; background:${bg}; color:${color}; display:flex; align-items:center; justify-content:center; box-shadow: 0 4px 15px ${bg};">
                     <i data-lucide="${icon}" style="width:20px;"></i>
                 </div>
-                <div style="padding-left:10px;">
-                    <h4 style="font-size:0.95rem; font-weight:800; color:#fff; letter-spacing:-0.4px;">${h.target}</h4>
-                    <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
-                        <span style="font-size:0.6rem; font-weight:900; color:${color}; opacity:0.8; letter-spacing:1px; background:${bg}; padding:2px 8px; border-radius:4px;">${h.type.toUpperCase()}</span>
-                        <p style="font-size:0.65rem; color:var(--text-s); font-weight:700;">${h.action}</p>
+                <div style="padding-left:15px;">
+                    <h4 style="font-size:1rem; font-weight:1000; color:#fff; letter-spacing:-0.5px; margin:0;">${h.target}</h4>
+                    <div style="display:flex; align-items:center; gap:10px; margin-top:5px;">
+                        <span style="font-size:0.6rem; font-weight:1000; color:${color}; letter-spacing:1px; background:${bg}; padding:3px 10px; border-radius:6px; border:1px solid ${color}33;">${typeLabel}</span>
+                        <p style="font-size:0.75rem; color:var(--text-s); font-weight:700; margin:0;">${h.action}</p>
                     </div>
                 </div>
-                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
-                    <span style="font-size:0.75rem; color:#fff; font-weight:800;">${new Date(h.time).toLocaleDateString('uz-UZ', { day: 'numeric', month: 'short' })}</span>
-                    <span style="font-size:0.6rem; color:var(--text-s); font-weight:600;">SANASI</span>
+                <div style="text-align:right;">
+                    <span style="font-size:0.85rem; color:#fff; font-weight:800; display:block;">${dateStr}</span>
+                    <span style="font-size:0.6rem; color:var(--text-s); font-weight:900; opacity:0.5; letter-spacing:1px; text-transform:uppercase;">Amal sanasi</span>
                 </div>
-                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:1px; padding-left:20px;">
-                    <span style="font-family:'Outfit'; font-size:1.1rem; font-weight:1000; color:var(--accent); letter-spacing:-0.5px;">${new Date(h.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                    <span style="font-size:0.6rem; color:var(--text-s); font-weight:900; opacity:0.5; letter-spacing:1px;">AMAL VAQTI</span>
+                <div style="text-align:right; border-left:1px solid rgba(255,255,255,0.05); padding-left:20px;">
+                    <span style="font-family:'Outfit'; font-size:1.3rem; font-weight:1000; color:var(--accent); letter-spacing:-1px; line-height:1;">${timeStr}</span>
+                    <span style="font-size:0.6rem; color:var(--text-s); font-weight:900; opacity:0.5; letter-spacing:1px; display:block; margin-top:2px;">VAQTI</span>
                 </div>
             </div>
         `;
@@ -2053,10 +2159,29 @@ async function processAttendance(emp, type) {
     const { error } = await supabase.from('attendance').upsert(payload);
 
     if (!error) {
+        // 🚀 LIVE UPDATE: Update local status immediately
+        if (existing) {
+            const idx = todayAtt.findIndex(a => a.id === existing.id);
+            if (idx !== -1) todayAtt[idx] = { ...todayAtt[idx], ...payload };
+            else todayAtt.push(payload);
+        } else {
+            todayAtt.push(payload);
+        }
+
         closeActionModal();
-        alert(`Muvaffaqiyatli: ${emp.full_name} - ${type === 'in' ? 'Kash keldi' : 'Ishdan ketti'}`);
-        await loadInitialData(); // Refresh counts
+
+        // Trigger Re-render and Switch Tab immediately
+        filterAndRender();
         switchTab('dashboard');
+
+        // Non-blocking notification (optional: could use toast here)
+        console.log(`✅ ${emp.full_name} status updated to ${payload.status}`);
+
+        // Log to history too
+        logActivity('attendance', type === 'in' ? 'Ishga keldi' : 'Ishdan ketti', emp.full_name);
+
+        // Refetch everything in background just to be safe
+        loadInitialData();
     } else {
         alert("Xatolik: " + error.message);
     }
