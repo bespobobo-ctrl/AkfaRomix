@@ -1053,6 +1053,12 @@
         <div class="sidebar-logo">AR</div>
         <button class="nav-btn active" title="Dashboard" onclick="window.switchTab('dashboard')"><i
                 data-lucide="layout-grid"></i></button>
+        <button class="nav-btn" title="Kutish jarayonidagi so'rovlar" onclick="window.switchTab('requests')"
+            style="position:relative;">
+            <i data-lucide="bell"></i>
+            <span id="requestBadge"
+                style="position:absolute; top:12px; right:12px; width:10px; height:10px; background:#ff4d4f; border-radius:50%; border:2px solid #05080c; display:none;"></span>
+        </button>
         <button class="nav-btn" title="QR Scanner" onclick="window.switchTab('scanner')"><i
                 data-lucide="qr-code"></i></button>
         <button class="nav-btn" title="Hisobotlar" onclick="window.switchTab('reports')"><i
@@ -1062,7 +1068,7 @@
         <button class="nav-btn" title="Oshxona" onclick="window.switchTab('kitchen')"><i
                 data-lucide="coffee"></i></button>
         <div style="flex:1"></div>
-        <button class="nav-btn" id="logoutBtn"><i data-lucide="log-out"></i></button>
+        <button class="nav-btn" id="logoutBtn" title="Chiqish"><i data-lucide="log-out"></i></button>
     </nav>
 
     <div class="main-container">
@@ -2335,6 +2341,50 @@
     </style>
 
     <!-- 📊 ACCOUNTANT ANALYTICS SECTION (Ultra Premium Fin-Tech UI) -->
+    <div id="requestsSection"
+        style="display:none; position:fixed; inset:0; z-index:9000; background:#04070a; flex-direction:column; padding:40px; overflow-y:auto;">
+        <div style="max-width:1200px; margin:0 auto; width:100%;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:40px;">
+                <div style="display:flex; align-items:center; gap:20px;">
+                    <div
+                        style="width:60px; height:60px; background:rgba(0, 255, 136, 0.1); border-radius:20px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(0,255,136,0.2);">
+                        <i data-lucide="bell" style="color:var(--accent); width:30px; height:30px;"></i>
+                    </div>
+                    <div>
+                        <h2 style="font-family:'Outfit'; font-size:2rem; font-weight:900;"><span
+                                style="color:var(--accent)">PROFIL</span> SO'ROVLARI</h2>
+                        <p style="font-size:0.8rem; color:var(--text-s); margin-top:5px;">Xodimlardan kelgan
+                            ma'lumotlarni tahrirlash so'rovlari</p>
+                    </div>
+                </div>
+                <button onclick="window.switchTab('dashboard')" class="mgmt-btn"
+                    style="background:rgba(255,255,255,0.05); color:#fff; border:1px solid rgba(255,255,255,0.1);">YOPISH</button>
+            </div>
+
+            <div class="bento-card" style="padding:0; overflow:hidden; background:rgba(255,255,255,0.01);">
+                <div
+                    style="padding:25px 30px; border-bottom:1px solid rgba(255,255,255,0.05); background:rgba(255,255,255,0.01);">
+                    <h3 style="font-size:1.1rem; font-weight:900;">KUTISH JARAYONIDAGI RO'YXAT</h3>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="lux-table" style="width:100%; border-collapse: collapse; margin:0;">
+                        <thead>
+                            <tr>
+                                <th>Xodim</th>
+                                <th>O'zgarishlar Tafsiloti</th>
+                                <th>Sana</th>
+                                <th style="text-align:right;">Amal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="requestsTableBody">
+                            <!-- JS fill -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="analyticsSection"
         style="display:none; position:fixed; inset:0; z-index:9000; background:#04070a; flex-direction:column; padding:40px; overflow-y:auto;">
         <div style="max-width:1400px; margin:0 auto; width:100%;">

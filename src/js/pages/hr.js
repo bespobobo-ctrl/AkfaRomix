@@ -1261,7 +1261,8 @@ async function switchTab(tab) {
         'scanner': document.getElementById('scannerSection'),
         'reports': document.getElementById('analyticsSection'),
         'history': document.getElementById('historySection'),
-        'kitchen': document.getElementById('kitchenSection')
+        'kitchen': document.getElementById('kitchenSection'),
+        'requests': document.getElementById('requestsSection')
     };
 
     // Hide all sections
@@ -1276,6 +1277,9 @@ async function switchTab(tab) {
     } else if (tab === 'kitchen') {
         sections.kitchen.style.display = 'flex';
         renderKitchenCalendar();
+    } else if (tab === 'requests') {
+        sections.requests.style.display = 'flex';
+        await loadProfileRequests();
     } else if (tab === 'dashboard') {
         sections.dashboard.style.display = 'flex';
         stopScanner();
@@ -1287,6 +1291,105 @@ async function switchTab(tab) {
 
     lucide.createIcons();
 }
+
+// 🏢 HR APPROVAL SYSTEM: PROFILE REQUESTS
+async function loadProfileRequests() {
+    const tbody = document.getElementById('requestsTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:50px;">Yuklanmoqda...</td></tr>';
+
+    const { data, error } = await supabase.from('profile_requests')
+        .select('*, employees(full_name, avatar_url)')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        tbody.innerHTML = `<tr><td colspan="4" style="color:red;">Xato: ${error.message}</td></tr>`;
+        return;
+    }
+
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:50px; color:var(--text-s);">Yangi so\'rovlar yo\'q</td></tr>';
+        document.getElementById('requestBadge').style.display = 'none';
+        return;
+    }
+
+    document.getElementById('requestBadge').style.display = 'block';
+    document.getElementById('requestBadge').innerText = data.length;
+
+    tbody.innerHTML = data.map(req => {
+        const emp = req.employees;
+        const changes = req.requested_data;
+        let details = '';
+        for (let key in changes) {
+            details += `<div style="font-size:0.7rem; color:var(--text-s); margin-bottom:5px;"><b>${key}:</b> <span style="color:var(--accent)">${changes[key]}</span></div>`;
+        }
+
+        return `
+            <tr>
+                <td style="padding:15px;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <img src="${emp.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(emp.full_name)}" style="width:40px; height:40px; border-radius:12px;">
+                        <div style="font-weight:700;">${emp.full_name}</div>
+                    </div>
+                </td>
+                <td style="padding:15px;">${details}</td>
+                <td style="padding:15px; font-size:0.75rem; color:var(--text-s);">${new Date(req.created_at).toLocaleString()}</td>
+                <td style="padding:15px; text-align:right;">
+                    <div style="display:inline-flex; gap:10px;">
+                        <button onclick="approveProfileRequest('${req.id}')" style="background:#00ff8822; color:#00ff88; border:1px solid #00ff8844; padding:8px 15px; border-radius:10px; font-weight:900; font-size:0.65rem; cursor:pointer;">TASDIQLASH</button>
+                        <button onclick="rejectProfileRequest('${req.id}')" style="background:#ff4d4f22; color:#ff4d4f; border:1px solid #ff4d4f44; padding:8px 15px; border-radius:10px; font-weight:900; font-size:0.65rem; cursor:pointer;">RAD ETISH</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+window.approveProfileRequest = async function (id) {
+    if (!confirm("Ushbu o'zgarishlarni tasdiqlaysizmi?")) return;
+
+    // 1. Get request data
+    const { data: request } = await supabase.from('profile_requests').select('*').eq('id', id).single();
+    if (!request) return;
+
+    // 2. Update employee
+    const { error: upError } = await supabase.from('employees').update(request.requested_data).eq('id', request.employee_id);
+
+    if (!upError) {
+        // 3. Mark request as approved
+        await supabase.from('profile_requests').update({ status: 'approved' }).eq('id', id);
+        alert("O'zgarishlar saqlandi!");
+        loadProfileRequests();
+        loadInitialData(); // Refresh staff list
+    } else {
+        alert("Xato: " + upError.message);
+    }
+};
+
+window.rejectProfileRequest = async function (id) {
+    if (!confirm("Ushbu so'rovni rad etasizmi?")) return;
+    const { error } = await supabase.from('profile_requests').update({ status: 'rejected' }).eq('id', id);
+    if (!error) {
+        alert("So'rov rad etildi.");
+        loadProfileRequests();
+    }
+};
+
+// Auto-check requests every 30s
+setInterval(() => {
+    supabase.from('profile_requests').select('id', { count: 'exact' }).eq('status', 'pending').then(({ count }) => {
+        const badge = document.getElementById('requestBadge');
+        if (badge) {
+            if (count > 0) {
+                badge.style.display = 'block';
+                badge.innerText = count;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    });
+}, 30000);
 
 // 📈 PROFESSIONAL ACCOUNTANT ANALYTICS ENGINE
 window.renderAnalyticsBoard = async function () {

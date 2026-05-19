@@ -8,6 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/css/style.css" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
         .auth-container {
             display: flex;
@@ -131,6 +133,17 @@
                 <p id="loginSubtitle">Tizimga kirish uchun malumotlarni kiriting</p>
             </div>
 
+            <!-- QR SCANNER AREA -->
+            <div id="qrScannerArea" style="display:none; margin: 15px 0;">
+                <div id="reader"
+                    style="width:100%; border-radius:20px; overflow:hidden; border:2px solid var(--accent-color); background:#000;">
+                </div>
+                <div style="margin-top:10px; padding:10px; background:rgba(0,210,255,0.1); border-radius:12px;">
+                    <p style="font-size:0.75rem; color:var(--accent-color); font-weight:800; letter-spacing:1px;">📷
+                        BEJIGINGIZNI SKANERLANG</p>
+                </div>
+            </div>
+
             <form id="loginForm">
                 <div id="usernameGroup" class="input-group">
                     <label id="usernameLabel">Login (Username)</label>
@@ -149,9 +162,10 @@
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <!-- SCRIPTS -->
     <script>
         lucide.createIcons();
+        let html5QrScanner = null;
 
         window.selectRole = function (role) {
             const roleSelector = document.getElementById('roleSelector');
@@ -160,6 +174,7 @@
             const usernameInput = document.getElementById('username');
             const passGroup = document.getElementById('passwordGroup');
             const passInput = document.getElementById('password');
+            const qrArea = document.getElementById('qrScannerArea');
 
             gsap.to(roleSelector, {
                 opacity: 0, y: -20, duration: 0.3, onComplete: () => {
@@ -168,18 +183,22 @@
 
                     if (role === 'employee') {
                         document.getElementById('loginTitle').innerText = 'Xodim Kirishi';
-                        document.getElementById('loginSubtitle').innerText = 'Sizga berilgan shaxsiy ID-ni kiriting';
+                        document.getElementById('loginSubtitle').innerText = 'Bejigingizni ko\'rsating yoki ID yozing';
                         usernameLabel.innerText = 'Xodim ID raqami';
                         usernameInput.placeholder = 'Masalan: 12345';
                         passGroup.style.display = 'none';
                         passInput.required = false;
-                        passInput.value = ''; // We will handle this in JS by cloning ID as pass
+                        passInput.value = '';
+                        qrArea.style.display = 'block';
+                        startScanner();
                     } else {
                         document.getElementById('loginTitle').innerText = 'Rahbar Kirishi';
                         usernameLabel.innerText = 'Login (Username)';
                         usernameInput.placeholder = 'rahbar yoki usta...';
                         passGroup.style.display = 'flex';
                         passInput.required = true;
+                        qrArea.style.display = 'none';
+                        stopScanner();
                     }
 
                     gsap.to(loginCard, { opacity: 1, y: 0, duration: 0.4 });
@@ -188,7 +207,32 @@
             });
         };
 
+        function startScanner() {
+            if (html5QrScanner) html5QrScanner.clear();
+            html5QrScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+            html5QrScanner.render(onScanSuccess);
+        }
+
+        function stopScanner() {
+            if (html5QrScanner) {
+                html5QrScanner.clear().catch(e => console.log(e));
+                html5QrScanner = null;
+            }
+        }
+
+        function onScanSuccess(decodedText) {
+            if (decodedText.startsWith('ROMIX-STAFF-')) {
+                const id = decodedText.split('ROMIX-STAFF-')[1];
+                document.getElementById('username').value = id;
+                document.getElementById('password').value = id; // Auth service uses ID as password for employees
+                stopScanner();
+                // Trigger natural form submission
+                document.getElementById('loginForm').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+            }
+        }
+
         window.goBackToRole = function () {
+            stopScanner();
             const roleSelector = document.getElementById('roleSelector');
             const loginCard = document.getElementById('loginCard');
 

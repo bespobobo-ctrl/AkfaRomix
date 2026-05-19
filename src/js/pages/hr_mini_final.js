@@ -103,25 +103,69 @@ function renderMiniStaff(staff, attendance, role) {
         const attRec = attendance[0];
         const status = getSmartStatus(attRec);
 
+        // 🕒 Format Times
+        const fTime = (iso) => iso ? new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
+
         container.innerHTML = `
-            <div class="staff-mini-card" style="flex-direction:column; padding:30px; gap:20px; text-align:center;" onclick="window.miniShowAction(employees[0])">
+            <!-- 👤 COMPACT PROFILE CARD -->
+            <div class="staff-mini-card" style="flex-direction:column; padding:25px; gap:15px; text-align:center;">
                 <div style="position:relative; margin: 0 auto;">
-                    <img src="${emp.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(emp.full_name)}" style="width:100px; height:100px; border-radius:30px; border:3px solid var(--accent);">
-                    <div style="position:absolute; bottom:5px; right:5px; width:20px; height:20px; border-radius:50%; background:${status.color}; border:3px solid #05080c; box-shadow:0 0 10px ${status.color}"></div>
+                    <img src="${emp.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(emp.full_name)}" style="width:90px; height:90px; border-radius:30px; border:3px solid var(--accent);">
+                    <div style="position:absolute; bottom:5px; right:5px; width:18px; height:18px; border-radius:50%; background:${status.color}; border:3px solid #05080c;"></div>
                 </div>
                 <div>
-                    <h2 style="font-size:1.4rem; font-weight:900;">${emp.full_name}</h2>
-                    <p style="color:var(--text-s); font-weight:700;">${emp.role || 'Xodim'}</p>
+                    <h2 style="font-size:1.3rem; font-weight:900; letter-spacing:1px;">${emp.full_name}</h2>
+                    <p style="color:var(--text-s); font-size:0.75rem; font-weight:700;">${emp.role || 'Xodim'}</p>
                 </div>
-                <div style="background:rgba(255,255,255,0.03); padding:15px; border-radius:20px; border:1px dashed var(--border); width:100%;">
-                    <span style="font-size:0.7rem; color:var(--text-s); font-weight:800; letter-spacing:1px;">MENING STATUSIM</span>
-                    <div style="color:${status.color}; font-size:1.2rem; font-weight:900; margin-top:5px;">${status.text}</div>
+            </div>
+
+            <!-- 📊 DAILY TIMELINE -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin: 15px 0;">
+                <div class="stat-card-mini" style="padding:15px; border:1px solid rgba(0,255,136,0.2);">
+                    <span style="font-size:0.6rem;">KELISH</span>
+                    <b style="font-size:1.1rem; color:var(--accent);">${fTime(attRec?.check_in)}</b>
                 </div>
-                <button class="primary-btn" style="width:100%; height:60px; border-radius:20px; background:var(--accent); color:#000; font-weight:900; border:none;">
+                <div class="stat-card-mini" style="padding:15px; border:1px solid rgba(255,169,64,0.2);">
+                    <span style="font-size:0.6rem;">TUSHLIK</span>
+                    <b style="font-size:1.1rem; color:#ffa940;">${fTime(attRec?.lunch_start)} - ${fTime(attRec?.lunch_end)}</b>
+                </div>
+                <div class="stat-card-mini" style="padding:15px; border:1px solid rgba(255,77,79,0.2);">
+                    <span style="font-size:0.6rem;">KETISH</span>
+                    <b style="font-size:1.1rem; color:#ff4d4f;">${fTime(attRec?.check_out)}</b>
+                </div>
+                <div class="stat-card-mini" style="padding:15px; border:1px solid rgba(0,210,255,0.2);">
+                    <span style="font-size:0.6rem;">STATUS</span>
+                    <b style="font-size:1rem; color:#00d2ff;">${status.text}</b>
+                </div>
+            </div>
+
+            <!-- 🆔 MY QR IDENTIFIER -->
+            <div style="background:var(--card); border:1px solid var(--border); border-radius:30px; padding:25px; text-align:center; backdrop-filter:var(--glass);">
+                <span style="display:block; font-size:0.7rem; color:var(--text-s); font-weight:800; margin-bottom:15px; letter-spacing:2px;">SHAXSIY QR-KODIM</span>
+                <div id="personalQR" style="background:#fff; padding:15px; border-radius:20px; display:inline-block; margin:0 auto;"></div>
+                <p style="margin-top:15px; font-size:0.65rem; color:var(--text-s);">Boshqa xodimlar skaner qilishi uchun ko'rsating</p>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button onclick="window.miniShowAction(employees[0])" style="flex:2; height:65px; border-radius:20px; background:var(--accent); color:#000; font-weight:900; border:none; box-shadow:0 10px 20px rgba(0,255,136,0.15);">
                     DAVOMATNI QAYD ETISH
+                </button>
+                <button onclick="window.openProfileEdit()" style="flex:1; height:65px; border-radius:20px; background:rgba(255,255,255,0.05); color:#fff; border:1px solid var(--border);">
+                    <i data-lucide="edit-3"></i>
                 </button>
             </div>
         `;
+
+        // Generate QR code
+        setTimeout(() => {
+            new QRCode(document.getElementById("personalQR"), {
+                text: "ROMIX-STAFF-" + emp.id,
+                width: 140,
+                height: 140,
+                colorDark: "#000000",
+                colorLight: "#ffffff"
+            });
+        }, 100);
         return;
     }
 
@@ -371,4 +415,100 @@ window.miniProcessAttendance = async function (type) {
 window.miniShowProfile = function (id) {
     const emp = employees.find(e => e.id === id);
     if (emp) alert(`${emp.full_name}\n${emp.role}\n${emp.phone}`);
+};
+
+// 📝 PROFILE EDIT ENGINE (With HR Approval)
+window.openProfileEdit = function () {
+    const emp = employees[0]; // For employee role, it's always the first one
+    const overlay = document.createElement('div');
+    overlay.className = 'mini-modal-overlay';
+    overlay.id = 'profileEditModal';
+    overlay.style.display = 'flex';
+
+    overlay.innerHTML = `
+        <div class="mini-modal" id="profileEditContent" style="max-height:90vh; overflow-y:auto; border-radius:35px 35px 0 0;">
+            <div style="width:40px; height:5px; background:rgba(255,255,255,0.1); border-radius:10px; margin:0 auto 20px auto;"></div>
+            <h2 style="font-size:1.4rem; font-weight:900; margin-bottom:25px; text-align:center;">PROFILNI TAHRIRLASH</h2>
+            
+            <div style="display:flex; flex-direction:column; gap:15px; padding-bottom:30px;">
+                <div class="input-group">
+                    <label style="color:var(--text-s); font-size:0.7rem; font-weight:800;">F.I.SH (To'liq ism)</label>
+                    <input type="text" id="editFullName" class="auth-input" value="${emp.full_name}" style="background:rgba(255,255,255,0.02);">
+                </div>
+                <div class="input-group">
+                    <label style="color:var(--text-s); font-size:0.7rem; font-weight:800;">TUG'ILGAN YILI</label>
+                    <input type="number" id="editBirthYear" class="auth-input" value="${emp.birth_year || ''}" placeholder="1995" style="background:rgba(255,255,255,0.02);">
+                </div>
+                <div class="input-group">
+                    <label style="color:var(--text-s); font-size:0.7rem; font-weight:800;">ASOSIY TELEFON</label>
+                    <input type="tel" id="editPhone" class="auth-input" value="${emp.phone || ''}" style="background:rgba(255,255,255,0.02);">
+                </div>
+                <div class="input-group">
+                    <label style="color:var(--text-s); font-size:0.7rem; font-weight:800;">QO'SHIMCHA TELEFON</label>
+                    <input type="tel" id="editPhoneAlt" class="auth-input" value="${emp.phone_alt || ''}" style="background:rgba(255,255,255,0.02);">
+                </div>
+                <div class="input-group">
+                    <label style="color:var(--text-s); font-size:0.7rem; font-weight:800;">YASHASH MANZILI</label>
+                    <input type="text" id="editAddress" class="auth-input" value="${emp.address || ''}" style="background:rgba(255,255,255,0.02);">
+                </div>
+                <div class="input-group">
+                    <label style="color:var(--text-s); font-size:0.7rem; font-weight:800;">AVATAR URL (Rasm ssilkasi)</label>
+                    <input type="text" id="editAvatar" class="auth-input" value="${emp.avatar_url || ''}" style="background:rgba(255,255,255,0.02);">
+                </div>
+
+                <div style="background:rgba(255,169,64,0.1); padding:15px; border-radius:15px; border:1px dashed #ffa940; margin-top:10px;">
+                    <p style="color:#ffa940; font-size:0.75rem; font-weight:700; line-height:1.4;">
+                        ⚠️ DIQQAT: O'zgarishlar HR bo'limi tomonidan tasdiqlanganidan so'ng kuchga kiradi.
+                    </p>
+                </div>
+
+                <button onclick="window.submitProfileRequest()" id="saveBtn" style="height:65px; border-radius:22px; background:var(--accent); color:#000; font-weight:900; border:none; margin-top:10px;">
+                    HR-GA SO'ROV YUBORISH
+                </button>
+                <button onclick="window.closeProfileEdit()" style="background:none; border:none; color:var(--text-s); font-weight:700; padding:10px;">BEKOR QILISH</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+    gsap.to("#profileEditContent", { y: 0, duration: 0.5, ease: "power4.out" });
+};
+
+window.closeProfileEdit = function () {
+    gsap.to("#profileEditContent", {
+        y: "100%", duration: 0.4, onComplete: () => {
+            document.getElementById('profileEditModal').remove();
+        }
+    });
+};
+
+window.submitProfileRequest = async function () {
+    const btn = document.getElementById('saveBtn');
+    btn.innerText = 'YUBORILMOQDA...';
+    btn.disabled = true;
+
+    const emp = employees[0];
+    const requestedData = {
+        full_name: document.getElementById('editFullName').value,
+        birth_year: document.getElementById('editBirthYear').value,
+        phone: document.getElementById('editPhone').value,
+        phone_alt: document.getElementById('editPhoneAlt').value,
+        address: document.getElementById('editAddress').value,
+        avatar_url: document.getElementById('editAvatar').value
+    };
+
+    const { error } = await supabase.from('profile_requests').insert({
+        employee_id: emp.id,
+        requested_data: requestedData,
+        status: 'pending'
+    });
+
+    if (!error) {
+        alert("So'rov yuborildi! HR tasdiqlashini kuting.");
+        window.closeProfileEdit();
+    } else {
+        alert("Xatolik: " + error.message);
+        btn.innerText = 'HR-GA SO\'ROV YUBORISH';
+        btn.disabled = false;
+    }
 };
