@@ -11,6 +11,11 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
+        :root {
+            --accent-glow: rgba(0, 210, 255, 0.3);
+            --card-bg: rgba(10, 25, 47, 0.7);
+        }
+
         .auth-container {
             display: flex;
             justify-content: center;
@@ -19,76 +24,157 @@
             width: 100vw;
             position: relative;
             z-index: 10;
+            padding: 20px;
         }
 
         .auth-card {
             width: 100%;
-            max-width: 400px;
-            padding: 40px;
+            max-width: 440px;
+            padding: 50px 40px;
             text-align: center;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 25px;
+            border-radius: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            background: var(--card-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
         }
 
         .auth-card h1 {
-            color: var(--accent-color);
-            font-size: 1.8rem;
-            margin-bottom: 8px;
+            color: #fff;
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 5px;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to bottom, #fff 0%, #a0aec0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .auth-card p {
             color: var(--text-secondary);
-            font-size: 0.9rem;
-            margin-bottom: 24px;
+            font-size: 0.95rem;
+            font-weight: 400;
+            margin-bottom: 20px;
+        }
+
+        .role-btn {
+            position: relative;
+            height: 85px;
+            border-radius: 24px;
+            font-weight: 700;
+            font-size: 1.05rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            overflow: hidden;
+        }
+
+        .role-btn i {
+            width: 24px;
+            height: 24px;
+        }
+
+        .role-btn.primary {
+            background: linear-gradient(135deg, var(--accent-color) 0%, #00a3ff 100%);
+            color: #001830;
+            box-shadow: 0 15px 30px -10px rgba(0, 210, 255, 0.4);
+        }
+
+        .role-btn.secondary {
+            background: rgba(255, 255, 255, 0.03);
+            color: #fff;
+            backdrop-filter: blur(10px);
+        }
+
+        .role-btn:hover {
+            transform: translateY(-5px) scale(1.02);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .role-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.3);
+        }
+
+        .role-btn.primary:hover {
+            box-shadow: 0 20px 40px -10px rgba(0, 210, 255, 0.6);
         }
 
         .input-group {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
             text-align: left;
         }
 
         .input-group label {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: var(--text-secondary);
-            font-weight: 500;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding-left: 5px;
         }
 
         .auth-input {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(0, 210, 255, 0.2);
-            padding: 14px;
-            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1.5px solid rgba(255, 255, 255, 0.08);
+            padding: 16px 20px;
+            border-radius: 18px;
             color: #fff;
             font-family: inherit;
             font-size: 1rem;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
         }
 
         .auth-input:focus {
             outline: none;
             border-color: var(--accent-color);
-            box-shadow: 0 0 10px var(--accent-glow);
+            background: rgba(0, 0, 0, 0.4);
+            box-shadow: 0 0 0 4px var(--accent-glow);
         }
 
         .auth-btn {
-            margin-top: 10px;
-            width: 100%;
-            padding: 14px;
-            font-size: 1rem;
+            height: 65px;
+            border-radius: 20px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            margin-top: 15px;
+            letter-spacing: 0.5px;
         }
 
         .error-msg {
             color: #ff4d4f;
             font-size: 0.85rem;
+            font-weight: 500;
             min-height: 20px;
+        }
+
+        /* Particles/Grid Overlay */
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(rgba(0, 210, 255, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: 1;
+            pointer-events: none;
         }
     </style>
 </head>
 
 <body>
+    <div class="bg-pattern"></div>
     <!-- Smoke Effect -->
     <div class="smoke-container">
         <div class="smoke smoke-1"></div>
@@ -100,56 +186,61 @@
     <div class="bg-glow bg-glow-secondary"></div>
 
     <div class="auth-container">
-        <div class="auth-card glass-panel" id="roleSelector">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
-                style="margin: 0 auto 20px;">
-                <rect width="24" height="24" rx="6" fill="var(--accent-color)" />
-                <path d="M12 7V17M7 12H17" stroke="#001830" stroke-width="2" stroke-linecap="round" />
-            </svg>
-            <h1 style="margin-bottom:10px;">Xush Kelibsiz!</h1>
-            <p style="margin-bottom:30px; opacity:0.7;">Tizimdan foydalanish turini tanlang</p>
+        <div class="auth-card" id="roleSelector">
+            <div
+                style="width: 72px; height: 72px; background: rgba(0,210,255,0.1); border-radius: 22px; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; border: 1px solid var(--accent-color);">
+                <i data-lucide="layout-grid" style="color: var(--accent-color); width: 32px; height: 32px;"></i>
+            </div>
+            <div>
+                <h1>Xush Kelibsiz!</h1>
+                <p>Davom etish uchun tizimdagi rolingizni tanlang</p>
+            </div>
 
-            <div style="display:flex; flex-direction:column; gap:12px;">
-                <button class="primary-btn" onclick="window.selectRole('management')"
-                    style="height:70px; border-radius:18px; font-weight:900; background:linear-gradient(90deg, var(--accent-color), #00d2ff); color:#000;">
+            <div style="display:flex; flex-direction:column; gap:15px;">
+                <button class="role-btn primary" onclick="window.selectRole('management')">
                     <i data-lucide="shield-check"></i> RAHBAR (ADMIN / HR)
                 </button>
-                <button class="primary-btn" onclick="window.selectRole('employee')"
-                    style="height:70px; border-radius:18px; font-weight:900; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff;">
-                    <i data-lucide="user"></i> ODDIY XODIM (USER)
+                <button class="role-btn secondary" onclick="window.selectRole('employee')">
+                    <i data-lucide="user-circle"></i> ODDIY XODIM (USER)
                 </button>
             </div>
+
+            <p style="font-size: 0.75rem; opacity: 0.5; margin-top: 10px;">AKFA Romix &copy; 2026 Barcha huquqlar
+                himoyalangan</p>
         </div>
 
-        <div class="auth-card glass-panel" id="loginCard" style="display:none; opacity:0;">
+        <div class="auth-card" id="loginCard" style="display:none; opacity:0;">
             <!-- Back Button -->
             <button onclick="window.goBackToRole()"
-                style="background:none; border:none; color:var(--text-secondary); display:flex; align-items:center; gap:5px; font-size:0.8rem; cursor:pointer; margin-bottom:20px;">
-                <i data-lucide="arrow-left" size="14"></i> ORTGA QAYTISH
+                style="background:rgba(255,255,255,0.05); border:none; color:#fff; width: 40px; height: 40px; border-radius: 12px; display:flex; align-items:center; justify-content:center; cursor:pointer; position: absolute; top: 30px; left: 30px; border: 1px solid rgba(255,255,255,0.1);">
+                <i data-lucide="arrow-left" size="18"></i>
             </button>
 
-            <div>
-                <h1 id="loginTitle">AKFA Romix</h1>
-                <p id="loginSubtitle">Tizimga kirish uchun malumotlarni kiriting</p>
+            <div style="margin-top: 20px;">
+                <h1 id="loginTitle" style="font-size: 1.8rem;">AKFA Romix</h1>
+                <p id="loginSubtitle">Tizimga kirish uchun ma'lumotlarni kiriting</p>
             </div>
 
             <!-- QR SCANNER AREA -->
-            <div id="qrScannerArea" style="display:none; margin: 15px 0;">
+            <div id="qrScannerArea" style="display:none; margin: 5px 0;">
                 <div id="reader"
-                    style="width:100%; border-radius:20px; overflow:hidden; border:2px solid var(--accent-color); background:#000;">
+                    style="width:100%; border-radius:24px; overflow:hidden; border:2px solid var(--accent-color); background:#000; box-shadow: 0 0 30px rgba(0,210,255,0.2);">
                 </div>
-                <div style="margin-top:10px; padding:10px; background:rgba(0,210,255,0.1); border-radius:12px;">
-                    <p style="font-size:0.75rem; color:var(--accent-color); font-weight:800; letter-spacing:1px;">📷
-                        BEJIGINGIZNI SKANERLANG</p>
+                <div
+                    style="margin-top:15px; padding:12px; background:rgba(0,210,255,0.05); border-radius:14px; border: 1px dashed var(--accent-color);">
+                    <p
+                        style="font-size:0.7rem; color:var(--accent-color); font-weight:800; letter-spacing:1.5px; text-transform: uppercase;">
+                        📷 BEJIKNI SKANERLANG
+                    </p>
                 </div>
             </div>
 
-            <form id="loginForm">
+            <form id="loginForm" style="display: flex; flex-direction: column; gap: 18px;">
                 <div id="usernameGroup" class="input-group">
                     <label id="usernameLabel">Login (Username)</label>
                     <input type="text" id="username" class="auth-input" placeholder="..." required />
                 </div>
-                <br>
+
                 <div id="passwordGroup" class="input-group">
                     <label>Parol</label>
                     <input type="password" id="password" class="auth-input" placeholder="••••••••" required />
@@ -157,7 +248,7 @@
 
                 <div class="error-msg" id="errorMsg"></div>
 
-                <button type="submit" class="primary-btn auth-btn">Kirish</button>
+                <button type="submit" class="primary-btn auth-btn">Tizimga kirish</button>
             </form>
         </div>
     </div>
