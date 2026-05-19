@@ -480,16 +480,23 @@ window.openProfileEdit = function () {
 
                 <div class="input-group-premium">
                     <label style="color:var(--text-s); font-size:0.65rem; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; margin-left:15px; margin-bottom:8px; display:block;">PROFIL RASMI</label>
-                    <div style="display:flex; align-items:center; gap:15px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); padding:15px; border-radius:24px;">
-                        <img id="tempAvatarPreview" src="${emp.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(emp.full_name)}" style="width:60px; height:60px; border-radius:18px; object-fit:cover; border:2px solid var(--accent);">
-                        <div style="flex:1;">
-                            <label for="avatarUpload" style="padding:10px 20px; background:rgba(255,255,255,0.05); border-radius:12px; font-size:0.75rem; font-weight:800; cursor:pointer; color:var(--accent); border:1px solid rgba(0,255,136,0.2); display:inline-block;">
-                                RASM TANLASH
+                    <div style="display:flex; flex-direction:column; gap:15px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); padding:20px; border-radius:30px; text-align:center;">
+                        <img id="tempAvatarPreview" src="${emp.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(emp.full_name)}" style="width:100px; height:100px; border-radius:30px; object-fit:cover; border:3px solid var(--accent); margin: 0 auto;">
+                        
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; width:100%;">
+                            <label for="avatarUpload" style="padding:15px; background:rgba(255,255,255,0.05); border-radius:18px; font-size:0.7rem; font-weight:800; cursor:pointer; color:#fff; border:1px solid rgba(255,255,255,0.1); display:flex; flex-direction:column; align-items:center; gap:5px;">
+                                <i data-lucide="image" style="width:18px;"></i> GALEREYA
                             </label>
                             <input type="file" id="avatarUpload" accept="image/*" style="display:none;" onchange="window.handleAvatarUpload(this)">
-                            <p id="uploadStatus" style="font-size:0.65rem; color:var(--text-s); margin-top:5px; margin-left:5px;">PNG, JPG (Maks. 2MB)</p>
-                            <input type="hidden" id="editAvatar" value="${emp.avatar_url || ''}">
+
+                            <label for="cameraUpload" style="padding:15px; background:rgba(0,255,136,0.1); border-radius:18px; font-size:0.7rem; font-weight:800; cursor:pointer; color:var(--accent); border:1px solid rgba(0,255,136,0.2); display:flex; flex-direction:column; align-items:center; gap:5px;">
+                                <i data-lucide="camera" style="width:18px;"></i> KAMERA
+                            </label>
+                            <input type="file" id="cameraUpload" accept="image/*" capture="user" style="display:none;" onchange="window.handleAvatarUpload(this)">
                         </div>
+                        
+                        <p id="uploadStatus" style="font-size:0.65rem; color:var(--text-s); font-weight:600;">O'zingizga mos usulni tanlang</p>
+                        <input type="hidden" id="editAvatar" value="${emp.avatar_url || ''}">
                     </div>
                 </div>
 

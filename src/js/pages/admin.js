@@ -9,11 +9,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Auth Check
     const user = authService.getCurrentUser();
+    console.log('Current User for Admin Dashboard:', user);
+
     if (!user || user.role !== ROLES.ADMIN) {
-        authService.logout();
+        console.warn('Auth Failed: User is not an admin', user);
+        // Wait a bit to show current page or error before redirecting
+        setTimeout(() => {
+            authService.logout();
+        }, 500);
         return;
     }
-    LayoutService.init();
+
+    // Check if we are in admin-v2 layout which has its own sidebar
+    if (document.querySelector('.sidebar-slim')) {
+        console.log('Admin V2 Layout detected, skipping generic sidebar injection');
+    } else {
+        LayoutService.init();
+    }
 
     // Initialize Telegram WebApp if available
     const tg = window.Telegram ? window.Telegram.WebApp : null;
@@ -125,6 +137,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (tab === 'logins') loadSystemUsers();
             if (tab === 'xodimlar') loadRomixHRData();
             if (tab === 'dashboard') loadRomixDashboardStats();
+        });
+    });
+
+    // --- AVTO CLAPAK SUB-SECTION SWITCHING ---
+    const autoNavLinks = document.querySelectorAll('.nav-link-item[data-auto-tab]');
+    const autoSubSections = document.querySelectorAll('.auto-tab-content');
+
+    autoNavLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const tab = link.getAttribute('data-auto-tab');
+
+            autoNavLinks.forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
+
+            autoSubSections.forEach(sec => {
+                sec.style.display = 'none';
+                if (sec.id === `sub-${tab}`) sec.style.display = 'block';
+            });
         });
     });
 

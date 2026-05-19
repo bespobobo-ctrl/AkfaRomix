@@ -13,12 +13,12 @@ export const LayoutService = {
     },
 
     injectSidebar() {
-        const existingSidebar = document.querySelector('.sidebar');
+        const existingSidebar = document.querySelector('.sidebar, .sidebar-slim, .hr-left-sidebar');
         if (existingSidebar) {
-            existingSidebar.outerHTML = Sidebar();
-        } else {
-            document.body.insertAdjacentHTML('afterbegin', Sidebar());
+            console.log('Sidebar already exists, skipping injection');
+            return;
         }
+        document.body.insertAdjacentHTML('afterbegin', Sidebar());
     },
 
     injectHeader(title, actions) {
