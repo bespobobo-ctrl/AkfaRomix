@@ -300,15 +300,32 @@
         };
 
         function startScanner() {
-            if (html5QrScanner) html5QrScanner.clear();
-            html5QrScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
-            html5QrScanner.render(onScanSuccess);
+            if (html5QrScanner) {
+                html5QrScanner.stop().catch(() => { }).finally(() => {
+                    initScanner();
+                });
+            } else {
+                initScanner();
+            }
+        }
+
+        function initScanner() {
+            html5QrScanner = new Html5Qrcode("reader");
+            html5QrScanner.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                onScanSuccess
+            ).catch(err => {
+                console.error("Skaner xatosi:", err);
+                document.getElementById('loginSubtitle').innerText = "Kameraga ruxsat berilmadi yoki xatolik yuz berdi.";
+            });
         }
 
         function stopScanner() {
             if (html5QrScanner) {
-                html5QrScanner.clear().catch(e => console.log(e));
-                html5QrScanner = null;
+                html5QrScanner.stop().then(() => {
+                    html5QrScanner = null;
+                }).catch(err => console.log("Stop error:", err));
             }
         }
 
@@ -316,9 +333,8 @@
             if (decodedText.startsWith('ROMIX-STAFF-')) {
                 const id = decodedText.split('ROMIX-STAFF-')[1];
                 document.getElementById('username').value = id;
-                document.getElementById('password').value = id; // Auth service uses ID as password for employees
+                document.getElementById('password').value = id;
                 stopScanner();
-                // Trigger natural form submission
                 document.getElementById('loginForm').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
             }
         }
