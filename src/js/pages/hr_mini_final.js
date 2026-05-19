@@ -479,8 +479,18 @@ window.openProfileEdit = function () {
                 </div>
 
                 <div class="input-group-premium">
-                    <label style="color:var(--text-s); font-size:0.65rem; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; margin-left:15px; margin-bottom:8px; display:block;">Avatar URL (Rasm ssilkasi)</label>
-                    <input type="text" id="editAvatar" class="auth-input" value="${emp.avatar_url || ''}" placeholder="https://..." style="height:65px; width:100%; border-radius:22px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); padding:0 25px; color:#fff; font-size:0.9rem;">
+                    <label style="color:var(--text-s); font-size:0.65rem; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; margin-left:15px; margin-bottom:8px; display:block;">PROFIL RASMI</label>
+                    <div style="display:flex; align-items:center; gap:15px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); padding:15px; border-radius:24px;">
+                        <img id="tempAvatarPreview" src="${emp.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(emp.full_name)}" style="width:60px; height:60px; border-radius:18px; object-fit:cover; border:2px solid var(--accent);">
+                        <div style="flex:1;">
+                            <label for="avatarUpload" style="padding:10px 20px; background:rgba(255,255,255,0.05); border-radius:12px; font-size:0.75rem; font-weight:800; cursor:pointer; color:var(--accent); border:1px solid rgba(0,255,136,0.2); display:inline-block;">
+                                RASM TANLASH
+                            </label>
+                            <input type="file" id="avatarUpload" accept="image/*" style="display:none;" onchange="window.handleAvatarUpload(this)">
+                            <p id="uploadStatus" style="font-size:0.65rem; color:var(--text-s); margin-top:5px; margin-left:5px;">PNG, JPG (Maks. 2MB)</p>
+                            <input type="hidden" id="editAvatar" value="${emp.avatar_url || ''}">
+                        </div>
+                    </div>
                 </div>
 
                 <div style="background:rgba(0,210,255,0.05); padding:20px; border-radius:25px; border:1px dashed rgba(0,210,255,0.3); margin-top:10px;">
@@ -500,6 +510,50 @@ window.openProfileEdit = function () {
     document.body.appendChild(overlay);
     gsap.to("#profileEditContent", { y: 0, duration: 0.6, ease: "power4.out" });
 };
+
+// 📸 AVATAR UPLOAD LOGIC
+window.handleAvatarUpload = async function (input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+        alert("Rasm hajmi 2MB dan katta bo'lmasligi kerak!");
+        return;
+    }
+
+    const statusEl = document.getElementById('uploadStatus');
+    const previewImg = document.getElementById('tempAvatarPreview');
+    const hiddenInput = document.getElementById('editAvatar');
+
+    statusEl.innerText = "YUKLANMOQDA...";
+    statusEl.style.color = "var(--accent)";
+
+    // 🚀 Upload to Supabase Storage
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const filePath = `avatars/${fileName}`;
+
+    const { data, error } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+    if (error) {
+        console.error("Yuklashda xatolik:", error);
+        statusEl.innerText = "XATOLIK YUZ BERDI!";
+        statusEl.style.color = "#ff4d4f";
+        alert("Rasm yuklashda xatolik: " + error.message);
+    } else {
+        const { data: { publicUrl } } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(filePath);
+
+        hiddenInput.value = publicUrl;
+        previewImg.src = publicUrl;
+        statusEl.innerText = "TAYYOR!";
+        statusEl.style.color = "var(--accent)";
+    }
+};
+
 
 window.closeProfileEdit = function () {
     gsap.to("#profileEditContent", {
