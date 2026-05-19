@@ -29,7 +29,10 @@ export const authService = {
             .maybeSingle();
 
         // For employees, we can use their ID as the password for simplicity
-        if (emp && (password === emp.id || password === '123456')) {
+        // If password is not provided (manual ID entry), we assume password matches ID
+        const effectivePassword = password || username;
+
+        if (emp && (effectivePassword === emp.id || effectivePassword === '123456')) {
             const userData = {
                 id: emp.id,
                 username: emp.full_name,
