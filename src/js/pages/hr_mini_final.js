@@ -46,10 +46,16 @@ async function loadMiniData(user) {
     const { data: staff } = await query;
     employees = staff || [];
 
-    // Fetch Attendance
-    let attQuery = supabase.from('attendance').select('*').eq('date', todayStr);
-    if (user.role === 'employee') {
-        attQuery = attQuery.eq('employee_id', user.id);
+    // Fetch Attendance (Current Month)
+    const monthStart = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-01';
+    let attQuery = supabase.from('attendance')
+        .select('*')
+        .eq('employee_id', user.role === 'employee' ? user.id : 'all') // Just a placeholder if not employee
+        .gte('date', monthStart);
+
+    if (user.role !== 'employee') {
+        // For HR, just fetch today's attendance for list
+        attQuery = supabase.from('attendance').select('*').eq('date', todayStr);
     }
 
     const { data: att } = await attQuery;
@@ -60,12 +66,35 @@ async function loadMiniData(user) {
 
 function updateMiniStats(staff, att, role) {
     if (role === 'employee') {
-        const myAtt = att[0];
-        document.getElementById('activeStaffCount').innerText = myAtt ? (myAtt.status === 'ISHDA' ? 'HA' : 'YO\'Q') : 'YO\'Q';
-        document.getElementById('activeStaffCount').previousElementSibling.innerText = 'ISHDA';
+        const emp = staff[0];
 
-        document.getElementById('todayArrived').innerText = myAtt && myAtt.check_in ? new Date(myAtt.check_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
-        document.getElementById('todayArrived').previousElementSibling.innerText = 'KELGAN VAQT';
+        // 📊 Calculate monthly hours
+        let totalMinutes = 0;
+        att.forEach(record => {
+            if (record.check_in && record.check_out) {
+                const start = new Date(record.check_in);
+                const end = new Date(record.check_out);
+                let diff = (end - start) / (1000 * 60); // minutes
+
+                // Subtract lunch if exists
+                if (record.lunch_start && record.lunch_end) {
+                    const lStart = new Date(record.lunch_start);
+                    const lEnd = new Date(record.lunch_end);
+                    diff -= (lEnd - lStart) / (1000 * 60);
+                }
+                totalMinutes += diff;
+            }
+        });
+
+        const totalHours = Math.floor(totalMinutes / 60);
+        const hourlyRate = (emp.salary || 0) / 234; // 234 hours base
+        const currentSalary = Math.floor(totalHours * hourlyRate);
+
+        document.getElementById('activeStaffCount').innerText = totalHours + ' soat';
+        document.getElementById('activeStaffCount').previousElementSibling.innerText = 'ISH VAQTI (OY)';
+
+        document.getElementById('todayArrived').innerText = new Intl.NumberFormat('uz-UZ').format(currentSalary) + ' so\'m';
+        document.getElementById('todayArrived').previousElementSibling.innerText = 'HISOBLANGAN OYLIK';
         return;
     }
 
@@ -119,23 +148,34 @@ function renderMiniStaff(staff, attendance, role) {
                 </div>
             </div>
 
-            <!-- 📊 DAILY TIMELINE -->
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin: 15px 0;">
-                <div class="stat-card-mini" style="padding:15px; border:1px solid rgba(0,255,136,0.2);">
-                    <span style="font-size:0.6rem;">KELISH</span>
-                    <b style="font-size:1.1rem; color:var(--accent);">${fTime(attRec?.check_in)}</b>
+            <!-- 📊 MONTHLY PERFORMANCE BENTO -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin: 20px 0;">
+                <div class="stat-card-mini" style="background:linear-gradient(135deg, rgba(0,255,136,0.1), transparent); border:1px solid rgba(0,255,136,0.2);">
+                    <span style="font-size:0.6rem; letter-spacing:1px;">OYLIK ISH VAQTI</span>
+                    <b style="font-size:1.4rem; color:var(--accent);">${document.getElementById('activeStaffCount').innerText}</b>
                 </div>
-                <div class="stat-card-mini" style="padding:15px; border:1px solid rgba(255,169,64,0.2);">
-                    <span style="font-size:0.6rem;">TUSHLIK</span>
-                    <b style="font-size:1.1rem; color:#ffa940;">${fTime(attRec?.lunch_start)} - ${fTime(attRec?.lunch_end)}</b>
+                <div class="stat-card-mini" style="background:linear-gradient(135deg, rgba(0,210,255,0.1), transparent); border:1px solid rgba(0,210,255,0.2);">
+                    <span style="font-size:0.6rem; letter-spacing:1px;">HISOB-KITOBLAR</span>
+                    <b style="font-size:1.4rem; color:#00d2ff;">${document.getElementById('todayArrived').innerText}</b>
                 </div>
-                <div class="stat-card-mini" style="padding:15px; border:1px solid rgba(255,77,79,0.2);">
-                    <span style="font-size:0.6rem;">KETISH</span>
-                    <b style="font-size:1.1rem; color:#ff4d4f;">${fTime(attRec?.check_out)}</b>
-                </div>
-                <div class="stat-card-mini" style="padding:15px; border:1px solid rgba(0,210,255,0.2);">
-                    <span style="font-size:0.6rem;">STATUS</span>
-                    <b style="font-size:1rem; color:#00d2ff;">${status.text}</b>
+            </div>
+
+            <!-- 🕒 DAILY TIMELINE -->
+            <div style="background:var(--card); border:1px solid var(--border); border-radius:30px; padding:20px; margin-bottom:15px;">
+                <span style="display:block; font-size:0.65rem; color:var(--text-s); font-weight:800; margin-bottom:15px; letter-spacing:1px;">BUGUNGI JADVAL</span>
+                <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;">
+                    <div style="text-align:center;">
+                        <span style="font-size:0.55rem; color:var(--text-s); display:block;">KELISH</span>
+                        <b style="font-size:0.9rem;">${fTime(attRec?.check_in)}</b>
+                    </div>
+                    <div style="text-align:center; border-left:1px solid var(--border); border-right:1px solid var(--border);">
+                        <span style="font-size:0.55rem; color:var(--text-s); display:block;">TUSHLIK</span>
+                        <b style="font-size:0.9rem; color:#ffa940;">${attRec?.lunch_start ? '✓' : '--:--'}</b>
+                    </div>
+                    <div style="text-align:center;">
+                        <span style="font-size:0.55rem; color:var(--text-s); display:block;">KETISH</span>
+                        <b style="font-size:0.9rem;">${fTime(attRec?.check_out)}</b>
+                    </div>
                 </div>
             </div>
 
