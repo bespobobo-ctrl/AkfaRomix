@@ -235,17 +235,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    function showInvoice(tx) {
-        // Simple mock of invoice data from note if JSON is too complex
-        // In real app, we would store metadata as JSON
-        document.getElementById('invNumber').textContent = `No. ${tx.id.slice(0, 8).toUpperCase()}`;
-        document.getElementById('invDate').textContent = new Date(tx.created_at).toLocaleDateString();
-        document.getElementById('invProdName').textContent = tx.warehouse_products?.name || "Mahsulot";
+    function showInvoice(tx, directProduct = null) {
+        const prod = directProduct || tx.warehouse_products || { name: "Mahsulot", unit: "" };
+
+        document.getElementById('invNumber').textContent = `No. ${tx.id ? tx.id.slice(0, 8).toUpperCase() : 'NEW'}`;
+        document.getElementById('invDate').textContent = new Date(tx.created_at || Date.now()).toLocaleDateString();
+        document.getElementById('invProdName').textContent = prod.product_name || prod.name || "Mahsulot";
         document.getElementById('invQty').textContent = tx.quantity;
-        document.getElementById('invUnit').textContent = tx.warehouse_products?.unit || "";
+        document.getElementById('invUnit').textContent = prod.unit || "";
+
+        // Show supplier and price info
+        if (document.getElementById('invSupplier')) {
+            document.getElementById('invSupplier').textContent = tx.supplier_name || "---";
+            document.getElementById('invPhone').textContent = tx.supplier_phone || "";
+            document.getElementById('invPrice').textContent = tx.price ? `$${tx.price.toLocaleString()}` : "---";
+        }
+
+        if (document.getElementById('invSubInfo')) {
+            document.getElementById('invSubInfo').textContent = tx.note || "";
+        }
 
         // QR
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=TXID-${tx.id}`;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=TXID-${tx.id || 'NEW'}`;
         document.getElementById('invQR').innerHTML = `<img src="${qrUrl}" style="width:130px;">`;
 
         mainApp.classList.add('hidden');
@@ -254,60 +265,83 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Save Actions ---
     saveKirimBtn.onclick = async () => {
-        const name = document.getElementById('kName').value.trim();
-        const cat = document.getElementById('kCategory').value;
-        const qty = parseFloat(document.getElementById('kQty').value);
-        const price = parseFloat(document.getElementById('kPrice').value) || 0;
-        const supplier = document.getElementById('kSupplier').value.trim();
-        const phone = document.getElementById('kPhone').value.trim();
-        const unit = document.getElementById('kUnit').value;
-        const gross = parseFloat(document.getElementById('kGross').value) || 0;
-        const net = parseFloat(document.getElementById('kNet').value) || 0;
-        const desc = document.getElementById('kDesc').value;
+        saveKirimBtn.disabled = true;
+        saveKirimBtn.textContent = 'Saqlanmoqda...';
 
-        if (!name || isNaN(qty)) return alert('Ma\'lumotlarni to\'ldiring!');
+        try {
+            const name = document.getElementById('kName').value.trim();
+            const cat = document.getElementById('kCategory').value;
+            const qty = parseFloat(document.getElementById('kQty').value);
+            const price = parseFloat(document.getElementById('kPrice').value) || 0;
+            const supplier = document.getElementById('kSupplier').value.trim();
+            const phone = document.getElementById('kPhone').value.trim();
+            const unit = document.getElementById('kUnit').value;
+            const gross = parseFloat(document.getElementById('kGross').value) || 0;
+            const net = parseFloat(document.getElementById('kNet').value) || 0;
+            const desc = document.getElementById('kDesc').value;
 
-        // 1. Manage Product (using clapak_inventory for Auto Clapak module)
-        const { data: existing } = await supabase.from('clapak_inventory').select('*').eq('product_name', name).maybeSingle();
-        let product;
+            if (!name || isNaN(qty)) {
+                alert('Ma\'lumotlarni to\'ldiring!');
+                return;
+            }
 
-        const payload = {
-            product_name: name,
-            category: cat,
-            description: desc,
-            unit: unit,
-            gross_weight: gross,
-            net_weight: net,
-            supplier_name: supplier,
-            supplier_phone: phone,
-            price: price,
-            stock_quantity: existing ? existing.stock_quantity + qty : qty
-        };
+            // 1. Manage Product (using clapak_inventory)
+            const { data: existing } = await supabase.from('clapak_inventory').select('*').eq('product_name', name).maybeSingle();
+            let product;
 
-        if (existing) {
-            const { data } = await supabase.from('clapak_inventory').update(payload).eq('id', existing.id).select().single();
-            product = data;
-        } else {
-            const { data } = await supabase.from('clapak_inventory').insert([payload]).select().single();
-            product = data;
-        }
+            const payload = {
+                product_name: name,
+                category: cat,
+                description: desc,
+                unit: unit,
+                gross_weight: gross,
+                net_weight: net,
+                supplier_name: supplier,
+                supplier_phone: phone,
+                price: price,
+                stock_quantity: existing ? (parseFloat(existing.stock_quantity) || 0) + qty : qty
+            };
 
-        // 2. Log Transaction (Using a unified transaction log or specific to clapak)
-        const { data: tx } = await supabase.from('warehouse_transactions').insert([{
-            product_id: product.id,
-            type: 'IN',
-            quantity: qty,
-            note: `Auto Clapak - Taminotchi: ${supplier} (${phone}) | Brutto/Netto: ${gross}/${net}`
-        }]).select('*, warehouse_products(name, unit)').single();
+            if (existing) {
+                const { data, error } = await supabase.from('clapak_inventory').update(payload).eq('id', existing.id).select().single();
+                if (error) throw error;
+                product = data;
+            } else {
+                const { data, error } = await supabase.from('clapak_inventory').insert([payload]).select().single();
+                if (error) throw error;
+                product = data;
+            }
 
-        // Note: warehouse_transactions might reference warehouse_products table. 
-        // If they are separate, we might need a separate transaction table or handle the reference.
+            // 2. Log Transaction
+            const txData = {
+                product_id: null, // We keep this null if it doesn't reference warehouse_products
+                type: 'IN',
+                quantity: qty,
+                note: `Auto Clapak - Taminotchi: ${supplier} | Brutto/Netto: ${gross}/${net}`
+            };
 
-        if (tx) showInvoice(tx);
-        else {
-            alert("Kirim muvaffaqiyatli saqlandi! (Hujjat generatsiya qilinmadi, jadval bog'liqligi sabab)");
+            const { data: tx, error: txError } = await supabase.from('warehouse_transactions').insert([txData]).select().single();
+
+            // Build virtual transaction for invoice view
+            const virtualTx = {
+                ...(tx || { id: 'NEW-' + Date.now(), created_at: new Date().toISOString() }),
+                quantity: qty,
+                supplier_name: supplier,
+                supplier_phone: phone,
+                price: price,
+                note: payload.description
+            };
+
+            showInvoice(virtualTx, product);
             kirimModal.classList.add('hidden');
             loadInventory();
+
+        } catch (err) {
+            console.error("Kirim Error:", err);
+            alert("Xatolik yuz berdi: " + err.message);
+        } finally {
+            saveKirimBtn.disabled = false;
+            saveKirimBtn.textContent = 'Tasdiqlash va Hujjat tayyorlash';
         }
     };
 
