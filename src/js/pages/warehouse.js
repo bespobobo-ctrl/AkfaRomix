@@ -61,6 +61,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        // Calculate Stats
+        const totalItems = data.length;
+        const lowStock = data.filter(p => p.stock_quantity < 10).length;
+        const totalValue = data.reduce((acc, p) => acc + (p.price * p.stock_quantity), 0);
+
+        document.getElementById('statTotalItems').textContent = totalItems;
+        document.getElementById('statLowStock').textContent = lowStock;
+        document.getElementById('statTodayIn').textContent = `$${totalValue.toLocaleString()}`; // Using total value as a demo stat
+
         inventoryTable.innerHTML = '';
         data.forEach(p => {
             const tr = document.createElement('tr');
@@ -129,22 +138,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         data.forEach(s => {
             const card = document.createElement('div');
-            card.className = 'bento-card';
-            card.style.padding = '20px';
-            card.style.textAlign = 'center';
+            card.className = 'bento-item staff-card';
             card.innerHTML = `
-                <img src="${s.photo_url || 'https://via.placeholder.com/150'}" style="width:120px; height:120px; border-radius:50%; object-fit:cover; border:3px solid #007c52; margin-bottom:15px; margin-left:auto; margin-right:auto;">
-                <h3 style="margin:0;">${s.full_name}</h3>
-                <p style="color:var(--adm-text-sec); font-size:0.9rem; margin:5px 0 15px 0;">${s.role}</p>
-                <div style="background:#fff; padding:10px; border-radius:10px; display:inline-block; margin-bottom:15px;">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=STAFF-${s.id}" style="width:80px; height:80px;">
+                <div class="staff-avatar-wrapper">
+                    <img src="${s.photo_url || 'https://via.placeholder.com/150'}" class="staff-avatar">
+                    <div class="qr-overlay">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=STAFF-${s.id}" style="width:80px; border-radius:8px;">
+                    </div>
                 </div>
-                <div style="display:flex; gap:10px; justify-content:center;">
-                    <button class="action-icon delete-staff-btn" data-id="${s.id}" style="color:red; background:none; border:none; cursor:pointer; font-size:1.2rem;">🗑️</button>
+                <h3 style="margin:0; font-weight:700;">${s.full_name}</h3>
+                <span class="premium-id">ID: ${s.id.slice(0, 8).toUpperCase()}</span>
+                <p style="color:var(--adm-text-sec); font-size:0.9rem; margin:10px 0 20px 0; font-weight:500;">${s.role}</p>
+                
+                <div class="auto-layout-row" style="justify-content:center;">
+                    <button class="action-icon delete-staff-btn" data-id="${s.id}" 
+                        style="color:#ff4d4f; background:rgba(255,77,79,0.1); border:none; padding:8px 15px; border-radius:12px; cursor:pointer; font-weight:600;">🗑️ O'chirish</button>
                 </div>
             `;
             staffGrid.appendChild(card);
         });
+
+        document.getElementById('statStaffCount').textContent = data.length;
 
         document.querySelectorAll('.delete-staff-btn').forEach(b => {
             b.onclick = async () => {
