@@ -67,6 +67,7 @@
             <div class="logo-icon-v2" style="font-size: 1.5rem; color: #007c52; margin-bottom: 40px; font-weight: 900;">
                 W</div>
             <div class="nav-icon active" data-tab="inventory" title="Ombor Qoldig'i">📦</div>
+            <div class="nav-icon" data-tab="staff" title="Hodimlar">👥</div>
             <div class="nav-icon" data-tab="history" title="Amallar Tarixi">📑</div>
             <div class="nav-icon" id="logoutBtn">🚪</div>
         </aside>
@@ -76,6 +77,7 @@
             <nav class="top-nav-v2">
                 <div class="nav-links-v2">
                     <button class="tab-btn active" data-tab="inventory">Ombor Holati</button>
+                    <button class="tab-btn" data-tab="staff">Hodimlar (Auto Clapak)</button>
                     <button class="tab-btn" data-tab="history">Hujjatlar Tarixi</button>
                 </div>
                 <div style="display: flex; gap: 20px; align-items: center;">
@@ -162,6 +164,22 @@
                 </div>
             </section>
 
+            <section id="staff-view" class="warehouse-section hidden">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px;">
+                    <div>
+                        <h1 style="font-size: 2.2rem; font-weight: 600;">Hodimlar Boshqaruvi</h1>
+                        <p style="color: var(--adm-text-sec);">Auto Clapak xodimlari, yuz ko'rinishi va QR kodlar</p>
+                    </div>
+                    <button id="openStaffModal" class="primary-btn"
+                        style="background:var(--adm-accent); color:#fff; border:none; padding:12px 25px; border-radius:15px; font-weight:600; cursor:pointer;">+
+                        Yangi Hodim</button>
+                </div>
+                <div class="bento-grid" id="staffGrid"
+                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+                    <!-- Staff cards will be loaded here -->
+                </div>
+            </section>
+
             <section id="history-view" class="warehouse-section hidden">
                 <div style="margin-bottom: 25px;">
                     <h1 style="font-size: 2.2rem; font-weight: 600;">Hujjatlar Tarixi</h1>
@@ -203,50 +221,46 @@
                 <div>
                     <label class="form-label">Kategoriya</label>
                     <select id="kCategory" class="form-input-v2">
-                        <option value="Profil">Profil</option>
-                        <option value="Aksessuar">Aksessuar</option>
+                        <option value="Xomashyo">Xomashyo (Raw Material)</option>
+                        <option value="Aksessuar">Aksessuar (Accessories)</option>
                         <option value="PVX">PVX</option>
                     </select>
                 </div>
                 <div>
-                    <label class="form-label">Taminotchi</label>
-                    <input type="text" id="kSupplier" placeholder="Firma nomi" class="form-input-v2">
+                    <label class="form-label">Mahsulot Xususiyati</label>
+                    <input type="text" id="kDesc" placeholder="Rangi, o'lchami va h.k." class="form-input-v2">
+                </div>
+                <div>
+                    <label class="form-label">O'lchov Birligi</label>
+                    <select id="kUnit" class="form-input-v2">
+                        <option value="kg">kg (Kilogram)</option>
+                        <option value="dona">dona (Pcs)</option>
+                        <option value="pachka">pachka (Pack)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Brutto Og'irligi (kg)</label>
+                    <input type="number" id="kGross" placeholder="0.00" class="form-input-v2">
+                </div>
+                <div>
+                    <label class="form-label">Netto Og'irligi (kg)</label>
+                    <input type="number" id="kNet" placeholder="0.00" class="form-input-v2">
+                </div>
+                <div>
+                    <label class="form-label">Taminotchi Ismi</label>
+                    <input type="text" id="kSupplier" placeholder="Firma yoki shaxs" class="form-input-v2">
                 </div>
                 <div>
                     <label class="form-label">Taminotchi Tel:</label>
                     <input type="text" id="kPhone" placeholder="+998" class="form-input-v2">
                 </div>
                 <div>
-                    <label class="form-label">O'lchov Birligi</label>
-                    <select id="kUnit" class="form-input-v2">
-                        <option value="Dona">Dona</option>
-                        <option value="Metr">Metr</option>
-                        <option value="Pachka">Pachka</option>
-                    </select>
-                </div>
-                <div>
                     <label class="form-label">Kirim Miqdori</label>
                     <input type="number" id="kQty" placeholder="0.00" class="form-input-v2">
                 </div>
-
-                <div id="pachkaLogicBox" class="hidden"
-                    style="background:rgba(0,124,82,0.05); padding:15px; border-radius:12px; grid-column: span 2;">
-                    <label class="form-label" style="color:var(--adm-accent);">Pachka ichidagi metr (1 pachka = ?
-                        metr)</label>
-                    <input type="number" id="kMetrPerPack" placeholder="Masalan: 36" class="form-input-v2"
-                        style="border-color:var(--adm-accent);">
-                </div>
-
                 <div>
-                    <label class="form-label">Birlik Narxi (Narxi)</label>
+                    <label class="form-label">Mahsulot Narxi ($/so'm)</label>
                     <input type="number" id="kPrice" placeholder="0.00" class="form-input-v2">
-                </div>
-                <div>
-                    <label class="form-label">Narx Nimaga Nisbatan?</label>
-                    <select id="kPriceBasis" class="form-input-v2">
-                        <option value="Birlik">Birlik (Dona/Metr) uchun</option>
-                        <option value="Pachka">Pachka uchun</option>
-                    </select>
                 </div>
             </div>
 
@@ -289,7 +303,36 @@
         </div>
     </div>
 
-    <!-- Hujjat (Invoice) Hududi - Print Area -->
+    <!-- Modal: Yangi Hodim Qo'shish -->
+    <div id="staffModal" class="hidden"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px;">
+        <div class="user-form-modal" style="width: 500px; background:var(--adm-surface);">
+            <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+                <span style="font-size: 1.5rem;">👤</span>
+                <h2 style="color:var(--adm-text);">Yangi Hodim Qo'shish</h2>
+            </div>
+            <label class="form-label">F.I.SH (To'liq ism)</label>
+            <input type="text" id="sName" placeholder="Masalan: Azizov Anvar" class="form-input-v2">
+
+            <label class="form-label">Lavozimi</label>
+            <select id="sRole" class="form-input-v2">
+                <option value="Operator">Operator</option>
+                <option value="Master">Master</option>
+                <option value="Yordamchi">Yordamchi</option>
+            </select>
+
+            <label class="form-label">Yuz Ko'rinishi (Rasm yuklash)</label>
+            <input type="file" id="sPhoto" accept="image/*" class="form-input-v2">
+
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button id="saveStaffBtn"
+                    style="flex:1; background:var(--adm-accent); color:#fff; border:none; padding:12px; border-radius:12px; font-weight:600; cursor:pointer;">Saqlash</button>
+                <button id="closeStaffModal"
+                    style="flex:1; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; padding:12px; border-radius:12px; cursor:pointer;">Yopish</button>
+            </div>
+        </div>
+    </div>
+
     <div id="printArea" class="hidden">
         <div class="invoice-container">
             <div class="invoice-header">

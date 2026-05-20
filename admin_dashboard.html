@@ -1933,93 +1933,375 @@
                 </div>
             </section>
 
-            <!-- Section: Avto Clapak (Complete Independent System) -->
-            <section id="section-autoclapak" class="admin-section autoclapak-system">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                    <h1 style="font-size: 2.2rem; font-weight: 500; color: var(--adm-text);">Auto Clapak <span
-                            style="color:var(--adm-accent);">Production</span></h1>
-                    <div
-                        style="font-size: 0.8rem; background: rgba(0, 124, 82, 0.1); padding: 5px 15px; border-radius: 20px; color: var(--adm-accent); font-weight: 600; border: 1px solid var(--adm-accent);">
-                        FAOL: SEH №4</div>
+            <!-- Section: Avto Clapak (Elite Production Version) -->
+            <section id="section-autoclapak" class="admin-section autoclapak-system" style="padding-top: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                    <div>
+                        <h1
+                            style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 5px; background: linear-gradient(135deg, #fff 30%, rgba(255,255,255,0.4)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                            Auto Clapak <span style="color:var(--adm-accent);">Production</span></h1>
+                        <p style="color: var(--adm-text-sec); font-size: 0.9rem; font-weight: 500;">Mustaqil ishlab
+                            chiqarish va logistika boshqaruv tizimi</p>
+                    </div>
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+                        <span
+                            style="background: rgba(0, 255, 136, 0.1); padding: 6px 18px; border-radius: 50px; color: #00ff88; font-weight: 700; font-size: 0.75rem; border: 1px solid rgba(0,255,136,0.2); box-shadow: 0 0 20px rgba(0,255,136,0.1);">●
+                            LIVE: SEH №4 FAOL</span>
+                        <span style="font-size:0.7rem; color:var(--adm-text-sec); opacity:0.6;">Oxirgi yangilanish:
+                            23:14</span>
+                    </div>
                 </div>
 
-                <!-- 8-Tab Navigation Bar -->
-                <div class="nav-links-v2 autoclapak-tabs"
-                    style="margin-bottom: 25px; display: flex; gap: 15px; border-bottom: 1px solid var(--adm-border); overflow-x: auto; scrollbar-width: none;">
-                    <a href="#" class="nav-link-item active" data-auto-tab="auto-main">Asosiy Panel</a>
-                    <a href="#" class="nav-link-item" data-auto-tab="auto-ombor">Ombor (Xom-ashyo)</a>
-                    <a href="#" class="nav-link-item" data-auto-tab="auto-tayyor">Tayyor Mahsulot Ombori</a>
-                    <a href="#" class="nav-link-item" data-auto-tab="auto-sotuv">Sotuv</a>
-                    <a href="#" class="nav-link-item" data-auto-tab="auto-buhgalteriya">Buxgalteriya</a>
-                    <a href="#" class="nav-link-item" data-auto-tab="auto-ishlab-chiqarish">Ishlab Chiqarish</a>
-                    <a href="#" class="nav-link-item" data-auto-tab="auto-xodimlar">Xodimlar</a>
-                    <a href="#" class="nav-link-item" data-auto-tab="auto-sozlamalar">Sozlamalar</a>
-                </div>
+                <!-- 8-Tab Premium Navigation Bar -->
+                <div class="nav-links-v2 autoclapak-tabs premium-tabs"
+                    style="margin-bottom: 35px; display: flex; gap: 12px; padding: 6px; background: rgba(255,255,255,0.03); border-radius: 18px; border: 1px solid rgba(255,255,255,0.05); overflow-x: auto; scrollbar-width: none;">
+                    <style>
+                        .premium-tabs .nav-link-item {
+                            padding: 12px 20px;
+                            border-radius: 14px;
+                            color: rgba(255, 255, 255, 0.6);
+                            font-weight: 600;
+                            font-size: 0.85rem;
+                            white-space: nowrap;
+                            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                            display: flex;
+                            align-items: center;
+                            gap: 10px;
+                            background: transparent;
+                        }
 
-                <!-- Sub-pages Container -->
-                <div id="autoclapak-pages">
-                    <!-- 1. Asosiy Panel -->
+                        .premium-tabs .nav-link-item:hover {
+                            background: rgba(255, 255, 255, 0.05);
+                            color: #fff;
+                        }
+
+                        .premium-tabs .nav-link-item.active {
+                            background: linear-gradient(135deg, #00ff88, #00b360);
+                            color: #000;
+                            box-shadow: 0 10px 20px rgba(0, 255, 136, 0.2);
+                        }
+
+                        .tab-icon {
+                            font-size: 1.1rem;
+                        }
+                    </style>
+                    <a href="#" class="nav-link-item active" data-auto-tab="auto-main"><span class="tab-icon">📊</span>
+                        Asosiy Panel</a>
+                    <a href="#" class="nav-link-item" data-auto-tab="auto-ombor"><span class="tab-icon">📦</span>
+                        Ombor</a>
+                    <a href="#" class="nav-link-item" data-auto-tab="auto-tayyor"><span class="tab-icon">🏭</span>
+                        Tayyor Mahsulot</a>
+                    <a href="#" class="nav-link-item" data-auto-tab="auto-sotuv"><span class="tab-icon">📈</span>
+                        Sotuv</a>
+                    <a href="#" class="nav-link-item" data-auto-tab="auto-buhgalteriya"><span class="tab-icon">💰</span>
+                        Buxgalteriya</a>
+                    <a href="#" class="nav-link-item" data-auto-tab="auto-ishlab-chiqarish"><span
+                            class="tab-icon">⚙️</span> Ishlab Chiqarish</a>
+                    <a href="#" class="nav-link-item" data-auto-tab="auto-xodimlar"><span class="tab-icon">👥</span>
+                        Xodimlar</a>
+                    <a href="#" class="nav-link-item" data-auto-tab="auto-sozlamalar"><span class="tab-icon">🛠️</span>
+                        Sozlamalar</a>
+                </div>
+                <!-- Sub-pages Area -->
+                <div id="autoclapak-pages" style="animation: fadeIn 0.5s ease;">
+
+                    <!-- 1. Asosiy Panel (Elite Optimal Responsive Dashboard) -->
                     <div id="sub-auto-main" class="auto-tab-content">
-                        <div class="bento-grid">
+
+                        <style>
+                            .auto-responsive-grid {
+                                display: grid;
+                                gap: 15px;
+                                margin-bottom: 15px;
+                            }
+
+                            /* Core KPI Grid: 4 columns on large, 2 on medium, 1 on small */
+                            .kpi-grid {
+                                grid-template-columns: repeat(4, 1fr);
+                            }
+
+                            /* Analytics Grid: 70/30 on large, 1 column on medium */
+                            .analytics-grid {
+                                grid-template-columns: 1fr 340px;
+                            }
+
+                            /* Operations Grid: 3 columns on large, 1 on medium */
+                            .ops-grid {
+                                grid-template-columns: repeat(3, 1fr);
+                            }
+
+                            /* RESPONSIVE BREAKPOINTS */
+                            @media (max-width: 1400px) {
+                                .analytics-grid {
+                                    grid-template-columns: 1fr;
+                                }
+
+                                .kpi-grid {
+                                    grid-template-columns: repeat(2, 1fr);
+                                }
+                            }
+
+                            @media (max-width: 900px) {
+                                .ops-grid {
+                                    grid-template-columns: 1fr;
+                                }
+
+                                .kpi-grid {
+                                    grid-template-columns: 1fr;
+                                }
+
+                                .sales-inner-grid {
+                                    grid-template-columns: repeat(2, 1fr) !important;
+                                }
+                            }
+                        </style>
+
+                        <!-- ROW 1: QUICK INTELLIGENCE -->
+                        <div class="auto-responsive-grid kpi-grid">
                             <div class="bento-card"
-                                style="grid-column: span 2; background: linear-gradient(135deg, rgba(0,124,82,0.1), transparent);">
-                                <h3>Seh Umumiy Holati</h3>
-                                <div class="balance-lg">88% <small>Samaradorlik</small></div>
-                                <div style="display:flex; gap:20px; margin-top:15px;">
-                                    <div style="font-size:0.8rem;">🏢 Stanoklar: <b>12 ta</b></div>
-                                    <div style="font-size:0.8rem;">⚡ Energiya: <b>420 kW</b></div>
+                                style="padding: 15px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; gap: 15px;">
+                                <div
+                                    style="width:40px; height:40px; border-radius:10px; background:rgba(0,122,255,0.1); display:flex; align-items:center; justify-content:center; font-size:1.2rem;">
+                                    👥</div>
+                                <div>
+                                    <div
+                                        style="font-size:0.65rem; color:var(--adm-text-sec); letter-spacing:0.5px; text-transform:uppercase;">
+                                        Xodimlar</div>
+                                    <div style="font-size:1.2rem; font-weight:800;">42 <small
+                                            style="opacity:0.4; font-size:0.7rem;">/ 48</small></div>
                                 </div>
                             </div>
-                            <div class="bento-card">
-                                <h3>Bugungi Reja</h3>
-                                <div class="balance-lg" style="color:var(--adm-accent);">2,500 <small>dona</small></div>
+                            <div class="bento-card"
+                                style="padding: 15px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; gap: 15px;">
                                 <div
-                                    style="width:100%; height:8px; background:rgba(255,255,255,0.05); border-radius:4px; margin-top:10px;">
+                                    style="width:40px; height:40px; border-radius:10px; background:rgba(0,210,255,0.1); display:flex; align-items:center; justify-content:center; font-size:1.2rem;">
+                                    📦</div>
+                                <div>
                                     <div
-                                        style="width:75%; height:100%; background:var(--adm-accent); border-radius:4px;">
+                                        style="font-size:0.65rem; color:var(--adm-text-sec); letter-spacing:0.5px; text-transform:uppercase;">
+                                        Ombor</div>
+                                    <div style="font-size:1.2rem; font-weight:800; color:#00d2ff;">18.4 <small
+                                            style="opacity:0.4; font-size:0.7rem;">t</small></div>
+                                </div>
+                            </div>
+                            <div class="bento-card"
+                                style="padding: 15px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; gap: 15px;">
+                                <div
+                                    style="width:40px; height:40px; border-radius:10px; background:rgba(0,255,136,0.1); display:flex; align-items:center; justify-content:center; font-size:1.2rem;">
+                                    🏗️</div>
+                                <div>
+                                    <div
+                                        style="font-size:0.65rem; color:var(--adm-text-sec); letter-spacing:0.5px; text-transform:uppercase;">
+                                        Tayyor</div>
+                                    <div style="font-size:1.2rem; font-weight:800; color:#00ff88;">12.5k <small
+                                            style="opacity:0.4; font-size:0.7rem;">dona</small></div>
+                                </div>
+                            </div>
+                            <div class="bento-card"
+                                style="padding: 15px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; gap: 15px;">
+                                <div
+                                    style="width:40px; height:40px; border-radius:10px; background:rgba(255,204,0,0.1); display:flex; align-items:center; justify-content:center; font-size:1.2rem;">
+                                    ⚡</div>
+                                <div>
+                                    <div
+                                        style="font-size:0.65rem; color:var(--adm-text-sec); letter-spacing:0.5px; text-transform:uppercase;">
+                                        Quvvat</div>
+                                    <div style="font-size:1.2rem; font-weight:800; color:#ffcc00;">92%</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ROW 2: PRIMARY ANALYTICS -->
+                        <div class="auto-responsive-grid analytics-grid">
+
+                            <!-- Sales Block -->
+                            <div class="bento-card"
+                                style="background: rgba(13,22,34,0.4); border: 1px solid rgba(255,255,255,0.04);">
+                                <div
+                                    style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                                    <h3 style="font-size:0.9rem; font-weight:700;">Sotuvlar Panoramasi</h3>
+                                    <div style="font-size:0.6rem; color:var(--adm-text-sec);">VALYUTA: UZS (SUM)</div>
+                                </div>
+                                <div class="sales-inner-grid"
+                                    style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;">
+                                    <div
+                                        style="padding:15px; background:rgba(255,255,255,0.02); border-radius:12px; text-align:center;">
+                                        <div style="font-size:0.6rem; color:rgba(255,255,255,0.4); margin-bottom:5px;">
+                                            BUGUN</div>
+                                        <div style="font-size:1rem; font-weight:800;">45.2M</div>
+                                        <div style="font-size:0.55rem; color:#00ff88;">+12%</div>
+                                    </div>
+                                    <div
+                                        style="padding:15px; background:rgba(255,255,255,0.02); border-radius:12px; text-align:center;">
+                                        <div style="font-size:0.6rem; color:rgba(255,255,255,0.4); margin-bottom:5px;">
+                                            HAFTA</div>
+                                        <div style="font-size:1rem; font-weight:800;">280.5M</div>
+                                        <div style="font-size:0.55rem; color:#00ff88;">+8%</div>
+                                    </div>
+                                    <div
+                                        style="padding:15px; background:rgba(255,255,255,0.02); border-radius:12px; text-align:center; border:1px solid rgba(0,122,255,0.2);">
+                                        <div style="font-size:0.6rem; color:rgba(255,255,255,0.4); margin-bottom:5px;">
+                                            OY</div>
+                                        <div style="font-size:1rem; font-weight:800; color:var(--adm-accent);">1.24B
+                                        </div>
+                                        <div style="font-size:0.55rem; color:#00ff88;">+22%</div>
+                                    </div>
+                                    <div
+                                        style="padding:15px; background:rgba(255,255,255,0.02); border-radius:12px; text-align:center;">
+                                        <div style="font-size:0.6rem; color:rgba(255,255,255,0.4); margin-bottom:5px;">
+                                            YIL</div>
+                                        <div style="font-size:1rem; font-weight:800;">14.50B</div>
+                                        <div style="font-size:0.55rem; color:#00ff88;">+15%</div>
+                                    </div>
+                                </div>
+                                <div style="height:80px; display:flex; align-items:flex-end; gap:6px;">
+                                    <div style="flex:1; height:30%; background:rgba(0,122,255,0.1); border-radius:4px;">
+                                    </div>
+                                    <div
+                                        style="flex:1; height:45%; background:rgba(0,122,255,0.15); border-radius:4px;">
+                                    </div>
+                                    <div style="flex:1; height:70%; background:rgba(0,122,255,0.2); border-radius:4px;">
+                                    </div>
+                                    <div
+                                        style="flex:1; height:55%; background:rgba(0,122,255,0.15); border-radius:4px;">
+                                    </div>
+                                    <div
+                                        style="flex:1; height:90%; background:linear-gradient(to top, rgba(0,122,255,0.2), var(--adm-accent)); border-radius:4px;">
+                                    </div>
+                                    <div style="flex:1; height:40%; background:rgba(0,122,255,0.1); border-radius:4px;">
+                                    </div>
+                                    <div
+                                        style="flex:1; height:65%; background:rgba(0,122,255,0.15); border-radius:4px;">
                                     </div>
                                 </div>
                             </div>
-                            <div class="bento-card">
-                                <h3>Brak Mahsulot</h3>
-                                <div class="balance-lg" style="color:#ff4d4f;">0.4%</div>
-                                <p style="font-size:0.75rem; color: #ff4d4f;">Norma ichida</p>
+
+                            <!-- Production Efficiency Block -->
+                            <div class="bento-card"
+                                style="background: rgba(13,22,34,0.4); border: 1px solid rgba(255,255,255,0.04);">
+                                <h3 style="font-size:0.9rem; font-weight:700; margin-bottom:15px;">Ishlab Chiqarish</h3>
+                                <div style="display:flex; flex-direction:column; gap:12px;">
+                                    <div>
+                                        <div
+                                            style="display:flex; justify-content:space-between; font-size:0.7rem; margin-bottom:5px;">
+                                            <span>Bugungi Reja</span><span
+                                                style="font-weight:700; color:#00ff88;">91%</span>
+                                        </div>
+                                        <div
+                                            style="width:100%; height:5px; background:rgba(255,255,255,0.03); border-radius:10px;">
+                                            <div
+                                                style="width:91%; height:100%; background:#00ff88; border-radius:10px;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div
+                                            style="display:flex; justify-content:space-between; font-size:0.7rem; margin-bottom:5px;">
+                                            <span>Sifat Nazorati</span><span
+                                                style="font-weight:700; color:#00d2ff;">99.6%</span>
+                                        </div>
+                                        <div
+                                            style="width:100%; height:5px; background:rgba(255,255,255,0.03); border-radius:10px;">
+                                            <div
+                                                style="width:99%; height:100%; background:#00d2ff; border-radius:10px;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div
+                                        style="margin-top:5px; padding:12px; background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03); border-radius:10px;">
+                                        <div style="font-size:0.6rem; color:var(--adm-text-sec);">PROGNOZ (KUN YAKUNI)
+                                        </div>
+                                        <div style="font-size:1.2rem; font-weight:800;">3,420 <small
+                                                style="font-size:0.6rem; opacity:0.5;">DONA</small></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+
+                        <!-- ROW 3: DETAILED OPERATIONS -->
+                        <div class="auto-responsive-grid ops-grid">
+                            <div class="bento-card"
+                                style="padding:15px; background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03);">
+                                <h4 style="font-size:0.75rem; margin-bottom:12px; color:rgba(255,255,255,0.5);">
+                                    Stanoklar Holati
+                                </h4>
+                                <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:8px;">
+                                    <div style="height:6px; background:#00ff88; border-radius:2px;" title="ST-01: OK">
+                                    </div>
+                                    <div style="height:6px; background:#00ff88; border-radius:2px;" title="ST-02: OK">
+                                    </div>
+                                    <div style="height:6px; background:#ff4d4f; border-radius:2px;"
+                                        title="ST-03: ERROR"></div>
+                                    <div style="height:6px; background:#00ff88; border-radius:2px;" title="ST-04: OK">
+                                    </div>
+                                    <div style="height:6px; background:#00ff88; border-radius:2px;" title="ST-05: OK">
+                                    </div>
+                                </div>
+                                <div style="font-size:0.6rem; margin-top:8px; opacity:0.6;">4 faol / 1 ta'mirda</div>
+                            </div>
+                            <div class="bento-card"
+                                style="padding:15px; background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03);">
+                                <h4 style="font-size:0.75rem; margin-bottom:10px; color:rgba(255,255,255,0.5);">Energiya
+                                    Sarfi</h4>
+                                <div style="display:flex; align-items:baseline; gap:5px;">
+                                    <div style="font-size:1.2rem; font-weight:800;">412</div>
+                                    <div style="font-size:0.6rem; opacity:0.5;">kW/u</div>
+                                </div>
+                                <div style="font-size:0.6rem; color:#00ff88;">Normada (A++)</div>
+                            </div>
+                            <div class="bento-card"
+                                style="padding:15px; background:rgba(255,255,255,0.01); border:1px solid rgba(255,255,255,0.03);">
+                                <h4 style="font-size:0.75rem; margin-bottom:10px; color:rgba(255,255,255,0.5);">
+                                    Kutilayotgan Sotuv
+                                </h4>
+                                <div style="display:flex; align-items:baseline; gap:5px;">
+                                    <div style="font-size:1.2rem; font-weight:800;">12.4M</div>
+                                    <div style="font-size:0.6rem; opacity:0.5;">Tushum</div>
+                                </div>
+                                <div style="font-size:0.6rem; color:var(--adm-accent);">Bugun kechga kutilmoqda</div>
+                            </div>
+                        </div>
+
                     </div>
 
                     <!-- 2. Ombor (Xom-ashyo) -->
                     <div id="sub-auto-ombor" class="auto-tab-content" style="display:none;">
-                        <div class="bento-grid">
-                            <div class="bento-card" style="grid-column: span 3;">
-                                <h3>Xom-ashyo Qoldiqlari</h3>
-                                <table class="v2-table" style="margin-top:15px;">
+                        <div class="bento-card"
+                            style="background: rgba(13,22,34,0.6); border: 1px solid rgba(255,255,255,0.05); border-radius:24px; padding:30px;">
+                            <div
+                                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+                                <h3 style="font-size:1.3rem; font-weight:700;">Materiallar Balansi</h3>
+                                <button
+                                    style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); padding:8px 16px; border-radius:10px; color:#fff; font-size:0.8rem; cursor:pointer;">+
+                                    Kirim qilish</button>
+                            </div>
+                            <div style="overflow-x:auto;">
+                                <table class="v2-table"
+                                    style="width:100%; border-collapse: separate; border-spacing: 0 10px;">
                                     <thead>
-                                        <tr>
-                                            <th>Material nomi</th>
-                                            <th>Partiya №</th>
+                                        <tr
+                                            style="text-align:left; color:rgba(255,255,255,0.4); font-size:0.8rem; text-transform:uppercase; letter-spacing:1px;">
+                                            <th style="padding:15px;">Material</th>
+                                            <th>Partiya</th>
                                             <th>Qoldiq</th>
-                                            <th>Minimal limit</th>
+                                            <th>Holat</th>
+                                            <th style="text-align:right; padding-right:15px;">Harakat</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr>
-                                            <td>Po'lat List 1.2mm</td>
-                                            <td>A-452</td>
-                                            <td>4.5 tonna</td>
-                                            <td>1 tonna</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Rezina Grannula</td>
-                                            <td>R-99</td>
-                                            <td>1.2 tonna</td>
-                                            <td>500 kg</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Kimyoviy Bo'yoq</td>
-                                            <td>B-10</td>
-                                            <td>450 litr</td>
-                                            <td>100 litr</td>
+                                        <tr style="background:rgba(255,255,255,0.02); border-radius:15px;">
+                                            <td style="padding:20px; border-radius:15px 0 0 15px; font-weight:600;">
+                                                Po'lat List 1.2mm</td>
+                                            <td style="color:var(--adm-text-sec);">#AL-9920</td>
+                                            <td style="font-weight:700; color:#00ff88;">4.5 tonna</td>
+                                            <td><span
+                                                    style="background:rgba(0,255,136,0.1); color:#00ff88; padding:4px 10px; border-radius:6px; font-size:0.7rem; font-weight:700;">YETARLI</span>
+                                            </td>
+                                            <td
+                                                style="text-align:right; padding-right:15px; border-radius:0 15px 15px 0;">
+                                                <button
+                                                    style="background:none; border:none; color:var(--adm-accent); cursor:pointer; font-weight:700;">Tahrirlash</button>
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -2027,107 +2309,95 @@
                         </div>
                     </div>
 
-                    <!-- 3. Tayyor Mahsulot Ombori -->
-                    <div id="sub-auto-tayyor" class="auto-tab-content" style="display:none;">
-                        <div class="bento-grid">
-                            <div class="bento-card" style="grid-column: span 2;">
-                                <h3>Tayyor Klapanlar</h3>
-                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-top:20px;">
-                                    <div class="hr-card" style="text-align:center;">
-                                        <div style="font-size:0.7rem; color:var(--adm-text-sec);">TYPE-A (NORMAL)</div>
-                                        <div style="font-size:1.8rem; font-weight:700;">8,420 <small>dona</small></div>
-                                    </div>
-                                    <div class="hr-card" style="text-align:center; border-color:var(--adm-accent);">
-                                        <div style="font-size:0.7rem; color:var(--adm-accent);">TYPE-Z (TURBO)</div>
-                                        <div style="font-size:1.8rem; font-weight:700; color:var(--adm-accent);">3,150
-                                            <small>dona</small></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 4. Sotuv -->
-                    <div id="sub-auto-sotuv" class="auto-tab-content" style="display:none;">
-                        <div class="bento-card">
-                            <h3>Oxirgi Shartnomalar</h3>
-                            <div style="margin-top:20px; opacity:0.6; text-align:center;">Sotuv ma'lumotlari
-                                yuklanmoqda...</div>
-                        </div>
-                    </div>
-
-                    <!-- 5. Buxgalteriya -->
-                    <div id="sub-auto-buhgalteriya" class="auto-tab-content" style="display:none;">
-                        <div class="bento-grid">
-                            <div class="bento-card">
-                                <h3>Kirim (Oy)</h3>
-                                <div class="balance-lg" style="color:var(--adm-accent);">+450M</div>
-                            </div>
-                            <div class="bento-card">
-                                <h3>Chiqim (Oy)</h3>
-                                <div class="balance-lg" style="color:#ff4d4f;">-320M</div>
-                            </div>
-                            <div class="bento-card">
-                                <h3>Sof Foyda</h3>
-                                <div class="balance-lg">130M <small>UZS</small></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 6. Ishlab Chiqarish -->
-                    <div id="sub-auto-ishlab-chiqarish" class="auto-tab-content" style="display:none;">
-                        <div class="bento-card">
-                            <h3>Stanoklar Online Monitoring</h3>
-                            <div
-                                style="display:grid; grid-template-columns:repeat(auto-fill, minmax(100px, 1fr)); gap:10px; margin-top:20px;">
-                                <div
-                                    style="padding:10px; border-radius:10px; background:rgba(0,255,136,0.1); text-align:center; border:1px solid #00ff88;">
-                                    <div style="font-size:0.6rem;">ST-01</div>
-                                    <div style="color:#00ff88;">ACTIVE</div>
-                                </div>
-                                <div
-                                    style="padding:10px; border-radius:10px; background:rgba(0,255,136,0.1); text-align:center; border:1px solid #00ff88;">
-                                    <div style="font-size:0.6rem;">ST-02</div>
-                                    <div style="color:#00ff88;">ACTIVE</div>
-                                </div>
-                                <div
-                                    style="padding:10px; border-radius:10px; background:rgba(255,77,79,0.1); text-align:center; border:1px solid #ff4d4f;">
-                                    <div style="font-size:0.6rem;">ST-03</div>
-                                    <div style="color:#ff4d4f;">REPAIR</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 7. Xodimlar -->
-                    <div id="sub-auto-xodimlar" class="auto-tab-content" style="display:none;">
-                        <div class="bento-card">
-                            <h3>Seh Ishchilari (48 kishi)</h3>
-                            <p style="opacity:0.5; margin-top:15px;">Xodimlar boshqaruvi tizimi integratsiya qilinmoqda.
-                            </p>
-                        </div>
-                    </div>
-
-                    <!-- 8. Sozlamalar -->
-                    <div id="sub-auto-sozlamalar" class="auto-tab-content" style="display:none;">
-                        <div class="bento-card">
-                            <h3>Tizim Sozlamalari</h3>
-                            <div style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
-                                <div
-                                    style="display:flex; justify-content:space-between; padding:10px; background:rgba(255,255,255,0.02); border-radius:8px;">
-                                    <span>Avtomatik reja yangilash</span><b>YOQILGAN</b>
-                                </div>
-                                <div
-                                    style="display:flex; justify-content:space-between; padding:10px; background:rgba(255,255,255,0.02); border-radius:8px;">
-                                    <span>Telegram bot xabarnomasi</span><b>YOQILGAN</b>
-                                </div>
-                            </div>
-                        </div>
+                    <!-- Additional tabs placeholders will be styled on click -->
+                    <div id="sub-auto-tayyor" class="auto-tab-content"
+                        style="display:none; text-align:center; padding:50px;">
+                        <h2 style="opacity:0.3;">Tayyor Mahsulot Ombori Yuklanmoqda...</h2>
                     </div>
                 </div>
             </section>
 
-        </main>
+            <!-- 4. Sotuv -->
+            <div id="sub-auto-sotuv" class="auto-tab-content" style="display:none;">
+                <div class="bento-card">
+                    <h3>Oxirgi Shartnomalar</h3>
+                    <div style="margin-top:20px; opacity:0.6; text-align:center;">Sotuv ma'lumotlari
+                        yuklanmoqda...</div>
+                </div>
+            </div>
+
+            <!-- 5. Buxgalteriya -->
+            <div id="sub-auto-buhgalteriya" class="auto-tab-content" style="display:none;">
+                <div class="bento-grid">
+                    <div class="bento-card">
+                        <h3>Kirim (Oy)</h3>
+                        <div class="balance-lg" style="color:var(--adm-accent);">+450M</div>
+                    </div>
+                    <div class="bento-card">
+                        <h3>Chiqim (Oy)</h3>
+                        <div class="balance-lg" style="color:#ff4d4f;">-320M</div>
+                    </div>
+                    <div class="bento-card">
+                        <h3>Sof Foyda</h3>
+                        <div class="balance-lg">130M <small>UZS</small></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. Ishlab Chiqarish -->
+            <div id="sub-auto-ishlab-chiqarish" class="auto-tab-content" style="display:none;">
+                <div class="bento-card">
+                    <h3>Stanoklar Online Monitoring</h3>
+                    <div
+                        style="display:grid; grid-template-columns:repeat(auto-fill, minmax(100px, 1fr)); gap:10px; margin-top:20px;">
+                        <div
+                            style="padding:10px; border-radius:10px; background:rgba(0,255,136,0.1); text-align:center; border:1px solid #00ff88;">
+                            <div style="font-size:0.6rem;">ST-01</div>
+                            <div style="color:#00ff88;">ACTIVE</div>
+                        </div>
+                        <div
+                            style="padding:10px; border-radius:10px; background:rgba(0,255,136,0.1); text-align:center; border:1px solid #00ff88;">
+                            <div style="font-size:0.6rem;">ST-02</div>
+                            <div style="color:#00ff88;">ACTIVE</div>
+                        </div>
+                        <div
+                            style="padding:10px; border-radius:10px; background:rgba(255,77,79,0.1); text-align:center; border:1px solid #ff4d4f;">
+                            <div style="font-size:0.6rem;">ST-03</div>
+                            <div style="color:#ff4d4f;">REPAIR</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. Xodimlar -->
+            <div id="sub-auto-xodimlar" class="auto-tab-content" style="display:none;">
+                <div class="bento-card">
+                    <h3>Seh Ishchilari (48 kishi)</h3>
+                    <p style="opacity:0.5; margin-top:15px;">Xodimlar boshqaruvi tizimi integratsiya qilinmoqda.
+                    </p>
+                </div>
+            </div>
+
+            <!-- 8. Sozlamalar -->
+            <div id="sub-auto-sozlamalar" class="auto-tab-content" style="display:none;">
+                <div class="bento-card">
+                    <h3>Tizim Sozlamalari</h3>
+                    <div style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
+                        <div
+                            style="display:flex; justify-content:space-between; padding:10px; background:rgba(255,255,255,0.02); border-radius:8px;">
+                            <span>Avtomatik reja yangilash</span><b>YOQILGAN</b>
+                        </div>
+                        <div
+                            style="display:flex; justify-content:space-between; padding:10px; background:rgba(255,255,255,0.02); border-radius:8px;">
+                            <span>Telegram bot xabarnomasi</span><b>YOQILGAN</b>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    </div>
+    </section>
+
+    </main>
     </div>
 
     <!-- User Management Modal -->

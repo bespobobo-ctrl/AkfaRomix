@@ -105,12 +105,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (sec.id === `section-${target}`) sec.classList.add('active');
             });
 
-            // Show/Hide Top Nav based on section
-            const topNav = document.querySelector('.nav-links-v2');
-            if (target === 'dashboard') {
-                topNav.style.display = 'flex';
-            } else {
-                topNav.style.display = 'none';
+            // Show/Hide Romix Top Nav (Executive Tabs) based on section
+            const romixTopNav = document.querySelector('.executive-tabs');
+            if (romixTopNav && !romixTopNav.classList.contains('autoclapak-tabs')) {
+                if (target === 'dashboard') {
+                    romixTopNav.style.setProperty('display', 'flex', 'important');
+                } else {
+                    romixTopNav.style.setProperty('display', 'none', 'important');
+                }
             }
 
             if (target === 'users') loadSystemUsers();
