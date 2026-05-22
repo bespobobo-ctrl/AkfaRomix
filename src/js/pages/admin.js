@@ -158,8 +158,402 @@ document.addEventListener('DOMContentLoaded', async () => {
                 sec.style.display = 'none';
                 if (sec.id === `sub-${tab}`) sec.style.display = 'block';
             });
+
+            if (tab === 'auto-ombor') loadAutoClapakInventory();
+            if (tab === 'auto-ishlab-chiqarish') loadAutoProduction();
         });
     });
+
+    // --- AUTO CLAPAK INVENTORY ---
+    let cachedAutoInventory = [];
+    async function loadAutoClapakInventory() {
+        const tableBody = document.getElementById('autoMaterialTable');
+        if (!tableBody) return;
+
+        const { data, error } = await supabase.from('clapak_inventory').select('*').order('created_at', { ascending: false });
+        if (error) {
+            console.error("Auto Clapak Inventory Error:", error);
+            return;
+        }
+        cachedAutoInventory = data;
+        renderAutoInventory(data);
+    }
+
+    function renderAutoInventory(items) {
+        const tableBody = document.getElementById('autoMaterialTable');
+        if (!tableBody) return;
+        tableBody.innerHTML = '';
+        items.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.classList.add('elite-row');
+
+            const statusColor = item.stock_quantity < 5 ? '#ff4d4f' : (item.stock_quantity < 20 ? '#fabb18' : '#00ff88');
+            const statusText = item.stock_quantity < 5 ? 'KAM QOLDI' : (item.stock_quantity < 20 ? 'O\'RTA' : 'YETARLI');
+
+            const descFull = item.description || '';
+            const cur = descFull.includes('Currency: UZS') ? 'UZS' : 'USD';
+            const mainDesc = descFull.split(' | Currency:')[0] || '';
+
+            const totalVal = (item.stock_quantity || 0) * (item.price || 0);
+            const priceDisplay = cur === 'USD' ? `$${(item.price || 0).toLocaleString()}` : `${(item.price || 0).toLocaleString()} so'm`;
+            const totalDisplay = cur === 'USD' ? `$${totalVal.toLocaleString()}` : `${totalVal.toLocaleString()} so'm`;
+
+            tr.innerHTML = `
+                <td style="padding:15px 20px;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div class="prod-icon-mini">${item.product_name[0]}</div>
+                        <div>
+                            <div style="font-weight:800; color:#fff; font-size:0.95rem;">${item.product_name}</div>
+                            <div style="font-size:0.65rem; color:rgba(255,255,255,0.3); margin-top:2px;">${mainDesc}</div>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge-elite">${item.category || 'Xomashyo'}</span></td>
+                <td style="font-weight:900; color:#fff; font-size:1rem;">
+                    ${item.stock_quantity.toLocaleString()} <small style="font-size:0.65rem; color:rgba(255,255,255,0.4);">${item.unit || 'tonna'}</small>
+                </td>
+                <td style="color:rgba(255,255,255,0.6); font-weight:600; font-size:0.85rem;">${priceDisplay}</td>
+                <td style="font-weight:900; color:var(--clapak-accent); font-size:1.05rem;">${totalDisplay}</td>
+                <td>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <div style="width:6px; height:6px; border-radius:50%; background:${statusColor}; box-shadow: 0 0 10px ${statusColor};"></div>
+                        <span style="color:${statusColor}; font-size:0.65rem; font-weight:800; letter-spacing:0.5px;">${statusText}</span>
+                    </div>
+                </td>
+                <td style="text-align:right; padding-right:25px;">
+                    <div style="display:flex; gap:10px; justify-content:flex-end;">
+                        <button onclick="window.editAutoItem('${item.id}')" class="btn-icon-elite edit">✏️</button>
+                        <button onclick="window.deleteAutoItem('${item.id}')" class="btn-icon-elite delete">🗑️</button>
+                    </div>
+                </td>
+            `;
+            tableBody.appendChild(tr);
+        });
+    }
+
+    // --- AUTO CLAPAK PRODUCTION PIPELINE ---
+    window.pipelineData = {
+        sovutish: [],
+        kraska: [],
+        sushilka: [],
+        packaging: 0,
+        finished: []
+    };
+
+    async function loadAutoProduction() {
+        renderPipeline();
+        updatePipelineStats();
+    }
+
+    function renderPipeline() {
+        renderStanok();
+        renderSovutish();
+        renderKraska();
+        renderSushilka();
+        renderPackaging();
+    }
+
+    function renderStanok() {
+        const list = document.getElementById('stanok-list');
+        if (!list) return;
+
+        // Mock data for two machines
+        const machines = [
+            { id: 'ST-1', model: 'MALIBU-2 R18', done: 24, total: 36, progress: 65 },
+            { id: 'ST-2', model: 'GENTRA R15', done: 12, total: 36, progress: 33 }
+        ];
+
+        list.innerHTML = machines.map(m => `
+            <div class="elite-prod-card" style="border-left: 4px solid #00baff; cursor:pointer;" onclick="window.showMachineDetails('${m.id}')">
+                <div class="card-header-v3">
+                    <span class="model-tag">STANOK №${m.id.split('-')[1]}</span>
+                    <div class="status-pill-v3">
+                        <div class="pulse-dot" style="background:#00baff; box-shadow:0 0 10px #00baff;"></div> PROTSESSDA
+                    </div>
+                </div>
+                <div class="prod-model-v3">${m.model}</div>
+                <div class="progress-container-v3">
+                    <div class="track-info">
+                        <span>PROGRESS</span>
+                        <span>${m.done} / ${m.total} Dona</span>
+                    </div>
+                    <div class="bar-v3">
+                        <div class="fill-v3" style="width: ${m.progress}%; background:#00baff;"></div>
+                    </div>
+                </div>
+                <button class="action-btn-v3" style="border-color:#00baff; color:#00baff;" 
+                    onclick="event.stopPropagation(); window.moveToSovutish('${m.id}', '${m.model}')">SOVUTISHGA ➜</button>
+            </div>
+        `).join('');
+    }
+
+    window.moveToSovutish = (source, model) => {
+        const qty = 36;
+        window.pipelineData.sovutish.push({ id: Date.now(), model: model, qty: qty });
+        renderSovutish();
+        updatePipelineStats();
+    };
+
+    function renderSovutish() {
+        const list = document.getElementById('sovutish-list');
+        if (!list) return;
+        if (window.pipelineData.sovutish.length === 0) {
+            list.innerHTML = `<div class="empty-state">NAVAT KUTILMOQDA...</div>`;
+            return;
+        }
+        list.innerHTML = window.pipelineData.sovutish.map(item => `
+            <div class="elite-prod-card" style="border-left: 4px solid #00f2ff;">
+                <div class="card-header-v3">
+                    <span class="model-tag" style="color:#00f2ff; background:rgba(0,242,255,0.05);">ARAVA #${item.id.toString().slice(-4)}</span>
+                    <div class="status-pill-v3" style="color:#00f2ff;"><div class="pulse-dot" style="background:#00f2ff; box-shadow:0 0 10px #00f2ff;"></div> SOVUTILMOQDA</div>
+                </div>
+                <div class="prod-model-v3">${item.model}</div>
+                <p style="font-size: 0.7rem; color: rgba(255,255,255,0.3); margin: 5px 0 15px 0;">36 Dona karkas</p>
+                <button class="action-btn-v3" style="border-color:#00f2ff; color:#00f2ff;" onmouseover="this.style.background='#00f2ff';this.style.color='#000'" onmouseout="this.style.background='transparent';this.style.color='#00f2ff'" onclick="window.moveToKraska(${item.id})">
+                    KRASKAGA ➜</button>
+            </div>
+        `).join('');
+    }
+
+    window.showMachineDetails = async (id) => {
+        const modal = document.getElementById('machineDetailsModal');
+        if (!modal) return;
+
+        // Current Date and Time
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('uz-UZ', { day: '2-digit', month: 'short', year: 'numeric' });
+        const timeStr = now.toLocaleTimeString('uz-UZ', { hour12: false });
+
+        // Mock data based on id
+        const machineData = {
+            'ST-1': {
+                title: 'STANOK №1',
+                startTime: '08:15',
+                operator: 'Jaloliddin R.',
+                energy: 14.5,
+                totalEnergy: 39.4,
+                efficiency: 94,
+                input: 420,
+                inputPlan: 500,
+                output: 1120,
+                shift: '08:00 – 17:00'
+            },
+            'ST-2': {
+                title: 'STANOK №2',
+                startTime: '07:45',
+                operator: 'Sardorbek M.',
+                energy: 12.8,
+                totalEnergy: 35.2,
+                efficiency: 88,
+                input: 380,
+                inputPlan: 500,
+                output: 980,
+                shift: '08:00 – 17:00'
+            }
+        };
+
+        const data = machineData[id] || machineData['ST-1'];
+
+        // Header & Badge
+        document.getElementById('md-title').textContent = data.title;
+        document.getElementById('md-date-badge').textContent = `📅 ${dateStr}`;
+
+        // Stats Row 1
+        document.getElementById('md-start-time').textContent = data.startTime;
+        document.getElementById('md-output-qty').textContent = data.output.toLocaleString();
+        document.getElementById('md-energy').textContent = data.energy;
+
+        // Sub-labels
+        document.getElementById('md-energy-total').textContent = `⚡ Jami bugun: ${data.totalEnergy} kWh`;
+        document.getElementById('md-total-kwh').textContent = data.totalEnergy;
+        document.getElementById('md-output-boxes').textContent = `📦 ${Math.floor(data.output / 4)} ta Box = 1 komplekt`;
+
+        // Work Duration (approx)
+        const [h, m] = data.startTime.split(':');
+        const start = new Date(); start.setHours(h, m);
+        const diffMs = now - start;
+        const diffH = Math.floor(diffMs / 3600000);
+        const diffM = Math.floor((diffMs % 3600000) / 60000);
+        document.getElementById('md-work-hours').textContent = `⏱ ${diffH} soat ${diffM} daqiqa ishladi`;
+
+        // Stats Row 2
+        document.getElementById('md-operator-name').textContent = data.operator;
+        document.getElementById('md-operator-shift').textContent = `🕗 Smena: ${data.shift}`;
+        document.getElementById('md-input-raw').textContent = data.input;
+
+        // Progress Bar
+        const rawPerc = Math.round((data.input / data.inputPlan) * 100);
+        document.getElementById('md-raw-perc').textContent = `${rawPerc}% / ${data.inputPlan}kg reja`;
+        document.getElementById('md-raw-bar').style.width = `${rawPerc}%`;
+
+        // Efficiency Ring
+        document.getElementById('md-efficiency-val').textContent = `${data.efficiency}%`;
+        const ring = document.getElementById('md-efficiency-ring');
+        if (ring) {
+            const dash = 263.9; // 2 * PI * r(42)
+            const offset = dash - (dash * data.efficiency / 100);
+            ring.style.strokeDashoffset = offset;
+            ring.style.stroke = data.efficiency > 90 ? '#00ff88' : '#fabb18';
+        }
+
+        // Footer Update
+        document.getElementById('md-last-update').textContent = timeStr;
+
+        modal.style.display = 'flex';
+    };
+
+    window.moveToKraska = (id) => {
+        const idx = window.pipelineData.sovutish.findIndex(x => x.id === id);
+        if (idx > -1) {
+            const item = window.pipelineData.sovutish.splice(idx, 1)[0];
+            window.pipelineData.kraska.push(item);
+            renderSovutish();
+            renderKraska();
+            updatePipelineStats();
+        }
+    };
+
+    function renderKraska() {
+        const list = document.getElementById('kraska-list');
+        if (!list) return;
+        if (window.pipelineData.kraska.length === 0) {
+            list.innerHTML = `<div class="empty-state">NAVAT KUTILMOQDA...</div>`;
+            return;
+        }
+        list.innerHTML = window.pipelineData.kraska.map(item => `
+            <div class="elite-prod-card" style="border-left: 4px solid #ba00ff;">
+                <div class="card-header-v3">
+                    <span class="model-tag" style="color:#ba00ff; background:rgba(186,0,255,0.05);">ARAVA #${item.id.toString().slice(-4)}</span>
+                    <div class="status-pill-v3" style="color:#ba00ff;"><div class="pulse-dot" style="background:#ba00ff; box-shadow:0 0 10px #ba00ff;"></div> BO'YASHDA</div>
+                </div>
+                <div class="prod-model-v3">${item.model}</div>
+                <p style="font-size: 0.7rem; color: rgba(255,255,255,0.3); margin: 5px 0 15px 0;">36 Dona oq karkas</p>
+                <button class="action-btn-v3" style="border-color:#ba00ff; color:#ba00ff;" onmouseover="this.style.background='#ba00ff';this.style.color='#000'" onmouseout="this.style.background='transparent';this.style.color='#ba00ff'" onclick="window.moveToSushilka(${item.id})">
+                    SUSHILKAGA ➜</button>
+            </div>
+        `).join('');
+    }
+
+    window.moveToSushilka = (id) => {
+        const idx = window.pipelineData.kraska.findIndex(x => x.id === id);
+        if (idx > -1) {
+            const item = window.pipelineData.kraska.splice(idx, 1)[0];
+            item.remainingTime = 40 * 60; // 40 minutes
+            window.pipelineData.sushilka.push(item);
+            renderKraska();
+            renderSushilka();
+        }
+    };
+
+    function renderSushilka() {
+        const list = document.getElementById('sushilka-list');
+        if (!list) return;
+        if (window.pipelineData.sushilka.length === 0) {
+            list.innerHTML = `<div class="empty-state">PROTSESS YO'Q</div>`;
+            return;
+        }
+        list.innerHTML = window.pipelineData.sushilka.map(item => {
+            const mins = Math.floor(item.remainingTime / 60);
+            const secs = item.remainingTime % 60;
+            const perc = Math.round(((40 * 60 - item.remainingTime) / (40 * 60)) * 100);
+            return `
+                <div class="elite-prod-card" style="border-left: 4px solid #fabb18;">
+                    <div class="card-header-v3">
+                        <span class="model-tag" style="color:#fabb18; background:rgba(250,187,24,0.05);">ARAVA #${item.id.toString().slice(-4)}</span>
+                        <div class="status-pill-v3" style="color:#fff; font-size:0.8rem;">
+                            ${mins}:${secs.toString().padStart(2, '0')}
+                        </div>
+                    </div>
+                    <div class="prod-model-v3">${item.model}</div>
+                    <div class="progress-container-v3">
+                        <div class="track-info">
+                            <span style="color:#fabb18;">QURITISH</span>
+                            <span>${perc}%</span>
+                        </div>
+                        <div class="bar-v3">
+                            <div class="fill-v3" style="width: ${perc}%; background: #fabb18; box-shadow: 0 0 15px rgba(250,187,24,0.3);"></div>
+                        </div>
+                    </div>
+                    <button class="action-btn-v3" style="border-color:#fabb18; color:#fabb18;" onmouseover="this.style.background='#fabb18';this.style.color='#000'" onmouseout="this.style.background='transparent';this.style.color='#fabb18'" onclick="window.moveToPackaging(${item.id})">
+                        QADOQLASHGA ➜</button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    window.moveToPackaging = (id) => {
+        const idx = window.pipelineData.sushilka.findIndex(x => x.id === id);
+        if (idx > -1) {
+            const item = window.pipelineData.sushilka.splice(idx, 1)[0];
+            window.pipelineData.packaging += item.qty;
+            renderSushilka();
+            renderPackaging();
+        }
+    };
+
+    function renderPackaging() {
+        const qtyEl = document.getElementById('qadoqlash-pending-qty');
+        const boxEl = document.getElementById('qadoqlash-boxes');
+        const btn = document.getElementById('btn-finish-pack');
+        if (!qtyEl) return;
+        const total = window.pipelineData.packaging;
+        const boxes = Math.floor(total / 4);
+        qtyEl.textContent = total;
+        boxEl.textContent = `${boxes} KOMPLEKT (BOX)`;
+        if (total > 0) {
+            btn.disabled = false;
+            btn.style.background = '#ff4d4f';
+            btn.style.color = '#000';
+            btn.style.borderColor = '#ff4d4f';
+            btn.style.cursor = 'pointer';
+        } else {
+            btn.disabled = true;
+            btn.style.background = 'transparent';
+            btn.style.color = 'rgba(255,255,255,0.1)';
+            btn.style.borderColor = 'rgba(255,255,255,0.05)';
+            btn.style.cursor = 'not-allowed';
+        }
+    }
+
+    window.finalizePackaging = () => {
+        const total = window.pipelineData.packaging;
+        if (total <= 0) return;
+        const boxes = Math.floor(total / 4);
+        window.pipelineData.finished.unshift({
+            model: 'Auto Clapak Mix',
+            boxes: boxes,
+            time: new Date().toLocaleTimeString().slice(0, 5)
+        });
+        window.pipelineData.packaging = 0;
+        renderPackaging();
+        updatePipelineStats();
+        alert(`Muvaffaqiyatli! ${boxes} ta box tayyor omborga qabul qilindi.`);
+    };
+
+    function updatePipelineStats() {
+        const activeCarts = window.pipelineData.kraska.length + window.pipelineData.sushilka.length;
+        const acEl = document.getElementById('active-carts-count');
+        if (acEl) acEl.textContent = activeCarts;
+
+        const totalDona = 1440 + window.pipelineData.finished.reduce((sum, x) => sum + (x.boxes * 4), 0);
+        const totalBoxes = 360 + window.pipelineData.finished.reduce((sum, x) => sum + x.boxes, 0);
+
+        const tdEl = document.getElementById('today-total-production');
+        const tbEl = document.getElementById('today-total-boxes');
+        if (tdEl) tdEl.textContent = totalDona.toLocaleString();
+        if (tbEl) tbEl.textContent = totalBoxes.toLocaleString();
+    }
+
+    setInterval(() => {
+        let changed = false;
+        window.pipelineData.sushilka.forEach(item => {
+            if (item.remainingTime > 0) {
+                item.remainingTime--;
+                changed = true;
+            }
+        });
+        if (changed) renderSushilka();
+    }, 1000);
 
     // --- ROMIX DASHBOARD STATS (PANEL) ---
     async function loadRomixDashboardStats() {

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Stanokchi Control Panel</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="app">
+        <!-- 🔐 LOGIN SCREEN -->
+        <div id="login-screen" class="screen">
+            <div class="glass-auth">
+                <div class="logo-area">
+                    <div class="logo-shield">AKFA</div>
+                    <h1>CONTROL PANEL</h1>
+                    <p>Operator Login System</p>
+                </div>
+                <div class="form-group">
+                    <label>Login (Id)</label>
+                    <input type="text" id="login-id" placeholder="Masalan: 7007">
+                </div>
+                <div class="form-group" style="margin-bottom: 30px;">
+                    <label>Parol</label>
+                    <input type="password" id="login-pass" placeholder="••••••••">
+                </div>
+                <button id="login-btn" class="main-btn">TIZIMGA KIRISH</button>
+            </div>
+        </div>
+
+        <!-- 📟 DASHBOARD SCREEN -->
+        <div id="dashboard-screen" class="screen" style="display: none;">
+            <!-- Header -->
+            <header>
+                <div class="user-info">
+                    <div class="avatar" id="op-avatar">O</div>
+                    <div>
+                        <div id="op-name" class="name">YUKLANMOQDA...</div>
+                        <div class="role">USTA-OPERATOR</div>
+                    </div>
+                </div>
+                <button id="logout-btn" class="icon-btn">🚪</button>
+            </header>
+
+            <!-- Status Widget -->
+            <div class="status-widget inactive" id="shift-status">
+                <div class="status-header">
+                    <span class="dot"></span>
+                    <span id="status-text">SMENA YORDAMIDA ISHGA TUSHIRING</span>
+                </div>
+                <div class="timer" id="shift-timer">00:00:00</div>
+            </div>
+
+            <!-- Machine Control -->
+            <div class="control-grid">
+                <!-- Machine Selection -->
+                <div class="card select-card">
+                    <label>STANOKNI TANLANG</label>
+                    <div class="selector-group" id="machine-selector">
+                        <div class="option active" data-val="ST-1">ST 01</div>
+                        <div class="option" data-val="ST-2">ST 02</div>
+                    </div>
+                </div>
+
+                <!-- Model Selection -->
+                <div class="card select-card">
+                    <label>MODELNI TANLANG</label>
+                    <div class="model-grid" id="model-selector">
+                        <div class="model-item active" data-val="MALIBU-2">MALIBU 2</div>
+                        <div class="model-item" data-val="GENTRA">GENTRA</div>
+                        <div class="model-item" data-val="COBALT">COBALT</div>
+                    </div>
+                </div>
+
+                <!-- Counter Area -->
+                <div class="card counter-card">
+                    <div class="counter-header">
+                        <label>ISHALB CHIQRARISH (DONA)</label>
+                        <span id="current-goal">REJA: 500</span>
+                    </div>
+                    <div class="counter-display" id="count-val">0</div>
+                    <div class="counter-actions">
+                        <button class="count-btn" data-add="1">+1</button>
+                        <button class="count-btn" data-add="10">+10</button>
+                        <button class="count-btn reset" id="count-reset">↺</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="footer-actions">
+                <button id="shift-toggle-btn" class="action-btn start">SMENANI BOSHLASH</button>
+                <button id="report-btn" class="action-btn secondary">HISOBOT</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast">Ma'lumot saqlandi ✅</div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
