@@ -65,18 +65,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Apply AC Manager specific UI overrides synchronously to prevent flash
     if (user.role === 'ac_manager') {
         const sidebar = document.querySelector('.sidebar-slim');
-        if (sidebar) sidebar.style.display = 'none';
+        if (sidebar) sidebar.style.setProperty('display', 'none', 'important');
         
         const mainArea = document.querySelector('.admin-main');
-        if (mainArea) mainArea.style.marginLeft = '0';
+        if (mainArea) mainArea.style.setProperty('margin-left', '0', 'important');
 
         const romixTopNav = document.querySelector('.executive-tabs');
-        if (romixTopNav) romixTopNav.style.display = 'none';
+        if (romixTopNav) romixTopNav.style.setProperty('display', 'none', 'important');
         
         const autoTabs = document.querySelectorAll('.nav-link-item[data-auto-tab]');
         autoTabs.forEach(tab => {
             if (tab.getAttribute('data-auto-tab') !== 'auto-ishlab-chiqarish') {
-                tab.style.display = 'none';
+                tab.style.setProperty('display', 'none', 'important');
             }
         });
 
