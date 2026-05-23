@@ -48,7 +48,7 @@ document.getElementById('login-btn').onclick = async () => {
 
     try {
         // 1. Hardcoded Qadoqlovchi credentials
-        if (id.toLowerCase().replace(/\s+/g, '') === 'qadoqlovchi1' && pass === '1234') {
+        if (id.toUpperCase() === 'Q1' && pass === '123') {
             currentUser = {
                 id: 'Q1',
                 username: 'Qadoqlovchi 1',
