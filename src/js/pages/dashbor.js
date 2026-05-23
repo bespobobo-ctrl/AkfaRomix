@@ -12,9 +12,22 @@ let pipelineData = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    const saved = localStorage.getItem('ac_manager_session');
-    if (saved) {
-        currentUser = JSON.parse(saved);
+    const acSession = localStorage.getItem('ac_manager_session');
+    const mainSession = localStorage.getItem('currentUser');
+    
+    let validSession = false;
+    if (acSession) {
+        currentUser = JSON.parse(acSession);
+        validSession = true;
+    } else if (mainSession) {
+        const user = JSON.parse(mainSession);
+        if (user.role === 'ac_manager') {
+            currentUser = user;
+            validSession = true;
+        }
+    }
+
+    if (validSession) {
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('dash-screen').style.display = 'block';
         initDash();
@@ -38,7 +51,8 @@ document.getElementById('login-btn').onclick = () => {
 
 window.logout = () => {
     localStorage.removeItem('ac_manager_session');
-    location.reload();
+    localStorage.removeItem('currentUser');
+    location.href = '/index.html';
 };
 
 function initDash() {

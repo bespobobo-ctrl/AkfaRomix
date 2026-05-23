@@ -2,6 +2,13 @@ import { supabase } from '@/core/supabase.js';
 
 export const authService = {
     async login(username, password) {
+        // 0. Check Auto Clapak Manager (Hardcoded)
+        if (username.toUpperCase().replace(/\s+/g, '') === 'AC1' && password === '123') {
+            const userData = { id: 'AC1', username: 'AC1', role: 'ac_manager', full_name: 'Ishlab Chiqarish Boshlig\'i' };
+            localStorage.setItem('currentUser', JSON.stringify(userData));
+            return userData;
+        }
+
         // 1. Try System Users First (Admin, HR, etc)
         const { data: user } = await supabase
             .from('system_users')
@@ -73,6 +80,7 @@ export const authService = {
             case 'sotuv': return base + 'sales_dashboard.html';
             case 'showroom': return base + 'showroom_dashboard.html';
             case 'ishlab_chiqarish': return base + 'production_dashboard.html';
+            case 'ac_manager': return base + 'dashbor.html';
             default: return base + 'generic_dashboard.html';
         }
     }
