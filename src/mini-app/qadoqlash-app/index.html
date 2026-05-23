@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>AKFA — Qadoqlash Bo'limi</title>
+    <link rel="stylesheet" href="./style.css" />
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <!-- ═══ LOGIN SCREEN ═══ -->
+    <div id="login-screen" class="screen">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-icon">📦</div>
+                <h1 class="login-title">QADOQLASH BO'LIMI</h1>
+                <p class="login-subtitle">Avtorizatsiya tizimi</p>
+
+                <div class="input-group">
+                    <label>LOGIN (ID)</label>
+                    <input type="text" id="login-id" placeholder="Qadoqlovchi 1" autocomplete="off" />
+                </div>
+                <div class="input-group">
+                    <label>PAROL</label>
+                    <input type="password" id="login-pass" placeholder="••••" autocomplete="off" />
+                </div>
+
+                <button class="btn-login" id="login-btn">KIRISHNI TASDIQLASH</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ DASHBOARD SCREEN ═══ -->
+    <div id="dashboard-screen" class="screen">
+
+        <!-- Header -->
+        <div class="dash-header">
+            <div class="dash-header-left">
+                <h1>
+                    <span style="font-size:1.4rem;">📦</span>
+                    QADOQLASH PANELI
+                </h1>
+                <p>Operator: <strong id="user-name" style="color:var(--accent);">—</strong></p>
+            </div>
+            <button class="btn-logout" onclick="window.qLogout()">CHIQISH ✕</button>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">☀️</div>
+                <div class="stat-label">KUTMOQDA</div>
+                <div class="stat-value" id="stat-waiting" style="color:var(--warning);">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-label">QADOQLANGAN</div>
+                <div class="stat-value" id="stat-packed" style="color:var(--accent);">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-label">KOMPLEKT</div>
+                <div class="stat-value" id="stat-komplekt" style="color:var(--cyan);">0</div>
+            </div>
+        </div>
+
+        <!-- Sushilka Carts Section -->
+        <div class="section-title">
+            <span class="dot"></span>
+            SUSHILKADAN KELGAN ARAVALAR
+        </div>
+        <div id="cart-list" class="cart-list">
+            <div class="empty-state">
+                <div class="emoji">📭</div>
+                <p>Hozircha sushilkada tayyor arava yo'q</p>
+            </div>
+        </div>
+
+        <!-- Finished Products Section -->
+        <div class="section-title" style="margin-top:10px;">
+            <span class="dot" style="background:var(--cyan); box-shadow:0 0 8px var(--cyan);"></span>
+            TAYYOR MAHSULOTLAR (OMBOR)
+        </div>
+        <div id="finished-list" class="finished-grid">
+            <div class="empty-state">
+                <div class="emoji">📦</div>
+                <p>Hali tayyor mahsulot yo'q</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ═══ TOAST ═══ -->
+    <div id="toast" class="toast"></div>
+
+    <script type="module" src="./app.js"></script>
+</body>
+</html>

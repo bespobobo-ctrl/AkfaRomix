@@ -64,6 +64,19 @@ document.getElementById('login-btn').onclick = async () => {
         return;
     }
 
+    // 3. Check Qadoqlovchi operators and redirect
+    if (id.toLowerCase() === 'qadoqlovchi 1' && pass === '1234') {
+        const qadoqUser = {
+            id: 'Q1',
+            username: 'Qadoqlovchi 1',
+            role: 'qadoqlash',
+            name: 'Qadoqlovchi 1'
+        };
+        localStorage.setItem('qadoqlash_session', JSON.stringify(qadoqUser));
+        location.href = '../qadoqlash-app/index.html';
+        return;
+    }
+
     // 3. Fallback database query
     try {
         const { data: user } = await supabaseClient

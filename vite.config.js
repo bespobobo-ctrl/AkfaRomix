@@ -25,6 +25,7 @@ export default defineConfig({
                 akfa_hr_mini: resolve(__dirname, 'akfa_hr_mini.html'),
                 stanok: resolve(__dirname, 'src/mini-app/stanok-app/index.html'),
                 kraska: resolve(__dirname, 'src/mini-app/kraska-app/index.html'),
+                qadoqlash: resolve(__dirname, 'src/mini-app/qadoqlash-app/index.html'),
             },
         },
     },
