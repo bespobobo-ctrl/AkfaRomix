@@ -8,206 +8,264 @@ const BOT_TOKEN = '8876482426:AAFIMJCPYrxi-xVQwVDtURhl_BcDDSg6htA';
 let currentUser = null;
 let isShiftActive = false;
 let shiftStartTime = null;
-let currentCount = 0;
+let countReady = 0;
+let countBrak = 0;
+let goalAmount = 500;
 let timerInterval = null;
-
-// --- DOM Elements ---
-const screens = {
-    login: document.getElementById('login-screen'),
-    dashboard: document.getElementById('dashboard-screen')
-};
+let currentShiftId = null; // Track current session in Supabase
 
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-// --- Init ---
+// --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
-    // Check local storage for session
     const saved = localStorage.getItem('op_session');
     if (saved) {
         currentUser = JSON.parse(saved);
-        showScreen('dashboard');
-        initDashboard();
+        showScreen('setup-screen');
+        initSetup();
+    } else {
+        showScreen('login-screen');
     }
 });
 
 // --- Auth ---
-document.getElementById('login-btn').addEventListener('click', async () => {
+document.getElementById('login-btn').onclick = () => {
     const id = document.getElementById('login-id').value;
     const pass = document.getElementById('login-pass').value;
 
-    // Manual check for now (Can be linked to clapak_staff table)
     if ((id === '7007' && pass === '1234') || (id === '8008' && pass === '1234')) {
         currentUser = {
             id: id,
-            name: id === '7007' ? 'Jaloliddin R.' : 'Sardorbek M.',
-            machine: 'ST-1'
+            name: id === '7007' ? 'Jaloliddin R.' : 'Sardorbek M.'
         };
         localStorage.setItem('op_session', JSON.stringify(currentUser));
-        showScreen('dashboard');
-        initDashboard();
-        notifyBot(`🚀 Operator ${currentUser.name} tizimga kirdi.`);
+        showScreen('setup-screen');
+        initSetup();
     } else {
-        alert('Login yoki parol xato!');
+        alert('Avtorizatsiya xatosi!');
     }
-});
+};
 
-document.getElementById('logout-btn').addEventListener('click', () => {
+window.logout = () => {
     localStorage.removeItem('op_session');
     location.reload();
-});
+};
 
-// --- Dashboard Logic ---
-function initDashboard() {
-    document.getElementById('op-name').textContent = currentUser.name;
-    document.getElementById('op-avatar').textContent = currentUser.name[0];
-
-    // Selectors
-    document.querySelectorAll('.option').forEach(opt => {
+// --- Setup Mode ---
+function initSetup() {
+    document.querySelectorAll('.bento-item').forEach(opt => {
         opt.onclick = () => {
-            document.querySelectorAll('.option').forEach(o => o.classList.remove('active'));
+            opt.parentElement.querySelectorAll('.bento-item').forEach(o => o.classList.remove('active'));
             opt.classList.add('active');
         };
     });
-
-    document.querySelectorAll('.model-item').forEach(opt => {
-        opt.onclick = () => {
-            document.querySelectorAll('.model-item').forEach(o => o.classList.remove('active'));
-            opt.classList.add('active');
-        };
-    });
-
-    // Counter
-    document.querySelectorAll('.count-btn[data-add]').forEach(btn => {
-        btn.onclick = () => {
-            if (!isShiftActive) {
-                alert('Avval smenani boshlang!');
-                return;
-            }
-            const add = parseInt(btn.getAttribute('data-add'));
-            currentCount += add;
-            updateUI();
-            saveToSupabase();
-        };
-    });
-
-    document.getElementById('count-reset').onclick = () => {
-        if (confirm('Hisoblagichni nollashni xohlaysizmi?')) {
-            currentCount = 0;
-            updateUI();
-        }
-    };
-
-    // Shift Toggle
-    const toggleBtn = document.getElementById('shift-toggle-btn');
-    toggleBtn.onclick = () => {
-        if (!isShiftActive) {
-            startShift();
-        } else {
-            stopShift();
-        }
-    };
+    document.getElementById('start-shift-btn').onclick = startShift;
 }
 
+// --- Shift Logic ---
 function startShift() {
     isShiftActive = true;
     shiftStartTime = new Date();
-    const toggleBtn = document.getElementById('shift-toggle-btn');
-    toggleBtn.textContent = 'SMENANI YAKUNLASH';
-    toggleBtn.className = 'action-btn stop';
+    goalAmount = parseInt(document.getElementById('goal-input').value) || 500;
 
-    document.getElementById('shift-status').className = 'status-widget active';
-    document.getElementById('status-text').textContent = 'STANOK ISHLAMOQDA';
+    const machine = document.querySelector('#machine-selector .active').dataset.val;
+    const model = document.querySelector('#model-selector .active').dataset.val;
 
+    document.getElementById('active-machine').textContent = machine;
+    document.getElementById('active-model').textContent = model;
+
+    countReady = 0;
+    countBrak = 0;
+
+    updateDashboardUI();
+    showScreen('dashboard-screen');
     timerInterval = setInterval(updateTimer, 1000);
 
-    const machine = document.querySelector('.option.active').getAttribute('data-val');
-    const model = document.querySelector('.model-item.active').getAttribute('data-val');
+    notifyBot(`⚡ <b>TIZIM ISHGA TUSHIRILDI</b>\n\n👤 Operator: ${currentUser.name}\n⚙️ Stanok: ${machine}\n📦 Reja: ${goalAmount} dona\n⏰ Vaqt: ${shiftStartTime.toLocaleTimeString()}`);
 
-    notifyBot(`✅ Smena boshlandi!\n👤 Operator: ${currentUser.name}\n⚙️ Stanok: ${machine}\n📦 Model: ${model}\n⏰ Vaqt: ${shiftStartTime.toLocaleTimeString()}`);
-    showToast('Smena boshlandi! Kuch-quvvat tilingiz!');
+    // Save to Supabase
+    saveShiftToSupabase({
+        operator: currentUser.name,
+        machine: machine,
+        model: model,
+        quantity: 0,
+        brak: 0,
+        start_time: shiftStartTime.toISOString(),
+        status: 'ACTIVE'
+    });
+
+    showToast('Tizim onlayn. Ishlab chiqarish boshlandi.');
+}
+
+async function saveShiftToSupabase(data) {
+    try {
+        const { data: res, error } = await supabaseClient
+            .from('clapak_production')
+            .upsert([data], { onConflict: 'id' })
+            .select();
+
+        if (res && res[0]) currentShiftId = res[0].id;
+        if (error) console.error("Supabase Error:", error);
+    } catch (e) { console.error("Sync Error", e); }
 }
 
 function stopShift() {
-    if (!confirm('Smenani yakunlashni tasdiqlaysizmi?')) return;
+    if (!confirm('Tizimni to\'xtatish va hisobotni yakunlashni tasdiqlaysizmi?')) return;
 
     isShiftActive = false;
     clearInterval(timerInterval);
+    const endTime = new Date();
+    const durationMin = Math.floor((endTime - shiftStartTime) / 60000);
 
-    const toggleBtn = document.getElementById('shift-toggle-btn');
-    toggleBtn.textContent = 'SMENANI BOSHLASH';
-    toggleBtn.className = 'action-btn start';
+    const machine = document.getElementById('active-machine').textContent;
+    const model = document.getElementById('active-model').textContent;
 
-    document.getElementById('shift-status').className = 'status-widget inactive';
-    document.getElementById('status-text').textContent = 'SMENA YAKUNLANDI';
+    // Industrial Stats
+    const energyRate = machine === 'ST-1' ? 14.5 : 12.8;
+    const energyUsed = ((energyRate * durationMin) / 60).toFixed(2);
+    const rawUsed = (countReady * 0.38 + countBrak * 0.40).toFixed(1);
 
-    notifyBot(`🏁 Smena yakunlandi!\n👤 Operator: ${currentUser.name}\n📊 Natija: ${currentCount} dona\n⏱ Ish vaqti: ${document.getElementById('shift-timer').textContent}`);
-    showToast('Smena yakunlandi. Rahmat!');
+    document.getElementById('rep-op').textContent = currentUser.name;
+    document.getElementById('rep-time').textContent = `${durationMin} minut`;
+    document.getElementById('rep-model').textContent = model;
+    document.getElementById('rep-total').textContent = countReady;
+    document.getElementById('rep-brak').textContent = countBrak;
+    document.getElementById('rep-raw').textContent = `${rawUsed} kg`;
+    document.getElementById('rep-energy').textContent = `${energyUsed} kWh`;
+
+    document.getElementById('report-modal').style.display = 'flex';
+
+    notifyBot(`📊 <b>ISHLAB CHIQARISH HISOBOTI</b>\n\n👤 Operator: ${currentUser.name}\n⚙️ Stanok: ${machine}\n📦 Model: ${model}\n✅ Tayyor: ${countReady}\n❌ Brak (Nuqson): ${countBrak}\n⚡ Elektr sarfi: ${energyUsed} kWh\n🏗 Xom-ashyo: ${rawUsed} kg`);
+}
+
+document.getElementById('stop-shift-btn').onclick = stopShift;
+
+// --- Counters ---
+document.getElementById('add-1').onclick = () => { if (isShiftActive) { countReady += 1; updateDashboardUI(); pulseEffect('count-val'); } };
+document.getElementById('add-10').onclick = () => { if (isShiftActive) { countReady += 10; updateDashboardUI(); pulseEffect('count-val'); } };
+document.getElementById('add-brak').onclick = () => { if (isShiftActive) { countBrak += 1; updateDashboardUI(); showToast('Nuqson qayd etildi ⚠️'); } };
+
+function updateDashboardUI() {
+    document.getElementById('count-val').textContent = countReady;
+    const remaining = goalAmount - countReady;
+    const remEl = document.getElementById('remaining-val');
+
+    if (remaining <= 0) {
+        remEl.textContent = `+${Math.abs(remaining)}`;
+        remEl.style.color = 'var(--emerald)';
+    } else {
+        remEl.textContent = remaining;
+        remEl.style.color = '#fff';
+    }
+
+    // Progress Ring Calculation
+    const ring = document.getElementById('progress-bar');
+    const dash = 282.7;
+    const progress = Math.min(countReady / goalAmount, 1);
+    const offset = dash - (dash * progress);
+    ring.style.strokeDashoffset = offset;
+    ring.style.stroke = remaining <= 0 ? 'var(--emerald)' : 'var(--cyan)';
+
+    // Optional: Periodic Sync to Supabase during shift
+    debouncedSync();
+}
+
+let syncTimeout = null;
+function debouncedSync() {
+    clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(async () => {
+        if (!currentShiftId) return;
+        await supabaseClient.from('clapak_production').update({
+            quantity: countReady,
+            brak: countBrak,
+            last_update: new Date().toISOString()
+        }).eq('id', currentShiftId);
+    }, 5000); // Sync every 5 seconds of inactivity
 }
 
 function updateTimer() {
-    const now = new Date();
-    const diff = now - shiftStartTime;
+    const diff = new Date() - shiftStartTime;
     const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
     const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
     const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
     document.getElementById('shift-timer').textContent = `${h}:${m}:${s}`;
 }
 
-function updateUI() {
-    document.getElementById('count-val').textContent = currentCount;
-}
-
-async function saveToSupabase() {
-    // Here we would update the clapak_production table
-    console.log("Saving to Supabase:", currentCount);
-}
-
+// --- Presentation Helpers ---
 function showScreen(id) {
-    Object.values(screens).forEach(s => s.style.display = 'none');
-    screens[id].style.display = 'flex';
+    document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+    document.getElementById(id).style.display = 'flex';
 }
 
 function showToast(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg;
     t.className = 'toast show';
-    setTimeout(() => t.className = 'toast', 3000);
+    setTimeout(() => t.className = 'toast', 2000);
+}
+
+function pulseEffect(id) {
+    const el = document.getElementById(id);
+    el.style.transform = 'scale(1.1)';
+    setTimeout(() => el.style.transform = 'scale(1)', 100);
 }
 
 async function notifyBot(text) {
     try {
-        // Telegram ichida ochilganda foydalanuvchi ID-sini olamiz
-        let chatId = tg.initDataUnsafe?.user?.id;
-
-        // Agar brauzerda test qilinayotgan bo'lsa va chatId yo'q bo'lsa
-        if (!chatId) {
-            console.warn("Telegram WebApp ma'lumotlari topilmadi. Brauzerda test rejimida.");
-            // Bu yerda siz o'z Chat ID-ingizni qo'lda kiritib test qilishingiz mumkin
-            chatId = localStorage.getItem('test_chat_id') || '689230554';
-        }
-
+        const chatId = tg.initDataUnsafe?.user?.id || localStorage.getItem('test_chat_id') || '689230554';
         const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
-        const response = await fetch(url, {
+        await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                chat_id: chatId,
-                text: text,
-                parse_mode: 'HTML'
-            })
+            body: JSON.stringify({ chat_id: chatId, text: text, parse_mode: 'HTML' })
         });
-
-        const result = await response.json();
-        if (!result.ok) {
-            console.error("Bot Error Response:", result);
-            if (result.description.includes("chat not found")) {
-                alert("Bot xabar yubora olmadi. Iltimos, Telegram botga kirib /start tugmasini bosing!");
-            }
-        } else {
-            console.log("Bot Message Sent ✅");
-        }
-    } catch (e) {
-        console.error("Bot Connection Error:", e);
-    }
+    } catch (e) { console.error("Bot Error", e); }
 }
+
+// --- Report Actions ---
+window.printReport = () => {
+    window.print();
+};
+
+document.getElementById('final-transmit-btn').onclick = async () => {
+    const btn = document.getElementById('final-transmit-btn');
+    btn.textContent = 'YUBORILMOQDA...';
+    btn.disabled = true;
+
+    try {
+        const endTime = new Date();
+        const durationMin = Math.floor((endTime - shiftStartTime) / 60000);
+        const machine = document.getElementById('active-machine').textContent;
+        const energyRate = machine === 'ST-1' ? 14.5 : 12.8;
+        const energyUsed = parseFloat(((energyRate * durationMin) / 60).toFixed(2));
+        const rawUsed = parseFloat((countReady * 0.38 + countBrak * 0.40).toFixed(1));
+
+        const reportData = {
+            id: currentShiftId,
+            operator: currentUser.name,
+            machine: machine,
+            model: document.getElementById('active-model').textContent,
+            quantity: countReady,
+            brak: countBrak,
+            raw_material: rawUsed,
+            energy: energyUsed,
+            end_time: endTime.toISOString(),
+            status: 'DONE',
+            stage: 'sovutish'
+        };
+
+        const { error } = await supabaseClient
+            .from('clapak_production')
+            .upsert([reportData]);
+
+        if (error) throw error;
+
+        showToast('Partiya sovutish bo\'limiga o\'tkazildi! ✅');
+        setTimeout(() => location.reload(), 2000);
+    } catch (e) {
+        alert('Xatolik yuz berdi: ' + e.message);
+        btn.textContent = 'QAYTA YUBORISH';
+        btn.disabled = false;
+    }
+};

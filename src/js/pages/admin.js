@@ -253,36 +253,58 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderPackaging();
     }
 
-    function renderStanok() {
+    async function renderStanok() {
         const list = document.getElementById('stanok-list');
         if (!list) return;
 
-        // Mock data for two machines
+        const today = new Date().toISOString().split('T')[0];
+        const startOfDay = `${today}T00:00:00.000Z`;
+        const endOfDay = `${today}T23:59:59.999Z`;
+
+        const { data: production } = await supabase
+            .from('clapak_production')
+            .select('*')
+            .gte('start_time', startOfDay)
+            .lte('start_time', endOfDay);
+
         const machines = [
-            { id: 'ST-1', model: 'MALIBU-2 R18', done: 24, total: 36, progress: 65 },
-            { id: 'ST-2', model: 'GENTRA R15', done: 12, total: 36, progress: 33 }
+            { id: 'ST-1', model: 'MALIBU-2 R18', done: 0, total: 36, progress: 0, status: 'O\'CHIK' },
+            { id: 'ST-2', model: 'GENTRA R15', done: 0, total: 36, progress: 0, status: 'O\'CHIK' }
         ];
 
+        if (production) {
+            machines.forEach(m => {
+                const machineData = production.filter(p => p.machine === m.id);
+                if (machineData.length > 0) {
+                    const latest = machineData[machineData.length - 1];
+                    m.done = machineData.reduce((sum, p) => sum + (p.quantity || 0), 0);
+                    m.model = latest.model;
+                    m.status = latest.status === 'ACTIVE' ? 'PROTSESSDA' : 'YAKUNLANDI';
+                    m.progress = Math.min(Math.round((m.done / 500) * 100), 100); // 500 is daily goal
+                }
+            });
+        }
+
         list.innerHTML = machines.map(m => `
-            <div class="elite-prod-card" style="border-left: 4px solid #00baff; cursor:pointer;" onclick="window.showMachineDetails('${m.id}')">
+            <div class="elite-prod-card" style="border-left: 4px solid ${m.status === 'PROTSESSDA' ? '#00baff' : '#555'}; cursor:pointer;" onclick="window.showMachineDetails('${m.id}')">
                 <div class="card-header-v3">
                     <span class="model-tag">STANOK №${m.id.split('-')[1]}</span>
                     <div class="status-pill-v3">
-                        <div class="pulse-dot" style="background:#00baff; box-shadow:0 0 10px #00baff;"></div> PROTSESSDA
+                        <div class="pulse-dot" style="background:${m.status === 'PROTSESSDA' ? '#00baff' : '#555'}; box-shadow:0 0 10px ${m.status === 'PROTSESSDA' ? '#00baff' : 'transparent'};"></div> ${m.status}
                     </div>
                 </div>
                 <div class="prod-model-v3">${m.model}</div>
                 <div class="progress-container-v3">
                     <div class="track-info">
                         <span>PROGRESS</span>
-                        <span>${m.done} / ${m.total} Dona</span>
+                        <span>${m.done} Dona</span>
                     </div>
                     <div class="bar-v3">
                         <div class="fill-v3" style="width: ${m.progress}%; background:#00baff;"></div>
                     </div>
                 </div>
-                <button class="action-btn-v3" style="border-color:#00baff; color:#00baff;" 
-                    onclick="event.stopPropagation(); window.moveToSovutish('${m.id}', '${m.model}')">SOVUTISHGA ➜</button>
+                <button class="action-btn-v3" style="border-color:#00baff; color:#00baff; width:100%;" 
+                    onclick="event.stopPropagation(); window.showMachineDetails('${m.id}')">BATAFSIL MA'LUMOT ➜</button>
             </div>
         `).join('');
     }
@@ -315,92 +337,225 @@ document.addEventListener('DOMContentLoaded', async () => {
         `).join('');
     }
 
-    window.showMachineDetails = async (id) => {
+    window.currentFilterDate = new Date().toISOString().split('T')[0];
+
+    window.showMachineDetails = async (machineId) => {
         const modal = document.getElementById('machineDetailsModal');
         if (!modal) return;
+        document.getElementById('md-title').textContent = `STANOK №${machineId.split('-')[1]}`;
+        modal.style.display = 'flex';
+        await updateMachineModalData(machineId, window.currentFilterDate);
+    };
 
-        // Current Date and Time
-        const now = new Date();
-        const dateStr = now.toLocaleDateString('uz-UZ', { day: '2-digit', month: 'short', year: 'numeric' });
-        const timeStr = now.toLocaleTimeString('uz-UZ', { hour12: false });
+    async function updateMachineModalData(machineId, date) {
+        if (document.getElementById('md-date-input')) document.getElementById('md-date-input').value = date;
 
-        // Mock data based on id
-        const machineData = {
-            'ST-1': {
-                title: 'STANOK №1',
-                startTime: '08:15',
-                operator: 'Jaloliddin R.',
-                energy: 14.5,
-                totalEnergy: 39.4,
-                efficiency: 94,
-                input: 420,
-                inputPlan: 500,
-                output: 1120,
-                shift: '08:00 – 17:00'
-            },
-            'ST-2': {
-                title: 'STANOK №2',
-                startTime: '07:45',
-                operator: 'Sardorbek M.',
-                energy: 12.8,
-                totalEnergy: 35.2,
-                efficiency: 88,
-                input: 380,
-                inputPlan: 500,
-                output: 980,
-                shift: '08:00 – 17:00'
-            }
-        };
+        const startOfDay = `${date}T00:00:00.000Z`;
+        const endOfDay = `${date}T23:59:59.999Z`;
 
-        const data = machineData[id] || machineData['ST-1'];
+        const { data, error } = await supabase
+            .from('clapak_production')
+            .select('*')
+            .eq('machine', machineId)
+            .gte('start_time', startOfDay)
+            .lte('start_time', endOfDay)
+            .order('start_time', { ascending: true });
 
-        // Header & Badge
-        document.getElementById('md-title').textContent = data.title;
-        document.getElementById('md-date-badge').textContent = `📅 ${dateStr}`;
+        let totalQty = 0;
+        let totalBrak = 0;
+        let totalEnergy = 0;
+        let totalRaw = 0;
+        let startTime = "--:--";
+        let operator = "Noma'lum";
+        let durationStr = "Bugun ishlamadi";
 
-        // Stats Row 1
-        document.getElementById('md-start-time').textContent = data.startTime;
-        document.getElementById('md-output-qty').textContent = data.output.toLocaleString();
-        document.getElementById('md-energy').textContent = data.energy;
+        if (data && data.length > 0) {
+            startTime = new Date(data[0].start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            operator = data[0].operator;
 
-        // Sub-labels
-        document.getElementById('md-energy-total').textContent = `⚡ Jami bugun: ${data.totalEnergy} kWh`;
-        document.getElementById('md-total-kwh').textContent = data.totalEnergy;
-        document.getElementById('md-output-boxes').textContent = `📦 ${Math.floor(data.output / 4)} ta Box = 1 komplekt`;
+            data.forEach(row => {
+                totalQty += (row.quantity || 0);
+                totalBrak += (row.brak || 0);
+                totalEnergy += (row.energy || 0);
+                totalRaw += (row.raw_material || 0);
+            });
 
-        // Work Duration (approx)
-        const [h, m] = data.startTime.split(':');
-        const start = new Date(); start.setHours(h, m);
-        const diffMs = now - start;
-        const diffH = Math.floor(diffMs / 3600000);
-        const diffM = Math.floor((diffMs % 3600000) / 60000);
-        document.getElementById('md-work-hours').textContent = `⏱ ${diffH} soat ${diffM} daqiqa ishladi`;
-
-        // Stats Row 2
-        document.getElementById('md-operator-name').textContent = data.operator;
-        document.getElementById('md-operator-shift').textContent = `🕗 Smena: ${data.shift}`;
-        document.getElementById('md-input-raw').textContent = data.input;
-
-        // Progress Bar
-        const rawPerc = Math.round((data.input / data.inputPlan) * 100);
-        document.getElementById('md-raw-perc').textContent = `${rawPerc}% / ${data.inputPlan}kg reja`;
-        document.getElementById('md-raw-bar').style.width = `${rawPerc}%`;
-
-        // Efficiency Ring
-        document.getElementById('md-efficiency-val').textContent = `${data.efficiency}%`;
-        const ring = document.getElementById('md-efficiency-ring');
-        if (ring) {
-            const dash = 263.9; // 2 * PI * r(42)
-            const offset = dash - (dash * data.efficiency / 100);
-            ring.style.strokeDashoffset = offset;
-            ring.style.stroke = data.efficiency > 90 ? '#00ff88' : '#fabb18';
+            const firstStart = new Date(data[0].start_time);
+            const lastData = data[data.length - 1];
+            const lastTime = lastData.status === 'ACTIVE' ? new Date() : new Date(lastData.end_time || lastData.last_update || lastData.start_time);
+            const diffMs = lastTime - firstStart;
+            const diffH = Math.floor(diffMs / 3600000);
+            const diffM = Math.floor((diffMs % 3600000) / 60000);
+            durationStr = `${diffH} soat ${diffM} daqiqa ishladi`;
         }
 
-        // Footer Update
-        document.getElementById('md-last-update').textContent = timeStr;
+        window.currentMachineProduction = data || [];
 
-        modal.style.display = 'flex';
-    };
+        // Dynamic rendering of last 3 produced products
+        const lastProductsContainer = document.getElementById('md-last-products');
+        if (lastProductsContainer) {
+            if (data && data.length > 0) {
+                const sortedProd = [...data].sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
+                const top3 = sortedProd.slice(0, 3);
+                
+                lastProductsContainer.innerHTML = top3.map(row => {
+                    const timeStr = new Date(row.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const timeDiff = new Date() - new Date(row.start_time);
+                    const diffMins = Math.floor(timeDiff / 60000);
+                    let agoStr = '';
+                    if (diffMins < 1) agoStr = 'Hozirgina';
+                    else if (diffMins < 60) agoStr = `${diffMins} min oldin`;
+                    else {
+                        const diffHrs = Math.floor(diffMins / 60);
+                        agoStr = `${diffHrs} soat oldin`;
+                    }
+
+                    const qty = row.quantity || 0;
+                    const raw = row.raw_material || 0;
+                    const brak = row.brak || 0;
+
+                    const isReady = row.status !== 'ACTIVE';
+                    const statusText = isReady ? 'TAYYOR ✓' : 'SOVUTILMOQDA ⏳';
+                    const statusColor = isReady ? '#00ff88' : '#00baff';
+                    const statusBg = isReady ? 'rgba(0,255,136,0.1)' : 'rgba(0,186,255,0.1)';
+                    const cardBg = isReady 
+                        ? 'linear-gradient(135deg, rgba(0,255,136,0.04), rgba(0,186,255,0.02))'
+                        : 'linear-gradient(135deg, rgba(0,186,255,0.04), rgba(186,0,255,0.01))';
+                    const cardBorder = isReady ? 'rgba(0,255,136,0.1)' : 'rgba(0,186,255,0.1)';
+                    
+                    return `
+                        <div style="display:flex; align-items:center; gap:16px; background:${cardBg}; border:1px solid ${cardBorder}; border-radius:18px; padding:16px 20px; transition:all 0.3s;"
+                            onmouseenter="this.style.borderColor='${statusColor}'; this.style.boxShadow='0 8px 25px rgba(0,0,0,0.3)'; this.style.transform='translateY(-2px)'"
+                            onmouseleave="this.style.borderColor='${cardBorder}'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+                            <div style="width:48px; height:48px; border-radius:14px; background:linear-gradient(135deg, ${statusColor}28, ${statusColor}0D); display:flex; align-items:center; justify-content:center; font-size:1.5rem; flex-shrink:0; border:1px solid ${statusColor}40;">
+                                ${isReady ? '📦' : '❄️'}
+                            </div>
+                            <div style="flex:1; min-width:0;">
+                                <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap;">
+                                    <span style="font-size:0.95rem; font-weight:800; color:#fff;">${row.model || 'Noma\'lum mahsulot'}</span>
+                                    <span style="font-size:0.55rem; font-weight:800; background:${statusBg}; color:${statusColor}; padding:3px 8px; border-radius:6px; letter-spacing:0.5px;">${statusText}</span>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                                    <span style="font-size:0.7rem; color:rgba(255,255,255,0.4); font-weight:600;">🔢 Miqdor: <strong style="color:rgba(255,255,255,0.7);">${qty} dona</strong></span>
+                                    <span style="font-size:0.7rem; color:rgba(255,255,255,0.4); font-weight:600;">⚖️ Xom-ashyo: <strong style="color:rgba(255,255,255,0.7);">${raw} kg</strong></span>
+                                    ${brak > 0 ? `<span style="font-size:0.7rem; color:#ff4d4f; font-weight:600;">🚨 Brak: <strong>${brak} dona</strong></span>` : ''}
+                                </div>
+                            </div>
+                            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px; flex-shrink:0;">
+                                <div style="text-align:right;">
+                                    <div style="font-size:0.7rem; color:${statusColor}; font-weight:700;">${timeStr}</div>
+                                    <div style="font-size:0.6rem; color:rgba(255,255,255,0.25); margin-top:2px;">${agoStr}</div>
+                                </div>
+                                <button onclick="window.showProductDetail('${row.id}')" 
+                                    style="background:rgba(0,186,255,0.1); border:1px solid rgba(0,186,255,0.25); color:#00baff; padding:6px 12px; border-radius:10px; font-size:0.7rem; font-weight:800; cursor:pointer; transition:all 0.2s;"
+                                    onmouseenter="this.style.background='rgba(0,186,255,0.2)'; this.style.borderColor='#00baff'"
+                                    onmouseleave="this.style.background='rgba(0,186,255,0.1)'; this.style.borderColor='rgba(0,186,255,0.25)'">
+                                    👁️ Ko'rish
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                lastProductsContainer.innerHTML = `
+                    <div style="text-align:center; padding:30px 20px; background:rgba(255,255,255,0.01); border:1px dashed rgba(255,255,255,0.08); border-radius:18px; color:rgba(255,255,255,0.3); font-size:0.85rem; display:flex; flex-direction:column; align-items:center; gap:10px;">
+                        <span style="font-size:2rem; opacity:0.5;">📦</span>
+                        <div>Bugun bu stanokda hali mahsulot ishlab chiqarilmagan</div>
+                    </div>
+                `;
+            }
+        }
+
+        const stats = {
+            startTime: startTime,
+            workHours: durationStr,
+            outputQty: totalQty.toLocaleString(),
+            outputBoxes: `${Math.floor(totalQty / 4)} ta Box = ${Math.floor(totalQty / 1120)} komplekt`,
+            energyRate: machineId === 'ST-1' ? "14.5" : "12.8",
+            energyTotal: totalEnergy.toFixed(1),
+            operator: operator,
+            shift: "🕗 Smena: 08:00 – 17:00",
+            rawQty: totalRaw.toFixed(0),
+            rawPerc: `${Math.round((totalRaw / 500) * 100)}% / 500kg reja`,
+            rawBar: Math.min(Math.round((totalRaw / 500) * 100), 100)
+        };
+
+        const safeSet = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+        safeSet('md-start-time', stats.startTime);
+        safeSet('md-work-hours', stats.workHours);
+        safeSet('md-output-qty', stats.outputQty);
+        safeSet('md-output-boxes', stats.outputBoxes);
+        safeSet('md-energy', stats.energyRate);
+        safeSet('md-energy-total', `⚡ Jami: ${stats.energyTotal} kWh`);
+        safeSet('md-operator-name', stats.operator);
+        safeSet('md-operator-shift', stats.shift);
+        safeSet('md-input-raw', stats.rawQty);
+        safeSet('md-raw-perc', stats.rawPerc);
+        const bar = document.getElementById('md-raw-bar');
+        if (bar) bar.style.width = `${stats.rawBar}%`;
+
+        // Define showProductDetail handler
+        window.showProductDetail = (productId) => {
+            const prod = (window.currentMachineProduction || []).find(p => p.id.toString() === productId.toString());
+            if (!prod) {
+                alert("Mahsulot ma'lumoti topilmadi!");
+                return;
+            }
+
+            const modal = document.getElementById('mdProductDetailModal');
+            if (!modal) return;
+
+            document.getElementById('pd-model-name').textContent = prod.model || 'Noma\'lum Mahsulot';
+            
+            const isReady = prod.status !== 'ACTIVE';
+            const statusEl = document.getElementById('pd-status');
+            statusEl.textContent = isReady ? 'TAYYOR' : 'SOVUTILMOQDA';
+            statusEl.style.color = isReady ? '#00ff88' : '#00baff';
+            document.getElementById('pd-status-badge').style.background = isReady ? 'rgba(0,255,136,0.1)' : 'rgba(0,186,255,0.1)';
+            document.getElementById('pd-status-badge').style.borderColor = isReady ? 'rgba(0,255,136,0.2)' : 'rgba(0,186,255,0.2)';
+            document.getElementById('pd-status-dot').style.background = isReady ? '#00ff88' : '#00baff';
+            document.getElementById('pd-status-dot').style.boxShadow = isReady ? '0 0 8px #00ff88' : '0 0 8px #00baff';
+
+            document.getElementById('pd-qty').textContent = (prod.quantity || 0).toLocaleString();
+            document.getElementById('pd-raw').textContent = (prod.raw_material || 0).toLocaleString() + ' kg';
+            document.getElementById('pd-brak').textContent = (prod.brak || 0).toLocaleString();
+            document.getElementById('pd-energy').textContent = (prod.energy || 0).toFixed(1) + ' kWh';
+
+            document.getElementById('pd-machine').textContent = prod.machine === 'ST-1' ? 'STANOK №1' : 'STANOK №2';
+            document.getElementById('pd-operator').textContent = prod.operator || 'Noma\'lum';
+            document.getElementById('pd-start-time').textContent = prod.start_time ? new Date(prod.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--';
+            
+            let endTimeStr = '--:--';
+            if (prod.end_time) {
+                endTimeStr = new Date(prod.end_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            } else if (prod.last_update) {
+                endTimeStr = new Date(prod.last_update).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            }
+            document.getElementById('pd-end-time').textContent = endTimeStr;
+
+            modal.style.display = 'flex';
+        };
+
+        // Close on outside click
+        const pdModal = document.getElementById('mdProductDetailModal');
+        if (pdModal) {
+            pdModal.onclick = (e) => {
+                if (e.target === pdModal) pdModal.style.display = 'none';
+            };
+        }
+    }
+
+    const mdDateInput = document.getElementById('md-date-input');
+    if (mdDateInput) {
+        mdDateInput.addEventListener('change', (e) => {
+            const newDate = e.target.value;
+            if (newDate) {
+                window.currentFilterDate = newDate;
+                const currentId = document.getElementById('md-title').textContent.replace('STANOK №', 'ST-');
+                updateMachineModalData(currentId, window.currentFilterDate);
+            }
+        });
+    }
 
     window.moveToKraska = (id) => {
         const idx = window.pipelineData.sovutish.findIndex(x => x.id === id);

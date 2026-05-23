@@ -3,106 +3,160 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Stanokchi Control Panel</title>
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AKFA Stanok Nazorati v4 | Elite</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
 </head>
 
 <body>
     <div id="app">
-        <!-- 🔐 LOGIN SCREEN -->
+        <!-- 🔐 SCREEN: AUTH -->
         <div id="login-screen" class="screen">
-            <div class="glass-auth">
-                <div class="logo-area">
+            <div class="glass-auth" style="margin: auto;">
+                <div class="setup-header">
                     <div class="logo-shield">AKFA</div>
-                    <h1>CONTROL PANEL</h1>
-                    <p>Operator Login System</p>
+                    <p>NAZORAT TIZIMLARI</p>
                 </div>
-                <div class="form-group">
-                    <label>Login (Id)</label>
-                    <input type="text" id="login-id" placeholder="Masalan: 7007">
+                <div class="elite-input-group">
+                    <label class="elite-label">TIZIM LOGIN</label>
+                    <input type="text" id="login-id" class="huge-input" placeholder="ID"
+                        style="font-size: 1.5rem; padding: 20px;">
                 </div>
-                <div class="form-group" style="margin-bottom: 30px;">
-                    <label>Parol</label>
-                    <input type="password" id="login-pass" placeholder="••••••••">
+                <div class="elite-input-group">
+                    <label class="elite-label">KIRISH PAROLI</label>
+                    <input type="password" id="login-pass" class="huge-input" placeholder="••••"
+                        style="font-size: 1.5rem; padding: 20px;">
                 </div>
-                <button id="login-btn" class="main-btn">TIZIMGA KIRISH</button>
+                <button id="login-btn" class="btn-stop" style="background: var(--cyan); margin-top: 20px;">KIRISHNI TASDIQLASH</button>
             </div>
         </div>
 
-        <!-- 📟 DASHBOARD SCREEN -->
-        <div id="dashboard-screen" class="screen" style="display: none;">
-            <!-- Header -->
-            <header>
-                <div class="user-info">
-                    <div class="avatar" id="op-avatar">O</div>
-                    <div>
-                        <div id="op-name" class="name">YUKLANMOQDA...</div>
-                        <div class="role">USTA-OPERATOR</div>
-                    </div>
+        <!-- 🚀 SCREEN: SETUP -->
+        <div id="setup-screen" class="screen" style="display: none;">
+            <div class="setup-header">
+                <div class="logo-shield">PRO-LINE</div>
+                <p>SOZLASH REJIMI</p>
+            </div>
+
+            <div class="elite-input-group">
+                <label class="elite-label">STANOK (ISH JOYI)</label>
+                <div class="bento-grid" id="machine-selector">
+                    <div class="bento-item active" data-val="ST-1">ST 01</div>
+                    <div class="bento-item" data-val="ST-2">ST 02</div>
                 </div>
-                <button id="logout-btn" class="icon-btn">🚪</button>
+            </div>
+
+            <div class="elite-input-group">
+                <label class="elite-label">MAHSULOT MODELI</label>
+                <div class="bento-grid" id="model-selector">
+                    <div class="bento-item active" data-val="MALIBU-2">MALIBU 2</div>
+                    <div class="bento-item" data-val="GENTRA">GENTRA</div>
+                    <div class="bento-item" data-val="COBALT">COBALT</div>
+                </div>
+            </div>
+
+            <div class="elite-input-group">
+                <label class="elite-label">MAQSADLI MIQDOR (REJA)</label>
+                <input type="number" id="goal-input" value="500" class="huge-input">
+            </div>
+
+            <div style="margin-top: auto;">
+                <button id="start-shift-btn" class="btn-stop" style="background: var(--emerald);">TIZIMNI ISHGA TUSHIRISH VA BOSHLASH</button>
+                <p
+                    style="text-align: center; font-size: 0.6rem; color: var(--text-muted); margin-top: 15px; letter-spacing: 1px;">
+                    TIZIM HOLATI: ISHLAB CHIQARISHGA TAYYOR</p>
+            </div>
+        </div>
+
+        <!-- 📟 SCREEN: DASHBOARD -->
+        <div id="dashboard-screen" class="screen" style="display: none;">
+            <header class="dash-header">
+                <div class="live-badge">
+                    <div class="pulse-dot"></div>
+                    <span id="active-machine">ST 01</span> // <span id="active-model">MALIBU 2</span>
+                </div>
+                <div class="mega-timer" id="shift-timer">00:00:00</div>
             </header>
 
-            <!-- Status Widget -->
-            <div class="status-widget inactive" id="shift-status">
-                <div class="status-header">
-                    <span class="dot"></span>
-                    <span id="status-text">SMENA YORDAMIDA ISHGA TUSHIRING</span>
-                </div>
-                <div class="timer" id="shift-timer">00:00:00</div>
-            </div>
-
-            <!-- Machine Control -->
-            <div class="control-grid">
-                <!-- Machine Selection -->
-                <div class="card select-card">
-                    <label>STANOKNI TANLANG</label>
-                    <div class="selector-group" id="machine-selector">
-                        <div class="option active" data-val="ST-1">ST 01</div>
-                        <div class="option" data-val="ST-2">ST 02</div>
+            <div class="card-elite prod-visualizer">
+                <div class="main-counter">
+                    <span class="count-label">ISHLAB CHIQARILGAN MAHSULOTLAR</span>
+                    <div class="count-number" id="count-val">0</div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <span class="count-label" style="font-size: 0.6rem;">TIZIM SAMARADORLIGI:</span>
+                        <span style="color: var(--emerald); font-weight: 800; font-size: 0.7rem;">BARQAROR</span>
                     </div>
                 </div>
-
-                <!-- Model Selection -->
-                <div class="card select-card">
-                    <label>MODELNI TANLANG</label>
-                    <div class="model-grid" id="model-selector">
-                        <div class="model-item active" data-val="MALIBU-2">MALIBU 2</div>
-                        <div class="model-item" data-val="GENTRA">GENTRA</div>
-                        <div class="model-item" data-val="COBALT">COBALT</div>
+                <div class="target-circle">
+                    <div class="progress-ring">
+                        <svg viewBox="0 0 100 100" style="transform: rotate(-90deg);">
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="8">
+                            </circle>
+                            <circle id="progress-bar" cx="50" cy="50" r="45" fill="none" stroke="var(--cyan)"
+                                stroke-width="8" stroke-dasharray="282.7" stroke-dashoffset="282.7"
+                                stroke-linecap="round"></circle>
+                        </svg>
+                        <p id="remaining-val">500</p>
                     </div>
-                </div>
-
-                <!-- Counter Area -->
-                <div class="card counter-card">
-                    <div class="counter-header">
-                        <label>ISHALB CHIQRARISH (DONA)</label>
-                        <span id="current-goal">REJA: 500</span>
-                    </div>
-                    <div class="counter-display" id="count-val">0</div>
-                    <div class="counter-actions">
-                        <button class="count-btn" data-add="1">+1</button>
-                        <button class="count-btn" data-add="10">+10</button>
-                        <button class="count-btn reset" id="count-reset">↺</button>
-                    </div>
+                    <span class="count-label" style="font-size: 0.55rem; margin-top: 10px;">REJADAN QOLDI</span>
                 </div>
             </div>
 
-            <!-- Footer Actions -->
-            <div class="footer-actions">
-                <button id="shift-toggle-btn" class="action-btn start">SMENANI BOSHLASH</button>
-                <button id="report-btn" class="action-btn secondary">HISOBOT</button>
+            <div class="control-pad">
+                <button class="btn-cyber primary" id="add-1">
+                    <span style="font-size: 0.7rem; color: var(--text-muted);">DONALIK</span>
+                    <span>+1</span>
+                </button>
+                <button class="btn-cyber primary" id="add-10">
+                    <span style="font-size: 0.7rem; color: var(--text-muted);">PARTIYALIK</span>
+                    <span>+10</span>
+                </button>
+                <button class="btn-cyber warning" id="add-brak">
+                    <span>NUQSONNI QAYD ETISH (BRAK)</span>
+                </button>
+            </div>
+
+            <div class="bottom-bar">
+                <button id="stop-shift-btn" class="btn-stop">YAKUNLASH VA HISOBOT YARATISH</button>
+            </div>
+        </div>
+
+        <!-- 📊 MODAL: REPORT -->
+        <div id="report-modal" class="report-overlay" style="display: none;">
+            <div class="report-panel">
+                <h2>ISHLAB CHIQARISH XULOSASI</h2>
+                <div class="report-row"><span class="label">OPERATOR</span> <span class="value" id="rep-op">...</span>
+                </div>
+                <div class="report-row"><span class="label">ISH VAQTI</span> <span class="value"
+                        id="rep-time">...</span></div>
+                <div class="report-row"><span class="label">MAHSULOT MODELI</span> <span class="value"
+                        id="rep-model">...</span></div>
+                <div class="report-row"><span class="label">TAYYOR MAHSULOT</span> <span class="value" id="rep-total"
+                        style="color: var(--emerald);">0</span></div>
+                <div class="report-row"><span class="label">BRAK MAHSULOT (NUQSON)</span> <span class="value" id="rep-brak"
+                        style="color: var(--rose);">0</span></div>
+                <div class="report-row" style="margin-top: 10px;"><span class="label">XOM-ASHYO SARFI</span> <span
+                        class="value" id="rep-raw">0 kg</span></div>
+                <div class="report-row"><span class="label">ELEKTR SARFI</span> <span class="value" id="rep-energy">0
+                        kWh</span></div>
+
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: 30px;">
+                    <button class="finish-btn" style="background: rgba(255,255,255,0.1); color: #fff;"
+                        onclick="window.printReport()">PDF / CHOP ETISH</button>
+                    <button class="finish-btn" id="final-transmit-btn">YUBORISH VA SOVUTISHGA O'TKAZISH</button>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Notification Toast -->
-    <div id="toast" class="toast">Ma'lumot saqlandi ✅</div>
+    <div id="toast" class="toast">Ma'lumotlar sinxronlashtirildi ✅</div>
 
-    <script src="app.js"></script>
+    <script type="module" src="./app.js"></script>
 </body>
 
 </html>
