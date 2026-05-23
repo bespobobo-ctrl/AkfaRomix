@@ -400,22 +400,54 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderSovutish() {
         const list = document.getElementById('sovutish-list');
         if (!list) return;
-        if (window.pipelineData.sovutish.length === 0) {
-            list.innerHTML = `<div class="empty-state">NAVAT KUTILMOQDA...</div>`;
-            return;
-        }
-        list.innerHTML = window.pipelineData.sovutish.map(item => `
-            <div class="elite-prod-card" style="border-left: 4px solid #00f2ff;">
+
+        // Calculate active carts stats
+        const activeCartsCount = window.pipelineData.sovutish.length;
+        const utilPerc = Math.round((activeCartsCount / 20) * 100);
+
+        // Make the permanent Cooling Room Card HTML (looking exactly like Stanok card)
+        const roomCardHtml = `
+            <div class="elite-prod-card" style="border-left: 4px solid #00f2ff; margin-bottom: 20px; background: linear-gradient(135deg, rgba(0,242,255,0.04), rgba(0,186,255,0.01)); cursor: pointer;" onclick="window.showCoolingDetails()">
                 <div class="card-header-v3">
-                    <span class="model-tag" style="color:#00f2ff; background:rgba(0,242,255,0.05);">${item.cart ? `ARAVA #${item.cart}` : `ARAVA #${item.id.toString().slice(-4)}`}</span>
-                    <div class="status-pill-v3" style="color:#00f2ff;"><div class="pulse-dot" style="background:#00f2ff; box-shadow:0 0 10px #00f2ff;"></div> SOVUTILMOQDA</div>
+                    <span class="model-tag" style="color:#00f2ff; background:rgba(0,242,255,0.05); font-weight:800; font-size:0.6rem; letter-spacing:0.5px;">TIZIM HOLATI</span>
+                    <div class="status-pill-v3" style="color:#00f2ff; font-weight:800; font-size:0.7rem;">
+                        <div class="pulse-dot" style="background:#00f2ff; box-shadow:0 0 10px #00f2ff;"></div> ${activeCartsCount > 0 ? 'FAOL' : 'NAVATCHI'}
+                    </div>
                 </div>
-                <div class="prod-model-v3">${item.model}</div>
-                <p style="font-size: 0.7rem; color: rgba(255,255,255,0.3); margin: 5px 0 15px 0;">${item.qty} Dona karkas</p>
-                <button class="action-btn-v3" style="border-color:#00f2ff; color:#00f2ff;" onmouseover="this.style.background='#00f2ff';this.style.color='#000'" onmouseout="this.style.background='transparent';this.style.color='#00f2ff'" onclick="window.moveToKraska('${item.id}')">
-                    KRASKAGA ➜</button>
+                <div class="prod-model-v3" style="font-size:1.25rem; font-weight:900; color:#fff; letter-spacing:-0.5px; margin: 10px 0;">SOVUTISH XONASI</div>
+                <div class="progress-container-v3" style="margin-bottom:15px;">
+                    <div class="track-info" style="display:flex; justify-content:space-between; font-size:0.65rem; color:rgba(255,255,255,0.4); font-weight:700; margin-bottom:6px;">
+                        <span>BANDLIK (ARAVALAR)</span>
+                        <span style="color:#00f2ff; font-weight:800;">${activeCartsCount} / 20 ta</span>
+                    </div>
+                    <div class="bar-v3" style="width:100%; height:6px; background:rgba(255,255,255,0.05); border-radius:3px; overflow:hidden; position:relative;">
+                        <div class="fill-v3" style="width: ${utilPerc}%; height:100%; background:#00f2ff; box-shadow:0 0 10px rgba(0,242,255,0.5); border-radius:3px; transition:width 0.4s ease;"></div>
+                    </div>
+                </div>
+                <button class="action-btn-v3" style="border-color:#00f2ff; color:#00f2ff; width:100%;" 
+                    onclick="event.stopPropagation(); window.showCoolingDetails()">BATAFSIL MA'LUMOT ➜</button>
             </div>
-        `).join('');
+        `;
+
+        let activeCartsHtml = '';
+        if (window.pipelineData.sovutish.length === 0) {
+            activeCartsHtml = `<div class="empty-state">NAVAT KUTILMOQDA...</div>`;
+        } else {
+            activeCartsHtml = window.pipelineData.sovutish.map(item => `
+                <div class="elite-prod-card" style="border-left: 4px solid #00f2ff; margin-bottom: 12px;">
+                    <div class="card-header-v3">
+                        <span class="model-tag" style="color:#00f2ff; background:rgba(0,242,255,0.05);">${item.cart ? `ARAVA #${item.cart}` : `ARAVA #${item.id.toString().slice(-4)}`}</span>
+                        <div class="status-pill-v3" style="color:#00f2ff;"><div class="pulse-dot" style="background:#00f2ff; box-shadow:0 0 10px #00f2ff;"></div> SOVUTILMOQDA</div>
+                    </div>
+                    <div class="prod-model-v3">${item.model}</div>
+                    <p style="font-size: 0.7rem; color: rgba(255,255,255,0.3); margin: 5px 0 15px 0;">${item.qty} Dona karkas</p>
+                    <button class="action-btn-v3" style="border-color:#00f2ff; color:#00f2ff;" onmouseover="this.style.background='#00f2ff';this.style.color='#000'" onmouseout="this.style.background='transparent';this.style.color='#00f2ff'" onclick="window.moveToKraska('${item.id}')">
+                        KRASKAGA ➜</button>
+                </div>
+            `).join('');
+        }
+
+        list.innerHTML = roomCardHtml + activeCartsHtml;
         
         // Also update details modal if it's currently open
         const modal = document.getElementById('coolingDetailsModal');
