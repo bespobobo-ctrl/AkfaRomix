@@ -1,4 +1,4 @@
-import { supabase } from '../supabase.js';
+import { supabase } from '../core/supabase.js';
 
 let currentUser = null;
 let pipelineData = {
