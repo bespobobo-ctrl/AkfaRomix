@@ -458,6 +458,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const carts = Array.from({ length: 20 }, (_, idx) => ({
             num: idx + 1,
             active: false,
+            isOccupied: false,
+            status: 'BO\'SH',
             model: '',
             qty: 0,
             operator: '',
@@ -472,6 +474,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 carts[cartNum - 1] = {
                     num: cartNum,
                     active: true,
+                    isOccupied: true,
                     model: item.model,
                     qty: item.qty,
                     operator: item.operator || 'Operator',
@@ -481,10 +484,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
+        // Mark carts that are in Kraska or Sushilka as occupied
+        window.pipelineData.kraska.forEach(item => {
+            const cartNum = parseInt(item.cart);
+            if (cartNum >= 1 && cartNum <= 20 && !carts[cartNum - 1].active) {
+                carts[cartNum - 1].isOccupied = true;
+                carts[cartNum - 1].status = 'BO\'YALMOQDA';
+            }
+        });
+
+        window.pipelineData.sushilka.forEach(item => {
+            const cartNum = parseInt(item.cart);
+            if (cartNum >= 1 && cartNum <= 20 && !carts[cartNum - 1].active) {
+                carts[cartNum - 1].isOccupied = true;
+                carts[cartNum - 1].status = 'SUSHILKADA';
+            }
+        });
+
         // Calculate stats
         const activeCount = carts.filter(c => c.active).length;
-        const emptyCount = 20 - activeCount;
-        const utilisation = Math.round((activeCount / 20) * 100);
+        const emptyCount = carts.filter(c => !c.isOccupied).length;
+        const utilisation = Math.round(((20 - emptyCount) / 20) * 100);
 
         // Update stats elements
         document.getElementById('cd-active-carts').textContent = `${activeCount} ta`;
@@ -521,6 +541,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 KRASKAGA O'TKAZISH ➜
                             </button>
                         </div>
+                    </div>
+                `;
+            } else if (c.isOccupied) {
+                return `
+                    <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.1); padding:16px; border-radius:18px; display:flex; flex-direction:column; justify-content:space-between; height:105px; opacity:0.8;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:0.75rem; font-weight:800; color:rgba(255,255,255,0.5);">ARAVA #${c.num}</span>
+                            <span style="font-size:0.6rem; color:#fabb18; font-weight:700;">BAND</span>
+                        </div>
+                        <div style="font-size:0.9rem; font-weight:800; color:rgba(255,255,255,0.4); text-align:center; margin:10px 0;">${c.status}</div>
                     </div>
                 `;
             } else {
