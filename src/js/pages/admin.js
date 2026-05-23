@@ -434,25 +434,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
         `;
 
-        let activeCartsHtml = '';
-        if (window.pipelineData.sovutish.length === 0) {
-            activeCartsHtml = `<div class="empty-state">NAVAT KUTILMOQDA...</div>`;
-        } else {
-            activeCartsHtml = window.pipelineData.sovutish.map(item => `
-                <div class="elite-prod-card" style="border-left: 4px solid #00f2ff; margin-bottom: 12px;">
-                    <div class="card-header-v3">
-                        <span class="model-tag" style="color:#00f2ff; background:rgba(0,242,255,0.05);">${item.cart ? `ARAVA #${item.cart}` : `ARAVA #${item.id.toString().slice(-4)}`}</span>
-                        <div class="status-pill-v3" style="color:#00f2ff;"><div class="pulse-dot" style="background:#00f2ff; box-shadow:0 0 10px #00f2ff;"></div> SOVUTILMOQDA</div>
-                    </div>
-                    <div class="prod-model-v3">${item.model}</div>
-                    <p style="font-size: 0.7rem; color: rgba(255,255,255,0.3); margin: 5px 0 15px 0;">${item.qty} Dona karkas</p>
-                    <button class="action-btn-v3" style="border-color:#00f2ff; color:#00f2ff;" onmouseover="this.style.background='#00f2ff';this.style.color='#000'" onmouseout="this.style.background='transparent';this.style.color='#00f2ff'" onclick="window.moveToKraska('${item.id}')">
-                        KRASKAGA ➜</button>
-                </div>
-            `).join('');
-        }
-
-        list.innerHTML = roomCardHtml + activeCartsHtml;
+        list.innerHTML = roomCardHtml;
         
         // Also update details modal if it's currently open
         const modal = document.getElementById('coolingDetailsModal');
@@ -513,21 +495,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         grid.innerHTML = carts.map(c => {
             if (c.active) {
                 return `
-                    <div style="background:linear-gradient(135deg, rgba(0,242,255,0.06), rgba(186,0,255,0.02)); border:1px solid rgba(0,242,255,0.35); padding:16px; border-radius:18px; position:relative; box-shadow:0 8px 25px rgba(0,242,255,0.05); transition:all 0.3s;"
+                    <div style="background:linear-gradient(135deg, rgba(0,242,255,0.06), rgba(186,0,255,0.02)); border:1px solid rgba(0,242,255,0.35); padding:16px; border-radius:18px; position:relative; box-shadow:0 8px 25px rgba(0,242,255,0.05); transition:all 0.3s; display:flex; flex-direction:column; justify-content:space-between; min-height:175px;"
                         onmouseenter="this.style.borderColor='#00f2ff'; this.style.transform='translateY(-2px)'"
                         onmouseleave="this.style.borderColor='rgba(0,242,255,0.35)'; this.style.transform='translateY(0)'">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                            <span style="font-size:0.75rem; font-weight:900; background:rgba(0,242,255,0.1); color:#00f2ff; padding:4px 10px; border-radius:8px;">ARAVA #${c.num}</span>
-                            <div style="display:flex; align-items:center; gap:6px;">
-                                <div style="width:6px; height:6px; border-radius:50%; background:#00f2ff; box-shadow:0 0 8px #00f2ff; animation:clapak-pulse 1s infinite;"></div>
-                                <span style="font-size:0.6rem; color:#00f2ff; font-weight:800; letter-spacing:0.5px;">SOVUTISH</span>
+                        <div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                                <span style="font-size:0.75rem; font-weight:900; background:rgba(0,242,255,0.1); color:#00f2ff; padding:4px 10px; border-radius:8px;">ARAVA #${c.num}</span>
+                                <div style="display:flex; align-items:center; gap:6px;">
+                                    <div style="width:6px; height:6px; border-radius:50%; background:#00f2ff; box-shadow:0 0 8px #00f2ff; animation:clapak-pulse 1s infinite;"></div>
+                                    <span style="font-size:0.6rem; color:#00f2ff; font-weight:800; letter-spacing:0.5px;">SOVUTISH</span>
+                                </div>
                             </div>
+                            <div style="font-size:1.15rem; font-weight:900; color:#fff; margin-bottom:4px;">${c.model}</div>
+                            <div style="font-size:0.7rem; color:rgba(255,255,255,0.4); font-weight:600; margin-bottom:8px;">Miqdor: <strong style="color:#00f2ff;">${c.qty} dona</strong></div>
                         </div>
-                        <div style="font-size:1.15rem; font-weight:900; color:#fff; margin-bottom:4px;">${c.model}</div>
-                        <div style="font-size:0.7rem; color:rgba(255,255,255,0.4); font-weight:600; margin-bottom:8px;">Miqdor: <strong style="color:#00f2ff;">${c.qty} dona</strong></div>
-                        <div style="border-top:1px solid rgba(255,255,255,0.05); padding-top:8px; display:flex; justify-content:space-between; font-size:0.6rem; color:rgba(255,255,255,0.3); font-weight:700;">
-                            <span>👤 ${c.operator.split(' ')[0]}</span>
-                            <span>⏰ ${c.time}</span>
+                        <div>
+                            <div style="border-top:1px solid rgba(255,255,255,0.05); padding-top:8px; display:flex; justify-content:space-between; font-size:0.6rem; color:rgba(255,255,255,0.3); font-weight:700; margin-bottom:8px;">
+                                <span>👤 ${c.operator.split(' ')[0]}</span>
+                                <span>⏰ ${c.time}</span>
+                            </div>
+                            <button onclick="window.moveToKraska('${c.id}'); document.getElementById('coolingDetailsModal').style.display='none';" 
+                                style="width:100%; background:rgba(0,242,255,0.1); border:1px solid rgba(0,242,255,0.3); color:#00f2ff; padding:8px 12px; border-radius:12px; font-size:0.7rem; font-weight:800; cursor:pointer; transition:all 0.2s;"
+                                onmouseenter="this.style.background='rgba(0,242,255,0.25)'"
+                                onmouseleave="this.style.background='rgba(0,242,255,0.1)'">
+                                KRASKAGA O'TKAZISH ➜
+                            </button>
                         </div>
                     </div>
                 `;
