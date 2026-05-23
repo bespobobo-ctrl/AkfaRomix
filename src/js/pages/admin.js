@@ -852,38 +852,203 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderSushilka() {
         const list = document.getElementById('sushilka-list');
         if (!list) return;
-        if (window.pipelineData.sushilka.length === 0) {
-            list.innerHTML = `<div class="empty-state">PROTSESS YO'Q</div>`;
-            return;
-        }
-        list.innerHTML = window.pipelineData.sushilka.map(item => {
-            const mins = Math.floor(item.remainingTime / 60);
-            const secs = item.remainingTime % 60;
-            const perc = Math.round(((40 * 60 - item.remainingTime) / (40 * 60)) * 100);
-            return `
-                <div class="elite-prod-card" style="border-left: 4px solid #fabb18;">
-                    <div class="card-header-v3">
-                        <span class="model-tag" style="color:#fabb18; background:rgba(250,187,24,0.05);">${item.cart ? `ARAVA #${item.cart}` : `ARAVA #${item.id.toString().slice(-4)}`}</span>
-                        <div class="status-pill-v3" style="color:#fff; font-size:0.8rem;">
-                            ${mins}:${secs.toString().padStart(2, '0')}
-                        </div>
+
+        // Calculate active carts stats
+        const activeCartsCount = window.pipelineData.sushilka.length;
+        const utilPerc = Math.round((activeCartsCount / 20) * 100);
+
+        // Make the permanent Drying Room Card HTML (looking exactly like Cooling Room Card)
+        const roomCardHtml = `
+            <div class="elite-prod-card" style="border-left: 4px solid #fabb18; margin-bottom: 20px; background: linear-gradient(135deg, rgba(250,187,24,0.04), rgba(250,187,24,0.01)); cursor: pointer;" onclick="window.showSushilkaDetails()">
+                <div class="card-header-v3">
+                    <span class="model-tag" style="color:#fabb18; background:rgba(250,187,24,0.05); font-weight:800; font-size:0.6rem; letter-spacing:0.5px;">TIZIM HOLATI</span>
+                    <div class="status-pill-v3" style="color:#fabb18; font-weight:800; font-size:0.7rem;">
+                        <div class="pulse-dot" style="background:#fabb18; box-shadow:0 0 10px #fabb18;"></div> ${activeCartsCount > 0 ? 'FAOL' : 'NAVATCHI'}
                     </div>
-                    <div class="prod-model-v3">${item.model}</div>
-                    <div class="progress-container-v3">
-                        <div class="track-info">
-                            <span style="color:#fabb18;">QURITISH</span>
-                            <span>${perc}%</span>
-                        </div>
-                        <div class="bar-v3">
-                            <div class="fill-v3" style="width: ${perc}%; background: #fabb18; box-shadow: 0 0 15px rgba(250,187,24,0.3);"></div>
-                        </div>
-                    </div>
-                    <button class="action-btn-v3" style="border-color:#fabb18; color:#fabb18;" onmouseover="this.style.background='#fabb18';this.style.color='#000'" onmouseout="this.style.background='transparent';this.style.color='#fabb18'" onclick="window.moveToPackaging('${item.id}')">
-                        QADOQLASHGA ➜</button>
                 </div>
-            `;
+                <div class="prod-model-v3" style="font-size:1.25rem; font-weight:900; color:#fff; letter-spacing:-0.5px; margin: 10px 0;">SUSHILKA XONASI</div>
+                <div class="progress-container-v3" style="margin-bottom:15px;">
+                    <div class="track-info" style="display:flex; justify-content:space-between; font-size:0.65rem; color:rgba(255,255,255,0.4); font-weight:700; margin-bottom:6px;">
+                        <span>BANDLIK (ARAVALAR)</span>
+                        <span style="color:#fabb18; font-weight:800;">${activeCartsCount} / 20 ta</span>
+                    </div>
+                    <div class="bar-v3" style="width:100%; height:6px; background:rgba(255,255,255,0.05); border-radius:3px; overflow:hidden; position:relative;">
+                        <div class="fill-v3" style="width: ${utilPerc}%; height:100%; background:#fabb18; box-shadow:0 0 10px rgba(250,187,24,0.5); border-radius:3px; transition:width 0.4s ease;"></div>
+                    </div>
+                </div>
+                <button class="action-btn-v3" style="border-color:#fabb18; color:#fabb18; width:100%;" 
+                    onclick="event.stopPropagation(); window.showSushilkaDetails()">BATAFSIL MA'LUMOT ➜</button>
+            </div>
+        `;
+
+        list.innerHTML = roomCardHtml;
+        
+        // Also update details modal if it's currently open
+        const modal = document.getElementById('sushilkaDetailsModal');
+        if (modal && modal.style.display === 'flex') {
+            renderSushilkaCartsModal();
+        }
+    }
+
+    window.showSushilkaDetails = () => {
+        const modal = document.getElementById('sushilkaDetailsModal');
+        if (!modal) return;
+        modal.style.display = 'flex';
+        renderSushilkaCartsModal();
+    };
+
+    function renderSushilkaCartsModal() {
+        const grid = document.getElementById('sushilka-carts-grid');
+        if (!grid) return;
+
+        // Initialize 20 carts as empty
+        const carts = Array.from({ length: 20 }, (_, idx) => ({
+            num: idx + 1,
+            active: false,
+            model: '',
+            qty: 0,
+            operator: '',
+            time: '',
+            remainingTime: 0,
+            id: ''
+        }));
+
+        // Fill active sushilka carts from window.pipelineData.sushilka
+        window.pipelineData.sushilka.forEach(item => {
+            const cartNum = parseInt(item.cart);
+            if (cartNum >= 1 && cartNum <= 20) {
+                carts[cartNum - 1] = {
+                    num: cartNum,
+                    active: true,
+                    model: item.model,
+                    qty: item.qty,
+                    operator: item.operator || 'Operator',
+                    time: item.time || '--:--',
+                    remainingTime: item.remainingTime,
+                    id: item.id
+                };
+            }
+        });
+
+        // Calculate stats
+        const activeCount = carts.filter(c => c.active).length;
+        const emptyCount = 20 - activeCount;
+        const utilisation = Math.round((activeCount / 20) * 100);
+
+        // Update stats elements
+        document.getElementById('sd-active-carts').textContent = `${activeCount} ta`;
+        document.getElementById('sd-empty-carts').textContent = `${emptyCount} ta`;
+        document.getElementById('sd-utilisation').textContent = `${utilisation}%`;
+
+        // Render the 20 carts with premium styled elements
+        grid.innerHTML = carts.map(c => {
+            if (c.active) {
+                const mins = Math.floor(c.remainingTime / 60);
+                const secs = c.remainingTime % 60;
+                const progressPerc = Math.round(((40 * 60 - c.remainingTime) / (40 * 60)) * 100);
+                return `
+                    <div style="background:linear-gradient(135deg, rgba(250,187,24,0.06), rgba(186,0,255,0.02)); border:1px solid rgba(250,187,24,0.35); padding:16px; border-radius:18px; position:relative; box-shadow:0 8px 25px rgba(250,187,24,0.05); transition:all 0.3s; display:flex; flex-direction:column; justify-content:space-between; min-height:175px; cursor:pointer;"
+                        onclick="window.showSushilkaPassport('${c.id}')"
+                        onmouseenter="this.style.borderColor='#fabb18'; this.style.transform='translateY(-2px)'"
+                        onmouseleave="this.style.borderColor='rgba(250,187,24,0.35)'; this.style.transform='translateY(0)'">
+                        <div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                                <span style="font-size:0.75rem; font-weight:900; background:rgba(250,187,24,0.1); color:#fabb18; padding:4px 10px; border-radius:8px;">ARAVA #${c.num}</span>
+                                <div style="display:flex; align-items:center; gap:6px;">
+                                    <div style="width:6px; height:6px; border-radius:50%; background:#fabb18; box-shadow:0 0 8px #fabb18; animation:clapak-pulse 1s infinite;"></div>
+                                    <span style="font-size:0.6rem; color:#fabb18; font-weight:800; letter-spacing:0.5px;">QURITISH</span>
+                                </div>
+                            </div>
+                            <div style="font-size:1.15rem; font-weight:900; color:#fff; margin-bottom:4px;">${c.model}</div>
+                            <div style="font-size:0.7rem; color:rgba(255,255,255,0.4); font-weight:600; margin-bottom:8px;">Vaqt qoldi: <strong style="color:#fabb18;">${mins}:${secs.toString().padStart(2, '0')}</strong></div>
+                        </div>
+                        <div>
+                            <div style="margin-bottom: 8px;">
+                                <div style="width:100%; height:4px; background:rgba(255,255,255,0.05); border-radius:2px; overflow:hidden;">
+                                    <div style="width:${progressPerc}%; height:100%; background:#fabb18;"></div>
+                                </div>
+                            </div>
+                            <div style="border-top:1px solid rgba(255,255,255,0.05); padding-top:8px; display:flex; justify-content:space-between; font-size:0.6rem; color:rgba(255,255,255,0.3); font-weight:700;">
+                                <span>👤 ${c.operator.split(' | ')[0].split(' ')[0]}</span>
+                                <span>⏰ ${c.time}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div style="background:rgba(255,255,255,0.01); border:1px dashed rgba(255,255,255,0.07); padding:16px; border-radius:18px; display:flex; flex-direction:column; justify-content:space-between; height:105px; opacity:0.6; transition:all 0.3s;"
+                        onmouseenter="this.style.opacity='1'; this.style.borderColor='rgba(255,255,255,0.15)'"
+                        onmouseleave="this.style.opacity='0.6'; this.style.borderColor='rgba(255,255,255,0.07)'">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:0.75rem; font-weight:800; color:rgba(255,255,255,0.3); font-weight:750;">ARAVA #${c.num}</span>
+                            <span style="font-size:0.6rem; color:rgba(255,255,255,0.25); font-weight:700;">BO'SH</span>
+                        </div>
+                        <div style="font-size:0.9rem; font-weight:800; color:rgba(255,255,255,0.15); text-align:center; margin:10px 0;">QURITISHGA TAYYOR</div>
+                    </div>
+                `;
+            }
         }).join('');
     }
+
+    window.showSushilkaPassport = async (cartId) => {
+        const modal = document.getElementById('cartPassportModal');
+        if (!modal) return;
+
+        // Fetch cart details from database
+        const { data: c, error } = await supabase
+            .from('clapak_production')
+            .select('*')
+            .eq('id', cartId)
+            .maybeSingle();
+
+        if (error || !c) {
+            alert('Aravacha pasporti yuklanmadi!');
+            return;
+        }
+
+        const cartNum = c.stage.split('-')[1] || '0';
+        
+        // Split concatenated operator field
+        const machineOperator = c.operator ? c.operator.split(' | ')[0] : 'Noma\'lum';
+        const painter = c.operator && c.operator.includes(' | ') ? c.operator.split(' | ')[1] : 'Noma\'lum';
+
+        const stanokTime = c.end_time 
+            ? new Date(c.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            : '--:--';
+        const sushilkaTime = c.last_update 
+            ? new Date(c.last_update).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            : '--:--';
+
+        // Update passport UI elements
+        document.getElementById('pass-show-cart-num').textContent = `ARAVA #${cartNum}`;
+        document.getElementById('pass-show-model').textContent = c.model || 'Noma\'lum';
+        document.getElementById('pass-show-machine').textContent = c.machine === 'ST-1' ? 'STANOK №1' : 'STANOK №2';
+        document.getElementById('pass-show-operator').textContent = machineOperator;
+        document.getElementById('pass-show-painter').textContent = painter;
+        document.getElementById('pass-show-qty-brak').innerHTML = `<span style="color:#00ff88;">${c.quantity || 0} ta</span> / <span style="color:#ff4d4f;">${c.brak || 0} ta</span>`;
+        document.getElementById('pass-show-stanok-time').textContent = stanokTime;
+        document.getElementById('pass-show-sushilka-time').textContent = sushilkaTime;
+
+        // Hook up the transition button
+        const btn = document.getElementById('btn-passport-to-pack');
+        btn.onclick = async () => {
+            btn.textContent = 'O\'TKAZILMOQDA...';
+            btn.disabled = true;
+            try {
+                // Call window.moveToPackaging(c.id)
+                await window.moveToPackaging(c.id);
+                document.getElementById('cartPassportModal').style.display = 'none';
+                document.getElementById('sushilkaDetailsModal').style.display = 'none';
+            } catch (err) {
+                alert('Xatolik: ' + err.message);
+                btn.textContent = 'QADOQLASHGA ➜';
+                btn.disabled = false;
+            }
+        };
+
+        modal.style.display = 'flex';
+    };
 
     window.moveToPackaging = async (id) => {
         const idx = window.pipelineData.sushilka.findIndex(x => x.id.toString() === id.toString());
