@@ -5098,44 +5098,196 @@
     </div>
 
     <!-- 🎫 MODAL: ARAVA PASPORTI (SUSHILKA ICHIDAN BOSILGANDA) -->
+    <!-- 🎫 MODAL: PREMIUM ARAVA PASPORTI (SUSHILKA ICHIDAN BOSILGANDA) -->
     <div id="cartPassportModal"
         style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.92); backdrop-filter:blur(30px); z-index:1000005; align-items:center; justify-content:center; padding:20px;">
-        <div
-            style="width:100%; max-width:480px; background:#0d121a; border:1px solid rgba(250,187,24,0.4); padding:35px 25px; border-radius:36px; box-shadow:0 40px 80px rgba(0,0,0,0.85); font-family:'Inter', sans-serif;">
+        <div style="width:100%; max-width:520px; background:linear-gradient(165deg, rgba(13,18,26,0.99), rgba(18,24,34,0.98)); border:1px solid rgba(250,187,24,0.3); padding:40px; border-radius:30px; box-shadow:0 60px 120px rgba(0,0,0,0.95); position:relative; overflow:hidden; font-family:'Inter', sans-serif;">
             
-            <div style="text-align:center; margin-bottom:25px;">
-                <div style="font-size:1.8rem; font-weight:950; background:linear-gradient(135deg, #fff, #fabb18); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; text-shadow:0 5px 15px rgba(250,187,24,0.25);">
-                    🎫 ARAVA PASPORTI
+            <!-- Glow Effect -->
+            <div style="position:absolute; top:-100px; left:50%; transform:translateX(-50%); width:250px; height:250px; background:radial-gradient(circle, rgba(250,187,24,0.15), transparent); filter:blur(50px); pointer-events:none;"></div>
+
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:30px; position:relative; z-index:2;">
+                <div>
+                    <div style="font-size:2rem; font-weight:900; color:#fff; letter-spacing:-1px; margin-bottom:5px; display:flex; align-items:center; gap:10px;">
+                        <div style="width:40px; height:40px; background:linear-gradient(135deg, rgba(250,187,24,0.2), rgba(250,187,24,0.05)); border:1px solid rgba(250,187,24,0.4); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.2rem; box-shadow:0 0 20px rgba(250,187,24,0.2);">🎫</div>
+                        ARAVA PASPORTI
+                    </div>
+                    <div style="font-size:0.75rem; color:rgba(255,255,255,0.5); font-weight:600; letter-spacing:1px; text-transform:uppercase; padding-left:50px;">
+                        Sushilka bosqichi tafsilotlari
+                    </div>
                 </div>
-                <p style="font-size:0.65rem; color:#fabb18; font-weight:800; letter-spacing:2px; margin-top:5px; text-transform:uppercase;">
-                    SUSHILKA BOSQICHI MA'LUMOTLARI
-                </p>
+                <!-- Export Actions -->
+                <div style="display:flex; gap:10px;">
+                    <button onclick="window.exportPassportPdf()" style="background:rgba(255,77,79,0.1); border:1px solid rgba(255,77,79,0.3); color:#ff4d4f; width:40px; height:40px; border-radius:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:1.2rem; transition:all 0.3s;" onmouseenter="this.style.background='rgba(255,77,79,0.2)'; this.style.transform='translateY(-2px)'" onmouseleave="this.style.background='rgba(255,77,79,0.1)'; this.style.transform='translateY(0)'" title="PDF Yuklab olish">📄</button>
+                    <button onclick="window.exportPassportExcel()" style="background:rgba(0,255,136,0.1); border:1px solid rgba(0,255,136,0.3); color:#00ff88; width:40px; height:40px; border-radius:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:1.2rem; transition:all 0.3s;" onmouseenter="this.style.background='rgba(0,255,136,0.2)'; this.style.transform='translateY(-2px)'" onmouseleave="this.style.background='rgba(0,255,136,0.1)'; this.style.transform='translateY(0)'" title="Excel Yuklab olish">📊</button>
+                </div>
             </div>
 
-            <div class="report-row"><span class="label">ARAVA RAQAMI</span> <span class="value" id="pass-show-cart-num" style="color:#fabb18; font-weight:900;">ARAVA #1</span></div>
-            <div class="report-row"><span class="label">MAHSULOT MODELI</span> <span class="value" id="pass-show-model" style="color:#fff; font-weight:900;">MALIBU-2</span></div>
-            <div class="report-row"><span class="label">STANOK (ISH JOYI)</span> <span class="value" id="pass-show-machine" style="color:#fff; font-weight:700;">STANOK №1</span></div>
-            <div class="report-row"><span class="label">STANOK OPERATORI</span> <span class="value" id="pass-show-operator" style="color:#fff; font-weight:700;">Jaloliddin R.</span></div>
-            <div class="report-row"><span class="label">IJROCHI RASSOM</span> <span class="value" id="pass-show-painter" style="color:#ba00ff; font-weight:800;">Rassom 1</span></div>
-            <div class="report-row"><span class="label">TAYYOR / BRAK</span> <span class="value" id="pass-show-qty-brak" style="color:#fff; font-weight:700;"><span style="color:#00ff88;">36 ta</span> / <span style="color:#ff4d4f;">2 ta</span></span></div>
-            
-            <div class="report-row"><span class="label">STANOKDAN CHIQQAN VAQT</span> <span class="value" id="pass-show-stanok-time" style="color:rgba(255,255,255,0.7);">10:15</span></div>
-            <div class="report-row"><span class="label">SUSHILKAGA KIRGAN VAQT</span> <span class="value" id="pass-show-sushilka-time" style="color:#fabb18; font-weight:800;">10:35</span></div>
+            <!-- Details Grid -->
+            <div style="display:grid; grid-template-columns: 1fr; gap:16px; margin-bottom:35px; position:relative; z-index:2;">
+                <!-- Main Info -->
+                <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:20px; border-radius:20px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-size:0.65rem; color:rgba(255,255,255,0.4); font-weight:800; letter-spacing:1px; margin-bottom:4px;">MAHSULOT MODELI</div>
+                        <div id="pass-show-model" style="font-size:1.4rem; font-weight:900; color:#fff;">MALIBU-2</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:0.65rem; color:rgba(255,255,255,0.4); font-weight:800; letter-spacing:1px; margin-bottom:4px;">ARAVA RAQAMI</div>
+                        <div id="pass-show-cart-num" style="font-size:1.4rem; font-weight:900; color:#fabb18; text-shadow:0 0 15px rgba(250,187,24,0.3);">ARAVA #1</div>
+                    </div>
+                </div>
 
-            <div style="margin-top:30px; display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <!-- Roles -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                    <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:16px; border-radius:18px;">
+                        <div style="font-size:0.6rem; color:rgba(255,255,255,0.4); font-weight:800; letter-spacing:0.5px; margin-bottom:8px;">STANOK OPERATORI</div>
+                        <div id="pass-show-machine" style="font-size:0.75rem; font-weight:800; color:rgba(255,255,255,0.7); margin-bottom:4px; display:inline-block; padding:2px 6px; background:rgba(255,255,255,0.1); border-radius:6px;">STANOK №1</div>
+                        <div id="pass-show-operator" style="font-size:0.95rem; font-weight:800; color:#fff;">Jaloliddin R.</div>
+                    </div>
+                    <div style="background:rgba(186,0,255,0.03); border:1px solid rgba(186,0,255,0.15); padding:16px; border-radius:18px;">
+                        <div style="font-size:0.6rem; color:rgba(186,0,255,0.6); font-weight:800; letter-spacing:0.5px; margin-bottom:8px;">IJROCHI RASSOM</div>
+                        <div style="font-size:0.75rem; font-weight:800; color:#ba00ff; margin-bottom:4px; display:inline-block; padding:2px 6px; background:rgba(186,0,255,0.1); border-radius:6px;">BO'YASH BO'LIMI</div>
+                        <div id="pass-show-painter" style="font-size:0.95rem; font-weight:800; color:#fff;">Noma'lum</div>
+                    </div>
+                </div>
+
+                <!-- Qty / Time -->
+                <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:16px 20px; border-radius:20px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed rgba(255,255,255,0.1); padding-bottom:12px; margin-bottom:12px;">
+                        <span style="font-size:0.75rem; color:rgba(255,255,255,0.5); font-weight:700;">TAYYOR / NUQSON (BRAK)</span>
+                        <div id="pass-show-qty-brak" style="font-size:0.9rem; font-weight:800;"><span style="color:#00ff88;">36 ta</span> <span style="color:rgba(255,255,255,0.2);">/</span> <span style="color:#ff4d4f;">2 ta</span></div>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:8px;">
+                        <span style="font-size:0.75rem; color:rgba(255,255,255,0.5); font-weight:700;">STANOKDAN CHIQQAN VAQT</span>
+                        <span id="pass-show-stanok-time" style="font-size:0.85rem; font-weight:800; color:#fff;">10:15</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:0.75rem; color:rgba(255,255,255,0.5); font-weight:700;">SUSHILKAGA KIRGAN VAQT</span>
+                        <span id="pass-show-sushilka-time" style="font-size:0.85rem; font-weight:800; color:#fabb18;">10:35</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div style="display:grid; grid-template-columns:1fr 1.5fr; gap:16px; position:relative; z-index:2;">
                 <button onclick="document.getElementById('cartPassportModal').style.display='none'"
-                    style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:15px; border-radius:18px; font-weight:800; font-size:0.85rem; cursor:pointer; transition:all 0.2s;"
-                    onmouseenter="this.style.background='rgba(255,255,255,0.1)'"
-                    onmouseleave="this.style.background='rgba(255,255,255,0.05)'">
-                    YOPISH ✕
+                    style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:16px; border-radius:20px; font-weight:800; font-size:0.9rem; cursor:pointer; transition:all 0.3s; display:flex; align-items:center; justify-content:center; gap:8px;"
+                    onmouseenter="this.style.background='rgba(255,255,255,0.08)'; this.style.borderColor='rgba(255,255,255,0.2)'"
+                    onmouseleave="this.style.background='rgba(255,255,255,0.03)'; this.style.borderColor='rgba(255,255,255,0.1)'">
+                    <span>✕</span> YOPISH
                 </button>
                 <button id="btn-passport-to-pack"
-                    style="background:linear-gradient(135deg, #fabb18, #ff8c00); border:none; color:#000; padding:15px; border-radius:18px; font-weight:900; font-size:0.85rem; cursor:pointer; box-shadow:0 8px 20px rgba(250,187,24,0.25); transition:all 0.2s;"
-                    onmouseenter="this.style.opacity='0.9'"
-                    onmouseleave="this.style.opacity='1'">
-                    QADOQLASHGA ➜
+                    style="background:linear-gradient(135deg, #fabb18, #ff8c00); border:none; color:#000; padding:16px; border-radius:20px; font-weight:900; font-size:0.9rem; cursor:pointer; box-shadow:0 15px 30px rgba(250,187,24,0.3); transition:all 0.3s; display:flex; align-items:center; justify-content:center; gap:8px;"
+                    onmouseenter="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 20px 40px rgba(250,187,24,0.4)'"
+                    onmouseleave="this.style.transform='translateY(0)'; this.style.boxShadow='0 15px 30px rgba(250,187,24,0.3)'">
+                    QADOQLASHGA YUBORISH ➜
                 </button>
             </div>
+            
+            <!-- Export Script Logic inside Modal to keep it self-contained -->
+            <script>
+                window.exportPassportPdf = function() {
+                    if (typeof window.jspdf === 'undefined') {
+                        alert('jsPDF kutubxonasi yuklanmagan!');
+                        return;
+                    }
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF('p', 'mm', 'a5'); // A5 format fits passport better
+                    
+                    const cartNum = document.getElementById('pass-show-cart-num').textContent;
+                    const model = document.getElementById('pass-show-model').textContent;
+                    const machine = document.getElementById('pass-show-machine').textContent;
+                    const operator = document.getElementById('pass-show-operator').textContent;
+                    const painter = document.getElementById('pass-show-painter').textContent;
+                    const qtyBrakHtml = document.getElementById('pass-show-qty-brak').innerHTML;
+                    
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = qtyBrakHtml;
+                    const spans = tempDiv.getElementsByTagName('span');
+                    const qty = spans.length > 0 ? spans[0].textContent : '0 ta';
+                    const brak = spans.length > 1 ? spans[1].textContent : '0 ta';
+                    
+                    const sTime = document.getElementById('pass-show-stanok-time').textContent;
+                    const shTime = document.getElementById('pass-show-sushilka-time').textContent;
+
+                    doc.setFontSize(18);
+                    doc.setFont(undefined, 'bold');
+                    doc.text('ARAVA PASPORTI', 74, 20, { align: 'center' });
+                    
+                    doc.setFontSize(10);
+                    doc.setFont(undefined, 'normal');
+                    doc.setTextColor(100);
+                    doc.text("SUSHILKA BOSQICHI TAFSILOTLARI", 74, 28, { align: 'center' });
+
+                    doc.autoTable({
+                        startY: 35,
+                        head: [['Ko\\'rsatkich', 'Ma\\'lumot']],
+                        body: [
+                            ['Arava Raqami', cartNum],
+                            ['Mahsulot Modeli', model],
+                            ['Stanok (Ish joyi)', machine],
+                            ['Stanok Operatori', operator],
+                            ['Ijrochi Rassom', painter],
+                            ['Tayyor Mahsulot', qty],
+                            ['Nuqson (Brak)', brak],
+                            ['Stanokdan Chiqqan', sTime],
+                            ['Sushilkaga Kirgan', shTime],
+                        ],
+                        theme: 'grid',
+                        headStyles: { fillColor: [250, 187, 24], textColor: [0,0,0], fontStyle: 'bold' },
+                        styles: { fontSize: 11, cellPadding: 4 }
+                    });
+                    
+                    doc.setFontSize(8);
+                    doc.setTextColor(150);
+                    doc.text(`AKFA Control Systems | ${new Date().toLocaleString()}`, 74, doc.internal.pageSize.height - 10, { align: 'center' });
+                    
+                    doc.save(`Arava_Pasporti_${cartNum.replace('#', '')}.pdf`);
+                };
+
+                window.exportPassportExcel = function() {
+                    if (typeof XLSX === 'undefined') {
+                        alert('SheetJS kutubxonasi yuklanmagan!');
+                        return;
+                    }
+                    const cartNum = document.getElementById('pass-show-cart-num').textContent;
+                    const model = document.getElementById('pass-show-model').textContent;
+                    const machine = document.getElementById('pass-show-machine').textContent;
+                    const operator = document.getElementById('pass-show-operator').textContent;
+                    const painter = document.getElementById('pass-show-painter').textContent;
+                    
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = document.getElementById('pass-show-qty-brak').innerHTML;
+                    const spans = tempDiv.getElementsByTagName('span');
+                    const qty = spans.length > 0 ? spans[0].textContent : '0 ta';
+                    const brak = spans.length > 1 ? spans[1].textContent : '0 ta';
+                    
+                    const sTime = document.getElementById('pass-show-stanok-time').textContent;
+                    const shTime = document.getElementById('pass-show-sushilka-time').textContent;
+
+                    const wsData = [
+                        ['AKFA - ARAVA PASPORTI'],
+                        [''],
+                        ['Arava Raqami', cartNum],
+                        ['Mahsulot Modeli', model],
+                        ['Stanok (Ish joyi)', machine],
+                        ['Stanok Operatori', operator],
+                        ['Ijrochi Rassom', painter],
+                        ['Tayyor Mahsulot', qty],
+                        ['Nuqson (Brak)', brak],
+                        ['Stanokdan Chiqqan', sTime],
+                        ['Sushilkaga Kirgan', shTime],
+                        [''],
+                        ['Yaratilgan vaqt:', new Date().toLocaleString()]
+                    ];
+
+                    const wb = XLSX.utils.book_new();
+                    const ws = XLSX.utils.aoa_to_sheet(wsData);
+                    ws['!cols'] = [{ wch: 25 }, { wch: 30 }];
+                    XLSX.utils.book_append_sheet(wb, ws, 'Pasport');
+                    XLSX.writeFile(wb, `Arava_Pasporti_${cartNum.replace('#', '')}.xlsx`);
+                };
+            </script>
         </div>
     </div>
 </body>
