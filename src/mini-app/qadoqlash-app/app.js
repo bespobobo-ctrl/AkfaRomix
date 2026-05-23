@@ -114,12 +114,12 @@ async function loadSushilkaCarts() {
         const startOfDay = today + 'T00:00:00.000Z';
         const endOfDay = today + 'T23:59:59.999Z';
 
-        // Get carts in sushilka/sovutish stage (ready for packaging)
+        // Get carts in sushilka/sovutish stage (ready for packaging) or currently being packaged
         const { data: carts, error } = await supabaseClient
             .from('clapak_production')
             .select('*')
-            .or('stage.like.sovutish-%,stage.like.sushilka-%')
-            .eq('status', 'DONE')
+            .or('stage.like.sovutish-%,stage.like.sushilka-%,stage.like.packaging-%')
+            .not('status', 'eq', 'DONE_WAREHOUSE')
             .gte('start_time', startOfDay)
             .lte('start_time', endOfDay)
             .order('end_time', { ascending: true });
@@ -173,29 +173,42 @@ function renderCarts(carts) {
             duration = h > 0 ? h + ' soat ' + m + ' daq' : m + ' daqiqa';
         }
 
-        // Cart is "ready" if it's been in sushilka for >30 min
-        var diffMin = c.last_update ? Math.floor((Date.now() - new Date(c.last_update).getTime()) / 60000) : 0;
-        var isReady = diffMin >= 30;
-        var statusClass = isReady ? 'ready' : 'waiting';
-        var statusText = isReady ? 'TAYYOR' : 'KUTILMOQDA';
+        // Is it being packaged right now?
+        var isPackaging = c.stage && c.stage.startsWith('packaging');
 
-        html += '<div class="cart-item ' + statusClass + '">' +
+        // Cart is "ready" if it's been in sushilka for >30 min (only if not already packaging)
+        var diffMin = c.last_update ? Math.floor((Date.now() - new Date(c.last_update).getTime()) / 60000) : 0;
+        var isReady = isPackaging ? true : diffMin >= 30;
+        
+        var statusClass = isPackaging ? 'ready' : (isReady ? 'ready' : 'waiting');
+        var statusText = isPackaging ? 'FAOL QADOQLANMOQDA' : (isReady ? 'TAYYOR' : 'KUTILMOQDA');
+
+        html += '<div class="cart-item ' + statusClass + '" ' + (isPackaging ? 'style="border: 2px solid var(--accent);"' : '') + '>' +
             '<div class="cart-header">' +
                 '<div class="cart-name">🛒 ARAVA #' + cartNum + ' — ' + model + '</div>' +
                 '<span class="cart-badge ' + statusClass + '">' + statusText + '</span>' +
             '</div>' +
             '<div class="cart-details">' +
-                '<div class="cart-detail">Miqdor: <span>' + qty + ' ta</span></div>' +
+                '<div class="cart-detail">Miqdor qoldi: <span>' + qty + ' ta</span></div>' +
                 '<div class="cart-detail">Brak: <span style="color:var(--danger);">' + brak + ' ta</span></div>' +
                 '<div class="cart-detail">Operator: <span>' + operator + '</span></div>' +
-                '<div class="cart-detail">Sushilkada: <span style="color:var(--warning);">' + duration + '</span></div>' +
-                '<div class="cart-detail">Kirgan vaqt: <span>' + sushilkaTime + '</span></div>' +
-            '</div>' +
-            '<button class="btn-pack" onclick="window.packCart(\'' + c.id + '\', ' + cartNum + ', \'' + model + '\', ' + qty + ')" ' +
-            (isReady ? '' : 'disabled') + '>' +
-            (isReady ? '📦 QADOQLASHNI BOSHLASH' : '⏳ QURITILMOQDA...') +
-            '</button>' +
-        '</div>';
+                (isPackaging ? '<div class="cart-detail">Qadoqlandi: <span style="color:var(--accent);">' + (c.packed_boxes || 0) + ' quti</span></div>' 
+                             : '<div class="cart-detail">Sushilkada: <span style="color:var(--warning);">' + duration + '</span></div>') +
+            '</div>';
+
+        if (isPackaging) {
+            html += '<button class="btn-pack" style="background: linear-gradient(135deg, #00e676, #00b359);" ' +
+                'onclick="window.addKomplekt(\'' + c.id + '\', ' + cartNum + ', \'' + model + '\', ' + qty + ', ' + (c.packed_boxes || 0) + ', \'' + (c.last_update || '') + '\')">' +
+                '📦 +1 KOMPLEKT QADOQLANDI (4 dona)' +
+                '</button>';
+        } else {
+            html += '<button class="btn-pack" onclick="window.packCart(\'' + c.id + '\', ' + cartNum + ', \'' + model + '\', ' + qty + ')" ' +
+                (isReady ? '' : 'disabled') + '>' +
+                (isReady ? '📦 QADOQLASHGA OLISH' : '⏳ QURITILMOQDA...') +
+                '</button>';
+        }
+
+        html += '</div>';
     });
 
     container.innerHTML = html;
@@ -213,7 +226,6 @@ window.packCart = async function(id, cartNum, model, qty) {
     if (!confirm('Arava #' + cartNum + ' ni qadoqlashni boshlaysizmi?\n\nModel: ' + model + '\nMiqdor: ' + qty + ' ta')) return;
 
     try {
-        // 1. Move to packaging stage
         var { error } = await supabaseClient
             .from('clapak_production')
             .update({
@@ -225,66 +237,80 @@ window.packCart = async function(id, cartNum, model, qty) {
         if (error) throw error;
 
         showToast('Arava #' + cartNum + ' qadoqlashga olindi ✅');
-
-        // 2. Simulate packaging process (in real life this would be a separate step)
-        // After a short delay, mark as finished
-        setTimeout(async function() {
-            await finishPacking(id, cartNum, model, qty);
-        }, 1500);
+        loadSushilkaCarts();
 
     } catch (e) {
         alert('Xatolik: ' + e.message);
     }
 };
 
-async function finishPacking(id, cartNum, model, qty) {
+window.addKomplekt = async function(id, cartNum, model, remainingQty, packedBoxes, startTimeStr) {
+    // Prevent packing more than available
+    if (remainingQty < 4 && remainingQty > 0) {
+        if(!confirm(`Aravada faqat ${remainingQty} ta qoldi. Shuni bitta chala quti qilib yopib, aravani tugatasizmi?`)) return;
+    } else if (remainingQty <= 0) {
+        alert('Aravada mahsulot qolmadi!');
+        return;
+    }
+
+    const qtyToPack = Math.min(4, remainingQty);
+    const newRemaining = remainingQty - qtyToPack;
+    const newPacked = (packedBoxes || 0) + 1;
+    const now = new Date();
+    
+    // Check if cart is empty after this pack
+    const isFinished = newRemaining <= 0;
+    const newStage = isFinished ? 'warehouse_pending' : `packaging-${cartNum}`;
+    const newStatus = isFinished ? 'DONE_PACKAGING' : 'PACKAGING';
+
     try {
-        // 1. Mark production as finished
         var { error } = await supabaseClient
             .from('clapak_production')
             .update({
-                stage: 'finished',
-                status: 'DONE'
+                quantity: newRemaining, // We decrease the cart's remaining quantity
+                packed_boxes: newPacked, // Keep track of boxes packed from this cart
+                stage: newStage,
+                status: newStatus,
+                last_update: now.toISOString()
             })
             .eq('id', id);
 
         if (error) throw error;
 
-        // 2. Add to finished products list
-        var komplekt = Math.floor(qty / 4);
-        var qoldiq = qty % 4;
+        // Log the time taken for this komplekt
+        const timeDiffStr = startTimeStr ? Math.floor((now - new Date(startTimeStr)) / 1000) + ' soniya' : '';
+        showToast(`+1 Komplekt qadoqlandi! ${timeDiffStr ? '(' + timeDiffStr + ')' : ''}`);
+        
+        if (isFinished) {
+            alert(`Arava #${cartNum} to'liq qadoqlanib bo'ldi va tayyor mahsulot omboriga yuborildi!`);
+            
+            // Log to finished products locally for UI
+            finishedProducts.unshift({
+                model: model,
+                qty: (newPacked * 4) + newRemaining, // Original qty approx
+                komplekt: newPacked,
+                qoldiq: 0,
+                cart: cartNum,
+                time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            });
+            renderFinished();
+            packedToday += (newPacked * 4);
+            
+            notifyBot('📦 <b>ARAVA QADOQLANIB BO\\'LDI</b>\n\n' +
+                '👤 ' + currentUser.name + '\n' +
+                '🛒 Arava: #' + cartNum + '\n' +
+                '📦 Model: ' + model + '\n' +
+                '📊 Jami qutilar: ' + newPacked + ' ta');
+        }
 
-        finishedProducts.unshift({
-            model: model,
-            qty: qty,
-            komplekt: komplekt,
-            qoldiq: qoldiq,
-            cart: cartNum,
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        });
-
-        renderFinished();
-        packedToday += qty;
-        updateStats([]);
-
-        // Reload carts list (arava disappears from sushilka)
         loadSushilkaCarts();
-
-        showToast('Arava #' + cartNum + ' qadoqlandi! ' + komplekt + ' komplekt tayyor ✅');
-
-        // 3. Notify bot
-        notifyBot('📦 <b>QADOQLASH TUGADI</b>\n\n' +
-            '👤 ' + currentUser.name + '\n' +
-            '🛒 Arava: #' + cartNum + '\n' +
-            '📦 Model: ' + model + '\n' +
-            '✅ Miqdor: ' + qty + ' ta\n' +
-            '📊 Komplekt: ' + komplekt + ' ta\n' +
-            '⏰ Vaqt: ' + new Date().toLocaleTimeString());
 
     } catch (e) {
         alert('Xatolik: ' + e.message);
     }
-}
+};
+
+
 
 function renderFinished() {
     var container = document.getElementById('finished-list');

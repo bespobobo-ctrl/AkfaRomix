@@ -26,6 +26,7 @@ export default defineConfig({
                 stanok: resolve(__dirname, 'src/mini-app/stanok-app/index.html'),
                 kraska: resolve(__dirname, 'src/mini-app/kraska-app/index.html'),
                 qadoqlash: resolve(__dirname, 'src/mini-app/qadoqlash-app/index.html'),
+                dashbor: resolve(__dirname, 'dashbor.html'),
             },
         },
     },
