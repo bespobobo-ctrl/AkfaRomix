@@ -296,7 +296,7 @@ window.addKomplekt = async function(id, cartNum, model, remainingQty, packedBoxe
             renderFinished();
             packedToday += (newPacked * 4);
             
-            notifyBot('📦 <b>ARAVA QADOQLANIB BO\\'LDI</b>\n\n' +
+            notifyBot('📦 <b>ARAVA QADOQLANIB BO\'LDI</b>\n\n' +
                 '👤 ' + currentUser.name + '\n' +
                 '🛒 Arava: #' + cartNum + '\n' +
                 '📦 Model: ' + model + '\n' +
