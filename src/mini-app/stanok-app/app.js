@@ -76,8 +76,15 @@ document.getElementById('login-btn').onclick = async () => {
         location.href = '../qadoqlash-app/index.html';
         return;
     }
+    // 4. Check AC Manager and redirect
+    if (id.toUpperCase().replace(/\s+/g, '') === 'AC1' && pass.replace(/\s+/g, '') === '123') {
+        const acUser = { id: 'AC1', name: 'Ishlab Chiqarish Boshlig\'i' };
+        localStorage.setItem('ac_manager_session', JSON.stringify(acUser));
+        location.href = '../../dashbor.html';
+        return;
+    }
 
-    // 3. Fallback database query
+    // 5. Fallback database query
     try {
         const { data: user } = await supabaseClient
             .from('system_users')
