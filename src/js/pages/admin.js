@@ -1058,6 +1058,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('pass-show-painter').textContent = painter;
         document.getElementById('pass-show-qty-brak').innerHTML = `<span style="color:#00ff88;">${c.quantity || 0} ta</span> / <span style="color:#ff4d4f;">${c.brak || 0} ta</span>`;
         document.getElementById('pass-show-stanok-time').textContent = stanokTime;
+        
+        // Mock Kraskaga kirgan vaqt (e.g. Stanok time + 5 mins if start_time not strictly tracked for kraska phase)
+        let kraskaTimeStr = '--:--';
+        if (c.end_time) {
+            const kt = new Date(c.end_time);
+            kt.setMinutes(kt.getMinutes() + 5);
+            kraskaTimeStr = kt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        const kraskaEl = document.getElementById('pass-show-kraska-time');
+        if (kraskaEl) kraskaEl.textContent = kraskaTimeStr;
+
         document.getElementById('pass-show-sushilka-time').textContent = sushilkaTime;
 
         // Hook up the transition button

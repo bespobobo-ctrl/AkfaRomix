@@ -5099,6 +5099,7 @@
 
     <!-- 🎫 MODAL: ARAVA PASPORTI (SUSHILKA ICHIDAN BOSILGANDA) -->
     <!-- 🎫 MODAL: PREMIUM ARAVA PASPORTI (SUSHILKA ICHIDAN BOSILGANDA) -->
+    <!-- 🎫 MODAL: PREMIUM ARAVA PASPORTI (SUSHILKA ICHIDAN BOSILGANDA) -->
     <div id="cartPassportModal"
         style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.92); backdrop-filter:blur(30px); z-index:1000005; align-items:center; justify-content:center; padding:20px;">
         <div style="width:100%; max-width:520px; background:linear-gradient(165deg, rgba(13,18,26,0.99), rgba(18,24,34,0.98)); border:1px solid rgba(250,187,24,0.3); padding:40px; border-radius:30px; box-shadow:0 60px 120px rgba(0,0,0,0.95); position:relative; overflow:hidden; font-family:'Inter', sans-serif;">
@@ -5115,11 +5116,6 @@
                     <div style="font-size:0.75rem; color:rgba(255,255,255,0.5); font-weight:600; letter-spacing:1px; text-transform:uppercase; padding-left:50px;">
                         Sushilka bosqichi tafsilotlari
                     </div>
-                </div>
-                <!-- Export Actions -->
-                <div style="display:flex; gap:10px;">
-                    <button onclick="window.exportPassportPdf()" style="background:rgba(255,77,79,0.1); border:1px solid rgba(255,77,79,0.3); color:#ff4d4f; width:40px; height:40px; border-radius:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:1.2rem; transition:all 0.3s;" onmouseenter="this.style.background='rgba(255,77,79,0.2)'; this.style.transform='translateY(-2px)'" onmouseleave="this.style.background='rgba(255,77,79,0.1)'; this.style.transform='translateY(0)'" title="PDF Yuklab olish">📄</button>
-                    <button onclick="window.exportPassportExcel()" style="background:rgba(0,255,136,0.1); border:1px solid rgba(0,255,136,0.3); color:#00ff88; width:40px; height:40px; border-radius:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:1.2rem; transition:all 0.3s;" onmouseenter="this.style.background='rgba(0,255,136,0.2)'; this.style.transform='translateY(-2px)'" onmouseleave="this.style.background='rgba(0,255,136,0.1)'; this.style.transform='translateY(0)'" title="Excel Yuklab olish">📊</button>
                 </div>
             </div>
 
@@ -5161,9 +5157,23 @@
                         <span style="font-size:0.75rem; color:rgba(255,255,255,0.5); font-weight:700;">STANOKDAN CHIQQAN VAQT</span>
                         <span id="pass-show-stanok-time" style="font-size:0.85rem; font-weight:800; color:#fff;">10:15</span>
                     </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:8px;">
+                        <span style="font-size:0.75rem; color:rgba(255,255,255,0.5); font-weight:700;">KRASKAGA KIRGAN VAQT</span>
+                        <span id="pass-show-kraska-time" style="font-size:0.85rem; font-weight:800; color:#ba00ff;">10:20</span>
+                    </div>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <span style="font-size:0.75rem; color:rgba(255,255,255,0.5); font-weight:700;">SUSHILKAGA KIRGAN VAQT</span>
                         <span id="pass-show-sushilka-time" style="font-size:0.85rem; font-weight:800; color:#fabb18;">10:35</span>
+                    </div>
+
+                    <!-- Export Buttons under Sushilka time -->
+                    <div style="margin-top:20px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:16px; display:flex; gap:12px;">
+                        <button onclick="window.exportPassportPdf()" style="flex:1; background:linear-gradient(135deg, rgba(255,77,79,0.1), rgba(255,77,79,0.05)); border:1px solid rgba(255,77,79,0.3); color:#ff4d4f; padding:12px; border-radius:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:800; font-size:0.8rem; transition:all 0.3s; box-shadow:0 5px 15px rgba(255,77,79,0.1);" onmouseenter="this.style.background='linear-gradient(135deg, rgba(255,77,79,0.2), rgba(255,77,79,0.1))'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(255,77,79,0.2)';" onmouseleave="this.style.background='linear-gradient(135deg, rgba(255,77,79,0.1), rgba(255,77,79,0.05))'; this.style.transform='translateY(0)'; this.style.boxShadow='0 5px 15px rgba(255,77,79,0.1)';">
+                            <span style="font-size:1.2rem;">📄</span> PDF PASPORT
+                        </button>
+                        <button onclick="window.exportPassportExcel()" style="flex:1; background:linear-gradient(135deg, rgba(0,255,136,0.1), rgba(0,255,136,0.05)); border:1px solid rgba(0,255,136,0.3); color:#00ff88; padding:12px; border-radius:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:800; font-size:0.8rem; transition:all 0.3s; box-shadow:0 5px 15px rgba(0,255,136,0.1);" onmouseenter="this.style.background='linear-gradient(135deg, rgba(0,255,136,0.2), rgba(0,255,136,0.1))'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(0,255,136,0.2)';" onmouseleave="this.style.background='linear-gradient(135deg, rgba(0,255,136,0.1), rgba(0,255,136,0.05))'; this.style.transform='translateY(0)'; this.style.boxShadow='0 5px 15px rgba(0,255,136,0.1)';">
+                            <span style="font-size:1.2rem;">📊</span> EXCEL PASPORT
+                        </button>
                     </div>
                 </div>
             </div>
@@ -5186,6 +5196,20 @@
             
             <!-- Export Script Logic inside Modal to keep it self-contained -->
             <script>
+                function getSushilkaDuration(shTime) {
+                    if (!shTime || !shTime.includes(':')) return "Ma'lum emas";
+                    const parts = shTime.split(':');
+                    const shDate = new Date();
+                    shDate.setHours(parseInt(parts[0]), parseInt(parts[1]), 0, 0);
+                    const now = new Date();
+                    let diffMs = now - shDate;
+                    if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000;
+                    const diffMins = Math.floor(diffMs / 60000);
+                    const h = Math.floor(diffMins / 60);
+                    const m = diffMins % 60;
+                    return h > 0 ? `${h} soat ${m} daqiqa` : `${m} daqiqa`;
+                }
+
                 window.exportPassportPdf = function() {
                     if (typeof window.jspdf === 'undefined') {
                         alert('jsPDF kutubxonasi yuklanmagan!');
@@ -5208,16 +5232,18 @@
                     const brak = spans.length > 1 ? spans[1].textContent : '0 ta';
                     
                     const sTime = document.getElementById('pass-show-stanok-time').textContent;
+                    const kTime = document.getElementById('pass-show-kraska-time').textContent;
                     const shTime = document.getElementById('pass-show-sushilka-time').textContent;
+                    const duration = getSushilkaDuration(shTime);
 
-                    doc.setFontSize(18);
+                    doc.setFontSize(16);
                     doc.setFont(undefined, 'bold');
-                    doc.text('ARAVA PASPORTI', 74, 20, { align: 'center' });
+                    doc.text('MAHSULOT UMUMIY PASPORTI', 74, 20, { align: 'center' });
                     
                     doc.setFontSize(10);
                     doc.setFont(undefined, 'normal');
                     doc.setTextColor(100);
-                    doc.text("SUSHILKA BOSQICHI TAFSILOTLARI", 74, 28, { align: 'center' });
+                    doc.text("TO'LIQ ISHLAB CHIQARISH TARIXI", 74, 28, { align: 'center' });
 
                     doc.autoTable({
                         startY: 35,
@@ -5231,7 +5257,9 @@
                             ['Tayyor Mahsulot', qty],
                             ['Nuqson (Brak)', brak],
                             ['Stanokdan Chiqqan', sTime],
+                            ['Kraskaga Kirgan', kTime],
                             ['Sushilkaga Kirgan', shTime],
+                            ['Sushilkada Turgan Vaqt', duration],
                         ],
                         theme: 'grid',
                         headStyles: { fillColor: [250, 187, 24], textColor: [0,0,0], fontStyle: 'bold' },
@@ -5242,7 +5270,7 @@
                     doc.setTextColor(150);
                     doc.text(`AKFA Control Systems | ${new Date().toLocaleString()}`, 74, doc.internal.pageSize.height - 10, { align: 'center' });
                     
-                    doc.save(`Arava_Pasporti_${cartNum.replace('#', '')}.pdf`);
+                    doc.save(`Umumiy_Pasport_${cartNum.replace('#', '')}.pdf`);
                 };
 
                 window.exportPassportExcel = function() {
@@ -5263,10 +5291,12 @@
                     const brak = spans.length > 1 ? spans[1].textContent : '0 ta';
                     
                     const sTime = document.getElementById('pass-show-stanok-time').textContent;
+                    const kTime = document.getElementById('pass-show-kraska-time').textContent;
                     const shTime = document.getElementById('pass-show-sushilka-time').textContent;
+                    const duration = getSushilkaDuration(shTime);
 
                     const wsData = [
-                        ['AKFA - ARAVA PASPORTI'],
+                        ['AKFA - MAHSULOT UMUMIY PASPORTI'],
                         [''],
                         ['Arava Raqami', cartNum],
                         ['Mahsulot Modeli', model],
@@ -5276,7 +5306,9 @@
                         ['Tayyor Mahsulot', qty],
                         ['Nuqson (Brak)', brak],
                         ['Stanokdan Chiqqan', sTime],
+                        ['Kraskaga Kirgan', kTime],
                         ['Sushilkaga Kirgan', shTime],
+                        ['Sushilkada Turgan Vaqt', duration],
                         [''],
                         ['Yaratilgan vaqt:', new Date().toLocaleString()]
                     ];
@@ -5285,7 +5317,7 @@
                     const ws = XLSX.utils.aoa_to_sheet(wsData);
                     ws['!cols'] = [{ wch: 25 }, { wch: 30 }];
                     XLSX.utils.book_append_sheet(wb, ws, 'Pasport');
-                    XLSX.writeFile(wb, `Arava_Pasporti_${cartNum.replace('#', '')}.xlsx`);
+                    XLSX.writeFile(wb, `Umumiy_Pasport_${cartNum.replace('#', '')}.xlsx`);
                 };
             </script>
         </div>
