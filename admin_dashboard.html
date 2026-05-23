@@ -5194,135 +5194,138 @@
                 </button>
             </div>
             
-            <!-- Export Script Logic inside Modal to keep it self-contained -->
+            <!-- Export Script Logic -->
             <script>
                 function getSushilkaDuration(shTime) {
                     if (!shTime || !shTime.includes(':')) return "Ma'lum emas";
-                    const parts = shTime.split(':');
-                    const shDate = new Date();
+                    var parts = shTime.split(':');
+                    var shDate = new Date();
                     shDate.setHours(parseInt(parts[0]), parseInt(parts[1]), 0, 0);
-                    const now = new Date();
-                    let diffMs = now - shDate;
+                    var now = new Date();
+                    var diffMs = now - shDate;
                     if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000;
-                    const diffMins = Math.floor(diffMs / 60000);
-                    const h = Math.floor(diffMins / 60);
-                    const m = diffMins % 60;
-                    return h > 0 ? `${h} soat ${m} daqiqa` : `${m} daqiqa`;
+                    var diffMins = Math.floor(diffMs / 60000);
+                    var h = Math.floor(diffMins / 60);
+                    var m = diffMins % 60;
+                    return h > 0 ? h + ' soat ' + m + ' daqiqa' : m + ' daqiqa';
+                }
+
+                function getPassportData() {
+                    var cartNum = document.getElementById('pass-show-cart-num').textContent;
+                    var model = document.getElementById('pass-show-model').textContent;
+                    var machine = document.getElementById('pass-show-machine').textContent;
+                    var operator = document.getElementById('pass-show-operator').textContent;
+                    var painter = document.getElementById('pass-show-painter').textContent;
+                    
+                    var brakEl = document.getElementById('pass-show-qty-brak');
+                    var allSpans = brakEl.getElementsByTagName('span');
+                    var qty = allSpans.length > 0 ? allSpans[0].textContent.trim() : '0 ta';
+                    var brak = allSpans.length > 2 ? allSpans[2].textContent.trim() : (allSpans.length > 1 ? allSpans[1].textContent.trim() : '0 ta');
+                    
+                    var sTime = document.getElementById('pass-show-stanok-time').textContent;
+                    var kTime = document.getElementById('pass-show-kraska-time').textContent;
+                    var shTime = document.getElementById('pass-show-sushilka-time').textContent;
+                    var duration = getSushilkaDuration(shTime);
+
+                    return {
+                        cartNum: cartNum, model: model, machine: machine,
+                        operator: operator, painter: painter,
+                        qty: qty, brak: brak,
+                        sTime: sTime, kTime: kTime, shTime: shTime, duration: duration
+                    };
                 }
 
                 window.exportPassportPdf = function() {
-                    if (typeof window.jspdf === 'undefined') {
-                        alert('jsPDF kutubxonasi yuklanmagan!');
-                        return;
+                    try {
+                        if (typeof window.jspdf === 'undefined') {
+                            alert('jsPDF kutubxonasi yuklanmagan!');
+                            return;
+                        }
+                        var jsPDF = window.jspdf.jsPDF;
+                        var doc = new jsPDF('p', 'mm', 'a5');
+                        var d = getPassportData();
+
+                        doc.setFontSize(16);
+                        doc.setFont(undefined, 'bold');
+                        doc.text("MAHSULOT UMUMIY PASPORTI", 74, 20, { align: 'center' });
+                        
+                        doc.setFontSize(10);
+                        doc.setFont(undefined, 'normal');
+                        doc.setTextColor(100);
+                        doc.text("TO'LIQ ISHLAB CHIQARISH TARIXI", 74, 28, { align: 'center' });
+
+                        doc.autoTable({
+                            startY: 35,
+                            head: [["Ko'rsatkich", "Ma'lumot"]],
+                            body: [
+                                ['Arava Raqami', d.cartNum],
+                                ['Mahsulot Modeli', d.model],
+                                ['Stanok (Ish joyi)', d.machine],
+                                ['Stanok Operatori', d.operator],
+                                ['Ijrochi Rassom', d.painter],
+                                ['Tayyor Mahsulot', d.qty],
+                                ['Nuqson (Brak)', d.brak],
+                                ['Stanokdan Chiqqan', d.sTime],
+                                ['Kraskaga Kirgan', d.kTime],
+                                ['Sushilkaga Kirgan', d.shTime],
+                                ['Sushilkada Turgan Vaqt', d.duration]
+                            ],
+                            theme: 'grid',
+                            headStyles: { fillColor: [250, 187, 24], textColor: [0,0,0], fontStyle: 'bold' },
+                            styles: { fontSize: 11, cellPadding: 4 }
+                        });
+                        
+                        doc.setFontSize(8);
+                        doc.setTextColor(150);
+                        doc.text('AKFA Control Systems | ' + new Date().toLocaleString(), 74, doc.internal.pageSize.height - 10, { align: 'center' });
+                        
+                        doc.save('Umumiy_Pasport_' + d.cartNum.replace('#', '') + '.pdf');
+                        
+                    } catch(err) {
+                        alert('PDF xatolik: ' + err.message);
+                        console.error('PDF Export Error:', err);
                     }
-                    const { jsPDF } = window.jspdf;
-                    const doc = new jsPDF('p', 'mm', 'a5'); // A5 format fits passport better
-                    
-                    const cartNum = document.getElementById('pass-show-cart-num').textContent;
-                    const model = document.getElementById('pass-show-model').textContent;
-                    const machine = document.getElementById('pass-show-machine').textContent;
-                    const operator = document.getElementById('pass-show-operator').textContent;
-                    const painter = document.getElementById('pass-show-painter').textContent;
-                    const qtyBrakHtml = document.getElementById('pass-show-qty-brak').innerHTML;
-                    
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = qtyBrakHtml;
-                    const spans = tempDiv.getElementsByTagName('span');
-                    const qty = spans.length > 0 ? spans[0].textContent : '0 ta';
-                    const brak = spans.length > 1 ? spans[1].textContent : '0 ta';
-                    
-                    const sTime = document.getElementById('pass-show-stanok-time').textContent;
-                    const kTime = document.getElementById('pass-show-kraska-time').textContent;
-                    const shTime = document.getElementById('pass-show-sushilka-time').textContent;
-                    const duration = getSushilkaDuration(shTime);
-
-                    doc.setFontSize(16);
-                    doc.setFont(undefined, 'bold');
-                    doc.text('MAHSULOT UMUMIY PASPORTI', 74, 20, { align: 'center' });
-                    
-                    doc.setFontSize(10);
-                    doc.setFont(undefined, 'normal');
-                    doc.setTextColor(100);
-                    doc.text("TO'LIQ ISHLAB CHIQARISH TARIXI", 74, 28, { align: 'center' });
-
-                    doc.autoTable({
-                        startY: 35,
-                        head: [['Ko\\'rsatkich', 'Ma\\'lumot']],
-                        body: [
-                            ['Arava Raqami', cartNum],
-                            ['Mahsulot Modeli', model],
-                            ['Stanok (Ish joyi)', machine],
-                            ['Stanok Operatori', operator],
-                            ['Ijrochi Rassom', painter],
-                            ['Tayyor Mahsulot', qty],
-                            ['Nuqson (Brak)', brak],
-                            ['Stanokdan Chiqqan', sTime],
-                            ['Kraskaga Kirgan', kTime],
-                            ['Sushilkaga Kirgan', shTime],
-                            ['Sushilkada Turgan Vaqt', duration],
-                        ],
-                        theme: 'grid',
-                        headStyles: { fillColor: [250, 187, 24], textColor: [0,0,0], fontStyle: 'bold' },
-                        styles: { fontSize: 11, cellPadding: 4 }
-                    });
-                    
-                    doc.setFontSize(8);
-                    doc.setTextColor(150);
-                    doc.text(`AKFA Control Systems | ${new Date().toLocaleString()}`, 74, doc.internal.pageSize.height - 10, { align: 'center' });
-                    
-                    doc.save(`Umumiy_Pasport_${cartNum.replace('#', '')}.pdf`);
                 };
 
                 window.exportPassportExcel = function() {
-                    if (typeof XLSX === 'undefined') {
-                        alert('SheetJS kutubxonasi yuklanmagan!');
-                        return;
+                    try {
+                        if (typeof XLSX === 'undefined') {
+                            alert('SheetJS kutubxonasi yuklanmagan!');
+                            return;
+                        }
+                        var d = getPassportData();
+
+                        var wsData = [
+                            ['AKFA - MAHSULOT UMUMIY PASPORTI'],
+                            [''],
+                            ['Arava Raqami', d.cartNum],
+                            ['Mahsulot Modeli', d.model],
+                            ['Stanok (Ish joyi)', d.machine],
+                            ['Stanok Operatori', d.operator],
+                            ['Ijrochi Rassom', d.painter],
+                            ['Tayyor Mahsulot', d.qty],
+                            ['Nuqson (Brak)', d.brak],
+                            ['Stanokdan Chiqqan', d.sTime],
+                            ['Kraskaga Kirgan', d.kTime],
+                            ['Sushilkaga Kirgan', d.shTime],
+                            ['Sushilkada Turgan Vaqt', d.duration],
+                            [''],
+                            ['Yaratilgan vaqt:', new Date().toLocaleString()]
+                        ];
+
+                        var wb = XLSX.utils.book_new();
+                        var ws = XLSX.utils.aoa_to_sheet(wsData);
+                        ws['!cols'] = [{ wch: 25 }, { wch: 30 }];
+                        XLSX.utils.book_append_sheet(wb, ws, 'Pasport');
+                        XLSX.writeFile(wb, 'Umumiy_Pasport_' + d.cartNum.replace('#', '') + '.xlsx');
+                        
+                    } catch(err) {
+                        alert('Excel xatolik: ' + err.message);
+                        console.error('Excel Export Error:', err);
                     }
-                    const cartNum = document.getElementById('pass-show-cart-num').textContent;
-                    const model = document.getElementById('pass-show-model').textContent;
-                    const machine = document.getElementById('pass-show-machine').textContent;
-                    const operator = document.getElementById('pass-show-operator').textContent;
-                    const painter = document.getElementById('pass-show-painter').textContent;
-                    
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = document.getElementById('pass-show-qty-brak').innerHTML;
-                    const spans = tempDiv.getElementsByTagName('span');
-                    const qty = spans.length > 0 ? spans[0].textContent : '0 ta';
-                    const brak = spans.length > 1 ? spans[1].textContent : '0 ta';
-                    
-                    const sTime = document.getElementById('pass-show-stanok-time').textContent;
-                    const kTime = document.getElementById('pass-show-kraska-time').textContent;
-                    const shTime = document.getElementById('pass-show-sushilka-time').textContent;
-                    const duration = getSushilkaDuration(shTime);
-
-                    const wsData = [
-                        ['AKFA - MAHSULOT UMUMIY PASPORTI'],
-                        [''],
-                        ['Arava Raqami', cartNum],
-                        ['Mahsulot Modeli', model],
-                        ['Stanok (Ish joyi)', machine],
-                        ['Stanok Operatori', operator],
-                        ['Ijrochi Rassom', painter],
-                        ['Tayyor Mahsulot', qty],
-                        ['Nuqson (Brak)', brak],
-                        ['Stanokdan Chiqqan', sTime],
-                        ['Kraskaga Kirgan', kTime],
-                        ['Sushilkaga Kirgan', shTime],
-                        ['Sushilkada Turgan Vaqt', duration],
-                        [''],
-                        ['Yaratilgan vaqt:', new Date().toLocaleString()]
-                    ];
-
-                    const wb = XLSX.utils.book_new();
-                    const ws = XLSX.utils.aoa_to_sheet(wsData);
-                    ws['!cols'] = [{ wch: 25 }, { wch: 30 }];
-                    XLSX.utils.book_append_sheet(wb, ws, 'Pasport');
-                    XLSX.writeFile(wb, `Umumiy_Pasport_${cartNum.replace('#', '')}.xlsx`);
                 };
             </script>
         </div>
     </div>
 </body>
-</html>
-
 </html>
