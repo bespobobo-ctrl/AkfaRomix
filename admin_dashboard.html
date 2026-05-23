@@ -9,6 +9,26 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="/src/css/style.css" />
+    <script>
+        // Anti-Flash Script for AC Manager
+        try {
+            var savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                var u = JSON.parse(savedUser);
+                if (u.role === 'ac_manager') {
+                    var style = document.createElement('style');
+                    style.innerHTML = `
+                        .sidebar-slim { display: none !important; }
+                        .executive-tabs { display: none !important; }
+                        .admin-main { margin-left: 0 !important; }
+                        #section-dashboard { display: none !important; }
+                        #section-autoclapak { display: block !important; opacity: 1 !important; transform: scale(1) !important; animation: none !important; }
+                    `;
+                    document.head.appendChild(style);
+                }
+            }
+        } catch(e) {}
+    </script>
     <style>
         .admin-v2-body {
             background-color: #f8f9fa !important;
