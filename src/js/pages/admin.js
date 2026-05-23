@@ -20,34 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Wait for elements to be ready, then trigger section switch
-    if (user.role === 'ac_manager') {
-        setTimeout(() => {
-            if (window.switchSection) {
-                window.switchSection('section-autoclapak');
-            }
-            
-            // Hide sidebar for AC Manager
-            const sidebar = document.querySelector('.sidebar-slim');
-            if (sidebar) sidebar.style.display = 'none';
-            
-            const mainArea = document.querySelector('.admin-main');
-            if (mainArea) mainArea.style.marginLeft = '0';
-            
-            // Switch to Ishlab Chiqarish tab
-            const tabs = document.querySelectorAll('.nav-link-item[data-auto-tab]');
-            tabs.forEach(tab => {
-                if (tab.getAttribute('data-auto-tab') !== 'auto-ishlab-chiqarish') {
-                    tab.style.display = 'none';
-                }
-            });
-            
-            const ishlabChiqarishTab = document.querySelector('.nav-link-item[data-auto-tab="auto-ishlab-chiqarish"]');
-            if (ishlabChiqarishTab) {
-                ishlabChiqarishTab.click();
-            }
-        }, 100);
-    }
+    // The old ac_manager block was moved down to ensure synchronous execution after window.switchSection is defined.
 
     // Check if we are in admin-v2 layout which has its own sidebar
     if (document.querySelector('.sidebar-slim')) {
@@ -88,6 +61,32 @@ document.addEventListener('DOMContentLoaded', async () => {
             mi.classList.toggle('active', mi.getAttribute('onclick')?.includes(sectionId));
         });
     };
+
+    // Apply AC Manager specific UI overrides synchronously to prevent flash
+    if (user.role === 'ac_manager') {
+        const sidebar = document.querySelector('.sidebar-slim');
+        if (sidebar) sidebar.style.display = 'none';
+        
+        const mainArea = document.querySelector('.admin-main');
+        if (mainArea) mainArea.style.marginLeft = '0';
+
+        const romixTopNav = document.querySelector('.executive-tabs');
+        if (romixTopNav) romixTopNav.style.display = 'none';
+        
+        const autoTabs = document.querySelectorAll('.nav-link-item[data-auto-tab]');
+        autoTabs.forEach(tab => {
+            if (tab.getAttribute('data-auto-tab') !== 'auto-ishlab-chiqarish') {
+                tab.style.display = 'none';
+            }
+        });
+
+        window.switchSection('section-autoclapak');
+        
+        const ishlabChiqarishTab = document.querySelector('.nav-link-item[data-auto-tab="auto-ishlab-chiqarish"]');
+        if (ishlabChiqarishTab) {
+            ishlabChiqarishTab.click();
+        }
+    }
 
     // Theme Toggle Logic
     const themeBtn = document.getElementById('themeToggle');
