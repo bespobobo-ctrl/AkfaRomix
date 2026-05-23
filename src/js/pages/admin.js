@@ -250,7 +250,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!autoProductionInterval) {
             autoProductionInterval = setInterval(async () => {
                 // Only refresh if the active tab is still 'auto-ishlab-chiqarish'
-                const activeTab = document.querySelector('.auto-nav-link.active');
+                const activeTab = document.querySelector('.nav-link-item.active');
                 if (activeTab && activeTab.getAttribute('data-auto-tab') === 'auto-ishlab-chiqarish') {
                     await refreshAutoProduction();
                 } else {
@@ -289,31 +289,36 @@ document.addEventListener('DOMContentLoaded', async () => {
                 window.pipelineData.finished = [];
 
                 production.forEach(p => {
+                    const stagePart = p.stage ? p.stage.split('-')[0] : null;
+                    const cartNum = p.stage && p.stage.includes('-') ? p.stage.split('-')[1] : null;
+
                     const item = {
                         id: p.id,
                         model: p.model,
-                        qty: p.quantity || 36
+                        qty: p.quantity || 36,
+                        cart: cartNum || '',
+                        operator: p.operator || 'Noma\'lum',
+                        time: p.end_time 
+                            ? new Date(p.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                            : (p.last_update ? new Date(p.last_update).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--')
                     };
 
-                    if (p.stage === 'sovutish') {
+                    if (stagePart === 'sovutish') {
                         window.pipelineData.sovutish.push(item);
-                    } else if (p.stage === 'kraska') {
+                    } else if (stagePart === 'kraska') {
                         window.pipelineData.kraska.push(item);
-                    } else if (p.stage === 'sushilka') {
+                    } else if (stagePart === 'sushilka') {
                         item.remainingTime = oldSushilkaMap.has(p.id.toString()) 
                             ? oldSushilkaMap.get(p.id.toString())
                             : 40 * 60;
                         window.pipelineData.sushilka.push(item);
-                    } else if (p.stage === 'packaging') {
+                    } else if (stagePart === 'packaging') {
                         window.pipelineData.packaging += item.qty;
-                    } else if (p.stage === 'finished') {
-                        const timeStr = p.end_time 
-                            ? new Date(p.end_time).toLocaleTimeString().slice(0, 5)
-                            : (p.last_update ? new Date(p.last_update).toLocaleTimeString().slice(0, 5) : '--:--');
+                    } else if (stagePart === 'finished') {
                         window.pipelineData.finished.push({
                             model: p.model,
                             boxes: Math.floor(item.qty / 4),
-                            time: timeStr
+                            time: item.time
                         });
                     }
                 });
@@ -619,21 +624,54 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const raw = row.raw_material || 0;
                     const brak = row.brak || 0;
 
-                    const isReady = row.status !== 'ACTIVE';
-                    const statusText = isReady ? 'TAYYOR ✓' : 'SOVUTILMOQDA ⏳';
-                    const statusColor = isReady ? '#00ff88' : '#00baff';
-                    const statusBg = isReady ? 'rgba(0,255,136,0.1)' : 'rgba(0,186,255,0.1)';
+                    const stagePart = row.stage ? row.stage.split('-')[0] : '';
+                    const isReady = row.status !== 'ACTIVE' && (stagePart === 'finished' || !row.stage);
+
+                    let statusText = 'TAYYOR ✓';
+                    let statusColor = '#00ff88';
+                    let statusBg = 'rgba(0,255,136,0.1)';
+                    let statusIcon = '📦';
+
+                    if (!isReady) {
+                        if (stagePart === 'sovutish') {
+                            statusText = 'SOVUTILMOQDA ⏳';
+                            statusColor = '#00f2ff';
+                            statusBg = 'rgba(0,242,255,0.1)';
+                            statusIcon = '❄️';
+                        } else if (stagePart === 'kraska') {
+                            statusText = 'BO\'YALMOQDA 🎨';
+                            statusColor = '#ba00ff';
+                            statusBg = 'rgba(186,0,255,0.1)';
+                            statusIcon = '🎨';
+                        } else if (stagePart === 'sushilka') {
+                            statusText = 'QURITILMOQDA ☀️';
+                            statusColor = '#fabb18';
+                            statusBg = 'rgba(250,187,24,0.1)';
+                            statusIcon = '☀️';
+                        } else if (stagePart === 'packaging') {
+                            statusText = 'QADOQLANMOQDA 📦';
+                            statusColor = '#ff4d4f';
+                            statusBg = 'rgba(255,77,79,0.1)';
+                            statusIcon = '📦';
+                        } else {
+                            statusText = 'SOVUTILMOQDA ⏳';
+                            statusColor = '#00f2ff';
+                            statusBg = 'rgba(0,242,255,0.1)';
+                            statusIcon = '❄️';
+                        }
+                    }
+
                     const cardBg = isReady 
                         ? 'linear-gradient(135deg, rgba(0,255,136,0.04), rgba(0,186,255,0.02))'
-                        : 'linear-gradient(135deg, rgba(0,186,255,0.04), rgba(186,0,255,0.01))';
-                    const cardBorder = isReady ? 'rgba(0,255,136,0.1)' : 'rgba(0,186,255,0.1)';
+                        : 'linear-gradient(135deg, rgba(0,242,255,0.04), rgba(186,0,255,0.01))';
+                    const cardBorder = isReady ? 'rgba(0,255,136,0.1)' : 'rgba(0,242,255,0.25)';
                     
                     return `
                         <div style="display:flex; align-items:center; gap:16px; background:${cardBg}; border:1px solid ${cardBorder}; border-radius:18px; padding:16px 20px; transition:all 0.3s;"
                             onmouseenter="this.style.borderColor='${statusColor}'; this.style.boxShadow='0 8px 25px rgba(0,0,0,0.3)'; this.style.transform='translateY(-2px)'"
                             onmouseleave="this.style.borderColor='${cardBorder}'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
                             <div style="width:48px; height:48px; border-radius:14px; background:linear-gradient(135deg, ${statusColor}28, ${statusColor}0D); display:flex; align-items:center; justify-content:center; font-size:1.5rem; flex-shrink:0; border:1px solid ${statusColor}40;">
-                                ${isReady ? '📦' : '❄️'}
+                                ${statusIcon}
                             </div>
                             <div style="flex:1; min-width:0;">
                                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap;">
