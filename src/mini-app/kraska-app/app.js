@@ -92,7 +92,7 @@ document.getElementById('login-btn').onclick = async () => {
 window.logout = () => {
     if (confirm('Tizimdan chiqishni tasdiqlaysizmi?')) {
         localStorage.removeItem('kraska_session');
-        location.reload();
+        location.href = '../stanok-app/index.html';
     }
 };
 
