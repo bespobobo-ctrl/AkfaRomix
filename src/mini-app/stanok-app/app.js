@@ -30,10 +30,16 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- Auth ---
-document.getElementById('login-btn').onclick = () => {
-    const id = document.getElementById('login-id').value;
-    const pass = document.getElementById('login-pass').value;
+document.getElementById('login-btn').onclick = async () => {
+    const id = document.getElementById('login-id').value.trim();
+    const pass = document.getElementById('login-pass').value.trim();
 
+    if (!id || !pass) {
+        alert('Iltimos, login va parolni kiriting!');
+        return;
+    }
+
+    // 1. Check Stanok operators
     if ((id === '7007' && pass === '1234') || (id === '8008' && pass === '1234')) {
         currentUser = {
             id: id,
@@ -42,9 +48,58 @@ document.getElementById('login-btn').onclick = () => {
         localStorage.setItem('op_session', JSON.stringify(currentUser));
         showScreen('setup-screen');
         initSetup();
-    } else {
-        alert('Avtorizatsiya xatosi!');
+        return;
     }
+
+    // 2. Check Kraska operators and redirect
+    if ((id.toLowerCase() === 'kraska1' && pass === '123') || (id.toLowerCase() === 'kraska2' && pass === '123')) {
+        const kraskaUser = {
+            id: id.toLowerCase() === 'kraska1' ? 'K1' : 'K2',
+            username: id,
+            role: 'kraska',
+            name: id.toLowerCase() === 'kraska1' ? 'Rassom 1' : 'Rassom 2'
+        };
+        localStorage.setItem('kraska_session', JSON.stringify(kraskaUser));
+        location.href = '../kraska-app/index.html';
+        return;
+    }
+
+    // 3. Fallback database query
+    try {
+        const { data: user } = await supabaseClient
+            .from('system_users')
+            .select('*')
+            .eq('username', id)
+            .eq('password', pass)
+            .maybeSingle();
+
+        if (user) {
+            if (user.role === 'kraska' || user.role === 'kraskaci') {
+                const kraskaUser = {
+                    id: user.id,
+                    username: user.username,
+                    role: user.role,
+                    name: user.full_name
+                };
+                localStorage.setItem('kraska_session', JSON.stringify(kraskaUser));
+                location.href = '../kraska-app/index.html';
+                return;
+            } else if (user.role === 'admin' || user.role === 'ishlab_chiqarish') {
+                currentUser = {
+                    id: user.id,
+                    name: user.full_name
+                };
+                localStorage.setItem('op_session', JSON.stringify(currentUser));
+                showScreen('setup-screen');
+                initSetup();
+                return;
+            }
+        }
+    } catch (e) {
+        console.error("DB Auth error:", e);
+    }
+
+    alert('Avtorizatsiya xatosi!');
 };
 
 window.logout = () => {
