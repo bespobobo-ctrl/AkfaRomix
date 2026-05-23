@@ -240,7 +240,88 @@ document.addEventListener('DOMContentLoaded', async () => {
         finished: []
     };
 
+    let autoProductionInterval = null;
+
     async function loadAutoProduction() {
+        // Fetch immediately
+        await refreshAutoProduction();
+
+        // Start interval if not already running
+        if (!autoProductionInterval) {
+            autoProductionInterval = setInterval(async () => {
+                // Only refresh if the active tab is still 'auto-ishlab-chiqarish'
+                const activeTab = document.querySelector('.auto-nav-link.active');
+                if (activeTab && activeTab.getAttribute('data-auto-tab') === 'auto-ishlab-chiqarish') {
+                    await refreshAutoProduction();
+                } else {
+                    clearInterval(autoProductionInterval);
+                    autoProductionInterval = null;
+                }
+            }, 5000); // Check every 5 seconds for real-time updates!
+        }
+    }
+
+    async function refreshAutoProduction() {
+        const today = new Date().toISOString().split('T')[0];
+        const startOfDay = `${today}T00:00:00.000Z`;
+        const endOfDay = `${today}T23:59:59.999Z`;
+
+        try {
+            const { data: production, error } = await supabase
+                .from('clapak_production')
+                .select('*')
+                .gte('start_time', startOfDay)
+                .lte('start_time', endOfDay);
+
+            if (error) throw error;
+
+            if (production) {
+                // Preserve remaining time for drying items in memory
+                const oldSushilkaMap = new Map();
+                window.pipelineData.sushilka.forEach(item => {
+                    oldSushilkaMap.set(item.id.toString(), item.remainingTime);
+                });
+
+                window.pipelineData.sovutish = [];
+                window.pipelineData.kraska = [];
+                window.pipelineData.sushilka = [];
+                window.pipelineData.packaging = 0;
+                window.pipelineData.finished = [];
+
+                production.forEach(p => {
+                    const item = {
+                        id: p.id,
+                        model: p.model,
+                        qty: p.quantity || 36
+                    };
+
+                    if (p.stage === 'sovutish') {
+                        window.pipelineData.sovutish.push(item);
+                    } else if (p.stage === 'kraska') {
+                        window.pipelineData.kraska.push(item);
+                    } else if (p.stage === 'sushilka') {
+                        item.remainingTime = oldSushilkaMap.has(p.id.toString()) 
+                            ? oldSushilkaMap.get(p.id.toString())
+                            : 40 * 60;
+                        window.pipelineData.sushilka.push(item);
+                    } else if (p.stage === 'packaging') {
+                        window.pipelineData.packaging += item.qty;
+                    } else if (p.stage === 'finished') {
+                        const timeStr = p.end_time 
+                            ? new Date(p.end_time).toLocaleTimeString().slice(0, 5)
+                            : (p.last_update ? new Date(p.last_update).toLocaleTimeString().slice(0, 5) : '--:--');
+                        window.pipelineData.finished.push({
+                            model: p.model,
+                            boxes: Math.floor(item.qty / 4),
+                            time: timeStr
+                        });
+                    }
+                });
+            }
+        } catch (e) {
+            console.error("Error refreshing auto production:", e);
+        }
+
         renderPipeline();
         updatePipelineStats();
     }
@@ -311,7 +392,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     window.moveToSovutish = (source, model) => {
         const qty = 36;
-        window.pipelineData.sovutish.push({ id: Date.now(), model: model, qty: qty });
+        window.pipelineData.sovutish.push({ id: Date.now().toString(), model: model, qty: qty });
         renderSovutish();
         updatePipelineStats();
     };
@@ -330,8 +411,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div class="status-pill-v3" style="color:#00f2ff;"><div class="pulse-dot" style="background:#00f2ff; box-shadow:0 0 10px #00f2ff;"></div> SOVUTILMOQDA</div>
                 </div>
                 <div class="prod-model-v3">${item.model}</div>
-                <p style="font-size: 0.7rem; color: rgba(255,255,255,0.3); margin: 5px 0 15px 0;">36 Dona karkas</p>
-                <button class="action-btn-v3" style="border-color:#00f2ff; color:#00f2ff;" onmouseover="this.style.background='#00f2ff';this.style.color='#000'" onmouseout="this.style.background='transparent';this.style.color='#00f2ff'" onclick="window.moveToKraska(${item.id})">
+                <p style="font-size: 0.7rem; color: rgba(255,255,255,0.3); margin: 5px 0 15px 0;">${item.qty} Dona karkas</p>
+                <button class="action-btn-v3" style="border-color:#00f2ff; color:#00f2ff;" onmouseover="this.style.background='#00f2ff';this.style.color='#000'" onmouseout="this.style.background='transparent';this.style.color='#00f2ff'" onclick="window.moveToKraska('${item.id}')">
                     KRASKAGA ➜</button>
             </div>
         `).join('');
@@ -557,14 +638,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    window.moveToKraska = (id) => {
-        const idx = window.pipelineData.sovutish.findIndex(x => x.id === id);
+    window.moveToKraska = async (id) => {
+        const idx = window.pipelineData.sovutish.findIndex(x => x.id.toString() === id.toString());
         if (idx > -1) {
             const item = window.pipelineData.sovutish.splice(idx, 1)[0];
             window.pipelineData.kraska.push(item);
             renderSovutish();
             renderKraska();
             updatePipelineStats();
+
+            try {
+                await supabase.from('clapak_production').update({ stage: 'kraska' }).eq('id', id);
+            } catch (e) {
+                console.error("Error moving to kraska in DB:", e);
+            }
         }
     };
 
@@ -582,21 +669,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div class="status-pill-v3" style="color:#ba00ff;"><div class="pulse-dot" style="background:#ba00ff; box-shadow:0 0 10px #ba00ff;"></div> BO'YASHDA</div>
                 </div>
                 <div class="prod-model-v3">${item.model}</div>
-                <p style="font-size: 0.7rem; color: rgba(255,255,255,0.3); margin: 5px 0 15px 0;">36 Dona oq karkas</p>
-                <button class="action-btn-v3" style="border-color:#ba00ff; color:#ba00ff;" onmouseover="this.style.background='#ba00ff';this.style.color='#000'" onmouseout="this.style.background='transparent';this.style.color='#ba00ff'" onclick="window.moveToSushilka(${item.id})">
+                <p style="font-size: 0.7rem; color: rgba(255,255,255,0.3); margin: 5px 0 15px 0;">${item.qty} Dona oq karkas</p>
+                <button class="action-btn-v3" style="border-color:#ba00ff; color:#ba00ff;" onmouseover="this.style.background='#ba00ff';this.style.color='#000'" onmouseout="this.style.background='transparent';this.style.color='#ba00ff'" onclick="window.moveToSushilka('${item.id}')">
                     SUSHILKAGA ➜</button>
             </div>
         `).join('');
     }
 
-    window.moveToSushilka = (id) => {
-        const idx = window.pipelineData.kraska.findIndex(x => x.id === id);
+    window.moveToSushilka = async (id) => {
+        const idx = window.pipelineData.kraska.findIndex(x => x.id.toString() === id.toString());
         if (idx > -1) {
             const item = window.pipelineData.kraska.splice(idx, 1)[0];
             item.remainingTime = 40 * 60; // 40 minutes
             window.pipelineData.sushilka.push(item);
             renderKraska();
             renderSushilka();
+
+            try {
+                await supabase.from('clapak_production').update({ stage: 'sushilka' }).eq('id', id);
+            } catch (e) {
+                console.error("Error moving to sushilka in DB:", e);
+            }
         }
     };
 
@@ -629,20 +722,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <div class="fill-v3" style="width: ${perc}%; background: #fabb18; box-shadow: 0 0 15px rgba(250,187,24,0.3);"></div>
                         </div>
                     </div>
-                    <button class="action-btn-v3" style="border-color:#fabb18; color:#fabb18;" onmouseover="this.style.background='#fabb18';this.style.color='#000'" onmouseout="this.style.background='transparent';this.style.color='#fabb18'" onclick="window.moveToPackaging(${item.id})">
+                    <button class="action-btn-v3" style="border-color:#fabb18; color:#fabb18;" onmouseover="this.style.background='#fabb18';this.style.color='#000'" onmouseout="this.style.background='transparent';this.style.color='#fabb18'" onclick="window.moveToPackaging('${item.id}')">
                         QADOQLASHGA ➜</button>
                 </div>
             `;
         }).join('');
     }
 
-    window.moveToPackaging = (id) => {
-        const idx = window.pipelineData.sushilka.findIndex(x => x.id === id);
+    window.moveToPackaging = async (id) => {
+        const idx = window.pipelineData.sushilka.findIndex(x => x.id.toString() === id.toString());
         if (idx > -1) {
             const item = window.pipelineData.sushilka.splice(idx, 1)[0];
             window.pipelineData.packaging += item.qty;
             renderSushilka();
             renderPackaging();
+
+            try {
+                await supabase.from('clapak_production').update({ stage: 'packaging' }).eq('id', id);
+            } catch (e) {
+                console.error("Error moving to packaging in DB:", e);
+            }
         }
     };
 
@@ -670,7 +769,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    window.finalizePackaging = () => {
+    window.finalizePackaging = async () => {
         const total = window.pipelineData.packaging;
         if (total <= 0) return;
         const boxes = Math.floor(total / 4);
@@ -682,6 +781,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.pipelineData.packaging = 0;
         renderPackaging();
         updatePipelineStats();
+
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const startOfDay = `${today}T00:00:00.000Z`;
+            const endOfDay = `${today}T23:59:59.999Z`;
+
+            await supabase.from('clapak_production')
+                .update({ stage: 'finished', status: 'DONE' })
+                .eq('stage', 'packaging')
+                .gte('start_time', startOfDay)
+                .lte('start_time', endOfDay);
+        } catch (e) {
+            console.error("Error finalizing packaging in DB:", e);
+        }
+
         alert(`Muvaffaqiyatli! ${boxes} ta box tayyor omborga qabul qilindi.`);
     };
 
