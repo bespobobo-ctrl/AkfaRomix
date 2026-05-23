@@ -11,13 +11,42 @@ document.addEventListener('DOMContentLoaded', async () => {
     const user = authService.getCurrentUser();
     console.log('Current User for Admin Dashboard:', user);
 
-    if (!user || user.role !== ROLES.ADMIN) {
-        console.warn('Auth Failed: User is not an admin', user);
+    if (!user || (user.role !== ROLES.ADMIN && user.role !== 'ac_manager')) {
+        console.warn('Auth Failed: User is not an admin or ac_manager', user);
         // Wait a bit to show current page or error before redirecting
         setTimeout(() => {
             authService.logout();
         }, 500);
         return;
+    }
+
+    // Wait for elements to be ready, then trigger section switch
+    if (user.role === 'ac_manager') {
+        setTimeout(() => {
+            if (window.switchSection) {
+                window.switchSection('section-autoclapak');
+            }
+            
+            // Hide sidebar for AC Manager
+            const sidebar = document.querySelector('.sidebar-slim');
+            if (sidebar) sidebar.style.display = 'none';
+            
+            const mainArea = document.querySelector('.admin-main');
+            if (mainArea) mainArea.style.marginLeft = '0';
+            
+            // Switch to Ishlab Chiqarish tab
+            const tabs = document.querySelectorAll('.nav-link-item[data-auto-tab]');
+            tabs.forEach(tab => {
+                if (tab.getAttribute('data-auto-tab') !== 'auto-ishlab-chiqarish') {
+                    tab.style.display = 'none';
+                }
+            });
+            
+            const ishlabChiqarishTab = document.querySelector('.nav-link-item[data-auto-tab="auto-ishlab-chiqarish"]');
+            if (ishlabChiqarishTab) {
+                ishlabChiqarishTab.click();
+            }
+        }, 100);
     }
 
     // Check if we are in admin-v2 layout which has its own sidebar
