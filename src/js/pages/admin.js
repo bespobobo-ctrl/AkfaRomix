@@ -67,7 +67,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Update Rahbar Profile Info
     const adminNameDisplay = document.getElementById('adminName');
     const adminAvatar = document.getElementById('adminAvatar');
-    const displayName = user.username.toLowerCase() === 'admin' ? 'RAHBAR' : user.username.toUpperCase();
+    const safeUsername = user.username || user.name || 'Foydalanuvchi';
+    const displayName = safeUsername.toLowerCase() === 'admin' ? 'RAHBAR' : safeUsername.toUpperCase();
     if (adminNameDisplay) adminNameDisplay.textContent = displayName;
     if (adminAvatar) adminAvatar.src = `https://ui-avatars.com/api/?name=${displayName}&background=007c52&color=fff&size=100`;
 
