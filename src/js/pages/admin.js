@@ -392,7 +392,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     window.moveToSovutish = (source, model) => {
         const qty = 36;
-        window.pipelineData.sovutish.push({ id: Date.now().toString(), model: model, qty: qty });
+        window.pipelineData.sovutish.push({ id: Date.now().toString(), model: model, qty: qty, cart: '' });
         renderSovutish();
         updatePipelineStats();
     };
@@ -407,7 +407,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         list.innerHTML = window.pipelineData.sovutish.map(item => `
             <div class="elite-prod-card" style="border-left: 4px solid #00f2ff;">
                 <div class="card-header-v3">
-                    <span class="model-tag" style="color:#00f2ff; background:rgba(0,242,255,0.05);">ARAVA #${item.id.toString().slice(-4)}</span>
+                    <span class="model-tag" style="color:#00f2ff; background:rgba(0,242,255,0.05);">${item.cart ? `ARAVA #${item.cart}` : `ARAVA #${item.id.toString().slice(-4)}`}</span>
                     <div class="status-pill-v3" style="color:#00f2ff;"><div class="pulse-dot" style="background:#00f2ff; box-shadow:0 0 10px #00f2ff;"></div> SOVUTILMOQDA</div>
                 </div>
                 <div class="prod-model-v3">${item.model}</div>
@@ -416,6 +416,98 @@ document.addEventListener('DOMContentLoaded', async () => {
                     KRASKAGA ➜</button>
             </div>
         `).join('');
+        
+        // Also update details modal if it's currently open
+        const modal = document.getElementById('coolingDetailsModal');
+        if (modal && modal.style.display === 'flex') {
+            renderCoolingCartsModal();
+        }
+    }
+
+    window.showCoolingDetails = () => {
+        const modal = document.getElementById('coolingDetailsModal');
+        if (!modal) return;
+        modal.style.display = 'flex';
+        renderCoolingCartsModal();
+    };
+
+    function renderCoolingCartsModal() {
+        const grid = document.getElementById('cooling-carts-grid');
+        if (!grid) return;
+
+        // Initialize 20 carts as empty
+        const carts = Array.from({ length: 20 }, (_, idx) => ({
+            num: idx + 1,
+            active: false,
+            model: '',
+            qty: 0,
+            operator: '',
+            time: '',
+            id: ''
+        }));
+
+        // Fill active cooling carts from window.pipelineData.sovutish
+        window.pipelineData.sovutish.forEach(item => {
+            const cartNum = parseInt(item.cart);
+            if (cartNum >= 1 && cartNum <= 20) {
+                carts[cartNum - 1] = {
+                    num: cartNum,
+                    active: true,
+                    model: item.model,
+                    qty: item.qty,
+                    operator: item.operator || 'Operator',
+                    time: item.time || '--:--',
+                    id: item.id
+                };
+            }
+        });
+
+        // Calculate stats
+        const activeCount = carts.filter(c => c.active).length;
+        const emptyCount = 20 - activeCount;
+        const utilisation = Math.round((activeCount / 20) * 100);
+
+        // Update stats elements
+        document.getElementById('cd-active-carts').textContent = `${activeCount} ta`;
+        document.getElementById('cd-empty-carts').textContent = `${emptyCount} ta`;
+        document.getElementById('cd-utilisation').textContent = `${utilisation}%`;
+
+        // Render the 20 carts with premium styled elements
+        grid.innerHTML = carts.map(c => {
+            if (c.active) {
+                return `
+                    <div style="background:linear-gradient(135deg, rgba(0,242,255,0.06), rgba(186,0,255,0.02)); border:1px solid rgba(0,242,255,0.35); padding:16px; border-radius:18px; position:relative; box-shadow:0 8px 25px rgba(0,242,255,0.05); transition:all 0.3s;"
+                        onmouseenter="this.style.borderColor='#00f2ff'; this.style.transform='translateY(-2px)'"
+                        onmouseleave="this.style.borderColor='rgba(0,242,255,0.35)'; this.style.transform='translateY(0)'">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                            <span style="font-size:0.75rem; font-weight:900; background:rgba(0,242,255,0.1); color:#00f2ff; padding:4px 10px; border-radius:8px;">ARAVA #${c.num}</span>
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <div style="width:6px; height:6px; border-radius:50%; background:#00f2ff; box-shadow:0 0 8px #00f2ff; animation:clapak-pulse 1s infinite;"></div>
+                                <span style="font-size:0.6rem; color:#00f2ff; font-weight:800; letter-spacing:0.5px;">SOVUTISH</span>
+                            </div>
+                        </div>
+                        <div style="font-size:1.15rem; font-weight:900; color:#fff; margin-bottom:4px;">${c.model}</div>
+                        <div style="font-size:0.7rem; color:rgba(255,255,255,0.4); font-weight:600; margin-bottom:8px;">Miqdor: <strong style="color:#00f2ff;">${c.qty} dona</strong></div>
+                        <div style="border-top:1px solid rgba(255,255,255,0.05); padding-top:8px; display:flex; justify-content:space-between; font-size:0.6rem; color:rgba(255,255,255,0.3); font-weight:700;">
+                            <span>👤 ${c.operator.split(' ')[0]}</span>
+                            <span>⏰ ${c.time}</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div style="background:rgba(255,255,255,0.01); border:1px dashed rgba(255,255,255,0.07); padding:16px; border-radius:18px; display:flex; flex-direction:column; justify-content:space-between; height:105px; opacity:0.6; transition:all 0.3s;"
+                        onmouseenter="this.style.opacity='1'; this.style.borderColor='rgba(255,255,255,0.15)'"
+                        onmouseleave="this.style.opacity='0.6'; this.style.borderColor='rgba(255,255,255,0.07)'">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:0.75rem; font-weight:800; color:rgba(255,255,255,0.3); font-weight:750;">ARAVA #${c.num}</span>
+                            <span style="font-size:0.6rem; color:rgba(255,255,255,0.25); font-weight:700;">BO'SH</span>
+                        </div>
+                        <div style="font-size:0.9rem; font-weight:800; color:rgba(255,255,255,0.15); text-align:center; margin:10px 0;">FOYDALANISHGA TAYYOR</div>
+                    </div>
+                `;
+            }
+        }).join('');
     }
 
     window.currentFilterDate = new Date().toISOString().split('T')[0];
@@ -648,7 +740,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             updatePipelineStats();
 
             try {
-                await supabase.from('clapak_production').update({ stage: 'kraska' }).eq('id', id);
+                const dbStage = item.cart ? `kraska-${item.cart}` : 'kraska';
+                await supabase.from('clapak_production').update({ stage: dbStage }).eq('id', id);
             } catch (e) {
                 console.error("Error moving to kraska in DB:", e);
             }
@@ -665,7 +758,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         list.innerHTML = window.pipelineData.kraska.map(item => `
             <div class="elite-prod-card" style="border-left: 4px solid #ba00ff;">
                 <div class="card-header-v3">
-                    <span class="model-tag" style="color:#ba00ff; background:rgba(186,0,255,0.05);">ARAVA #${item.id.toString().slice(-4)}</span>
+                    <span class="model-tag" style="color:#ba00ff; background:rgba(186,0,255,0.05);">${item.cart ? `ARAVA #${item.cart}` : `ARAVA #${item.id.toString().slice(-4)}`}</span>
                     <div class="status-pill-v3" style="color:#ba00ff;"><div class="pulse-dot" style="background:#ba00ff; box-shadow:0 0 10px #ba00ff;"></div> BO'YASHDA</div>
                 </div>
                 <div class="prod-model-v3">${item.model}</div>
@@ -686,7 +779,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderSushilka();
 
             try {
-                await supabase.from('clapak_production').update({ stage: 'sushilka' }).eq('id', id);
+                const dbStage = item.cart ? `sushilka-${item.cart}` : 'sushilka';
+                await supabase.from('clapak_production').update({ stage: dbStage }).eq('id', id);
             } catch (e) {
                 console.error("Error moving to sushilka in DB:", e);
             }
@@ -707,7 +801,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return `
                 <div class="elite-prod-card" style="border-left: 4px solid #fabb18;">
                     <div class="card-header-v3">
-                        <span class="model-tag" style="color:#fabb18; background:rgba(250,187,24,0.05);">ARAVA #${item.id.toString().slice(-4)}</span>
+                        <span class="model-tag" style="color:#fabb18; background:rgba(250,187,24,0.05);">${item.cart ? `ARAVA #${item.cart}` : `ARAVA #${item.id.toString().slice(-4)}`}</span>
                         <div class="status-pill-v3" style="color:#fff; font-size:0.8rem;">
                             ${mins}:${secs.toString().padStart(2, '0')}
                         </div>
@@ -738,7 +832,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderPackaging();
 
             try {
-                await supabase.from('clapak_production').update({ stage: 'packaging' }).eq('id', id);
+                const dbStage = item.cart ? `packaging-${item.cart}` : 'packaging';
+                await supabase.from('clapak_production').update({ stage: dbStage }).eq('id', id);
             } catch (e) {
                 console.error("Error moving to packaging in DB:", e);
             }

@@ -135,8 +135,6 @@ function stopShift() {
     document.getElementById('rep-energy').textContent = `${energyUsed} kWh`;
 
     document.getElementById('report-modal').style.display = 'flex';
-
-    notifyBot(`📊 <b>ISHLAB CHIQARISH HISOBOTI</b>\n\n👤 Operator: ${currentUser.name}\n⚙️ Stanok: ${machine}\n📦 Model: ${model}\n✅ Tayyor: ${countReady}\n❌ Brak (Nuqson): ${countBrak}\n⚡ Elektr sarfi: ${energyUsed} kWh\n🏗 Xom-ashyo: ${rawUsed} kg`);
 }
 
 document.getElementById('stop-shift-btn').onclick = stopShift;
@@ -234,25 +232,27 @@ document.getElementById('final-transmit-btn').onclick = async () => {
     btn.disabled = true;
 
     try {
+        const cartNumber = document.getElementById('cart-selector').value || '1';
         const endTime = new Date();
         const durationMin = Math.floor((endTime - shiftStartTime) / 60000);
         const machine = document.getElementById('active-machine').textContent;
         const energyRate = machine === 'ST-1' ? 14.5 : 12.8;
         const energyUsed = parseFloat(((energyRate * durationMin) / 60).toFixed(2));
         const rawUsed = parseFloat((countReady * 0.38 + countBrak * 0.40).toFixed(1));
+        const model = document.getElementById('active-model').textContent;
 
         const reportData = {
             id: currentShiftId,
             operator: currentUser.name,
             machine: machine,
-            model: document.getElementById('active-model').textContent,
+            model: model,
             quantity: countReady,
             brak: countBrak,
             raw_material: rawUsed,
             energy: energyUsed,
             end_time: endTime.toISOString(),
             status: 'DONE',
-            stage: 'sovutish'
+            stage: 'sovutish-' + cartNumber
         };
 
         const { error } = await supabaseClient
@@ -261,7 +261,10 @@ document.getElementById('final-transmit-btn').onclick = async () => {
 
         if (error) throw error;
 
-        showToast('Partiya sovutish bo\'limiga o\'tkazildi! ✅');
+        // Send Telegram notification with cart details
+        await notifyBot(`📊 <b>ISHLAB CHIQARISH HISOBOTI</b>\n\n👤 Operator: ${currentUser.name}\n⚙️ Stanok: ${machine}\n📦 Model: ${model}\n✅ Tayyor: ${countReady}\n❌ Brak (Nuqson): ${countBrak}\n⚡ Elektr sarfi: ${energyUsed} kWh\n🏗 Xom-ashyo: ${rawUsed} kg\n📟 Arava raqami: ${cartNumber}-arava`);
+
+        showToast(`Partiya #${cartNumber}-aravada sovutish bo'limiga o'tkazildi! ✅`);
         setTimeout(() => location.reload(), 2000);
     } catch (e) {
         alert('Xatolik yuz berdi: ' + e.message);
