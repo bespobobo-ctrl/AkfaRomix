@@ -65,7 +65,7 @@ document.getElementById('login-btn').onclick = async () => {
     }
 
     // 3. Check Qadoqlovchi operators and redirect
-    if (id.toUpperCase() === 'Q1' && pass === '123') {
+    if (id.toUpperCase().replace(/\s+/g, '') === 'Q1' && pass.replace(/\s+/g, '') === '123') {
         const qadoqUser = {
             id: 'Q1',
             username: 'Qadoqlovchi 1',
