@@ -19,7 +19,7 @@ tg.expand();
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
-    const saved = localStorage.getItem('op_session');
+    const saved = localStorage.getItem('stanok_session');
     if (saved) {
         currentUser = JSON.parse(saved);
         showScreen('setup-screen');
@@ -45,7 +45,7 @@ document.getElementById('login-btn').onclick = async () => {
             id: id,
             name: id === '7007' ? 'Jaloliddin R.' : 'Sardorbek M.'
         };
-        localStorage.setItem('op_session', JSON.stringify(currentUser));
+        localStorage.setItem('stanok_session', JSON.stringify(currentUser));
         showScreen('setup-screen');
         initSetup();
         return;
@@ -89,7 +89,7 @@ document.getElementById('login-btn').onclick = async () => {
                     id: user.id,
                     name: user.full_name
                 };
-                localStorage.setItem('op_session', JSON.stringify(currentUser));
+                localStorage.setItem('stanok_session', JSON.stringify(currentUser));
                 showScreen('setup-screen');
                 initSetup();
                 return;
@@ -103,7 +103,7 @@ document.getElementById('login-btn').onclick = async () => {
 };
 
 window.logout = () => {
-    localStorage.removeItem('op_session');
+    localStorage.removeItem('stanok_session');
     location.reload();
 };
 
