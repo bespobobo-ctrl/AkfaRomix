@@ -24,6 +24,7 @@ export default defineConfig({
                 scanner: resolve(__dirname, 'scanner.html'),
                 akfa_hr_mini: resolve(__dirname, 'akfa_hr_mini.html'),
                 stanok: resolve(__dirname, 'src/mini-app/stanok-app/index.html'),
+                kraska: resolve(__dirname, 'src/mini-app/kraska-app/index.html'),
             },
         },
     },
