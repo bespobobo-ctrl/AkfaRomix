@@ -80,7 +80,7 @@ export const authService = {
             case 'sotuv': return base + 'sales_dashboard.html';
             case 'showroom': return base + 'showroom_dashboard.html';
             case 'ishlab_chiqarish': return base + 'production_dashboard.html';
-            case 'ac_manager': return base + 'dashbor.html';
+            case 'ac_manager': return base + 'admin_dashboard.html';
             default: return base + 'generic_dashboard.html';
         }
     }

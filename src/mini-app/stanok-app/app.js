@@ -78,9 +78,9 @@ document.getElementById('login-btn').onclick = async () => {
     }
     // 4. Check AC Manager and redirect
     if (id.toUpperCase().replace(/\s+/g, '') === 'AC1' && pass.replace(/\s+/g, '') === '123') {
-        const acUser = { id: 'AC1', name: 'Ishlab Chiqarish Boshlig\'i' };
-        localStorage.setItem('ac_manager_session', JSON.stringify(acUser));
-        location.href = '../../../dashbor.html';
+        const acUser = { id: 'AC1', name: 'Ishlab Chiqarish Boshlig\'i', role: 'ac_manager' };
+        localStorage.setItem('currentUser', JSON.stringify(acUser));
+        location.href = '../../../admin_dashboard.html';
         return;
     }
 
