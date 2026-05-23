@@ -147,7 +147,7 @@ function renderCarts(carts) {
     var container = document.getElementById('cart-list');
 
     if (!carts || carts.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="emoji">📭</div><p>Hozircha sushilkada tayyor arava yo\\'q</p></div>';
+        container.innerHTML = '<div class="empty-state"><div class="emoji">📭</div><p>Hozircha sushilkada tayyor arava yo&#39;q</p></div>';
         return;
     }
 
@@ -290,7 +290,7 @@ function renderFinished() {
     var container = document.getElementById('finished-list');
 
     if (finishedProducts.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="emoji">📦</div><p>Hali tayyor mahsulot yo\\'q</p></div>';
+        container.innerHTML = '<div class="empty-state"><div class="emoji">📦</div><p>Hali tayyor mahsulot yo&#39;q</p></div>';
         return;
     }
 
