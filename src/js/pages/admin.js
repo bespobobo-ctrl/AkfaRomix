@@ -22,6 +22,29 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // The old ac_manager block was moved down to ensure synchronous execution after window.switchSection is defined.
 
+    // Inject Premium CSS for Pulsing Unconfirmed Product Cards
+    const premiumCardStyle = document.createElement('style');
+    premiumCardStyle.innerHTML = `
+        @keyframes premiumPulse {
+            0% { box-shadow: 0 0 10px rgba(250, 187, 24, 0.25); border-color: rgba(250, 187, 24, 0.35); }
+            50% { box-shadow: 0 0 25px rgba(250, 187, 24, 0.6); border-color: rgba(250, 187, 24, 0.95); }
+            100% { box-shadow: 0 0 10px rgba(250, 187, 24, 0.25); border-color: rgba(250, 187, 24, 0.35); }
+        }
+        .premium-pulse-card {
+            animation: premiumPulse 2s infinite ease-in-out !important;
+            background: linear-gradient(135deg, rgba(20,15,5,0.85) 0%, rgba(13,22,34,0.85) 100%) !important;
+        }
+        @keyframes textBlink {
+            0% { opacity: 0.65; }
+            50% { opacity: 1; }
+            100% { opacity: 0.65; }
+        }
+        .premium-blink-badge {
+            animation: textBlink 1.5s infinite ease-in-out;
+        }
+    `;
+    document.head.appendChild(premiumCardStyle);
+
     // Check if we are in admin-v2 layout which has its own sidebar
     if (document.querySelector('.sidebar-slim')) {
         console.log('Admin V2 Layout detected, skipping generic sidebar injection');
@@ -62,24 +85,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     };
 
-    // Apply AC Manager specific UI overrides synchronously to prevent flash
-    if (user.role === 'ac_manager') {
-        const sidebar = document.querySelector('.sidebar-slim');
-        if (sidebar) sidebar.style.setProperty('display', 'none', 'important');
-        
-        const mainArea = document.querySelector('.admin-main');
-        if (mainArea) mainArea.style.setProperty('margin-left', '0', 'important');
 
-        const romixTopNav = document.querySelector('.executive-tabs');
-        if (romixTopNav) romixTopNav.style.setProperty('display', 'none', 'important');
-        
-        window.switchSection('section-autoclapak');
-        
-        const ishlabChiqarishTab = document.querySelector('.nav-link-item[data-auto-tab="auto-ishlab-chiqarish"]');
-        if (ishlabChiqarishTab) {
-            ishlabChiqarishTab.click();
-        }
-    }
 
     // Theme Toggle Logic
     const themeBtn = document.getElementById('themeToggle');
@@ -138,6 +144,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             if (target === 'users') loadSystemUsers();
+
+            // Auto Clapak specific load on sidebar icon click (for Admin / Rahbar role)
+            if (target === 'autoclapak') {
+                const activeAutoTab = document.querySelector('.nav-link-item[data-auto-tab].active');
+                if (activeAutoTab) {
+                    activeAutoTab.click();
+                } else {
+                    const firstTab = document.querySelector('.nav-link-item[data-auto-tab="auto-main"]');
+                    if (firstTab) firstTab.click();
+                }
+
+                // Pre-load finished goods and sales data in background to ensure sync
+                if (typeof window.loadAutoFinishedGoods === 'function') window.loadAutoFinishedGoods();
+                if (typeof window.loadAutoSales === 'function') window.loadAutoSales();
+            }
         });
     });
 
@@ -183,8 +204,454 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (tab === 'auto-ombor') loadAutoClapakInventory();
             if (tab === 'auto-ishlab-chiqarish') loadAutoProduction();
+            if (tab === 'auto-tayyor') loadAutoFinishedGoods();
+            if (tab === 'auto-sotuv') loadAutoSales();
         });
     });
+
+    // Apply AC Manager specific UI overrides synchronously AFTER event listeners are fully attached
+    if (user.role === 'ac_manager') {
+        const sidebar = document.querySelector('.sidebar-slim');
+        if (sidebar) sidebar.style.setProperty('display', 'none', 'important');
+        
+        const mainArea = document.querySelector('.admin-main');
+        if (mainArea) mainArea.style.setProperty('margin-left', '0', 'important');
+
+        const romixTopNav = document.querySelector('.executive-tabs');
+        if (romixTopNav) romixTopNav.style.setProperty('display', 'none', 'important');
+        
+        window.switchSection('section-autoclapak');
+        
+        const ishlabChiqarishTab = document.querySelector('.nav-link-item[data-auto-tab="auto-ishlab-chiqarish"]');
+        if (ishlabChiqarishTab) {
+            ishlabChiqarishTab.click();
+        }
+    }
+
+    // --- AUTO CLAPAK FINISHED GOODS & SALES STATE INITIALIZATION ---
+    // --- AUTO CLAPAK FINISHED GOODS & SALES STATE INITIALIZATION ---
+    window.clapakSetPrice = parseInt(localStorage.getItem('clapak_set_price') || '150000');
+    window.clapakBaseBoxes = 0; // Reset static baseline to 0 so it counts only actual production outputs!
+
+    // Premium product database mapping
+    window.clapakProducts = JSON.parse(localStorage.getItem('clapak_products_v4')) || [
+        {
+            id: 'prod-gentra',
+            name: 'Gentra Premium Calpak',
+            model: 'Gentra',
+            price: 150000,
+            design: 'gentra',
+            boxes: 0, // Reset to 0 base
+            image: '/src/assets/images/gentra_calpak.png'
+        },
+        {
+            id: 'prod-malibu',
+            name: 'Malibu-2 Sport Carbon Calpak',
+            model: 'Malibu-2',
+            price: 280000,
+            design: 'malibu',
+            boxes: 0, // Reset to 0 base
+            image: '/src/assets/images/malibu_calpak.png'
+        }
+    ];
+
+    window.showPremiumToast = (title, message, isSuccess = true) => {
+        const toast = document.getElementById('premium-toast');
+        const toastTitle = document.getElementById('toast-title');
+        const toastMessage = document.getElementById('toast-message');
+        if (!toast || !toastTitle || !toastMessage) return;
+
+        toastTitle.textContent = title;
+        toastMessage.textContent = message;
+
+        // Visual feedback based on status
+        toast.style.borderColor = isSuccess ? '#00ff88' : '#ff4d4f';
+        const iconContainer = toast.querySelector('div');
+        if (iconContainer) {
+            iconContainer.textContent = isSuccess ? '✓' : '✖';
+            iconContainer.style.color = isSuccess ? '#00ff88' : '#ff4d4f';
+            iconContainer.style.background = isSuccess ? 'rgba(0,255,136,0.1)' : 'rgba(255,77,79,0.1)';
+        }
+
+        // Trigger animation
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateY(0)';
+        toast.style.pointerEvents = 'auto';
+
+        // Hide toast after 4 seconds
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(-100px)';
+            toast.style.pointerEvents = 'none';
+        }, 4000);
+    };
+
+    window.loadAutoFinishedGoods = async () => {
+        // Fetch latest today's production from Supabase to ensure data is synchronized in real-time
+        await refreshAutoProduction();
+
+        // Map live session finishes grouped by model
+        const liveFinishedMap = new Map();
+        window.pipelineData.finished.forEach(item => {
+            let model = item.model || 'Gentra';
+            if (model.includes('Gentra')) model = 'Gentra';
+            if (model.includes('Malibu')) model = 'Malibu-2';
+            if (model.includes('Cobalt')) model = 'Cobalt';
+            liveFinishedMap.set(model, (liveFinishedMap.get(model) || 0) + item.boxes);
+        });
+
+        // Auto-discover and register any new models coming from warehouse/packaging if not already in product catalogue
+        let changed = false;
+        liveFinishedMap.forEach((boxes, model) => {
+            const exists = window.clapakProducts.some(p => p.model === model);
+            if (!exists) {
+                const defaultName = `${model} Premium Calpak`;
+                const defaultDesign = model.toLowerCase().includes('malibu') ? 'malibu' : 'gentra';
+                const defaultPrice = model.toLowerCase().includes('malibu') ? 280000 : 150000;
+                
+                window.clapakProducts.push({
+                    id: 'prod-' + model.toLowerCase().replace(/[^a-z0-9]/g, ''),
+                    name: defaultName,
+                    model: model,
+                    price: defaultPrice,
+                    design: defaultDesign,
+                    boxes: 0,
+                    priceConfirmed: false
+                });
+                changed = true;
+            }
+        });
+        if (changed) {
+            localStorage.setItem('clapak_products_v4', JSON.stringify(window.clapakProducts));
+        }
+
+        let totalBoxes = 0;
+        let totalValuation = 0;
+
+        // Render showroom cards
+        const showroomGrid = document.getElementById('fg-showroom-grid');
+        if (showroomGrid) {
+            showroomGrid.innerHTML = window.clapakProducts.map(p => {
+                const liveBoxes = liveFinishedMap.get(p.model) || 0;
+                const currentBoxes = (p.boxes || 0) + liveBoxes;
+                const currentUnits = currentBoxes * 4;
+                const totalValue = currentBoxes * (p.price || 0);
+
+                totalBoxes += currentBoxes;
+                totalValuation += totalValue;
+
+                const imageSrc = p.design === 'malibu' 
+                    ? '/src/assets/images/malibu_calpak.png' 
+                    : '/src/assets/images/gentra_calpak.png';
+
+                const isConfirmed = p.priceConfirmed !== false;
+                const cardClass = isConfirmed ? 'clapak-card' : 'clapak-card premium-pulse-card';
+                const cardBorder = isConfirmed ? '1.5px solid rgba(255,255,255,0.06)' : '1.5px solid rgba(250,187,24,0.4)';
+                
+                const hoverBorderColor = isConfirmed ? 'rgba(0,255,136,0.3)' : 'rgba(250,187,24,0.8)';
+                const normalBorderColor = isConfirmed ? 'rgba(255,255,255,0.06)' : 'rgba(250,187,24,0.4)';
+
+                const imageBadge = isConfirmed 
+                    ? `<div style="position: absolute; bottom: 8px; left: 8px; background: rgba(0,255,136,0.15); border: 1px solid rgba(0,255,136,0.3); color: #00ff88; padding: 2px 6px; border-radius: 4px; font-size: 0.55rem; font-weight: 700; letter-spacing: 0.3px;">OMBORDA</div>`
+                    : `<div style="position: absolute; top: 8px; left: 8px; background: linear-gradient(135deg, #fabb18 0%, #ff9800 100%); color: #000; padding: 4px 8px; border-radius: 6px; font-size: 0.6rem; font-weight: 900; letter-spacing: 0.5px; box-shadow: 0 4px 10px rgba(250,187,24,0.3); z-index: 5; display: flex; align-items: center; gap: 4px;" class="premium-blink-badge"><span>⚠️</span> NARXNI TASDIQLANG</div>
+                       <div style="position: absolute; bottom: 8px; left: 8px; background: rgba(250,187,24,0.15); border: 1px solid rgba(250,187,24,0.3); color: #fabb18; padding: 2px 6px; border-radius: 4px; font-size: 0.55rem; font-weight: 700; letter-spacing: 0.3px;">TASDIQLANMAGAN</div>`;
+
+                const priceSpecHtml = isConfirmed
+                    ? `<div style="display: flex; justify-content: space-between; align-items: center;">
+                          <span style="font-size: 0.65rem; color: rgba(255,255,255,0.4);">Narxi:</span>
+                          <span style="font-size: 0.75rem; font-weight: 800; color: #fabb18;">${(p.price || 0).toLocaleString()} UZS</span>
+                       </div>`
+                    : `<div style="display: flex; justify-content: space-between; align-items: center; background: rgba(250,187,24,0.08); padding: 4px 6px; border-radius: 6px; border: 1px dashed rgba(250,187,24,0.3); margin: 2px 0;">
+                          <span style="font-size: 0.65rem; color: #fabb18; font-weight: 700;">Narxi:</span>
+                          <span style="font-size: 0.75rem; font-weight: 800; color: #fabb18;">${(p.price || 0).toLocaleString()} UZS ⚠️</span>
+                       </div>`;
+
+                const actionButtonsHtml = isConfirmed
+                    ? `<div style="display: flex; gap: 6px; margin-top: 4px;">
+                           <button onclick="window.editProductSelector('${p.id}')" style="flex: 1; padding: 6px 10px; border-radius: 8px; font-size: 0.65rem; font-weight: 800; border: 1.5px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); color: #fff; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                               <span>✏️</span> Tahrirlash
+                           </button>
+                           <button onclick="window.deleteProduct('${p.id}')" style="padding: 6px 8px; border-radius: 8px; font-size: 0.65rem; font-weight: 800; border: 1.5px solid rgba(255,77,79,0.2); background: rgba(255,77,79,0.05); color: #ff4d4f; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center;">
+                               🗑️
+                           </button>
+                       </div>`
+                    : `<div style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px; width: 100%;">
+                           <button onclick="window.confirmProductPrice('${p.id}')" style="width: 100%; padding: 8px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 900; border: none; background: linear-gradient(135deg, #fabb18 0%, #ff9800 100%); color: #000; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(250,187,24,0.25);"
+                               onmouseenter="this.style.transform='scale(1.02)'; this.style.boxShadow='0 6px 16px rgba(250,187,24,0.4)';"
+                               onmouseleave="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(250,187,24,0.25)';">
+                               <span>✅</span> Narxni Tasdiqlash
+                           </button>
+                           <div style="display: flex; gap: 6px; width: 100%;">
+                               <button onclick="window.editProductSelector('${p.id}')" style="flex: 1; padding: 6px 10px; border-radius: 8px; font-size: 0.65rem; font-weight: 800; border: 1.5px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); color: #fff; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                                   <span>✏️</span> O'zgartirish
+                               </button>
+                               <button onclick="window.deleteProduct('${p.id}')" style="padding: 6px 8px; border-radius: 8px; font-size: 0.65rem; font-weight: 800; border: 1.5px solid rgba(255,77,79,0.2); background: rgba(255,77,79,0.05); color: #ff4d4f; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center;">
+                                   🗑️
+                               </button>
+                           </div>
+                       </div>`;
+
+                return `
+                    <div class="${cardClass}" style="background: rgba(13,22,34,0.75); border: ${cardBorder}; border-radius: 16px; overflow: hidden; padding: 0; box-shadow: 0 8px 24px rgba(0,0,0,0.3); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; width: 100%; box-sizing: border-box;" 
+                        onmouseenter="this.style.transform='translateY(-4px)'; this.style.borderColor='${hoverBorderColor}';" 
+                        onmouseleave="this.style.transform='translateY(0)'; this.style.borderColor='${normalBorderColor}';">
+                        
+                        <!-- Image -->
+                        <div style="width: 100%; height: 130px; position: relative; background: #070f19; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                            <img src="${imageSrc}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8;" />
+                            <div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); color: #fff; padding: 3px 8px; border-radius: 6px; font-size: 0.6rem; font-weight: 800; border: 1px solid rgba(255,255,255,0.1);">${p.model}</div>
+                            ${imageBadge}
+                        </div>
+
+                        <!-- Content -->
+                        <div style="padding: 12px; display: flex; flex-direction: column; gap: 8px; flex: 1; justify-content: space-between;">
+                            <div>
+                                <h4 style="margin: 0 0 2px 0; font-size: 0.85rem; font-weight: 800; color: #fff; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${p.name}">${p.name}</h4>
+                                <span style="font-size: 0.65rem; color: rgba(255,255,255,0.4); font-weight: 600;">Dizayn: ${p.design === 'malibu' ? 'Sport Carbon' : 'Silver Multi'}</span>
+                                
+                                <!-- Compact Grid Specs -->
+                                <div style="display: grid; grid-template-columns: 1fr; gap: 4px; margin-top: 10px; background: rgba(255,255,255,0.02); padding: 8px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.04);">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="font-size: 0.65rem; color: rgba(255,255,255,0.4);">Zaxira:</span>
+                                        <span style="font-size: 0.75rem; font-weight: 800; color: #00ff88;">${currentBoxes.toLocaleString()} Komplekt <span style="font-size: 0.6rem; color: rgba(255,255,255,0.4); font-weight: 500;">(${currentUnits.toLocaleString()} dona)</span></span>
+                                    </div>
+                                    ${priceSpecHtml}
+                                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px; margin-top: 2px;">
+                                        <span style="font-size: 0.65rem; color: rgba(255,255,255,0.4);">Jami:</span>
+                                        <span style="font-size: 0.75rem; font-weight: 800; color: #ba00ff;">${totalValue.toLocaleString()} UZS</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Actions -->
+                            ${actionButtonsHtml}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        const totalUnits = totalBoxes * 4;
+        const averagePrice = window.clapakProducts.length > 0
+            ? Math.round(window.clapakProducts.reduce((sum, p) => sum + (p.price || 0), 0) / window.clapakProducts.length)
+            : 0;
+
+        // Render top KPI cards
+        const totalBoxesEl = document.getElementById('fg-total-boxes');
+        const totalUnitsEl = document.getElementById('fg-total-units');
+        const setPriceEl = document.getElementById('fg-set-price');
+        const totalValuationEl = document.getElementById('fg-total-valuation');
+        const todayAddedEl = document.getElementById('fg-today-added');
+        const mainFgUnitsEl = document.getElementById('main-fg-total-units');
+
+        if (totalBoxesEl) totalBoxesEl.innerHTML = `${totalBoxes.toLocaleString()} <small style="font-size: 0.8rem; font-weight: 500; color: rgba(255,255,255,0.5);">KOMPLEKT</small>`;
+        if (totalUnitsEl) totalUnitsEl.innerHTML = `${totalUnits.toLocaleString()} <small style="font-size: 0.8rem; font-weight: 500; color: rgba(255,255,255,0.5);">DONA</small>`;
+        if (setPriceEl) setPriceEl.innerHTML = `${averagePrice.toLocaleString()} <small style="font-size: 0.8rem; font-weight: 500; color: rgba(255,255,255,0.5);">UZS</small>`;
+        if (totalValuationEl) totalValuationEl.innerHTML = `${totalValuation.toLocaleString()} <small style="font-size: 0.8rem; font-weight: 500; color: rgba(255,255,255,0.5);">UZS</small>`;
+        if (todayAddedEl) todayAddedEl.textContent = `+${window.pipelineData.finished.reduce((sum, x) => sum + x.boxes, 0)} Komplekt bugun qo'shildi`;
+        if (mainFgUnitsEl) mainFgUnitsEl.innerHTML = `${totalUnits.toLocaleString()} <small style="font-size: 1rem; color: var(--adm-text-sec); font-weight: 500;">dona</small>`;
+    };
+
+    window.editingProductId = null;
+
+    window.editProductSelector = (id) => {
+        const p = window.clapakProducts.find(x => x.id === id);
+        if (!p) return;
+
+        window.editingProductId = p.id;
+        document.getElementById('modal-prod-model').value = p.model;
+        document.getElementById('modal-prod-design').value = p.design;
+        document.getElementById('modal-prod-name').value = p.name;
+        document.getElementById('modal-prod-price').value = p.price;
+
+        const modal = document.getElementById('editProductModal');
+        if (modal) {
+            modal.style.display = 'flex';
+        }
+    };
+
+    window.closeEditProductModal = () => {
+        const modal = document.getElementById('editProductModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+        window.editingProductId = null;
+    };
+
+    window.saveModalProduct = () => {
+        if (!window.editingProductId) return;
+
+        const model = document.getElementById('modal-prod-model').value;
+        const design = document.getElementById('modal-prod-design').value;
+        const name = document.getElementById('modal-prod-name').value.trim();
+        const price = parseInt(document.getElementById('modal-prod-price').value);
+
+        if (!name || isNaN(price) || price <= 0) {
+            window.showPremiumToast("Xatolik", "Iltimos, barcha maydonlarni to'g'ri to'ldiring!", false);
+            return;
+        }
+
+        const p = window.clapakProducts.find(x => x.id === window.editingProductId);
+        if (p) {
+            p.model = model;
+            p.design = design;
+            p.name = name;
+            p.price = price;
+            
+            p.priceConfirmed = true;
+            
+            p.image = design === 'malibu' 
+                ? '/src/assets/images/malibu_calpak.png' 
+                : '/src/assets/images/gentra_calpak.png';
+        }
+
+        localStorage.setItem('clapak_products_v4', JSON.stringify(window.clapakProducts));
+        window.closeEditProductModal();
+        window.loadAutoFinishedGoods();
+        window.showPremiumToast("Tovar Yangilandi", `"${name}" tovar sozlamalari saqlandi.`, true);
+    };
+
+    window.confirmProductPrice = (id) => {
+        const p = window.clapakProducts.find(x => x.id === id);
+        if (p) {
+            p.priceConfirmed = true;
+            localStorage.setItem('clapak_products_v4', JSON.stringify(window.clapakProducts));
+            window.loadAutoFinishedGoods();
+            window.showPremiumToast("Narx Tasdiqlandi", `"${p.name}" uchun ${p.price.toLocaleString()} UZS narxi muvaffaqiyatli tasdiqlandi.`, true);
+        }
+    };
+
+    window.deleteProduct = (id) => {
+        if (!confirm("Haqiqatan ham ushbu tovar turini o'chirmoqchimisiz?")) return;
+        window.clapakProducts = window.clapakProducts.filter(x => x.id !== id);
+        localStorage.setItem('clapak_products_v4', JSON.stringify(window.clapakProducts));
+        window.loadAutoFinishedGoods();
+        window.showPremiumToast("Tovar O'chirildi", "Mahsulot showroomdan olib tashlandi.", true);
+    };
+
+    window.sendToSalesDepartment = () => {
+        const syncData = {
+            products: window.clapakProducts,
+            finished_session: window.pipelineData.finished,
+            timestamp: new Date().toLocaleTimeString().slice(0, 5)
+        };
+        localStorage.setItem('clapak_sales_sync_v2', JSON.stringify(syncData));
+
+        window.showPremiumToast(
+            "Sotuv Showroomi Sinxronlandi", 
+            `Zaxiradagi barcha premium tovar kartochkalari sotuv bo'limiga yuborildi.`, 
+            true
+        );
+
+        window.loadAutoSales();
+    };
+
+    window.loadAutoSales = async () => {
+        // Fetch latest today's production from Supabase to ensure data is synchronized in real-time
+        await refreshAutoProduction();
+
+        const syncDataStr = localStorage.getItem('clapak_sales_sync_v2');
+        let products = window.clapakProducts;
+        let finishedSession = window.pipelineData.finished;
+        let syncTime = "Faol";
+
+        if (syncDataStr) {
+            try {
+                const syncData = JSON.parse(syncDataStr);
+                products = syncData.products;
+                finishedSession = syncData.finished_session || [];
+                syncTime = `Sinxronlangan: ${syncData.timestamp}`;
+            } catch (e) {
+                console.error("Error parsing sync v2 data:", e);
+            }
+        }
+
+        const liveFinishedMap = new Map();
+        finishedSession.forEach(item => {
+            let model = item.model || 'Gentra';
+            if (model.includes('Gentra')) model = 'Gentra';
+            if (model.includes('Malibu')) model = 'Malibu-2';
+            if (model.includes('Cobalt')) model = 'Cobalt';
+            liveFinishedMap.set(model, (liveFinishedMap.get(model) || 0) + item.boxes);
+        });
+
+        const salesShowroom = document.getElementById('sales-showroom-grid');
+        if (salesShowroom) {
+            // Only show products in Sales department showroom that have actually been received (zaxira/currentBoxes > 0)
+            const activeProducts = products.filter(p => {
+                const liveBoxes = liveFinishedMap.get(p.model) || 0;
+                const currentBoxes = (p.boxes || 0) + liveBoxes;
+                return currentBoxes > 0;
+            });
+
+            if (activeProducts.length === 0) {
+                salesShowroom.innerHTML = `
+                    <div style="text-align: center; color: rgba(255,255,255,0.3); padding: 40px; grid-column: 1/-1; font-size: 0.85rem;">
+                        Bugun ishlab chiqarish qadoqlash bo'limidan hali tayyor mahsulotlar qabul qilinmagan (sotuv uchun zaxira mavjud emas).
+                    </div>
+                `;
+            } else {
+                salesShowroom.innerHTML = activeProducts.map(p => {
+                    const liveBoxes = liveFinishedMap.get(p.model) || 0;
+                    const currentBoxes = (p.boxes || 0) + liveBoxes;
+                    const currentUnits = currentBoxes * 4;
+                    const totalValue = currentBoxes * (p.price || 0);
+
+                    const imageSrc = p.design === 'malibu' 
+                        ? '/src/assets/images/malibu_calpak.png' 
+                        : '/src/assets/images/gentra_calpak.png';
+
+                    return `
+                        <div class="clapak-card" style="background: rgba(13,22,34,0.75); border: 1.5px solid rgba(0,210,255,0.15); border-radius: 16px; overflow: hidden; padding: 0; box-shadow: 0 8px 24px rgba(0,0,0,0.3); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; width: 100%; box-sizing: border-box;"
+                            onmouseenter="this.style.transform='translateY(-4px)'; this.style.borderColor='rgba(0,210,255,0.4)';" 
+                            onmouseleave="this.style.transform='translateY(0)'; this.style.borderColor='rgba(0,210,255,0.15)';" >
+                            
+                            <!-- Image Area -->
+                            <div style="width: 100%; height: 130px; position: relative; background: #070f19; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                                <img src="${imageSrc}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8;" />
+                                <div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); color: #fff; padding: 3px 8px; border-radius: 6px; font-size: 0.6rem; font-weight: 800; border: 1px solid rgba(255,255,255,0.1);">${p.model}</div>
+                                <div style="position: absolute; bottom: 8px; left: 8px; background: rgba(0,210,255,0.15); border: 1px solid rgba(0,210,255,0.3); color: #00d2ff; padding: 2px 6px; border-radius: 4px; font-size: 0.55rem; font-weight: 700; letter-spacing: 0.3px;">SOTUVDA</div>
+                            </div>
+
+                            <!-- Content Area -->
+                            <div style="padding: 12px; display: flex; flex-direction: column; gap: 8px; flex: 1; justify-content: space-between;">
+                                <div>
+                                    <h4 style="margin: 0 0 2px 0; font-size: 0.85rem; font-weight: 800; color: #fff; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${p.name}">${p.name}</h4>
+                                    <span style="font-size: 0.65rem; color: rgba(255,255,255,0.4); font-weight: 600;">Dizayn: ${p.design === 'malibu' ? 'Sport Carbon' : 'Silver Multi'}</span>
+                                    
+                                    <!-- Compact Grid Specs -->
+                                    <div style="display: grid; grid-template-columns: 1fr; gap: 4px; margin-top: 10px; background: rgba(255,255,255,0.02); padding: 8px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.04);">
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <span style="font-size: 0.65rem; color: rgba(255,255,255,0.4);">Sotuvda:</span>
+                                            <span style="font-size: 0.75rem; font-weight: 800; color: #00ff88;">${currentBoxes.toLocaleString()} Komplekt <span style="font-size: 0.6rem; color: rgba(255,255,255,0.4); font-weight: 500;">(${currentUnits.toLocaleString()} dona)</span></span>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <span style="font-size: 0.65rem; color: rgba(255,255,255,0.4);">Komplekt:</span>
+                                            <span style="font-size: 0.75rem; font-weight: 800; color: #fabb18;">${(p.price || 0).toLocaleString()} UZS</span>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px; margin-top: 2px;">
+                                            <span style="font-size: 0.65rem; color: rgba(255,255,255,0.4);">Jami:</span>
+                                            <span style="font-size: 0.75rem; font-weight: 800; color: #00d2ff;">${totalValue.toLocaleString()} UZS</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Quick Action -->
+                                <button onclick="alert('Yangi shartnoma interfeysi muvaffaqiyatli ochildi: ${p.name}')" style="width: 100%; justify-content: center; padding: 8px 12px; border-radius: 8px; background: linear-gradient(135deg, #00d2ff, #0072ff); color: #fff; font-size: 0.7rem; font-weight: 800; border: none; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(0,114,255,0.2);">
+                                    <span>📄</span> Shartnoma Tuzish
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        const timeEl = document.getElementById('sales-sync-time');
+        if (timeEl) {
+            timeEl.textContent = syncTime;
+            timeEl.style.color = '#00ff88';
+        }
+    };
 
     // --- AUTO CLAPAK INVENTORY ---
     let cachedAutoInventory = [];
@@ -261,6 +728,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         packaging: 0,
         finished: []
     };
+
+    // Fetch production data immediately in the background on page load
+    refreshAutoProduction().then(() => {
+        // Pre-render finished goods and sales once initial data is loaded
+        if (typeof window.loadAutoFinishedGoods === 'function') window.loadAutoFinishedGoods();
+        if (typeof window.loadAutoSales === 'function') window.loadAutoSales();
+    }).catch(e => console.error("Initial production load error:", e));
 
     let autoProductionInterval = null;
 
@@ -1167,6 +1641,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderPackaging();
         updatePipelineStats();
 
+        // Dynamically reload finished goods inventory if current tab is tayyor mahsulot
+        if (typeof window.loadAutoFinishedGoods === 'function') {
+            window.loadAutoFinishedGoods();
+        }
+
         try {
             const today = new Date().toISOString().split('T')[0];
             const startOfDay = `${today}T00:00:00.000Z`;
@@ -1181,7 +1660,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error("Error finalizing packaging in DB:", e);
         }
 
-        alert(`Muvaffaqiyatli! ${boxes} ta box tayyor omborga qabul qilindi.`);
+        window.showPremiumToast("Omborga Jo'natildi", `${boxes} ta box tayyor mahsulot omboriga muvaffaqiyatli qabul qilindi.`, true);
     };
 
     function updatePipelineStats() {

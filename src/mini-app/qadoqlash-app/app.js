@@ -153,7 +153,9 @@ function renderCarts(carts) {
 
     var html = '';
     carts.forEach(function(c) {
-        var cartNum = c.stage ? c.stage.split('-')[1] || '?' : '?';
+        var stageParts = c.stage ? c.stage.split('-') : [];
+        var cartNum = stageParts[1] || '?';
+        var packedBoxes = parseInt(stageParts[2] || '0');
         var model = c.model || "Noma'lum";
         var qty = c.quantity || 0;
         var brak = c.brak || 0;
@@ -192,13 +194,13 @@ function renderCarts(carts) {
                 '<div class="cart-detail">Miqdor qoldi: <span>' + qty + ' ta</span></div>' +
                 '<div class="cart-detail">Brak: <span style="color:var(--danger);">' + brak + ' ta</span></div>' +
                 '<div class="cart-detail">Operator: <span>' + operator + '</span></div>' +
-                (isPackaging ? '<div class="cart-detail">Qadoqlandi: <span style="color:var(--accent);">' + (c.packed_boxes || 0) + ' quti</span></div>' 
+                (isPackaging ? '<div class="cart-detail">Qadoqlandi: <span style="color:var(--accent);">' + packedBoxes + ' quti</span></div>' 
                              : '<div class="cart-detail">Sushilkada: <span style="color:var(--warning);">' + duration + '</span></div>') +
             '</div>';
 
         if (isPackaging) {
             html += '<button class="btn-pack" style="background: linear-gradient(135deg, #00e676, #00b359);" ' +
-                'onclick="window.addKomplekt(\'' + c.id + '\', ' + cartNum + ', \'' + model + '\', ' + qty + ', ' + (c.packed_boxes || 0) + ', \'' + (c.last_update || '') + '\')">' +
+                'onclick="window.addKomplekt(\'' + c.id + '\', ' + cartNum + ', \'' + model + '\', ' + qty + ', ' + packedBoxes + ', \'' + (c.last_update || '') + '\')">' +
                 '📦 +1 KOMPLEKT QADOQLANDI (4 dona)' +
                 '</button>';
         } else {
@@ -229,7 +231,7 @@ window.packCart = async function(id, cartNum, model, qty) {
         var { error } = await supabaseClient
             .from('clapak_production')
             .update({
-                stage: 'packaging-' + cartNum,
+                stage: 'packaging-' + cartNum + '-0',
                 status: 'PACKAGING'
             })
             .eq('id', id);
@@ -260,7 +262,7 @@ window.addKomplekt = async function(id, cartNum, model, remainingQty, packedBoxe
     
     // Check if cart is empty after this pack
     const isFinished = newRemaining <= 0;
-    const newStage = isFinished ? 'warehouse_pending' : `packaging-${cartNum}`;
+    const newStage = isFinished ? 'warehouse_pending' : `packaging-${cartNum}-${newPacked}`;
     const newStatus = isFinished ? 'DONE_PACKAGING' : 'PACKAGING';
 
     try {
@@ -268,7 +270,6 @@ window.addKomplekt = async function(id, cartNum, model, remainingQty, packedBoxe
             .from('clapak_production')
             .update({
                 quantity: newRemaining, // We decrease the cart's remaining quantity
-                packed_boxes: newPacked, // Keep track of boxes packed from this cart
                 stage: newStage,
                 status: newStatus,
                 last_update: now.toISOString()

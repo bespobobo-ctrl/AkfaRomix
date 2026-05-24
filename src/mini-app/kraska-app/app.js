@@ -263,12 +263,14 @@ document.getElementById('sushilka-transmit-btn').onclick = async () => {
 
         // Sum the painting defects to the existing defects (brak)
         const totalBrak = (activeCart.brak || 0) + brakCount;
+        const newQuantity = Math.max(0, (activeCart.quantity || 36) - brakCount);
 
-        // Update database: stage -> sushilka-X, update brak, save end_time
+        // Update database: stage -> sushilka-X, update brak, quantity, save end_time
         const { error } = await supabaseClient
             .from('clapak_production')
             .update({
                 stage: 'sushilka-' + cartNum,
+                quantity: newQuantity, // Subtract defects from active quantity!
                 brak: totalBrak,
                 last_update: endTime.toISOString()
             })
@@ -281,7 +283,7 @@ document.getElementById('sushilka-transmit-btn').onclick = async () => {
             `🎫 <b>ARAVA PASPORTI (SUSHILKAGA YO'LLANDI)</b>\n\n` +
             `📟 <b>Arava raqami:</b> ARAVA #${cartNum}\n` +
             `📦 <b>Mahsulot modeli:</b> ${activeCart.model}\n` +
-            `✅ <b>Tayyor karkas:</b> ${activeCart.quantity} dona\n` +
+            `✅ <b>Tayyor karkas:</b> ${newQuantity} dona (Brak chegirildi)\n` +
             `🚨 <b>Bo'yashdagi nuqson (brak):</b> ${brakCount} dona (Jami: ${totalBrak} ta)\n` +
             `⏱ <b>Bo'yalish davomiyligi:</b> ${durationStr}\n` +
             `👤 <b>Ijrochi rassom:</b> ${currentUser.name}\n` +

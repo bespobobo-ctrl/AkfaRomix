@@ -10,9 +10,11 @@ let isShiftActive = false;
 let shiftStartTime = null;
 let countReady = 0;
 let countBrak = 0;
+let totalProducedSoFar = 0; // Total calpaks produced in the entire shift
 let goalAmount = 500;
 let timerInterval = null;
 let currentShiftId = null; // Track current session in Supabase
+let isModalOpen = false; // Flag to prevent multiple dialog triggers
 
 const tg = window.Telegram.WebApp;
 tg.expand();
@@ -152,6 +154,8 @@ function startShift() {
 
     countReady = 0;
     countBrak = 0;
+    totalProducedSoFar = 0; // Reset overall tally on new shift start
+    isModalOpen = false;
 
     updateDashboardUI();
     showScreen('dashboard-screen');
@@ -215,13 +219,34 @@ function stopShift() {
 document.getElementById('stop-shift-btn').onclick = stopShift;
 
 // --- Counters ---
-document.getElementById('add-1').onclick = () => { if (isShiftActive) { countReady += 1; updateDashboardUI(); pulseEffect('count-val'); } };
-document.getElementById('add-10').onclick = () => { if (isShiftActive) { countReady += 10; updateDashboardUI(); pulseEffect('count-val'); } };
-document.getElementById('add-brak').onclick = () => { if (isShiftActive) { countBrak += 1; updateDashboardUI(); showToast('Nuqson qayd etildi ⚠️'); } };
+document.getElementById('add-1').onclick = () => { 
+    if (isShiftActive) { 
+        countReady += 1; 
+        totalProducedSoFar += 1; 
+        updateDashboardUI(); 
+        pulseEffect('count-val'); 
+    } 
+};
+document.getElementById('add-10').onclick = () => { 
+    if (isShiftActive) { 
+        countReady += 10; 
+        totalProducedSoFar += 10; 
+        updateDashboardUI(); 
+        pulseEffect('count-val'); 
+    } 
+};
+document.getElementById('add-brak').onclick = () => { 
+    if (isShiftActive) { 
+        countBrak += 1; 
+        updateDashboardUI(); 
+        showToast('Nuqson qayd etildi ⚠️'); 
+    } 
+};
 
 function updateDashboardUI() {
-    document.getElementById('count-val').textContent = countReady;
-    const remaining = goalAmount - countReady;
+    document.getElementById('count-val').innerHTML = `${countReady} <small style="font-size: 0.9rem; opacity: 0.5; display: block; margin-top: 5px; line-height: 1.3;">Aravadagi miqdor (Maks. 36)<br>Smena jami: ${totalProducedSoFar} / ${goalAmount}</small>`;
+    
+    const remaining = goalAmount - totalProducedSoFar;
     const remEl = document.getElementById('remaining-val');
 
     if (remaining <= 0) {
@@ -232,16 +257,20 @@ function updateDashboardUI() {
         remEl.style.color = '#fff';
     }
 
-    // Progress Ring Calculation
+    // Progress Ring Calculation (overall goal based)
     const ring = document.getElementById('progress-bar');
     const dash = 282.7;
-    const progress = Math.min(countReady / goalAmount, 1);
+    const progress = Math.min(totalProducedSoFar / goalAmount, 1);
     const offset = dash - (dash * progress);
     ring.style.strokeDashoffset = offset;
     ring.style.stroke = remaining <= 0 ? 'var(--emerald)' : 'var(--cyan)';
 
-    // Optional: Periodic Sync to Supabase during shift
-    debouncedSync();
+    // Automated trigger when current cart reaches/exceeds 36 calpaks
+    if (countReady >= 36 && isShiftActive) {
+        showCartFullModal();
+    } else {
+        debouncedSync();
+    }
 }
 
 let syncTimeout = null;
@@ -345,5 +374,131 @@ document.getElementById('final-transmit-btn').onclick = async () => {
         alert('Xatolik yuz berdi: ' + e.message);
         btn.textContent = 'QAYTA YUBORISH';
         btn.disabled = false;
+    }
+};
+
+function showCartFullModal() {
+    if (isModalOpen) return;
+    isModalOpen = true;
+    
+    const modal = document.getElementById('cart-full-modal');
+    if (!modal) {
+        createCartFullModalElement();
+    } else {
+        modal.style.display = 'flex';
+    }
+}
+
+function createCartFullModalElement() {
+    const overlay = document.createElement('div');
+    overlay.id = 'cart-full-modal';
+    overlay.className = 'report-overlay';
+    overlay.style.cssText = 'display: flex; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(10, 15, 24, 0.96); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); z-index: 9999; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;';
+    
+    overlay.innerHTML = `
+        <div class="report-panel" style="max-width: 420px; text-align: center; background: rgba(13,22,34,0.85); border: 1.5px solid rgba(250,187,24,0.4); border-radius: 24px; padding: 30px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); width: 100%; box-sizing: border-box;">
+            <div style="font-size: 3rem; margin-bottom: 15px; animation: bounce 2s infinite;">🛒</div>
+            <h2 style="color: #fabb18; margin: 0 0 10px 0; font-size: 1.8rem; font-weight: 900; letter-spacing: 0.5px; font-family: 'Inter', sans-serif;">ARAVA TO'LDI!</h2>
+            <p style="font-size: 0.9rem; color: rgba(255,255,255,0.7); margin-bottom: 25px; line-height: 1.4; font-family: 'Inter', sans-serif;">
+                Joriy aravaga <strong>36 ta</strong> mahsulot to'ldi. Uni <strong>Sovutish bo'limiga</strong> yuborish uchun arava raqamini tanlang:
+            </p>
+
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 25px;" id="cart-grid-selector">
+                ${Array.from({ length: 20 }, (_, i) => i + 1).map(n => `
+                    <button onclick="window.submitCompletedCart(${n})" style="padding: 12px 6px; font-size: 0.85rem; font-weight: 800; background: rgba(255,255,255,0.03); color: #fff; border: 1.5px solid rgba(255,255,255,0.08); border-radius: 12px; cursor: pointer; transition: 0.2s; font-family: inherit;"
+                        onmouseenter="this.style.background='var(--cyan)'; this.style.color='#000'; this.style.borderColor='var(--cyan)';"
+                        onmouseleave="this.style.background='rgba(255,255,255,0.03)'; this.style.color='#fff'; this.style.borderColor='rgba(255,255,255,0.08)';">
+                        ${n}-arava
+                    </button>
+                `).join('')}
+            </div>
+
+            <button class="finish-btn" style="background: rgba(255,255,255,0.05); color: #fff; border: 1px solid rgba(255,255,255,0.1); width: 100%; margin: 0; padding: 12px; font-weight: 700; border-radius: 12px; font-size: 0.85rem; cursor: pointer;" onclick="window.closeCartFullModal()">ORQAGA QAYTISH</button>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+}
+
+window.closeCartFullModal = () => {
+    const modal = document.getElementById('cart-full-modal');
+    if (modal) modal.style.display = 'none';
+    isModalOpen = false;
+};
+
+window.submitCompletedCart = async (cartNum) => {
+    const modal = document.getElementById('cart-full-modal');
+    if (modal) modal.style.display = 'none';
+    isModalOpen = false;
+    
+    const excessQty = countReady - 36;
+    const now = new Date();
+    
+    const machine = document.getElementById('active-machine').textContent;
+    const model = document.getElementById('active-model').textContent;
+    
+    const durationMin = Math.max(1, Math.floor((now - shiftStartTime) / 60000));
+    const energyRate = machine === 'ST-1' ? 14.5 : 12.8;
+    const energyUsed = parseFloat(((energyRate * durationMin) / 60).toFixed(2));
+    const rawUsed = parseFloat((36 * 0.38 + countBrak * 0.40).toFixed(1));
+    
+    showToast("Aravacha saqlanmoqda...");
+    
+    try {
+        // 1. Update existing active record to DONE and set its stage to cooling
+        const { error: updateError } = await supabaseClient
+            .from('clapak_production')
+            .update({
+                quantity: 36, // strictly 36 calpaks
+                brak: countBrak,
+                raw_material: rawUsed,
+                energy: energyUsed,
+                end_time: now.toISOString(),
+                status: 'DONE',
+                stage: 'sovutish-' + cartNum,
+                last_update: now.toISOString()
+            })
+            .eq('id', currentShiftId);
+            
+        if (updateError) throw updateError;
+        
+        // Notify Bot
+        await notifyBot(`❄️ <b>ARAVA TO'LDI (SOVUTISHGA YUBORILDI)</b>\n\n👤 Operator: ${currentUser.name}\n📟 Arava: ARAVA #${cartNum}\n📦 Model: ${model}\n✅ Miqdor: 36 dona\n❌ Brak: ${countBrak} dona`);
+        
+        showToast(`Arava #${cartNum} sovutish bo'limiga o'tkazildi! ✅`);
+        
+        // 2. Start a NEW active shift record for the remaining products
+        countReady = excessQty >= 0 ? excessQty : 0;
+        countBrak = 0;
+        shiftStartTime = new Date(); // Reset start time for the next session
+        
+        const newShiftData = {
+            operator: currentUser.name,
+            machine: machine,
+            model: model,
+            quantity: countReady,
+            brak: 0,
+            start_time: shiftStartTime.toISOString(),
+            status: 'ACTIVE',
+            stage: 'STANOK'
+        };
+        
+        const { data: res, error: insertError } = await supabaseClient
+            .from('clapak_production')
+            .insert([newShiftData])
+            .select();
+            
+        if (insertError) throw insertError;
+        
+        if (res && res[0]) {
+            currentShiftId = res[0].id;
+        }
+        
+        updateDashboardUI();
+        
+    } catch (e) {
+        alert("Aravani saqlashda xatolik yuz berdi: " + e.message);
+        isModalOpen = false;
+        showCartFullModal();
     }
 };
