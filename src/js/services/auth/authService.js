@@ -10,9 +10,10 @@ export const authService = {
         }
 
         // 1. Try System Users First (Admin, HR, etc)
+        // SECURITY NOTE: Passwords should be stored as hashes (e.g. Bcrypt) and checked via Supabase Auth
         const { data: user } = await supabase
             .from('system_users')
-            .select('*')
+            .select('id, username, role, full_name')
             .eq('username', username)
             .eq('password', password)
             .maybeSingle();
@@ -31,7 +32,7 @@ export const authService = {
         // 2. Try Employees Table (Username = ID or Full Name, Password = ID)
         const { data: emp } = await supabase
             .from('employees')
-            .select('*')
+            .select('id, full_name, avatar_url')
             .or(`id.eq.${username},full_name.eq.${username}`)
             .maybeSingle();
 

@@ -2,11 +2,11 @@
 //  📦 QADOQLASH BO'LIMI — APP LOGIC
 // ═══════════════════════════════════════════════════════════════
 
-const supabaseUrl = 'https://dzsswblbpnjuluyqvewt.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6c3N3YmxicG5qdWx1eXF2ZXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4OTI2NzcsImV4cCI6MjA5MzQ2ODY3N30.Kwgh1DIzb_j7AH2iEfI5LMboObXBaIm3SGk1JWF3LIk';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
 
-const BOT_TOKEN = '8876482426:AAFIMJCPYrxi-xVQwVDtURhl_BcDDSg6htA';
+const BOT_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN_OPERATOR;
 
 // --- State ---
 let currentUser = null;
@@ -91,11 +91,13 @@ document.getElementById('login-btn').onclick = async () => {
     }
 };
 
+let isFetchingCarts = false;
+
 // --- Logout ---
 window.qLogout = () => {
     if (confirm('Tizimdan chiqishni tasdiqlaysizmi?')) {
         localStorage.removeItem('qadoqlash_session');
-        clearInterval(pollingInterval);
+        clearTimeout(pollingInterval);
         location.href = '../stanok-app/index.html';
     }
 };
@@ -104,11 +106,11 @@ window.qLogout = () => {
 function initDashboard() {
     document.getElementById('user-name').textContent = currentUser.name;
     loadSushilkaCarts();
-    // Poll every 10 seconds for new carts
-    pollingInterval = setInterval(loadSushilkaCarts, 10000);
 }
 
 async function loadSushilkaCarts() {
+    if (isFetchingCarts) return;
+    isFetchingCarts = true;
     try {
         const today = new Date().toISOString().split('T')[0];
         const startOfDay = today + 'T00:00:00.000Z';
@@ -117,7 +119,7 @@ async function loadSushilkaCarts() {
         // Get carts in sushilka/sovutish stage (ready for packaging) or currently being packaged
         const { data: carts, error } = await supabaseClient
             .from('clapak_production')
-            .select('*')
+            .select('id, stage, model, quantity, start_time, end_time, status')
             .or('stage.like.sovutish-%,stage.like.sushilka-%,stage.like.packaging-%')
             .not('status', 'eq', 'DONE_WAREHOUSE')
             .gte('start_time', startOfDay)
@@ -140,6 +142,11 @@ async function loadSushilkaCarts() {
         updateStats(carts || []);
     } catch (e) {
         console.error('Load error:', e);
+    } finally {
+        isFetchingCarts = false;
+        if (currentUser) {
+            pollingInterval = setTimeout(loadSushilkaCarts, 10000);
+        }
     }
 }
 

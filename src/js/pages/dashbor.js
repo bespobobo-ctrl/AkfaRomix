@@ -55,12 +55,16 @@ window.logout = () => {
     location.href = '/index.html';
 };
 
+let isFetching = false;
+let pollTimeout = null;
+
 function initDash() {
     fetchPipelineData();
-    setInterval(fetchPipelineData, 5000); // refresh every 5s
 }
 
 async function fetchPipelineData() {
+    if (isFetching) return;
+    isFetching = true;
     try {
         const today = new Date().toISOString().split('T')[0];
         const startOfDay = `${today}T00:00:00.000Z`;
@@ -68,7 +72,7 @@ async function fetchPipelineData() {
 
         const { data, error } = await supabase
             .from('clapak_production')
-            .select('*')
+            .select('id, stage, model, quantity, start_time')
             .gte('start_time', startOfDay)
             .lte('start_time', endOfDay);
 
@@ -97,6 +101,9 @@ async function fetchPipelineData() {
         renderPipeline();
     } catch (e) {
         console.error("Dashboard fetch error:", e);
+    } finally {
+        isFetching = false;
+        pollTimeout = setTimeout(fetchPipelineData, 5000);
     }
 }
 
