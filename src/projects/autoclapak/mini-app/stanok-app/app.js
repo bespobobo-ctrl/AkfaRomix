@@ -16,6 +16,7 @@ let timerInterval = null;
 let currentShiftId = null; // Track current session in Supabase
 let isModalOpen = false; // Flag to prevent multiple dialog triggers
 let selectedOrderId = null; // Track selected active order
+let selectedOrderModel = ''; // Track original selected order model name
 
 const tg = window.Telegram.WebApp;
 tg.expand();
@@ -180,7 +181,7 @@ async function loadActiveOrders() {
             return `
                 <div class="order-item-card" data-order-id="${z.id}" data-model="${z.model}" data-qty="${z.quantity}" 
                     style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:12px; cursor:pointer; display:flex; flex-direction:column; gap:6px; transition:all 0.2s;"
-                    onclick="window.selectStanokOrder(this, '${z.id}', '${z.model}', ${z.quantity})">
+                    onclick="window.selectStanokOrder(this, '${z.id}', '${z.model.replace(/'/g, "\\'")}', ${z.quantity}, '${clientName.replace(/'/g, "\\'")}')">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <span style="font-size:0.7rem; font-weight:800; background:rgba(255,170,0,0.15); color:#ffaa00; padding:2px 8px; border-radius:6px; text-transform:uppercase;">${clientName}</span>
                         <span style="font-size:0.65rem; color:rgba(255,255,255,0.4); font-weight:700;">Muddat: ${deadline}</span>
@@ -197,7 +198,7 @@ async function loadActiveOrders() {
     }
 }
 
-window.selectStanokOrder = (element, orderId, model, qty) => {
+window.selectStanokOrder = (element, orderId, model, qty, clientName) => {
     document.querySelectorAll('.order-item-card').forEach(card => {
         card.style.background = 'rgba(255,255,255,0.03)';
         card.style.borderColor = 'rgba(255,255,255,0.08)';
@@ -207,6 +208,7 @@ window.selectStanokOrder = (element, orderId, model, qty) => {
     element.style.borderColor = '#ffaa00';
 
     selectedOrderId = orderId;
+    selectedOrderModel = model;
 
     let matchedModel = 'GENTRA';
     const lowerModel = model.toLowerCase();
@@ -223,6 +225,14 @@ window.selectStanokOrder = (element, orderId, model, qty) => {
     if (goalInput) {
         goalInput.value = qty;
     }
+
+    const summaryCard = document.getElementById('selected-order-summary');
+    if (summaryCard) {
+        document.getElementById('summary-model').textContent = model;
+        document.getElementById('summary-client').textContent = clientName || "Mijoz";
+        document.getElementById('summary-qty').textContent = `${qty.toLocaleString()} dona`;
+        summaryCard.style.display = 'flex';
+    }
 };
 
 // --- Shift Logic ---
@@ -236,7 +246,7 @@ function startShift() {
     goalAmount = parseInt(document.getElementById('goal-input').value) || 500;
 
     const machine = document.querySelector('#machine-selector .active').dataset.val;
-    const model = document.querySelector('#model-selector .active').dataset.val;
+    const model = selectedOrderModel || document.querySelector('#model-selector .active').dataset.val;
 
     document.getElementById('active-machine').textContent = machine;
     document.getElementById('active-model').textContent = model;
