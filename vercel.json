@@ -1,5 +1,13 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "framework": "vite"
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/src/mini-app/stanok-app/(.*)", "destination": "/src/projects/autoclapak/mini-app/stanok-app/$1" },
+    { "source": "/src/mini-app/kraska-app/(.*)", "destination": "/src/projects/autoclapak/mini-app/kraska-app/$1" },
+    { "source": "/src/mini-app/qadoqlash-app/(.*)", "destination": "/src/projects/autoclapak/mini-app/qadoqlash-app/$1" },
+    { "source": "/src/mini-app/stanok-app", "destination": "/src/projects/autoclapak/mini-app/stanok-app/index.html" },
+    { "source": "/src/mini-app/kraska-app", "destination": "/src/projects/autoclapak/mini-app/kraska-app/index.html" },
+    { "source": "/src/mini-app/qadoqlash-app", "destination": "/src/projects/autoclapak/mini-app/qadoqlash-app/index.html" }
+  ]
 }
