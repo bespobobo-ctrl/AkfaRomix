@@ -11,6 +11,8 @@ let paintStartTime = null;
 let timerInterval = null;
 let brakCount = 0;
 let pollingInterval = null;
+let confirmedQty = 36; // Track confirmed quantity of cart (default 36)
+let selectedPaintType = 'Serisi'; // Track selected paint type
 
 const tg = window.Telegram.WebApp;
 if (tg) {
@@ -179,37 +181,56 @@ window.startPainting = async (cartId) => {
     }
 
     activeCart = cart;
-    brakCount = 0;
-    paintStartTime = new Date();
 
-    const cartNum = activeCart.stage.split('-')[1] || '0';
-    document.getElementById('paint-cart-title').textContent = `ARAVA #${cartNum}`;
-    document.getElementById('paint-model-title').textContent = activeCart.model;
-    document.getElementById('paint-qty-val').innerHTML = `${activeCart.quantity} <small style="font-size: 1rem; color: rgba(255,255,255,0.4);">dona karkas</small>`;
-    document.getElementById('brak-count-val').textContent = '0';
+    // Show the confirmation modal instead of immediately beginning
+    const startModal = document.getElementById('start-paint-modal');
+    if (startModal) {
+        document.getElementById('start-qty-input').value = activeCart.quantity || 36;
+        startModal.style.display = 'flex';
 
-    // Update Stage in Supabase to kraska-X
-    try {
-        await supabaseClient
-            .from('clapak_production')
-            .update({
-                stage: 'kraska-' + cartNum,
-                last_update: paintStartTime.toISOString()
-            })
-            .eq('id', activeCart.id);
+        document.getElementById('start-paint-confirm-btn').onclick = async () => {
+            confirmedQty = parseInt(document.getElementById('start-qty-input').value) || 36;
+            selectedPaintType = document.getElementById('start-paint-type').value || 'Serisi';
+
+            startModal.style.display = 'none';
+            brakCount = 0;
+            paintStartTime = new Date();
+
+            const cartNum = activeCart.stage.split('-')[1] || '0';
+            document.getElementById('paint-cart-title').textContent = `ARAVA #${cartNum}`;
+            document.getElementById('paint-model-title').textContent = activeCart.model;
+            document.getElementById('paint-qty-val').innerHTML = `${confirmedQty} <small style="font-size: 1rem; color: rgba(255,255,255,0.4);">dona karkas</small>`;
+            document.getElementById('brak-count-val').textContent = '0';
+
+            // Pre-fill passport dropdown
+            const passportSelect = document.getElementById('paint-type-select');
+            if (passportSelect) passportSelect.value = selectedPaintType;
+
+            // Update Stage in Supabase to kraska-X
+            try {
+                await supabaseClient
+                    .from('clapak_production')
+                    .update({
+                        stage: 'kraska-' + cartNum,
+                        quantity: confirmedQty, // Save confirmed qty to database
+                        last_update: paintStartTime.toISOString()
+                    })
+                    .eq('id', activeCart.id);
+                    
+                // Notify Bot
+                notifyBot(`🎨 <b>BO'YASH BOSHLANDI</b>\n\n👤 Rassom: ${currentUser.name}\n📟 Arava: ARAVA #${cartNum}\n📦 Model: ${activeCart.model}\n⚡ Kraska turi: ${selectedPaintType}\n✅ Tasdiqlangan miqdor: ${confirmedQty} dona\n⏰ Boshlangan vaqt: ${paintStartTime.toLocaleTimeString()}`);
+            } catch (e) {
+                console.error('Error updating stage to kraska:', e);
+            }
+
+            showScreen('painting-screen');
             
-        // Notify Bot
-        notifyBot(`🎨 <b>BO'YASH BOSHLANDI</b>\n\n👤 Rassom: ${currentUser.name}\n📟 Arava: ARAVA #${cartNum}\n📦 Model: ${activeCart.model}\n⏰ Boshlangan vaqt: ${paintStartTime.toLocaleTimeString()}`);
-    } catch (e) {
-        console.error('Error updating stage to kraska:', e);
+            // Start Paint Timer
+            document.getElementById('paint-timer').textContent = '00:00';
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(updatePaintTimer, 1000);
+        };
     }
-
-    showScreen('painting-screen');
-    
-    // Start Paint Timer
-    document.getElementById('paint-timer').textContent = '00:00';
-    if (timerInterval) clearInterval(timerInterval);
-    timerInterval = setInterval(updatePaintTimer, 1000);
 };
 
 function updatePaintTimer() {
@@ -246,11 +267,40 @@ document.getElementById('finish-paint-btn').onclick = () => {
     const cartNum = activeCart.stage.split('-')[1] || '0';
     const passportId = 'PAS-' + Math.random().toString(36).substr(2, 5).toUpperCase();
 
+    // Reset defect count in passport modal
+    brakCount = 0;
+
+    // Set paint type selector to the pre-selected one
+    const selectEl = document.getElementById('paint-type-select');
+    if (selectEl) selectEl.value = selectedPaintType;
+
+    // Helper functions to increment/decrement brak count right inside the passport modal!
+    window.incrementPassBrak = () => {
+        if (brakCount < confirmedQty) {
+            brakCount++;
+            updatePassportBrakUI();
+        }
+    };
+
+    window.decrementPassBrak = () => {
+        if (brakCount > 0) {
+            brakCount--;
+            updatePassportBrakUI();
+        }
+    };
+
+    function updatePassportBrakUI() {
+        document.getElementById('pass-brak-input').textContent = brakCount;
+        const netQty = Math.max(0, confirmedQty - brakCount);
+        document.getElementById('pass-qty').textContent = `${netQty} dona`;
+        pulseEffect('pass-brak-input');
+    }
+
     // Populate Passport Modal
     document.getElementById('pass-cart-num').textContent = `ARAVA #${cartNum}`;
     document.getElementById('pass-model').textContent = activeCart.model;
-    document.getElementById('pass-qty').textContent = `${activeCart.quantity} dona`;
-    document.getElementById('pass-brak').textContent = `${brakCount} dona`;
+    document.getElementById('pass-qty').textContent = `${confirmedQty} dona`;
+    document.getElementById('pass-brak-input').textContent = '0';
     document.getElementById('pass-duration').textContent = durationStr;
     document.getElementById('pass-time').textContent = endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     document.getElementById('pass-id').textContent = '#' + passportId;
@@ -259,6 +309,8 @@ document.getElementById('finish-paint-btn').onclick = () => {
 };
 
 document.getElementById('sushilka-transmit-btn').onclick = async () => {
+    if (!confirm('Ushbu aravani sushilka (quritish) bo\'limiga yuborishni tasdiqlaysizmi?')) return;
+
     const btn = document.getElementById('sushilka-transmit-btn');
     btn.textContent = 'YUBORILMOQDA... 🚀';
     btn.disabled = true;
@@ -271,14 +323,14 @@ document.getElementById('sushilka-transmit-btn').onclick = async () => {
 
         // Sum the painting defects to the existing defects (brak)
         const totalBrak = (activeCart.brak || 0) + brakCount;
-        const newQuantity = Math.max(0, (activeCart.quantity || 36) - brakCount);
+        const newQuantity = Math.max(0, confirmedQty - brakCount);
 
         // Update database: stage -> sushilka-X, update brak, quantity, save end_time
         const { error } = await supabaseClient
             .from('clapak_production')
             .update({
                 stage: 'sushilka-' + cartNum,
-                quantity: newQuantity, // Subtract defects from active quantity!
+                quantity: newQuantity, // Subtract defects from confirmed quantity!
                 brak: totalBrak,
                 last_update: endTime.toISOString()
             })
