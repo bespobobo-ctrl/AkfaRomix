@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AC Boshqaruvchisi</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="/src/css/style.css">
+    
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <style>
+        /* Premium Glassmorphism Styles for AC Manager Panel */
+        body { 
+            background: #0f172a; 
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,0.2) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,0.2) 0, transparent 50%);
+            color: #f8fafc; 
+            font-family: 'Inter', sans-serif; 
+            overflow-x: hidden; 
+            margin: 0; 
+            min-height: 100vh;
+        }
+        
+        .login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px; }
+        .login-card { 
+            background: rgba(30, 41, 59, 0.7); 
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 40px; 
+            border-radius: 24px; 
+            border: 1px solid rgba(255,255,255,0.1); 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            width: 100%; 
+            max-width: 400px; 
+            text-align: center; 
+        }
+        .login-card h2 { margin-bottom: 5px; font-weight: 700; font-size: 1.8rem; background: linear-gradient(to right, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .login-card input { width: 100%; padding: 14px 16px; margin-top: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: #fff; font-size: 1rem; outline: none; transition: border-color 0.3s; box-sizing: border-box; }
+        .login-card input:focus { border-color: #60a5fa; }
+        .login-card button { width: 100%; padding: 14px; margin-top: 25px; border-radius: 12px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: #fff; font-weight: bold; font-size: 1.1rem; border: none; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .login-card button:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(139, 92, 246, 0.3); }
+        
+        .dash-screen { display: none; padding: 30px; max-width: 1400px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+        .header h2 { margin: 0; font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; }
+        .btn-logout { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 10px 20px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-logout:hover { background: #ef4444; color: #fff; }
+
+        /* Premium Metrics */
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 40px; }
+        .metric-card { 
+            background: rgba(30, 41, 59, 0.6); 
+            backdrop-filter: blur(12px);
+            padding: 24px; 
+            border-radius: 20px; 
+            border: 1px solid rgba(255,255,255,0.05); 
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        .metric-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; }
+        .metric-card.cyan::before { background: #06b6d4; }
+        .metric-card.red::before { background: #ef4444; }
+        .metric-card.yellow::before { background: #f59e0b; }
+
+        /* Pipeline */
+        .pipeline-container { 
+            display: grid; 
+            grid-template-columns: repeat(6, 1fr); 
+            gap: 16px; 
+            padding-bottom: 20px; 
+        }
+        @media (max-width: 1200px) {
+            .pipeline-container {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        @media (max-width: 768px) {
+            .pipeline-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        .stage-column { 
+            background: rgba(15, 23, 42, 0.6); 
+            backdrop-filter: blur(8px);
+            border-radius: 20px; 
+            padding: 16px; 
+            border: 1px solid rgba(255,255,255,0.05); 
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-width: 0; /* allows text wrapping */
+        }
+        .stage-title { font-weight: 700; font-size: 0.9rem; letter-spacing: 1px; color: #94a3b8; text-transform: uppercase; margin-bottom: 5px; }
+        .machine-card { 
+            background: rgba(255,255,255,0.03); 
+            border: 1px solid rgba(255,255,255,0.05); 
+            border-radius: 12px; 
+            padding: 16px; 
+            transition: transform 0.2s;
+        }
+        .machine-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.1); }
+        
+        /* Isometric Blocks for Warehouse */
+        .iso-warehouse {
+            display: flex;
+            flex-direction: column-reverse; /* Stack from bottom to top */
+            align-items: center;
+            gap: 2px;
+            margin: 20px 0;
+            min-height: 120px;
+            perspective: 1000px;
+        }
+        .iso-row {
+            display: flex;
+            gap: 2px;
+        }
+        .iso-block {
+            width: 40px;
+            height: 40px;
+            background: #10b981; /* Emerald */
+            position: relative;
+            transform: rotateX(60deg) rotateZ(-45deg);
+            transform-style: preserve-3d;
+            box-shadow: -1px 1px 0 #059669, -2px 2px 0 #059669, -3px 3px 0 #059669, -4px 4px 5px rgba(0,0,0,0.3);
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        .iso-block::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -10px; width: 10px; height: 100%;
+            background: #059669; /* Darker emerald for side */
+            transform: rotateY(-90deg);
+            transform-origin: right center;
+            border-top-left-radius: 2px;
+            border-bottom-left-radius: 2px;
+        }
+        .iso-block::after {
+            content: '';
+            position: absolute;
+            top: 100%; left: 0; width: 100%; height: 10px;
+            background: #34d399; /* Lighter emerald for other side */
+            transform: rotateX(-90deg);
+            transform-origin: top center;
+            border-bottom-left-radius: 2px;
+            border-bottom-right-radius: 2px;
+        }
+
+        .q-number { font-size: 3.5rem; color: #fff; font-weight: 800; margin-bottom: 5px; text-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .btn-action { width: 100%; padding: 14px; background: linear-gradient(to right, #10b981, #059669); color: #fff; font-weight: bold; border: none; border-radius: 12px; cursor: pointer; margin-top: auto; transition: opacity 0.2s; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+        .btn-action:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; box-shadow: none; }
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="login-screen">
+        <div class="login-card">
+            <h2>AC Boshqaruvchisi</h2>
+            <p style="color: #888; margin-bottom: 20px;">Avto Clapak Ishlab Chiqarish</p>
+            <input type="text" id="login-id" placeholder="Login (AC1)">
+            <input type="password" id="login-pass" placeholder="Parol">
+            <button id="login-btn">KIRISH</button>
+        </div>
+    </div>
+
+    <!-- DASHBOARD SCREEN -->
+    <div id="dash-screen" class="dash-screen">
+        <div class="header">
+            <div>
+                <h2>Auto Clapak Production</h2>
+                <p style="color:#888;">Ishlab chiqarish va logistika strategiyasi</p>
+            </div>
+            <button class="btn-logout" onclick="logout()">Chiqish</button>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card" style="border-left: 3px solid #00f2ff;">
+                <div style="color:#888; font-size: 0.8rem; margin-bottom: 5px;">FAOL ARAVALAR</div>
+                <div style="font-size: 1.8rem; font-weight: bold;" id="metric-carts">0</div>
+            </div>
+            <div class="metric-card" style="border-left: 3px solid #ff4d4f;">
+                <div style="color:#888; font-size: 0.8rem; margin-bottom: 5px;">BUGUNGI NATIJA (DONA)</div>
+                <div style="font-size: 1.8rem; font-weight: bold; color: #ff4d4f;" id="metric-today">0</div>
+            </div>
+            <div class="metric-card" style="border-left: 3px solid #fabb18;">
+                <div style="color:#888; font-size: 0.8rem; margin-bottom: 5px;">TAYYOR OMBOR (BOX)</div>
+                <div style="font-size: 1.8rem; font-weight: bold; color: #fabb18;" id="metric-boxes">0</div>
+            </div>
+        </div>
+
+        <div class="pipeline-container">
+            <!-- Step 1: Stanoklar -->
+            <div class="stage-column" style="border-top: 3px solid #00f2ff;">
+                <div class="stage-title">1. STANOKLAR</div>
+                <div id="pipe-stanok"></div>
+            </div>
+
+            <!-- Step 2: Sovutish -->
+            <div class="stage-column" style="border-top: 3px solid #00f2ff;">
+                <div class="stage-title">2. SOVUTISH</div>
+                <div id="pipe-sovutish"></div>
+            </div>
+
+            <!-- Step 3: Kraska -->
+            <div class="stage-column" style="border-top: 3px solid #ba00ff;">
+                <div class="stage-title">3. KRASKA</div>
+                <div id="pipe-kraska"></div>
+            </div>
+
+            <!-- Step 4: Sushilka -->
+            <div class="stage-column" style="border-top: 3px solid #fabb18;">
+                <div class="stage-title">4. SUSHILKA</div>
+                <div id="pipe-sushilka"></div>
+            </div>
+
+            <!-- Step 5: Qadoqlash -->
+            <div class="stage-column" style="border-top: 3px solid #ff4d4f;">
+                <div class="stage-title">5. QADOQLASH</div>
+                <div class="machine-card qadoqlash-box">
+                    <div style="color:#888; font-size: 0.8rem; margin-bottom: 10px;">QADOQLANAYOTGAN DONA</div>
+                    <div class="q-number" id="q-qty">0</div>
+                    <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px;" id="q-boxes">0 KOMPLEKT (BOX)</div>
+                </div>
+            </div>
+
+            <!-- Step 6: Tayyor Ombor -->
+            <div class="stage-column" style="border-top: 3px solid #10b981;">
+                <div class="stage-title">6. TAYYOR OMBOR</div>
+                <div class="machine-card qadoqlash-box" style="border-color: #10b981;">
+                    <div style="color:#94a3b8; font-size: 0.8rem; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;">Qabul Kutilmoqda</div>
+                    <div class="q-number" style="color: #10b981;" id="w-boxes">0</div>
+                    <div style="color:#94a3b8; font-size: 0.8rem; margin-bottom: 20px;">KOMPLEKT (BOX)</div>
+                    
+                    <!-- Isometric Warehouse Visualization -->
+                    <div id="iso-warehouse" class="iso-warehouse"></div>
+
+                    <button class="btn-action" id="btn-receive" disabled>OMBORGA QABUL QILISH</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/projects/autoclapak/js/dashbor.js"></script>
+</body>
+</html>

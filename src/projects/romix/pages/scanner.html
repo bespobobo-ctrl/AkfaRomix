@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AKFA Romix - Davomat Skaneri</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/style.css" />
+    <style>
+        .scanner-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+            z-index: 10;
+            backdrop-filter: blur(8px);
+        }
+
+        .scanner-box {
+            width: 100%;
+            max-width: 500px;
+            background: rgba(10, 25, 47, 0.85);
+            border: 2px solid var(--accent-color);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(0, 210, 255, 0.15), inset 0 0 20px rgba(0, 210, 255, 0.1);
+        }
+
+        .time-display {
+            font-size: 4rem;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 0 20px var(--accent-glow);
+            margin-bottom: 5px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .date-display {
+            font-size: 1.2rem;
+            color: var(--accent-color);
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .scan-area {
+            width: 250px;
+            height: 250px;
+            border: 2px dashed rgba(0, 210, 255, 0.5);
+            margin: 0 auto 30px;
+            border-radius: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--accent-color);
+            box-shadow: 0 0 15px var(--accent-color);
+            animation: scan-anim 2s infinite linear;
+        }
+
+        @keyframes scan-anim {
+            0% {
+                top: 0;
+            }
+
+            50% {
+                top: 100%;
+            }
+
+            100% {
+                top: 0;
+            }
+        }
+
+        .status-msg {
+            font-size: 1.2rem;
+            min-height: 30px;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+
+        .success {
+            color: #00ff88;
+        }
+
+        .warning {
+            color: #ffb800;
+        }
+
+        .hidden-input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Smoke Effect -->
+    <div class="smoke-container">
+        <div class="smoke smoke-1"></div>
+        <div class="smoke smoke-2"></div>
+    </div>
+    <div class="bg-glow"></div>
+
+    <div class="scanner-container">
+        <div class="scanner-box">
+            <div class="time-display" id="clockBox">00:00:00</div>
+            <div class="date-display" id="dateBox">DD MM YYYY</div>
+
+            <div class="scan-area" id="scanArea">
+                <div class="scan-line"></div>
+                <span style="color: rgba(255,255,255,0.4); text-align:center;">QR Kodni tekshiring<br><br>(yoki
+                    tugmalarni bosing)</span>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <input type="text" id="manualIdInput" class="auth-input" placeholder="ID ni yozib Enter bosing..."
+                    style="text-align:center; max-width:80%; margin-bottom:10px;">
+                <div id="mockButtonsContainer"
+                    style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; max-width: 400px; margin: 0 auto;">
+                </div>
+            </div>
+
+            <div class="status-msg" id="statusMessage">Davomat uchun QR Kodni o'qiting</div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/projects/romix/js/scanner.js"></script>
+</body>
+
+</html>

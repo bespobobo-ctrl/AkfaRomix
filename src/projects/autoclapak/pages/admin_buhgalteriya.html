@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Avto Clapak — Buxgalteriya</title>
+    <!-- Google Fonts: Outfit & Share Tech Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Share+Tech+Mono+display=swap" rel="stylesheet">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="/src/css/style.css" />
+    
+    <script>
+        // Anti-Flash & RBAC Role Protection (Ultimate Sync Edition)
+        try {
+            var savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                var u = JSON.parse(savedUser);
+                if (u.role === 'ac_manager') {
+                    var style = document.createElement('style');
+                    style.innerHTML = `
+                        .sidebar-slim { display: none !important; }
+                        .executive-tabs { display: none !important; }
+                        .admin-main { margin-left: 0 !important; }
+                        .mobile-bottom-nav { display: none !important; }
+                        #section-dashboard { display: none !important; }
+                        #section-autoclapak { display: block !important; opacity: 1 !important; transform: scale(1) !important; animation: none !important; }
+                        .nav-link-item[data-auto-tab="auto-buhgalteriya"],
+                        .nav-link-item[data-auto-tab="auto-sozlamalar"] {
+                            display: none !important;
+                        }
+                        .btn-icon-elite.delete, .btn-icon-elite.edit, 
+                        button[onclick*="deleteProduct"], button[onclick*="confirmProductPrice"],
+                        button[onclick*="editProductSelector"], button[onclick*="addBuhEmployee"],
+                        button[onclick*="addBuhRecipeItem"], button[onclick*="addBuhSale"],
+                        button[onclick*="addBuhTransaction"], button[onclick*="addBuhUtility"] {
+                            display: none !important;
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+            } else {
+                window.location.href = '/index.html';
+            }
+        } catch(e) {}
+    </script>
+    
+    <style>
+        :root {
+            --clapak-accent: #00ff88;
+            --clapak-glow: rgba(0, 255, 136, 0.4);
+            --clapak-dark: #070f19;
+            --clapak-border: rgba(255, 255, 255, 0.08);
+            --transition-premium: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .admin-v2-body {
+            background-color: #020813 !important;
+            color: #fff !important;
+            overflow-x: hidden;
+        }
+
+        /* Unified Sidebar Style */
+        .sidebar-slim {
+            width: 80px;
+            background: rgba(7, 15, 25, 0.85);
+            border-right: 1px solid var(--clapak-border);
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px 0;
+            z-index: 1000;
+            backdrop-filter: blur(20px);
+        }
+
+        .nav-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            color: rgba(255,255,255,0.4);
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: var(--transition-premium);
+            border: 1px solid transparent;
+        }
+
+        .nav-icon:hover {
+            color: #fff;
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.08);
+        }
+
+        .nav-icon.active {
+            color: #00ff88;
+            background: rgba(0,255,136,0.08);
+            border-color: rgba(0,255,136,0.25);
+            box-shadow: 0 0 20px rgba(0,255,136,0.12);
+        }
+
+        .admin-main {
+            margin-left: 80px;
+            padding: 25px 40px;
+            min-height: 100vh;
+            background: radial-gradient(circle at 50% 0%, #0c1626 0%, #020813 80%);
+            position: relative;
+        }
+
+        /* === BUHGALTERIYA MODULE PREMIUM STYLES === */
+        .buh-kpi-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+            margin-bottom: 25px;
+        }
+        @media (max-width: 1200px) { .buh-kpi-row { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 600px) { .buh-kpi-row { grid-template-columns: 1fr; } }
+
+        .buh-kpi-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 24px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .buh-kpi-card:hover {
+            background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
+            transform: translateY(-6px) scale(1.01);
+            border-color: rgba(255,255,255,0.15);
+        }
+        .buh-kpi-card .buh-kpi-icon {
+            position: absolute; bottom: -8px; right: -5px;
+            font-size: 3.8rem; opacity: 0.05; transform: rotate(-12deg);
+            transition: all 0.4s ease;
+        }
+        .buh-kpi-card:hover .buh-kpi-icon {
+            transform: rotate(0deg) scale(1.1);
+            opacity: 0.1;
+        }
+        .buh-kpi-card .buh-label {
+            font-size: 0.65rem; font-weight: 800; letter-spacing: 1.5px;
+            text-transform: uppercase; color: rgba(255,255,255,0.45); margin-bottom: 10px;
+        }
+        .buh-kpi-card .buh-value {
+            font-size: 1.9rem; font-weight: 900; line-height: 1.1;
+            font-family: 'Outfit', sans-serif;
+        }
+        .buh-kpi-card .buh-value small {
+            font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.3); margin-left: 4px;
+        }
+        .buh-kpi-card .buh-sub {
+            font-size: 0.72rem; color: rgba(255,255,255,0.35); margin-top: 10px; font-weight: 600;
+        }
+
+        /* Neon Glow Specific Cards */
+        .buh-kpi-kirim {
+            border-left: 4px solid #00ff88;
+            box-shadow: 0 8px 32px rgba(0, 255, 136, 0.04), inset 0 0 12px rgba(0, 255, 136, 0.02);
+        }
+        .buh-kpi-kirim:hover {
+            box-shadow: 0 12px 40px rgba(0, 255, 136, 0.12), inset 0 0 18px rgba(0, 255, 136, 0.06);
+        }
+        .buh-kpi-chiqim {
+            border-left: 4px solid #ff4d4f;
+            box-shadow: 0 8px 32px rgba(255, 77, 79, 0.04), inset 0 0 12px rgba(255, 77, 79, 0.02);
+        }
+        .buh-kpi-chiqim:hover {
+            box-shadow: 0 12px 40px rgba(255, 77, 79, 0.12), inset 0 0 18px rgba(255, 77, 79, 0.06);
+        }
+        .buh-kpi-foyda {
+            border-left: 4px solid #00d2ff;
+            box-shadow: 0 8px 32px rgba(0, 210, 255, 0.04), inset 0 0 12px rgba(0, 210, 255, 0.02);
+        }
+        .buh-kpi-foyda:hover {
+            box-shadow: 0 12px 40px rgba(0, 210, 255, 0.12), inset 0 0 18px rgba(0, 210, 255, 0.06);
+        }
+        .buh-kpi-fond {
+            border-left: 4px solid #ba00ff;
+            box-shadow: 0 8px 32px rgba(186, 0, 255, 0.04), inset 0 0 12px rgba(186, 0, 255, 0.02);
+        }
+        .buh-kpi-fond:hover {
+            box-shadow: 0 12px 40px rgba(186, 0, 255, 0.12), inset 0 0 18px rgba(186, 0, 255, 0.06);
+        }
+
+        /* Inner Tabs */
+        .buh-inner-tabs {
+            display: flex; gap: 8px; padding: 6px;
+            background: rgba(0,0,0,0.25); border-radius: 18px;
+            border: 1px solid rgba(255,255,255,0.05);
+            margin-bottom: 25px; overflow-x: auto; scrollbar-width: none;
+        }
+        .buh-inner-tabs::-webkit-scrollbar { display: none; }
+        .buh-tab-btn {
+            padding: 12px 24px; border-radius: 14px; border: none;
+            background: transparent; color: rgba(255,255,255,0.5);
+            font-weight: 700; font-size: 0.85rem; cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap; display: flex; align-items: center; gap: 8px;
+            font-family: 'Outfit', sans-serif;
+        }
+        .buh-tab-btn:hover { background: rgba(255,255,255,0.04); color: #fff; }
+        .buh-tab-btn.active {
+            background: linear-gradient(135deg, #00d2ff 0%, #0072ff 100%);
+            color: #fff; box-shadow: 0 8px 24px rgba(0,114,255,0.3);
+        }
+        .buh-tab-content { display: none; animation: fadeIn 0.4s ease; }
+        .buh-tab-content.active { display: block; }
+
+        /* Shared table styles */
+        .buh-table-wrap {
+            background: rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 20px; overflow: hidden;
+        }
+        .buh-table {
+            width: 100%; border-collapse: collapse; font-size: 0.85rem;
+        }
+        .buh-table thead th {
+            padding: 16px 20px; text-align: left; font-size: 0.72rem;
+            font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase;
+            color: rgba(255,255,255,0.4); border-bottom: 1px solid rgba(255,255,255,0.06);
+            background: rgba(255,255,255,0.01);
+        }
+        .buh-table tbody td {
+            padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.02);
+            color: rgba(255,255,255,0.85); font-weight: 500;
+        }
+        .buh-table tbody tr { transition: background 0.2s; }
+        .buh-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+        /* Section cards */
+        .buh-section-card {
+            background: rgba(255,255,255,0.01);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 24px; padding: 25px; margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        .buh-section-title {
+            font-size: 1.05rem; font-weight: 800; color: #fff; margin-bottom: 20px;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .buh-section-title .title-icon {
+            width: 38px; height: 38px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+            box-shadow: inset 0 0 10px rgba(255,255,255,0.05);
+        }
+
+        /* Mini stat chips */
+        .buh-stat-row {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;
+        }
+        @media (max-width: 800px) { .buh-stat-row { grid-template-columns: 1fr; } }
+        .buh-stat-chip {
+            background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 18px; padding: 18px; text-align: center;
+            transition: all 0.3s;
+        }
+        .buh-stat-chip:hover {
+            background: rgba(255,255,255,0.03);
+            border-color: rgba(255,255,255,0.1);
+        }
+        .buh-stat-chip .chip-label {
+            font-size: 0.6rem; font-weight: 800; letter-spacing: 1px;
+            text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 6px;
+        }
+        .buh-stat-chip .chip-value {
+            font-size: 1.45rem; font-weight: 900;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Forms & Premium Inputs */
+        .buh-form-row {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px; margin-bottom: 20px;
+        }
+        .buh-input-group { display: flex; flex-direction: column; gap: 8px; }
+        .buh-input-group label {
+            font-size: 0.65rem; font-weight: 800; letter-spacing: 1px;
+            text-transform: uppercase; color: rgba(255,255,255,0.45); padding-left: 2px;
+        }
+        .buh-input {
+            padding: 13px 18px; border-radius: 14px;
+            border: 1.5px solid rgba(255,255,255,0.07);
+            background: rgba(0,0,0,0.3); color: #fff;
+            font-family: 'Outfit', sans-serif; font-size: 0.9rem;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); width: 100%; box-sizing: border-box;
+        }
+        .buh-input:focus {
+            outline: none; border-color: #00d2ff;
+            box-shadow: 0 0 0 4px rgba(0,210,255,0.2), inset 0 0 10px rgba(0,210,255,0.1);
+            background: rgba(0,0,0,0.45);
+        }
+        .buh-btn-primary {
+            padding: 13px 26px; border-radius: 14px; border: none;
+            background: linear-gradient(135deg, #00ff88 0%, #00b360 100%);
+            color: #000; font-weight: 800; font-size: 0.88rem;
+            cursor: pointer; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); font-family: 'Outfit', sans-serif;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .buh-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,255,136,0.3);
+        }
+        .buh-btn-primary:active {
+            transform: translateY(0);
+        }
+        .buh-btn-danger {
+            padding: 8px 14px; border-radius: 10px; border: 1px solid rgba(255,77,79,0.3);
+            background: rgba(255,77,79,0.08); color: #ff4d4f;
+            font-weight: 700; font-size: 0.75rem; cursor: pointer;
+            transition: all 0.2s; font-family: 'Outfit', sans-serif;
+        }
+        .buh-btn-danger:hover { background: rgba(255,77,79,0.18); }
+
+        /* Profit highlight */
+        .buh-profit-card {
+            background: linear-gradient(135deg, rgba(0,255,136,0.05) 0%, rgba(0,114,255,0.05) 100%);
+            border: 1.5px solid rgba(0,255,136,0.15);
+            border-radius: 24px; padding: 30px; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,255,136,0.05);
+            transition: all 0.3s;
+        }
+        .buh-profit-card:hover {
+            border-color: rgba(0,255,136,0.3);
+            box-shadow: 0 15px 40px rgba(0,255,136,0.1);
+            transform: translateY(-2px);
+        }
+        .buh-profit-value {
+            font-size: 2.8rem; font-weight: 900; color: #00ff88;
+            text-shadow: 0 0 35px rgba(0,255,136,0.35);
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Two-column layout */
+        .buh-two-col {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+        }
+        @media (max-width: 900px) { .buh-two-col { grid-template-columns: 1fr; } }
+
+        /* Utility cost list */
+        .buh-cost-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,0.04);
+            transition: background 0.2s;
+        }
+        .buh-cost-item:hover { background: rgba(255,255,255,0.02); }
+        .buh-cost-item:last-child { border-bottom: none; }
+
+        /* Recipe builder */
+        .buh-recipe-item {
+            display: grid; grid-template-columns: 2fr 1fr 1fr 40px; gap: 10px;
+            align-items: center; padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+    </style>
+</head>
+
+<body class="admin-v2-body">
+    <div class="admin-layout">
+        <!-- Slim Sidebar -->
+        <aside class="sidebar-slim">
+            <div class="logo-icon-v2" style="font-size: 1.5rem; color: #007c52; margin-bottom: 40px; font-weight: 900;">Q</div>
+            <div class="nav-icon" data-section="dashboard" title="AKFA Romix">🏢</div>
+            <div class="nav-icon" data-section="rassrochka" title="AKFA Romix Rassrochka">💳</div>
+            <div class="nav-icon" data-section="oynak" title="AKFA Romix Oynek">💎</div>
+            <div class="nav-icon active" data-section="autoclapak" title="AKFA Avto Clapak">🚗</div>
+
+            <div class="nav-icon" style="margin-top: auto;">⚙️</div>
+            <div class="nav-icon" id="sidebarLogout">🚪</div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- 💎 PROFESSIONAL EXECUTIVE HEADER (Elite UI/UX) -->
+            <nav class="top-nav-v2 premium-header" style="margin-bottom: 25px;">
+                <div class="header-upper-tier">
+                    <div class="user-profile-cluster">
+                        <div class="avatar-wrapper">
+                            <img id="adminAvatar" src="https://ui-avatars.com/api/?name=Rahbar&background=007c52&color=fff" class="header-avatar">
+                            <div class="online-indicator"></div>
+                        </div>
+                        <div class="user-info-text">
+                            <span class="greeting-text">Xush kelibsiz</span>
+                            <span class="user-name" id="adminName">Admin</span>
+                        </div>
+                    </div>
+                    <div class="action-cluster">
+                        <button id="themeToggle" class="action-btn" title="Tungi/Kunduzgi rejim">🌙</button>
+                        <div class="notif-wrapper">
+                            <button class="action-btn">🔔</button>
+                            <span id="global-notif-dot" class="notif-pulse"></span>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Section: Avto Clapak Container -->
+            <section id="section-autoclapak" class="admin-section autoclapak-system active" style="padding-top: 10px;">
+                <div class="clapak-header-v3">
+                    <div class="clapak-title-group">
+                        <h1>Auto Clapak <span style="color:var(--clapak-accent);">Moliya va Buxgalteriya</span></h1>
+                        <p>Kompaniyaning moliyaviy hisobotlari va zaxira qiymati</p>
+                    </div>
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:10px;">
+                        <div class="clapak-status-badge">
+                            <span class="clapak-status-dot"></span>
+                            LIVE: BUXGALTERIYA FAOL
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 8-Tab Premium Navigation Bar (Point to modular files!) -->
+                <div class="nav-links-v2 autoclapak-tabs premium-tabs"
+                    style="margin-bottom: 35px; display: flex; gap: 12px; padding: 6px; background: rgba(255,255,255,0.03); border-radius: 18px; border: 1px solid rgba(255,255,255,0.05); overflow-x: auto; scrollbar-width: none;">
+                    <a href="admin_dashboard.html" class="nav-link-item" data-auto-tab="auto-main"><span class="tab-icon">📊</span> Asosiy Panel</a>
+                    <a href="admin_ombor.html" class="nav-link-item" data-auto-tab="auto-ombor"><span class="tab-icon">📦</span> Ombor</a>
+                    <a href="admin_tayyor.html" class="nav-link-item" data-auto-tab="auto-tayyor"><span class="tab-icon">🏭</span> Tayyor Mahsulot</a>
+                    <a href="admin_sotuv.html" class="nav-link-item" data-auto-tab="auto-sotuv"><span class="tab-icon">📈</span> Sotuv</a>
+                    <a href="admin_buhgalteriya.html" class="nav-link-item active" data-auto-tab="auto-buhgalteriya"><span class="tab-icon">💰</span> Buxgalteriya</a>
+                    <a href="admin_ishlab_chiqarish.html" class="nav-link-item" data-auto-tab="auto-ishlab-chiqarish"><span class="tab-icon">⚙️</span> Ishlab Chiqarish</a>
+                    <a href="admin_avtoclpak_xodimlar.html" class="nav-link-item" data-auto-tab="auto-xodimlar"><span class="tab-icon">👥</span> Xodimlar</a>
+                    <a href="admin_sozlamalar.html" class="nav-link-item" data-auto-tab="auto-sozlamalar"><span class="tab-icon">🛠️</span> Sozlamalar</a>
+                </div>
+
+                <!-- Sub-pages Area -->
+                <div id="autoclapak-pages" style="animation: fadeIn 0.5s ease;">
+                    
+                    <!-- 5. Buxgalteriya (Full Accounting Module) -->
+                    <div id="sub-auto-buhgalteriya" class="auto-tab-content" style="display:block; padding:0px;">
+                        
+                        <!-- ============ Premium Header & Supabase Status ============ -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px;">
+                            <div>
+                                <h2 style="font-size: 1.6rem; font-weight: 900; margin: 0; color: #fff; display: flex; align-items: center; gap: 10px; font-family: 'Outfit', sans-serif;">
+                                    💰 Avto Calpak Buhgalteriya Tizimi
+                                </h2>
+                                <p style="font-size: 0.8rem; color: rgba(255,255,255,0.45); margin: 6px 0 0 0; font-weight: 500;">
+                                    Supabase & LocalStorage sinxronizatsiyalangan premium moliya boshqaruvi
+                                </p>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <span id="buh-db-status" class="premium-blink-badge" style="background: rgba(255,77,79,0.1); border: 1px solid rgba(255,77,79,0.25); color: #ff4d4f; padding: 7px 14px; border-radius: 20px; font-size: 0.72rem; font-weight: 800; display: inline-flex; align-items: center; gap: 8px; transition: all 0.3s ease; letter-spacing: 0.5px;">
+                                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #ff4d4f; display: inline-block; box-shadow: 0 0 8px #ff4d4f;" id="buh-db-dot"></span>
+                                    LOKAL REJIM
+                                </span>
+                                <button class="buh-btn-primary" onclick="window.openBuhDbSetupModal()" style="padding: 9px 18px; font-size: 0.78rem; background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff; box-shadow: 0 6px 20px rgba(0,114,255,0.25); border: none; border-radius: 12px;">
+                                    ⚙️ Supabase Sozlash
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- ============ KPI Summary Row ============ -->
+                        <div class="buh-kpi-row">
+                            <div class="buh-kpi-card buh-kpi-kirim">
+                                <div class="buh-kpi-icon">💰</div>
+                                <div class="buh-label">JAMI KIRIM (OY)</div>
+                                <div class="buh-value" style="color:#00ff88;" id="buh-total-kirim">0 <small>UZS</small></div>
+                                <div class="buh-sub" id="buh-kirim-sub">Sotuv daromadi</div>
+                            </div>
+                            <div class="buh-kpi-card buh-kpi-chiqim">
+                                <div class="buh-kpi-icon">📉</div>
+                                <div class="buh-label">JAMI CHIQIM (OY)</div>
+                                <div class="buh-value" style="color:#ff4d4f;" id="buh-total-chiqim">0 <small>UZS</small></div>
+                                <div class="buh-sub" id="buh-chiqim-sub">Maosh + Ombor + Harajat</div>
+                            </div>
+                            <div class="buh-kpi-card buh-kpi-foyda">
+                                <div class="buh-kpi-icon">🏦</div>
+                                <div class="buh-label">SOF FOYDA</div>
+                                <div class="buh-value" style="color:#00d2ff;" id="buh-sof-foyda">0 <small>UZS</small></div>
+                                <div class="buh-sub" id="buh-foyda-sub">Kirim — Chiqim</div>
+                            </div>
+                            <div class="buh-kpi-card buh-kpi-fond">
+                                <div class="buh-kpi-icon">👥</div>
+                                <div class="buh-label">XODIM MAOSH FONDI</div>
+                                <div class="buh-value" style="color:#ba00ff;" id="buh-maosh-fond">0 <small>UZS</small></div>
+                                <div class="buh-sub" id="buh-maosh-sub">Oklad + Zdelniy</div>
+                            </div>
+                        </div>
+
+                        <!-- ============ Inner Tab Navigation ============ -->
+                        <div class="buh-inner-tabs" id="buhInnerTabs">
+                            <button class="buh-tab-btn active" data-buh-tab="buh-xodimlar">👥 Xodimlar</button>
+                            <button class="buh-tab-btn" data-buh-tab="buh-ombor">📦 Ombor</button>
+                            <button class="buh-tab-btn" data-buh-tab="buh-harajatlar">⚡ Harajatlar</button>
+                            <button class="buh-tab-btn" data-buh-tab="buh-sotuv">📈 Sotuv & Foyda</button>
+                        </div>
+
+
+                        <!-- ============ TAB 1: XODIMLAR BUHGALTERYASI ============ -->
+                        <div id="buh-xodimlar" class="buh-tab-content active">
+                            <!-- Stats -->
+                            <div class="buh-stat-row" id="buh-emp-stats">
+                                <div class="buh-stat-chip">
+                                    <div class="chip-label">OKLAD XODIMLAR</div>
+                                    <div class="chip-value" style="color:#00d2ff;" id="buh-oklad-count">0</div>
+                                </div>
+                                <div class="buh-stat-chip">
+                                    <div class="chip-label">ZDELNIY XODIMLAR</div>
+                                    <div class="chip-value" style="color:#fabb18;" id="buh-zdel-count">0</div>
+                                </div>
+                                <div class="buh-stat-chip">
+                                    <div class="chip-label">JAMI XODIMLAR</div>
+                                    <div class="chip-value" style="color:#fff;" id="buh-total-emp">0</div>
+                                </div>
+                            </div>
+
+                            <div class="buh-two-col">
+                                <!-- Oklad Section -->
+                                <div class="buh-section-card">
+                                    <div class="buh-section-title">
+                                        <div class="title-icon" style="background: rgba(0,210,255,0.1); color: #00d2ff;">💼</div>
+                                        Oklad Xodimlar
+                                    </div>
+                                    <div class="buh-table-wrap">
+                                        <table class="buh-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Ism</th>
+                                                    <th>Lavozim</th>
+                                                    <th>Ish Kunlari</th>
+                                                    <th>Oylik Maosh</th>
+                                                    <th></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="buh-oklad-table"></tbody>
+                                        </table>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding: 12px 18px; background: rgba(0,210,255,0.05); border-radius: 12px; border: 1px solid rgba(0,210,255,0.1);">
+                                        <span style="font-size: 0.75rem; font-weight: 800; color: rgba(255,255,255,0.5);">JAMI OKLAD FONDI:</span>
+                                        <span style="font-size: 1.1rem; font-weight: 900; color: #00d2ff;" id="buh-oklad-total">0 UZS</span>
+                                    </div>
+                                </div>
+
+                                <!-- Zdelniy Section -->
+                                <div class="buh-section-card">
+                                    <div class="buh-section-title">
+                                        <div class="title-icon" style="background: rgba(250,187,24,0.1); color: #fabb18;">⚒️</div>
+                                        Zdelniy Xodimlar
+                                    </div>
+                                    <div class="buh-table-wrap">
+                                        <table class="buh-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Ism</th>
+                                                    <th>Lavozim</th>
+                                                    <th>Bajarilgan Ish</th>
+                                                    <th>Hisoblangan Summa</th>
+                                                    <th></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="buh-zdel-table"></tbody>
+                                        </table>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding: 12px 18px; background: rgba(250,187,24,0.05); border-radius: 12px; border: 1px solid rgba(250,187,24,0.1);">
+                                        <span style="font-size: 0.75rem; font-weight: 800; color: rgba(255,255,255,0.5);">JAMI ZDELNIY FONDI:</span>
+                                        <span style="font-size: 1.1rem; font-weight: 900; color: #fabb18;" id="buh-zdel-total">0 UZS</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Kraska Zdelniy Section (Full Width) -->
+                            <div class="buh-section-card" style="margin-top: 20px;">
+                                <div class="buh-section-title">
+                                    <div class="title-icon" style="background: rgba(186,0,255,0.1); color: #ba00ff;">🎨</div>
+                                    Kraska Bo'limi (Ishbay / Zdelniy) Oyliklari
+                                </div>
+                                <div class="buh-table-wrap">
+                                    <table class="buh-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Ism (Rassom)</th>
+                                                <th style="color:#00ff88;">Serisi (25,600 UZS)</th>
+                                                <th style="color:#00d2ff;">Redlayn (33,000 UZS)</th>
+                                                <th style="color:#ba00ff;">Kombo (50,000 UZS)</th>
+                                                <th>Jami Arava</th>
+                                                <th>Jami Bo'yalgan Karkas</th>
+                                                <th>Hisoblangan Oylik Maosh</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="buh-kraska-table">
+                                            <tr><td colspan="7" style="text-align:center; color:rgba(255,255,255,0.2); padding:30px;">Yuklanmoqda...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding: 12px 18px; background: rgba(186,0,255,0.05); border-radius: 12px; border: 1px solid rgba(186,0,255,0.1);">
+                                    <span style="font-size: 0.75rem; font-weight: 800; color: rgba(255,255,255,0.5);">JAMI KRASKA BO'LIMI FONDI:</span>
+                                    <span style="font-size: 1.1rem; font-weight: 900; color: #ba00ff;" id="buh-kraska-total">0 UZS</span>
+                                </div>
+                            </div>
+
+                            <!-- Add Employee Salary Config -->
+                            <div class="buh-section-card" style="margin-top: 20px;">
+                                <div class="buh-section-title">
+                                    <div class="title-icon" style="background: rgba(186,0,255,0.1); color: #ba00ff;">⚙️</div>
+                                    Xodim Maosh Sozlash
+                                </div>
+                                <div class="buh-form-row">
+                                    <div class="buh-input-group">
+                                        <label>Xodim Ismi</label>
+                                        <input type="text" class="buh-input" id="buh-emp-name" placeholder="Masalan: Alisher">
+                                    </div>
+                                    <div class="buh-input-group">
+                                        <label>Turi</label>
+                                        <select class="buh-input" id="buh-emp-type">
+                                            <option value="oklad">Oklad (Oylik)</option>
+                                            <option value="zdelniy">Zdelniy (Ishbay)</option>
+                                        </select>
+                                    </div>
+                                    <div class="buh-input-group" id="buh-salary-group">
+                                        <label>Oylik Maosh (UZS)</label>
+                                        <input type="number" class="buh-input" id="buh-emp-salary" placeholder="3,000,000">
+                                    </div>
+                                    <div class="buh-input-group" id="buh-price-serisi-group" style="display: none;">
+                                        <label>Serisi Narxi (UZS)</label>
+                                        <input type="number" class="buh-input" id="buh-emp-price-serisi" value="25600">
+                                    </div>
+                                    <div class="buh-input-group" id="buh-price-redlayn-group" style="display: none;">
+                                        <label>Redlayn Narxi (UZS)</label>
+                                        <input type="number" class="buh-input" id="buh-emp-price-redlayn" value="33000">
+                                    </div>
+                                    <div class="buh-input-group" id="buh-price-kombo-group" style="display: none;">
+                                        <label>Kombo Narxi (UZS)</label>
+                                        <input type="number" class="buh-input" id="buh-emp-price-kombo" value="50000">
+                                    </div>
+                                    <div class="buh-input-group">
+                                        <label>Lavozim</label>
+                                        <input type="text" class="buh-input" id="buh-emp-position" placeholder="Usta / Ishchi">
+                                    </div>
+                                </div>
+                                <button class="buh-btn-primary" onclick="window.addBuhEmployee()">➕ Xodim Qo'shish</button>
+                            </div>
+                        </div>
+
+                        <!-- ============ TAB 2: OMBOR BUHGALTERYASI ============ -->
+                        <div id="buh-ombor" class="buh-tab-content">
+                            <!-- Exchange Rate & Settings -->
+                            <div class="buh-section-card" style="margin-bottom: 20px; padding: 20px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2); backdrop-filter: blur(10px);">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <div style="font-size: 1.8rem; background: rgba(0,210,255,0.1); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">💵</div>
+                                    <div>
+                                        <div style="font-weight: 800; color: #fff; font-size: 0.95rem; font-family: 'Outfit', sans-serif;">Valyuta Kursi Sozlamalari</div>
+                                        <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4);">USD so'mdagi qiymati hisobotlar uchun ishlatiladi</div>
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 0.85rem; color: rgba(255,255,255,0.6); font-weight: 700;">1 USD =</span>
+                                    <input type="number" id="buh-usd-rate" value="12800" class="buh-input" style="width: 120px; text-align: center; font-weight: 800; color: #00d2ff; margin: 0; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 8px;">
+                                    <span style="font-size: 0.85rem; color: rgba(255,255,255,0.6); font-weight: 700;">UZS</span>
+                                    <button class="buh-btn-primary" onclick="window.saveBuhUsdRate()" style="margin: 0; padding: 10px 20px; font-size: 0.8rem; border-radius: 10px;">💾 Kursni Saqlash</button>
+                                </div>
+                            </div>
+
+                            <!-- Stats -->
+                            <div class="buh-stat-row">
+                                <div class="buh-stat-chip">
+                                    <div class="chip-label">OMBOR QIYMATI</div>
+                                    <div class="chip-value" style="color:#00d2ff;" id="buh-ombor-value">0 UZS</div>
+                                </div>
+                                <div class="buh-stat-chip">
+                                    <div class="chip-label">OYLIK KIRIM</div>
+                                    <div class="chip-value" style="color:#00ff88;" id="buh-ombor-kirim">0 UZS</div>
+                                </div>
+                                <div class="buh-stat-chip">
+                                    <div class="chip-label">OYLIK CHIQIM</div>
+                                    <div class="chip-value" style="color:#ff4d4f;" id="buh-ombor-chiqim">0 UZS</div>
+                                </div>
+                            </div>
+     
+                             <!-- Inventory Table -->
+                             <div class="buh-section-card">
+                                 <div class="buh-section-title">
+                                     <div class="title-icon" style="background: rgba(0,210,255,0.1); color: #00d2ff;">📦</div>
+                                     Ombor Materiallari Holati
+                                 </div>
+                                 <div class="buh-table-wrap">
+                                     <table class="buh-table">
+                                         <thead>
+                                             <tr>
+                                                 <th>Material Nomi</th>
+                                                 <th>Kategoriya</th>
+                                                 <th>Qoldiq</th>
+                                                 <th>Narxi</th>
+                                                 <th>Jami Qiymat</th>
+                                                 <th>Holat</th>
+                                             </tr>
+                                         </thead>
+                                         <tbody id="buh-ombor-table"></tbody>
+                                     </table>
+                                 </div>
+                             </div>
+     
+                             <!-- Transaction Log -->
+                             <div class="buh-section-card">
+                                 <div class="buh-section-title">
+                                     <div class="title-icon" style="background: rgba(0,255,136,0.1); color: #00ff88;">📋</div>
+                                     Kirim / Chiqim Tarixi
+                                 </div>
+                                 <div class="buh-form-row" style="margin-bottom: 20px;">
+                                     <div class="buh-input-group">
+                                         <label>Material</label>
+                                         <input type="text" class="buh-input" id="buh-trx-material" placeholder="Material nomi">
+                                     </div>
+                                     <div class="buh-input-group">
+                                         <label>Turi</label>
+                                         <select class="buh-input" id="buh-trx-type">
+                                             <option value="kirim">📥 Kirim</option>
+                                             <option value="chiqim">📤 Chiqim</option>
+                                         </select>
+                                     </div>
+                                     <div class="buh-input-group">
+                                         <label>Miqdor</label>
+                                         <input type="number" class="buh-input" id="buh-trx-qty" placeholder="100">
+                                     </div>
+                                     <div class="buh-input-group">
+                                         <label>Narxi</label>
+                                         <div style="display: flex; gap: 8px;">
+                                             <input type="number" class="buh-input" id="buh-trx-price" placeholder="50,000" style="flex: 2; margin: 0;">
+                                             <select class="buh-input" id="buh-trx-currency" style="flex: 1; min-width: 80px; margin: 0; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 12px; padding: 8px;">
+                                                 <option value="UZS">UZS</option>
+                                                 <option value="USD">USD ($)</option>
+                                             </select>
+                                         </div>
+                                     </div>
+                                 </div>
+                                 <button class="buh-btn-primary" onclick="window.addBuhTransaction()">📝 Tranzaksiya Qo'shish</button>
+                                <div class="buh-table-wrap" style="margin-top: 15px;">
+                                    <table class="buh-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Sana</th>
+                                                <th>Material</th>
+                                                <th>Turi</th>
+                                                <th>Miqdor</th>
+                                                <th>Summa</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="buh-trx-table"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ============ TAB 3: HARAJATLAR (STANOK + KAMUNAL) ============ -->
+                        <div id="buh-harajatlar" class="buh-tab-content">
+                            <div class="buh-two-col">
+                                <!-- Stanok Elektr Energiya -->
+                                <div class="buh-section-card">
+                                    <div class="buh-section-title">
+                                        <div class="title-icon" style="background: rgba(250,187,24,0.1); color: #fabb18;">⚡</div>
+                                        Stanok Elektr Energiyasi
+                                    </div>
+                                    <div class="buh-stat-row" style="grid-template-columns: repeat(2, 1fr);">
+                                        <div class="buh-stat-chip">
+                                            <div class="chip-label">STANOK SOATLARI (OY)</div>
+                                            <div class="chip-value" style="color:#fabb18;" id="buh-stanok-hours">0 soat</div>
+                                        </div>
+                                        <div class="buh-stat-chip">
+                                            <div class="chip-label">ELEKTR XARAJAT</div>
+                                            <div class="chip-value" style="color:#ff4d4f;" id="buh-elektr-cost">0 UZS</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Settings -->
+                                    <div style="background: rgba(255,255,255,0.02); border-radius: 14px; padding: 18px; border: 1px solid rgba(255,255,255,0.05); margin-top: 10px;">
+                                        <div style="font-size: 0.7rem; font-weight: 800; color: rgba(255,255,255,0.4); letter-spacing: 1px; margin-bottom: 12px;">⚙️ SOZLAMALAR</div>
+                                        <div class="buh-form-row">
+                                            <div class="buh-input-group">
+                                                <label>Stanok Quvvati (kW/soat)</label>
+                                                <input type="number" class="buh-input" id="buh-kw-per-hour" placeholder="15" value="15">
+                                            </div>
+                                            <div class="buh-input-group">
+                                                <label>1 kWh Narxi (UZS)</label>
+                                                <input type="number" class="buh-input" id="buh-kwh-price" placeholder="680" value="680">
+                                            </div>
+                                        </div>
+                                        <button class="buh-btn-primary" onclick="window.saveBuhEnergySettings()" style="margin-top: 8px; font-size: 0.75rem; padding: 10px 18px;">💾 Saqlash</button>
+                                    </div>
+
+                                    <!-- Calculation breakdown -->
+                                    <div style="margin-top: 15px; padding: 15px; background: rgba(250,187,24,0.03); border-radius: 14px; border: 1px solid rgba(250,187,24,0.1);">
+                                        <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); font-weight: 700; margin-bottom: 8px;">📊 HISOBLASH</div>
+                                        <div id="buh-energy-breakdown" style="font-size: 0.8rem; color: rgba(255,255,255,0.6); line-height: 1.8;"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Kamunal Harajatlar -->
+                                <div class="buh-section-card">
+                                    <div class="buh-section-title">
+                                        <div class="title-icon" style="background: rgba(255,77,79,0.1); color: #ff4d4f;">🏠</div>
+                                        Kamunal Harajatlar
+                                    </div>
+                                    <!-- Add form -->
+                                    <div class="buh-form-row">
+                                        <div class="buh-input-group">
+                                            <label>Harajat Turi</label>
+                                            <select class="buh-input" id="buh-utility-type">
+                                                <option value="Elektr Energiya">⚡ Elektr Energiya</option>
+                                                <option value="Suv">💧 Suv</option>
+                                                <option value="Gaz">🔥 Gaz</option>
+                                                <option value="Ijara">🏢 Ijara</option>
+                                                <option value="Internet">🌐 Internet</option>
+                                                <option value="Boshqa">📋 Boshqa</option>
+                                            </select>
+                                        </div>
+                                        <div class="buh-input-group">
+                                            <label>Summa (UZS)</label>
+                                            <input type="number" class="buh-input" id="buh-utility-amount" placeholder="2,500,000">
+                                        </div>
+                                    </div>
+                                    <button class="buh-btn-primary" onclick="window.addBuhUtility()" style="font-size: 0.78rem; padding: 10px 18px;">➕ Harajat Qo'shish</button>
+
+                                    <!-- List -->
+                                    <div class="buh-table-wrap" style="margin-top: 15px;">
+                                        <div id="buh-utility-list"></div>
+                                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: rgba(255,77,79,0.05); border-top: 1px solid rgba(255,77,79,0.1);">
+                                            <span style="font-size: 0.75rem; font-weight: 800; color: rgba(255,255,255,0.5);">JAMI KAMUNAL:</span>
+                                            <span style="font-size: 1.1rem; font-weight: 900; color: #ff4d4f;" id="buh-utility-total">0 UZS</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Total Expenses Summary -->
+                            <div class="buh-section-card" style="margin-top: 5px;">
+                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; text-align: center;">
+                                    <div>
+                                        <div style="font-size: 0.65rem; font-weight: 800; color: rgba(255,255,255,0.35); letter-spacing: 1px; margin-bottom: 8px;">STANOK ELEKTR</div>
+                                        <div style="font-size: 1.3rem; font-weight: 900; color: #fabb18;" id="buh-expense-elektr">0 UZS</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 0.65rem; font-weight: 800; color: rgba(255,255,255,0.35); letter-spacing: 1px; margin-bottom: 8px;">KAMUNAL</div>
+                                        <div style="font-size: 1.3rem; font-weight: 900; color: #ff4d4f;" id="buh-expense-kamunal">0 UZS</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 0.65rem; font-weight: 800; color: rgba(255,255,255,0.35); letter-spacing: 1px; margin-bottom: 8px;">JAMI HARAJAT</div>
+                                        <div style="font-size: 1.3rem; font-weight: 900; color: #fff;" id="buh-expense-total">0 UZS</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ============ TAB 4: SOTUV & FOYDA ============ -->
+                        <div id="buh-sotuv" class="buh-tab-content">
+                            <!-- Tan Narxi Calculator -->
+                            <div class="buh-section-card">
+                                <div class="buh-section-title">
+                                    <div class="title-icon" style="background: rgba(186,0,255,0.1); color: #ba00ff;">🧮</div>
+                                    Mahsulot Tan Narxi Kalkulyatori
+                                </div>
+                                <p style="font-size: 0.78rem; color: rgba(255,255,255,0.35); margin-bottom: 15px;">
+                                    Bitta komplekt mahsulotning tan narxini hisoblang: xom ashyo + ishchi haqi + energiya + qadoqlash
+                                </p>
+
+                                <!-- Recipe Builder -->
+                                <div style="background: rgba(255,255,255,0.02); border-radius: 14px; padding: 18px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 15px;">
+                                    <div style="font-size: 0.7rem; font-weight: 800; color: rgba(255,255,255,0.4); letter-spacing: 1px; margin-bottom: 12px;">📋 RESEPT (1 KOMPLEKT UCHUN)</div>
+                                    <div id="buh-recipe-list"></div>
+                                    <div class="buh-form-row" style="margin-top: 10px;">
+                                        <div class="buh-input-group">
+                                            <label>Material Nomi</label>
+                                            <input type="text" class="buh-input" id="buh-recipe-name" placeholder="PVC granula">
+                                        </div>
+                                        <div class="buh-input-group">
+                                            <label>Miqdor (gram/dona)</label>
+                                            <input type="number" class="buh-input" id="buh-recipe-qty" placeholder="500">
+                                        </div>
+                                        <div class="buh-input-group">
+                                            <label>Narxi (UZS)</label>
+                                            <input type="number" class="buh-input" id="buh-recipe-price" placeholder="25,000">
+                                        </div>
+                                    </div>
+                                    <button class="buh-btn-primary" onclick="window.addBuhRecipeItem()" style="font-size: 0.75rem; padding: 10px 18px; margin-top: 5px;">➕ Material Qo'shish</button>
+                                </div>
+
+                                <!-- Cost breakdown -->
+                                <div class="buh-stat-row" style="grid-template-columns: repeat(5, 1fr);">
+                                    <div class="buh-stat-chip">
+                                        <div class="chip-label">XOM ASHYO</div>
+                                        <div class="chip-value" style="color:#00d2ff; font-size: 1rem;" id="buh-cost-material">0</div>
+                                    </div>
+                                    <div class="buh-stat-chip">
+                                        <div class="chip-label">ISHCHI HAQI</div>
+                                        <div class="chip-value" style="color:#ba00ff; font-size: 1rem;" id="buh-cost-labor">0</div>
+                                    </div>
+                                    <div class="buh-stat-chip">
+                                        <div class="chip-label">ENERGIYA</div>
+                                        <div class="chip-value" style="color:#fabb18; font-size: 1rem;" id="buh-cost-energy">0</div>
+                                    </div>
+                                    <div class="buh-stat-chip">
+                                        <div class="chip-label">QADOQLASH</div>
+                                        <div class="chip-value" style="color:#ff4d4f; font-size: 1rem;" id="buh-cost-packaging">0</div>
+                                    </div>
+                                    <div class="buh-stat-chip" style="background: rgba(0,255,136,0.05); border-color: rgba(0,255,136,0.15);">
+                                        <div class="chip-label">TAN NARXI</div>
+                                        <div class="chip-value" style="color:#00ff88; font-size: 1rem;" id="buh-cost-total">0</div>
+                                    </div>
+                                </div>
+                                <div class="buh-form-row" style="margin-top: 10px;">
+                                    <div class="buh-input-group">
+                                        <label>Ishchi Haqi (1 komplekt uchun, UZS)</label>
+                                        <input type="number" class="buh-input" id="buh-labor-per-unit" placeholder="15,000" value="15000">
+                                    </div>
+                                    <div class="buh-input-group">
+                                        <label>Energiya (1 komplekt uchun, UZS)</label>
+                                        <input type="number" class="buh-input" id="buh-energy-per-unit" placeholder="5,000" value="5000">
+                                    </div>
+                                    <div class="buh-input-group">
+                                        <label>Qadoqlash (1 komplekt uchun, UZS)</label>
+                                        <input type="number" class="buh-input" id="buh-packaging-per-unit" placeholder="8,000" value="8000">
+                                    </div>
+                                </div>
+                                <button class="buh-btn-primary" onclick="window.calculateTanNarxi()" style="margin-top: 10px;">🧮 Hisoblash</button>
+                            </div>
+
+                            <!-- Sales Log -->
+                            <div class="buh-section-card">
+                                <div class="buh-section-title">
+                                    <div class="title-icon" style="background: rgba(0,255,136,0.1); color: #00ff88;">📈</div>
+                                    Sotuv Jurnali
+                                </div>
+                                <div class="buh-form-row">
+                                    <div class="buh-input-group">
+                                        <label>Haridor Ismi</label>
+                                        <input type="text" class="buh-input" id="buh-sale-buyer" placeholder="Shirkati / Ismi">
+                                    </div>
+                                    <div class="buh-input-group">
+                                        <label>Mahsulot</label>
+                                        <input type="text" class="buh-input" id="buh-sale-product" placeholder="Gentra Premium Calpak">
+                                    </div>
+                                    <div class="buh-input-group">
+                                        <label>Miqdor (komplekt)</label>
+                                        <input type="number" class="buh-input" id="buh-sale-qty" placeholder="50">
+                                    </div>
+                                    <div class="buh-input-group">
+                                        <label>Sotuv Narxi (UZS/komplekt)</label>
+                                        <input type="number" class="buh-input" id="buh-sale-price" placeholder="150,000">
+                                    </div>
+                                </div>
+                                <button class="buh-btn-primary" onclick="window.addBuhSale()">💰 Sotuv Qo'shish</button>
+
+                                <div class="buh-table-wrap" style="margin-top: 15px;">
+                                    <table class="buh-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Sana</th>
+                                                <th>Haridor</th>
+                                                <th>Mahsulot</th>
+                                                <th>Miqdor</th>
+                                                <th>Sotuv Narxi</th>
+                                                <th>Tan Narxi</th>
+                                                <th>Foyda</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="buh-sales-table"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Profit Summary -->
+                            <div class="buh-profit-card">
+                                <div style="font-size: 0.7rem; font-weight: 800; color: rgba(255,255,255,0.4); letter-spacing: 2px; margin-bottom: 10px;">📊 JAMI SOF FOYDA (SOTUV)</div>
+                                <div class="buh-profit-value" id="buh-sales-profit">0 UZS</div>
+                                <div style="font-size: 0.8rem; color: rgba(255,255,255,0.35); margin-top: 10px;">
+                                    Jami sotuv: <span id="buh-sales-total-revenue" style="color: #00ff88; font-weight: 800;">0 UZS</span> |
+                                    Jami tan narxi: <span id="buh-sales-total-cost" style="color: #ff4d4f; font-weight: 800;">0 UZS</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ============ Supabase SQL Setup Modal ============ -->
+                        <div id="buh-db-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 10000; align-items: center; justify-content: center; animation: fadeIn 0.3s ease;">
+                            <div style="background: linear-gradient(135deg, #0d1622 0%, #152538 100%); border: 1px solid rgba(255,255,255,0.08); width: 90%; max-width: 650px; border-radius: 24px; padding: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); position: relative; max-height: 90vh; overflow-y: auto;">
+                                <button onclick="window.closeBuhDbSetupModal()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: rgba(255,255,255,0.4); font-size: 1.2rem; cursor: pointer; transition: 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.4)'">✕</button>
+                                <h3 style="font-size: 1.3rem; font-weight: 900; color: #fff; margin-top: 0; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; font-family: 'Outfit', sans-serif;">
+                                    ⚙️ Supabase Integratsiya Sozlamalari
+                                </h3>
+                                <p style="font-size: 0.85rem; color: rgba(255,255,255,0.5); line-height: 1.6; margin-bottom: 20px;">
+                                    Buhgalteriya ma'lumotlarini real-time holatda boshqa kompyuterlar va jamoangiz bilan ulashish uchun Supabase-da kerakli jadvallarni yarating. Quyidagi SQL skriptni nusxalang va Supabase platformangizdagi <b>SQL Editor</b> bo'limiga joylab <b>Run</b> tugmasini bosing.
+                                </p>
+                                
+                                <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 15px; position: relative; margin-bottom: 20px;">
+                                    <div style="font-size: 0.7rem; font-weight: 800; color: rgba(255,255,255,0.35); letter-spacing: 1px; margin-bottom: 8px;">NUSXALASH UCHUN SQL SKRIPT:</div>
+                                    <pre id="buh-sql-code" style="font-family: 'Courier New', Courier, monospace; font-size: 0.75rem; color: #00d2ff; max-height: 200px; overflow-y: auto; white-space: pre-wrap; margin: 0; scrollbar-width: thin; padding-right: 10px; text-align: left;"></pre>
+                                    <button onclick="window.copyBuhSqlScript()" style="position: absolute; top: 12px; right: 12px; background: rgba(0,210,255,0.1); border: 1px solid rgba(0,210,255,0.25); color: #00d2ff; font-size: 0.7rem; font-weight: 800; padding: 6px 12px; border-radius: 8px; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='rgba(0,210,255,0.2)'" onmouseout="this.style.background='rgba(0,210,255,0.1)'">
+                                        📋 SQL Nusxalash
+                                    </button>
+                                </div>
+                                
+                                <div style="background: rgba(250,187,24,0.05); border: 1px solid rgba(250,187,24,0.15); border-radius: 16px; padding: 18px; display: flex; gap: 15px; align-items: flex-start; text-align: left;">
+                                    <span style="font-size: 1.5rem; line-height: 1;">⚠️</span>
+                                    <div>
+                                        <h4 style="font-size: 0.85rem; font-weight: 800; color: #fabb18; margin: 0 0 5px 0;">Muhim Eslatma</h4>
+                                        <p style="font-size: 0.75rem; color: rgba(255,255,255,0.5); line-height: 1.5; margin: 0;">
+                                            Ushbu jadvallar Supabase-da yaratilganidan so'ng, admin dashboard sahifasini yangilang (refresh). Tizim avtomatik ravishda Supabase rejimi (<b>connected</b>) ga ulanadi va lokal ma'lumotlar avtomatik tarzda bulutga yuklanadi!
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Reporting Libraries & Main module page logic -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+
+    <script type="module">
+        let audioCtx = null;
+        window.playPremiumTick = () => {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1100, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.08);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.08);
+            } catch(e) {}
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.nav-link-item, .buh-tab-btn, button').forEach(el => {
+                el.addEventListener('click', () => window.playPremiumTick());
+            });
+        });
+    </script>
+    <script type="module" src="/src/projects/autoclapak/js/admin.js?v=6.0"></script>
+</body>
+
+</html>

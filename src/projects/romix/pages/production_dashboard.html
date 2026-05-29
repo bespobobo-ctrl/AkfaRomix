@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AKFA - Ishlab Chiqarish Bo'limi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css" />
+    <style>
+        .warehouse-body {
+            background: var(--adm-bg);
+            color: var(--adm-text);
+            transition: 0.3s;
+        }
+
+        .tab-btn {
+            padding: 10px 25px;
+            border-radius: 50px;
+            border: none;
+            background: transparent;
+            color: var(--adm-text-sec);
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .tab-btn.active {
+            background: var(--adm-accent);
+            color: #fff;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: var(--adm-text-sec);
+        }
+
+        .recipe-badge {
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .recipe-badge.eshik {
+            background: rgba(139, 92, 246, 0.1);
+            color: #8b5cf6;
+        }
+
+        .recipe-badge.rom {
+            background: rgba(0, 210, 255, 0.1);
+            color: #00d2ff;
+        }
+
+        .recipe-badge.fasad {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+
+        .cost-green {
+            color: #00ff88;
+            font-weight: 700;
+        }
+    </style>
+</head>
+
+<body class="warehouse-body">
+    <div id="mainApp" class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar-slim">
+            <div class="logo-icon-v2" style="font-size: 1.5rem; color: #8b5cf6; margin-bottom: 40px; font-weight: 900;">
+                P</div>
+            <div class="nav-icon active" data-tab="recipes" title="Shablonlar">🏭</div>
+            <div class="nav-icon" data-tab="history" title="Tarix">📑</div>
+            <div class="nav-icon" id="logoutBtn">🚪</div>
+        </aside>
+
+        <main class="admin-main">
+            <!-- Top Nav -->
+            <nav class="top-nav-v2">
+                <div class="nav-links-v2">
+                    <button class="tab-btn active" data-tab="recipes">Mahsulot Kalkulyatsiyasi</button>
+                    <button class="tab-btn" data-tab="history">Saqlangan Shablonlar</button>
+                </div>
+                <div style="display: flex; gap: 20px; align-items: center;">
+                    <button id="themeToggle" class="theme-toggle">🌙</button>
+                    <div style="text-align: right;">
+                        <div id="userName" style="font-weight: 600; font-size: 0.9rem;">Ishchi</div>
+                        <div style="font-size: 0.7rem; color: var(--adm-text-sec);">ISHLAB CHIQARISH</div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Section: Recipes Table -->
+            <section id="recipes-view" class="warehouse-section">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px;">
+                    <div>
+                        <h1 style="font-size: 2.2rem; font-weight: 600;">Mahsulot Shablonlari</h1>
+                        <p style="color: var(--adm-text-sec);">Har bir mahsulotning aniq tannarxi va tarkibi</p>
+                    </div>
+                    <div>
+                        <button id="openAddRecipe" class="primary-btn"
+                            style="background:#8b5cf6; color:#fff; border:none; padding:12px 25px; border-radius:15px; font-weight:600; cursor:pointer;">+
+                            Yangi Shablon Qo'shish</button>
+                    </div>
+                </div>
+
+                <!-- KPI Cards -->
+                <div class="bento-grid" style="margin-bottom:20px;">
+                    <div class="bento-card">
+                        <h3 style="font-size:0.9rem; color:var(--adm-text-sec);">Jami Shablonlar</h3>
+                        <div id="kpiTotal" style="font-size:2.5rem; font-weight:700; color:var(--adm-text);">0</div>
+                    </div>
+                    <div class="bento-card">
+                        <h3 style="font-size:0.9rem; color:var(--adm-text-sec);">Eshiklar</h3>
+                        <div id="kpiEshik" style="font-size:2.5rem; font-weight:700; color:#8b5cf6;">0</div>
+                    </div>
+                    <div class="bento-card">
+                        <h3 style="font-size:0.9rem; color:var(--adm-text-sec);">Romlar</h3>
+                        <div id="kpiRom" style="font-size:2.5rem; font-weight:700; color:#00d2ff;">0</div>
+                    </div>
+                    <div class="bento-card">
+                        <h3 style="font-size:0.9rem; color:var(--adm-text-sec);">O'rtacha Tannarx</h3>
+                        <div id="kpiAvg" style="font-size:1.8rem; font-weight:700; color:#00ff88;">0 UZS</div>
+                    </div>
+                </div>
+
+                <!-- Recipes Table -->
+                <div class="bento-grid">
+                    <div class="bento-card" style="grid-column: span 4;">
+                        <table class="v2-table">
+                            <thead>
+                                <tr>
+                                    <th>Mahsulot Nomi</th>
+                                    <th>Turi</th>
+                                    <th>Materiallar</th>
+                                    <th>Aksessuarlar</th>
+                                    <th>Stanok</th>
+                                    <th>Korxona</th>
+                                    <th style="color:#00ff88;">TANNARX</th>
+                                    <th>Harakat</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recipeTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal: Yangi Shablon Qo'shish -->
+    <div id="addRecipeModal"
+        style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:2000; align-items:center; justify-content:center;">
+        <div class="user-form-modal"
+            style="width: 650px; background:var(--adm-surface); max-height:90vh; overflow-y:auto;">
+            <div style="display:flex; align-items:center; gap:15px; margin-bottom:25px;">
+                <span style="font-size: 2rem;">🏭</span>
+                <h2 style="color:var(--adm-text);">Yangi Mahsulot Kalkulyatsiyasi</h2>
+            </div>
+
+            <!-- Asosiy -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:20px;">
+                <div style="grid-column: span 2;">
+                    <label class="form-label">Mahsulot Nomi / Modeli</label>
+                    <input type="text" id="rName" class="form-input-v2"
+                        placeholder="Masalan: Alyumin Eshik 40/7 Standart">
+                </div>
+                <div>
+                    <label class="form-label">Turi</label>
+                    <select id="rType" class="form-input-v2">
+                        <option value="Eshik">Eshik (Dver)</option>
+                        <option value="Rom">Rom (Okon)</option>
+                        <option value="Fasad">Fasad</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Rangi / Profil</label>
+                    <input type="text" id="rSpec" class="form-input-v2" placeholder="Oq, Qora, Mokka...">
+                </div>
+            </div>
+
+            <!-- Xom-ashyo -->
+            <div
+                style="background:rgba(0,210,255,0.05); padding:15px; border-radius:15px; margin-bottom:15px; border:1px solid rgba(0,210,255,0.1);">
+                <label class="form-label" style="font-weight:700; color:#00d2ff;">📦 Xom-ashyo (Materiallar)</label>
+                <div id="matsContainer" style="margin-bottom:10px;"></div>
+                <div style="display:flex; gap:10px;">
+                    <select id="selMat" class="form-input-v2" style="flex:2;"></select>
+                    <input type="number" step="0.01" id="qMat" class="form-input-v2" placeholder="Miqdori"
+                        style="flex:1;">
+                    <button id="addMatBtn"
+                        style="background:#00d2ff; border:none; border-radius:12px; color:#000; width:45px; font-weight:800; cursor:pointer; font-size:1.2rem;">+</button>
+                </div>
+            </div>
+
+            <!-- Aksessuarlar -->
+            <div
+                style="background:rgba(139,92,246,0.05); padding:15px; border-radius:15px; margin-bottom:15px; border:1px solid rgba(139,92,246,0.1);">
+                <label class="form-label" style="font-weight:700; color:#8b5cf6;">🔩 Aksessuarlar (Zamok,
+                    Ruchka...)</label>
+                <div id="accsContainer" style="margin-bottom:10px;"></div>
+                <div style="display:flex; gap:10px;">
+                    <select id="selAcc" class="form-input-v2" style="flex:2;"></select>
+                    <input type="number" step="1" id="qAcc" class="form-input-v2" placeholder="Dona" style="flex:1;">
+                    <button id="addAccBtn"
+                        style="background:#8b5cf6; border:none; border-radius:12px; color:#fff; width:45px; font-weight:800; cursor:pointer; font-size:1.2rem;">+</button>
+                </div>
+            </div>
+
+            <!-- Xarajatlar -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:20px;">
+                <div>
+                    <label class="form-label">Stanok Rasxodi (UZS)</label>
+                    <input type="number" id="cMachine" class="form-input-v2 calc-btn" value="50000">
+                </div>
+                <div>
+                    <label class="form-label">Korxona Rasxodi (UZS)</label>
+                    <input type="number" id="cOverhead" class="form-input-v2 calc-btn" value="30000">
+                </div>
+            </div>
+
+            <!-- Summary -->
+            <div
+                style="background:rgba(0,255,136,0.05); padding:20px; border-radius:15px; border:1px solid rgba(0,255,136,0.1); margin-bottom:20px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px; color:var(--adm-text-sec);">
+                    <span>Materiallar:</span><span id="sumMats">0 UZS</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px; color:var(--adm-text-sec);">
+                    <span>Aksessuarlar:</span><span id="sumAccs">0 UZS</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px; color:var(--adm-text-sec);">
+                    <span>Stanok + Korxona:</span><span id="sumExtra">0 UZS</span>
+                </div>
+                <div style="height:1px; background:rgba(255,255,255,0.1); margin:12px 0;"></div>
+                <div
+                    style="display:flex; justify-content:space-between; font-size:1.3rem; font-weight:800; color:#00ff88;">
+                    <span>TANNARX:</span><span id="sumTotal">0 UZS</span>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:10px;">
+                <button id="saveRecipeBtn"
+                    style="flex:1; background:var(--adm-accent); color:#fff; border:none; padding:15px; border-radius:15px; font-weight:700; cursor:pointer;">Saqlash</button>
+                <button id="closeAddRecipe"
+                    style="flex:1; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; border-radius:15px; cursor:pointer;">Bekor
+                    qilish</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Ko'rish -->
+    <div id="viewRecipeModal"
+        style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:2000; align-items:center; justify-content:center;">
+        <div class="user-form-modal"
+            style="width: 550px; background:var(--adm-surface); padding:30px; border-radius:20px; border:1px solid rgba(255,255,255,0.1);">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:15px; margin-bottom:20px;">
+                <h3 id="vrName" style="color:var(--adm-text); margin:0; font-size:1.4rem;">Model Nomi</h3>
+                <button id="closeVrBtn"
+                    style="background:none; border:none; color:var(--adm-text-sec); font-size:1.5rem; cursor:pointer;">&times;</button>
+            </div>
+            <div id="vrContent" style="color:var(--adm-text-sec); font-size:0.95rem; line-height:1.6;"></div>
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; margin-top:30px; border-top:1px solid rgba(255,255,255,0.05); padding-top:20px;">
+                <h2 style="margin:0; color:#00ff88; font-size:1.5rem;" id="vrTotal">0 UZS</h2>
+                <button id="delRecipeBtn"
+                    style="background:#ff4757; color:#fff; border:none; padding:10px 20px; border-radius:10px; font-weight:700; cursor:pointer;">O'chirish</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/projects/romix/js/production.js"></script>
+</body>
+
+</html>

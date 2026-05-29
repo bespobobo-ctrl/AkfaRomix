@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Avto Clapak — Tizim Sozlamalari</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="/src/css/style.css" />
+    
+    <script>
+        try {
+            var savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                var u = JSON.parse(savedUser);
+                if (u.role === 'ac_manager') {
+                    var style = document.createElement('style');
+                    style.innerHTML = `
+                        .sidebar-slim { display: none !important; }
+                        .executive-tabs { display: none !important; }
+                        .admin-main { margin-left: 0 !important; }
+                        .mobile-bottom-nav { display: none !important; }
+                        #section-dashboard { display: none !important; }
+                        #section-autoclapak { display: block !important; opacity: 1 !important; transform: scale(1) !important; animation: none !important; }
+                        .nav-link-item[data-auto-tab="auto-buhgalteriya"],
+                        .nav-link-item[data-auto-tab="auto-sozlamalar"] { display: none !important; }
+                        .btn-icon-elite.delete, .btn-icon-elite.edit,
+                        button[onclick*="deleteProduct"], button[onclick*="confirmProductPrice"],
+                        button[onclick*="editProductSelector"], button[onclick*="addBuhEmployee"],
+                        button[onclick*="addBuhRecipeItem"], button[onclick*="addBuhSale"],
+                        button[onclick*="addBuhTransaction"], button[onclick*="addBuhUtility"] { display: none !important; }
+                    `;
+                    document.head.appendChild(style);
+                }
+            } else { window.location.href = '/index.html'; }
+        } catch(e) {}
+    </script>
+    
+    <style>
+        /* ═══════════════════════════════════════════════ */
+        /*  PREMIUM DESIGN SYSTEM                         */
+        /* ═══════════════════════════════════════════════ */
+        :root {
+            --sz-bg: #020813;
+            --sz-card: rgba(8, 14, 26, 0.7);
+            --sz-card-hover: rgba(12, 20, 36, 0.85);
+            --sz-border: rgba(255,255,255,0.04);
+            --sz-border-active: rgba(255,255,255,0.1);
+            --sz-green: #00ff88;
+            --sz-cyan: #00d2ff;
+            --sz-red: #ff4d4f;
+            --sz-orange: #ff9800;
+            --sz-yellow: #fabb18;
+            --sz-purple: #a855f7;
+            --sz-pink: #f472b6;
+            --sz-text: #fff;
+            --sz-text2: rgba(255,255,255,0.6);
+            --sz-text3: rgba(255,255,255,0.3);
+            --sz-radius: 20px;
+            --sz-ease: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .admin-v2-body {
+            background-color: var(--sz-bg) !important;
+            color: var(--sz-text) !important;
+            overflow-x: hidden;
+        }
+
+        .sidebar-slim {
+            width: 80px;
+            background: rgba(7, 15, 25, 0.85);
+            border-right: 1px solid var(--sz-border);
+            position: fixed; top: 0; left: 0; height: 100vh;
+            display: flex; flex-direction: column; align-items: center;
+            padding: 30px 0; z-index: 1000; backdrop-filter: blur(20px);
+        }
+        .nav-icon {
+            width: 48px; height: 48px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem; color: rgba(255,255,255,0.4);
+            cursor: pointer; margin-bottom: 20px;
+            transition: all 0.5s var(--sz-ease);
+            border: 1px solid transparent;
+        }
+        .nav-icon:hover { color: #fff; background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.08); }
+        .nav-icon.active { color: #00ff88; background: rgba(0,255,136,0.08); border-color: rgba(0,255,136,0.25); box-shadow: 0 0 20px rgba(0,255,136,0.12); }
+
+        .admin-main {
+            margin-left: 80px; padding: 25px 40px; min-height: 100vh;
+            background: radial-gradient(ellipse at 20% 0%, rgba(0,210,255,0.03) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 100%, rgba(168,85,247,0.03) 0%, transparent 50%),
+                        var(--sz-bg);
+        }
+
+        /* ═══════════════════════════════════════════════ */
+        /*  ACCORDION SYSTEM — PREMIUM COLLAPSIBLE        */
+        /* ═══════════════════════════════════════════════ */
+        .sz-accordion {
+            display: flex; flex-direction: column;
+            gap: 14px;
+        }
+
+        .sz-panel {
+            border-radius: var(--sz-radius);
+            border: 1px solid var(--sz-border);
+            background: var(--sz-card);
+            backdrop-filter: blur(16px);
+            overflow: hidden;
+            transition: all 0.5s var(--sz-ease);
+            position: relative;
+        }
+        .sz-panel::before {
+            content: '';
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            border-radius: var(--sz-radius);
+            opacity: 0;
+            transition: opacity 0.5s var(--sz-ease);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .sz-panel.open { border-color: var(--sz-border-active); }
+        .sz-panel.open::before { opacity: 1; }
+
+        .sz-panel.panel-red::before { background: radial-gradient(ellipse at 0% 0%, rgba(255,77,79,0.06) 0%, transparent 60%); }
+        .sz-panel.panel-cyan::before { background: radial-gradient(ellipse at 0% 0%, rgba(0,210,255,0.06) 0%, transparent 60%); }
+        .sz-panel.panel-green::before { background: radial-gradient(ellipse at 0% 0%, rgba(0,255,136,0.06) 0%, transparent 60%); }
+        .sz-panel.panel-purple::before { background: radial-gradient(ellipse at 0% 0%, rgba(168,85,247,0.06) 0%, transparent 60%); }
+        .sz-panel.panel-yellow::before { background: radial-gradient(ellipse at 0% 0%, rgba(250,187,24,0.06) 0%, transparent 60%); }
+
+        /* Header — clickable */
+        .sz-panel-header {
+            display: flex; align-items: center; gap: 16px;
+            padding: 22px 28px;
+            cursor: pointer;
+            user-select: none;
+            position: relative; z-index: 1;
+            transition: all 0.3s var(--sz-ease);
+        }
+        .sz-panel-header:hover {
+            background: rgba(255,255,255,0.015);
+        }
+        .sz-panel.open .sz-panel-header {
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+
+        .sz-panel-icon {
+            width: 50px; height: 50px; border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; flex-shrink: 0;
+            transition: all 0.5s var(--sz-ease);
+            position: relative;
+        }
+        .sz-panel-icon::after {
+            content: '';
+            position: absolute; inset: -3px;
+            border-radius: 18px;
+            opacity: 0;
+            transition: opacity 0.5s var(--sz-ease);
+        }
+        .sz-panel.open .sz-panel-icon::after { opacity: 1; }
+
+        .panel-red .sz-panel-icon { background: rgba(255,77,79,0.08); color: var(--sz-red); }
+        .panel-red .sz-panel-icon::after { border: 1.5px solid rgba(255,77,79,0.2); }
+        .panel-cyan .sz-panel-icon { background: rgba(0,210,255,0.08); color: var(--sz-cyan); }
+        .panel-cyan .sz-panel-icon::after { border: 1.5px solid rgba(0,210,255,0.2); }
+        .panel-green .sz-panel-icon { background: rgba(0,255,136,0.08); color: var(--sz-green); }
+        .panel-green .sz-panel-icon::after { border: 1.5px solid rgba(0,255,136,0.2); }
+        .panel-purple .sz-panel-icon { background: rgba(168,85,247,0.08); color: var(--sz-purple); }
+        .panel-purple .sz-panel-icon::after { border: 1.5px solid rgba(168,85,247,0.2); }
+        .panel-yellow .sz-panel-icon { background: rgba(250,187,24,0.08); color: var(--sz-yellow); }
+        .panel-yellow .sz-panel-icon::after { border: 1.5px solid rgba(250,187,24,0.2); }
+
+        .sz-panel-info { flex: 1; min-width: 0; }
+        .sz-panel-title {
+            font-size: 1rem; font-weight: 800; color: #fff;
+            margin: 0; letter-spacing: -0.2px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .sz-panel-subtitle {
+            font-size: 0.7rem; color: var(--sz-text3);
+            margin: 4px 0 0 0; font-weight: 500;
+        }
+
+        /* Chevron Arrow */
+        .sz-chevron {
+            width: 32px; height: 32px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.5s var(--sz-ease);
+            flex-shrink: 0;
+            font-size: 0.7rem;
+            color: var(--sz-text3);
+        }
+        .sz-panel.open .sz-chevron {
+            transform: rotate(180deg);
+            background: rgba(255,255,255,0.06);
+            color: var(--sz-text2);
+        }
+
+        /* Count Badge */
+        .sz-count-badge {
+            padding: 3px 10px; border-radius: 20px;
+            font-size: 0.6rem; font-weight: 800;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+        }
+        .panel-red .sz-count-badge { background: rgba(255,77,79,0.1); color: var(--sz-red); }
+        .panel-cyan .sz-count-badge { background: rgba(0,210,255,0.1); color: var(--sz-cyan); }
+        .panel-green .sz-count-badge { background: rgba(0,255,136,0.1); color: var(--sz-green); }
+        .panel-purple .sz-count-badge { background: rgba(168,85,247,0.1); color: var(--sz-purple); }
+        .panel-yellow .sz-count-badge { background: rgba(250,187,24,0.1); color: var(--sz-yellow); }
+
+        /* Body — collapsible */
+        .sz-panel-body {
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+            transition: max-height 0.6s var(--sz-ease), opacity 0.4s var(--sz-ease), padding 0.4s var(--sz-ease);
+            padding: 0 28px;
+            position: relative; z-index: 1;
+        }
+        .sz-panel.open .sz-panel-body {
+            max-height: 2000px;
+            opacity: 1;
+            padding: 24px 28px 28px;
+        }
+
+        /* ═══════════════════════════════════════════════ */
+        /*  INNER UI ELEMENTS                             */
+        /* ═══════════════════════════════════════════════ */
+        .sz-btn {
+            padding: 11px 22px; border-radius: 12px;
+            font-weight: 800; font-size: 0.75rem; font-family: 'Outfit', sans-serif;
+            cursor: pointer; border: none;
+            display: inline-flex; align-items: center; gap: 7px;
+            transition: all 0.35s var(--sz-ease);
+            letter-spacing: 0.2px;
+        }
+        .sz-btn:hover { transform: translateY(-2px); }
+        .sz-btn:active { transform: scale(0.97); }
+
+        .sz-btn-red { background: linear-gradient(135deg, #ff4d4f 0%, #e53935 100%); color: #fff; box-shadow: 0 4px 18px rgba(255,77,79,0.2); }
+        .sz-btn-red:hover { box-shadow: 0 8px 25px rgba(255,77,79,0.35); }
+        .sz-btn-blue { background: linear-gradient(135deg, #00b4ff 0%, #0072ff 100%); color: #fff; box-shadow: 0 4px 18px rgba(0,114,255,0.2); }
+        .sz-btn-blue:hover { box-shadow: 0 8px 25px rgba(0,114,255,0.35); }
+        .sz-btn-green { background: linear-gradient(135deg, #00ff88 0%, #00c853 100%); color: #000; box-shadow: 0 4px 18px rgba(0,255,136,0.2); }
+        .sz-btn-green:hover { box-shadow: 0 8px 25px rgba(0,255,136,0.35); }
+        .sz-btn-yellow { background: linear-gradient(135deg, #fabb18 0%, #ff9800 100%); color: #000; box-shadow: 0 4px 18px rgba(250,187,24,0.2); }
+        .sz-btn-yellow:hover { box-shadow: 0 8px 25px rgba(250,187,24,0.35); }
+        .sz-btn-ghost {
+            background: rgba(255,255,255,0.03); color: var(--sz-text2);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .sz-btn-ghost:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.1); }
+        .sz-btn-sm { padding: 7px 14px; font-size: 0.65rem; border-radius: 9px; }
+
+        .sz-input {
+            width: 100%; padding: 12px 16px; border-radius: 12px;
+            border: 1.5px solid rgba(255,255,255,0.06);
+            background: rgba(0,0,0,0.25); color: #fff;
+            font-size: 0.82rem; font-weight: 600;
+            font-family: 'Outfit', sans-serif;
+            outline: none; box-sizing: border-box;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .sz-input:focus { border-color: var(--sz-cyan); box-shadow: 0 0 0 3px rgba(0,210,255,0.08); }
+        .sz-input::placeholder { color: rgba(255,255,255,0.18); }
+
+        .sz-select {
+            width: 100%; padding: 12px 16px; border-radius: 12px;
+            border: 1.5px solid rgba(255,255,255,0.06);
+            background: rgba(0,0,0,0.25); color: #fff;
+            font-size: 0.82rem; font-weight: 600;
+            font-family: 'Outfit', sans-serif;
+            cursor: pointer; color-scheme: dark;
+            box-sizing: border-box; outline: none;
+        }
+        .sz-label {
+            font-size: 0.6rem; font-weight: 700;
+            color: var(--sz-text3); letter-spacing: 1.5px;
+            text-transform: uppercase; margin-bottom: 6px; display: block;
+        }
+
+        /* ═══ RESET ROW ═══ */
+        .reset-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 20px; border-radius: 14px;
+            background: rgba(255,255,255,0.015);
+            border: 1px solid rgba(255,255,255,0.03);
+            transition: all 0.3s;
+        }
+        .reset-row:hover { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.06); }
+        .reset-row-left { display: flex; align-items: center; gap: 14px; }
+        .reset-row-icon {
+            width: 38px; height: 38px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; background: rgba(255,77,79,0.06);
+        }
+        .reset-row-name { font-weight: 700; font-size: 0.82rem; color: var(--sz-text2); }
+        .reset-row-sub { font-size: 0.6rem; color: var(--sz-text3); margin-top: 2px; }
+
+        /* ═══ CREDENTIAL CARD ═══ */
+        .cred-row {
+            display: flex; align-items: center; gap: 14px;
+            padding: 14px 18px; border-radius: 14px;
+            background: rgba(255,255,255,0.015);
+            border: 1px solid rgba(255,255,255,0.03);
+            transition: all 0.35s var(--sz-ease);
+        }
+        .cred-row:hover {
+            background: rgba(255,255,255,0.035);
+            border-color: rgba(255,255,255,0.08);
+            transform: translateX(4px);
+        }
+        .cred-avatar {
+            width: 40px; height: 40px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; flex-shrink: 0;
+        }
+        .cred-main { flex: 1; min-width: 0; }
+        .cred-main-name { font-weight: 700; font-size: 0.82rem; }
+        .cred-main-role { font-size: 0.6rem; color: var(--sz-text3); margin-top: 2px; }
+        .cred-meta { text-align: right; flex-shrink: 0; min-width: 85px; }
+        .cred-meta-login { font-size: 0.72rem; font-weight: 800; }
+        .cred-meta-pass { font-size: 0.58rem; color: var(--sz-text3); margin-top: 2px; font-family: monospace; }
+        .cred-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+        /* ═══ GMAIL STATUS ═══ */
+        .gmail-bar {
+            display: flex; align-items: center; gap: 14px;
+            padding: 16px 20px; border-radius: 14px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.04);
+        }
+        .gmail-pulse {
+            width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+            position: relative;
+        }
+        .gmail-pulse.on { background: var(--sz-green); box-shadow: 0 0 10px var(--sz-green); }
+        .gmail-pulse.on::after {
+            content: ''; position: absolute; inset: -4px;
+            border-radius: 50%; border: 2px solid var(--sz-green);
+            animation: gmailRing 2s infinite;
+        }
+        .gmail-pulse.off { background: rgba(255,77,79,0.6); }
+        @keyframes gmailRing {
+            0% { transform: scale(1); opacity: 0.6; }
+            100% { transform: scale(1.8); opacity: 0; }
+        }
+
+        .sync-check {
+            display: flex; align-items: center; gap: 12px;
+            padding: 11px 16px; border-radius: 12px;
+            background: rgba(255,255,255,0.015);
+            border: 1px solid rgba(255,255,255,0.03);
+            cursor: pointer; transition: 0.3s;
+        }
+        .sync-check:hover { background: rgba(255,255,255,0.03); }
+        .sync-check input[type=checkbox] { accent-color: var(--sz-green); width: 16px; height: 16px; cursor: pointer; }
+
+        /* ═══ HISTORY ═══ */
+        .history-gate {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 35px 20px; gap: 16px;
+        }
+        .history-gate-lock {
+            font-size: 3.5rem;
+            animation: floatLock 3s ease-in-out infinite;
+            filter: drop-shadow(0 0 20px rgba(168,85,247,0.3));
+        }
+        @keyframes floatLock {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .history-code-input {
+            width: 120px; text-align: center;
+            font-size: 1.4rem; letter-spacing: 12px;
+            padding: 14px 18px;
+            background: rgba(168,85,247,0.06);
+            border: 2px solid rgba(168,85,247,0.15);
+            border-radius: 16px;
+            color: var(--sz-purple); font-weight: 800;
+            outline: none;
+            transition: all 0.3s;
+        }
+        .history-code-input:focus {
+            border-color: var(--sz-purple);
+            box-shadow: 0 0 0 4px rgba(168,85,247,0.1), 0 0 30px rgba(168,85,247,0.1);
+        }
+
+        .history-unlocked { display: none; }
+        .history-unlocked.show { display: block; animation: fadeSlideIn 0.5s var(--sz-ease); }
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .filter-pill {
+            padding: 5px 14px; border-radius: 20px;
+            font-size: 0.65rem; font-weight: 700; cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.05);
+            background: transparent; color: var(--sz-text3);
+            transition: 0.3s; font-family: 'Outfit', sans-serif;
+        }
+        .filter-pill.active, .filter-pill:hover {
+            background: rgba(168,85,247,0.1); border-color: rgba(168,85,247,0.25);
+            color: var(--sz-purple);
+        }
+
+        .tl-item {
+            display: flex; gap: 14px; padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.025);
+        }
+        .tl-item:last-child { border-bottom: none; }
+        .tl-dot-col { display: flex; flex-direction: column; align-items: center; width: 20px; flex-shrink: 0; }
+        .tl-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .tl-line { width: 1.5px; flex: 1; background: rgba(255,255,255,0.04); margin-top: 4px; }
+        .tl-body { flex: 1; }
+        .tl-badge {
+            display: inline-block; padding: 2px 8px; border-radius: 6px;
+            font-size: 0.5rem; font-weight: 800; letter-spacing: 0.5px;
+        }
+        .tl-title { font-weight: 700; font-size: 0.8rem; margin-left: 6px; }
+        .tl-desc { font-size: 0.68rem; color: var(--sz-text3); margin-top: 4px; line-height: 1.5; }
+        .tl-time { font-size: 0.55rem; color: rgba(255,255,255,0.2); margin-top: 5px; font-weight: 600; }
+
+        /* ═══ MODAL ═══ */
+        .sz-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(2, 8, 19, 0.88); backdrop-filter: blur(14px);
+            z-index: 10000; align-items: center; justify-content: center;
+        }
+        .sz-overlay.show { display: flex; }
+        .sz-modal {
+            background: rgba(10, 18, 32, 0.97);
+            border: 1.5px solid rgba(255,255,255,0.06);
+            width: 100%; max-width: 480px; padding: 28px;
+            border-radius: 24px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+            animation: modalIn 0.4s var(--sz-ease);
+        }
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.92) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        /* ═══ TOAST ═══ */
+        .sz-toast {
+            position: fixed; top: 24px; right: 24px;
+            background: rgba(10, 18, 32, 0.96);
+            backdrop-filter: blur(20px);
+            border: 1.5px solid var(--sz-green);
+            border-radius: 16px; padding: 14px 22px;
+            display: flex; align-items: center; gap: 10px;
+            z-index: 99999; pointer-events: none;
+            opacity: 0; transform: translateX(40px);
+            transition: all 0.5s var(--sz-ease);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+            max-width: 380px;
+        }
+        .sz-toast.show { opacity: 1; transform: translateX(0); pointer-events: auto; }
+
+        /* ═══ RESPONSIVE ═══ */
+        @media (max-width: 768px) {
+            .admin-main { margin-left: 0; padding: 14px; }
+            .sidebar-slim { display: none; }
+            .sz-panel-header { padding: 16px 18px; gap: 12px; }
+            .sz-panel.open .sz-panel-body { padding: 18px; }
+            .sz-panel-icon { width: 42px; height: 42px; font-size: 1.2rem; }
+            .cred-row { flex-wrap: wrap; }
+        }
+
+        /* ═══ PAGE ENTRY ANIMATION ═══ */
+        .sz-accordion .sz-panel {
+            opacity: 0; transform: translateY(16px);
+            animation: panelEntry 0.5s var(--sz-ease) forwards;
+        }
+        .sz-accordion .sz-panel:nth-child(1) { animation-delay: 0.05s; }
+        .sz-accordion .sz-panel:nth-child(2) { animation-delay: 0.12s; }
+        .sz-accordion .sz-panel:nth-child(3) { animation-delay: 0.19s; }
+        .sz-accordion .sz-panel:nth-child(4) { animation-delay: 0.26s; }
+        .sz-accordion .sz-panel:nth-child(5) { animation-delay: 0.33s; }
+        @keyframes panelEntry {
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+
+<body class="admin-v2-body">
+    <div class="admin-layout">
+        <aside class="sidebar-slim">
+            <div class="logo-icon-v2" style="font-size: 1.5rem; color: #007c52; margin-bottom: 40px; font-weight: 900;">Q</div>
+            <div class="nav-icon" data-section="dashboard" title="AKFA Romix">🏢</div>
+            <div class="nav-icon" data-section="rassrochka" title="AKFA Romix Rassrochka">💳</div>
+            <div class="nav-icon" data-section="oynak" title="AKFA Romix Oynek">💎</div>
+            <div class="nav-icon active" data-section="autoclapak" title="AKFA Avto Clapak">🚗</div>
+            <div class="nav-icon" style="margin-top: auto;">⚙️</div>
+            <div class="nav-icon" id="sidebarLogout">🚪</div>
+        </aside>
+
+        <main class="admin-main">
+            <nav class="top-nav-v2 premium-header" style="margin-bottom: 25px;">
+                <div class="header-upper-tier">
+                    <div class="user-profile-cluster">
+                        <div class="avatar-wrapper">
+                            <img id="adminAvatar" src="https://ui-avatars.com/api/?name=Rahbar&background=007c52&color=fff" class="header-avatar">
+                            <div class="online-indicator"></div>
+                        </div>
+                        <div class="user-info-text">
+                            <span class="greeting-text">Xush kelibsiz</span>
+                            <span class="user-name" id="adminName">Admin</span>
+                        </div>
+                    </div>
+                    <div class="action-cluster">
+                        <button id="themeToggle" class="action-btn" title="Tungi/Kunduzgi rejim">🌙</button>
+                        <div class="notif-wrapper">
+                            <button class="action-btn">🔔</button>
+                            <span id="global-notif-dot" class="notif-pulse"></span>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <section id="section-autoclapak" class="admin-section autoclapak-system active" style="padding-top: 10px;">
+                <div class="clapak-header-v3">
+                    <div class="clapak-title-group">
+                        <h1>Auto Clapak <span style="color:var(--sz-green);">Sozlamalar</span></h1>
+                        <p>Boshqaruv, xavfsizlik va ma'lumotlar markazi</p>
+                    </div>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <div class="clapak-status-badge" style="border-color:rgba(0,255,136,0.2); color:var(--sz-green);">
+                            <span class="clapak-status-dot" style="background:var(--sz-green); box-shadow: 0 0 6px var(--sz-green);"></span>
+                            ADMIN ONLY
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="nav-links-v2 autoclapak-tabs premium-tabs"
+                    style="margin-bottom: 30px; display: flex; gap: 12px; padding: 6px; background: rgba(255,255,255,0.03); border-radius: 18px; border: 1px solid rgba(255,255,255,0.05); overflow-x: auto; scrollbar-width: none;">
+                    <a href="admin_dashboard.html" class="nav-link-item" data-auto-tab="auto-main"><span class="tab-icon">📊</span> Asosiy Panel</a>
+                    <a href="admin_ombor.html" class="nav-link-item" data-auto-tab="auto-ombor"><span class="tab-icon">📦</span> Ombor</a>
+                    <a href="admin_tayyor.html" class="nav-link-item" data-auto-tab="auto-tayyor"><span class="tab-icon">🏭</span> Tayyor Mahsulot</a>
+                    <a href="admin_sotuv.html" class="nav-link-item" data-auto-tab="auto-sotuv"><span class="tab-icon">📈</span> Sotuv</a>
+                    <a href="admin_buhgalteriya.html" class="nav-link-item" data-auto-tab="auto-buhgalteriya"><span class="tab-icon">💰</span> Buxgalteriya</a>
+                    <a href="admin_ishlab_chiqarish.html" class="nav-link-item" data-auto-tab="auto-ishlab-chiqarish"><span class="tab-icon">⚙️</span> Ishlab Chiqarish</a>
+                    <a href="admin_avtoclpak_xodimlar.html" class="nav-link-item" data-auto-tab="auto-xodimlar"><span class="tab-icon">👥</span> Xodimlar</a>
+                    <a href="admin_sozlamalar.html" class="nav-link-item active" data-auto-tab="auto-sozlamalar"><span class="tab-icon">🛠️</span> Sozlamalar</a>
+                </div>
+
+                <!-- ═══════════════════════════════════════ -->
+                <!--     ACCORDION PANELS                    -->
+                <!-- ═══════════════════════════════════════ -->
+                <div class="sz-accordion">
+
+                    <!-- ▸ 1. TIZIMNI TOZALASH -->
+                    <div class="sz-panel panel-red" id="panel-reset">
+                        <div class="sz-panel-header" onclick="togglePanel('panel-reset')">
+                            <div class="sz-panel-icon">🗑️</div>
+                            <div class="sz-panel-info">
+                                <h3 class="sz-panel-title">Tizimni Tozalash</h3>
+                                <p class="sz-panel-subtitle">Barcha kesh, mahsulotlar va sessiyalarni tozalab 0 dan boshlash</p>
+                            </div>
+                            <span class="sz-count-badge">4 TA SOZLAMA</span>
+                            <div class="sz-chevron">▼</div>
+                        </div>
+                        <div class="sz-panel-body">
+                            <!-- GATE -->
+                            <div class="history-gate" id="reset-gate">
+                                <div class="history-gate-lock" style="filter: drop-shadow(0 0 20px rgba(255,77,79,0.3));">🔒</div>
+                                <p style="font-size:0.85rem; font-weight:600; color:var(--sz-text2); text-align:center;">
+                                    Tizimni tozalash bo'limiga kirish uchun<br>maxsus kodni kiriting
+                                </p>
+                                <input type="password" class="history-code-input" id="reset-code-input" placeholder="••••" maxlength="4" style="background:rgba(255,77,79,0.06); border-color:rgba(255,77,79,0.15); color:var(--sz-red);" />
+                                <button class="sz-btn sz-btn-red" onclick="window.sozUnlockReset()">🔓 Ochish</button>
+                                <p style="font-size:0.55rem; color:rgba(255,77,79,0.4);">4 raqamli maxsus kod</p>
+                            </div>
+
+                            <!-- UNLOCKED CONTENT -->
+                            <div class="history-unlocked" id="reset-unlocked">
+                                <div style="display:flex; flex-direction:column; gap:10px;">
+                                    <div class="reset-row">
+                                        <div class="reset-row-left">
+                                            <div class="reset-row-icon">📦</div>
+                                            <div>
+                                                <div class="reset-row-name">Tayyor Mahsulotlar va Ombor</div>
+                                                <div class="reset-row-sub">Tayyor mahsulotlar va tarixni o'chirish</div>
+                                            </div>
+                                        </div>
+                                        <button class="sz-btn sz-btn-red sz-btn-sm" onclick="window.sozResetProducts()">Tozalash</button>
+                                    </div>
+                                    <div class="reset-row">
+                                        <div class="reset-row-left">
+                                            <div class="reset-row-icon">👥</div>
+                                            <div>
+                                                <div class="reset-row-name">Xodimlar bazasi va Sessiyalar</div>
+                                                <div class="reset-row-sub">Stanok, Kraska, davomat va barcha xodimlar</div>
+                                            </div>
+                                        </div>
+                                        <button class="sz-btn sz-btn-red sz-btn-sm" onclick="window.sozResetSessions()">Tozalash</button>
+                                    </div>
+                                    <div class="reset-row">
+                                        <div class="reset-row-left">
+                                            <div class="reset-row-icon">📊</div>
+                                            <div>
+                                                <div class="reset-row-name">Sotuv va buxgalteriya keshi</div>
+                                                <div class="reset-row-sub">Sotuv sinxronlash, buxgalteriya ma'lumotlar</div>
+                                            </div>
+                                        </div>
+                                        <button class="sz-btn sz-btn-red sz-btn-sm" onclick="window.sozResetSales()">Tozalash</button>
+                                    </div>
+                                    <div class="reset-row">
+                                        <div class="reset-row-left">
+                                            <div class="reset-row-icon">⚙️</div>
+                                            <div>
+                                                <div class="reset-row-name">Ishlab chiqarishni tozalash</div>
+                                                <div class="reset-row-sub">Jarayondagi barcha mahsulotlarni o'chirish</div>
+                                            </div>
+                                        </div>
+                                        <button class="sz-btn sz-btn-red sz-btn-sm" onclick="window.sozResetProduction()">Tozalash</button>
+                                    </div>
+                                </div>
+                                <div style="margin-top:18px; padding-top:18px; border-top: 1px solid rgba(255,77,79,0.1);">
+                                    <button class="sz-btn sz-btn-red" onclick="window.sozResetAll()" style="width:100%; justify-content:center; padding:16px; font-size:0.85rem; border-radius:14px;">
+                                        ⚠️ BARCHASINI TOZALAB 0 DAN BOSHLASH
+                                    </button>
+                                    <p style="text-align:center; font-size:0.58rem; color:rgba(255,77,79,0.45); margin-top:10px;">
+                                        Diqqat! Bu amal qaytarilmas. Barcha ma'lumotlar bazasi yo'qoladi.
+                                    </p>
+                                </div>
+                                <div style="margin-top:10px; display:flex; justify-content:flex-end;">
+                                    <button class="sz-btn sz-btn-ghost sz-btn-sm" onclick="window.sozLockReset()">🔒 Qulflash</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ▸ 2. LOGIN / PAROL BOSHQARUVI -->
+                    <div class="sz-panel panel-cyan" id="panel-creds">
+                        <div class="sz-panel-header" onclick="togglePanel('panel-creds')">
+                            <div class="sz-panel-icon">🔐</div>
+                            <div class="sz-panel-info">
+                                <h3 class="sz-panel-title">Login va Parollar</h3>
+                                <p class="sz-panel-subtitle">Barcha bo'lim xodimlarining login/parollarini boshqarish</p>
+                            </div>
+                            <span class="sz-count-badge" id="cred-count-badge">6 XODIM</span>
+                            <div class="sz-chevron">▼</div>
+                        </div>
+                        <div class="sz-panel-body">
+                            <div id="credentials-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+                            <div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
+                                <button class="sz-btn sz-btn-blue" onclick="window.sozOpenAddCred()">➕ Yangi Xodim</button>
+                                <button class="sz-btn sz-btn-ghost" onclick="window.sozRefreshCreds()">🔄 Yangilash</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ▸ 3. GMAIL INTEGRATSIYA -->
+                    <div class="sz-panel panel-green" id="panel-gmail">
+                        <div class="sz-panel-header" onclick="togglePanel('panel-gmail')">
+                            <div class="sz-panel-icon">📧</div>
+                            <div class="sz-panel-info">
+                                <h3 class="sz-panel-title">Gmail Zaxira Nusxa</h3>
+                                <p class="sz-panel-subtitle">Gmail.com ga ulab barcha ma'lumotlarni yig'ib borish</p>
+                            </div>
+                            <span class="sz-count-badge" id="gmail-badge">ULANMAGAN</span>
+                            <div class="sz-chevron">▼</div>
+                        </div>
+                        <div class="sz-panel-body">
+                            <div class="gmail-bar" id="gmail-status-bar">
+                                <div class="gmail-pulse off" id="gmail-dot"></div>
+                                <div style="flex:1;">
+                                    <div style="font-weight:700; font-size:0.82rem;" id="gmail-status-text">Ulanmagan</div>
+                                    <div style="font-size:0.6rem; color:var(--sz-text3);" id="gmail-status-sub">Gmail hali sozlanmagan</div>
+                                </div>
+                                <button class="sz-btn sz-btn-green sz-btn-sm" id="gmail-action-btn" onclick="window.sozConnectGmail()">📧 Ulash</button>
+                            </div>
+
+                            <div style="margin-top:18px; display:flex; flex-direction:column; gap:14px;">
+                                <div>
+                                    <label class="sz-label">GMAIL MANZILI</label>
+                                    <input type="email" class="sz-input" id="gmail-address" placeholder="sizning_email@gmail.com" />
+                                </div>
+                                <div>
+                                    <label class="sz-label">ILOVALAR PAROLI (APP PASSWORD)</label>
+                                    <input type="password" class="sz-input" id="gmail-app-password" placeholder="xxxx xxxx xxxx xxxx" />
+                                    <p style="font-size:0.55rem; color:var(--sz-text3); margin-top:5px;">
+                                        Google Account → Security → 2-Step Verification → App Passwords
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label class="sz-label">SINXRONLANUVCHI MA'LUMOTLAR</label>
+                                    <div style="display:flex; flex-direction:column; gap:6px; margin-top:6px;">
+                                        <label class="sync-check"><input type="checkbox" id="sync-ombor" checked> <span style="font-size:0.75rem; font-weight:600;">📦 Ombor zaxiralari</span></label>
+                                        <label class="sync-check"><input type="checkbox" id="sync-production" checked> <span style="font-size:0.75rem; font-weight:600;">⚙️ Ishlab chiqarish tarixi</span></label>
+                                        <label class="sync-check"><input type="checkbox" id="sync-employees" checked> <span style="font-size:0.75rem; font-weight:600;">👥 Xodimlar faoliyati</span></label>
+                                        <label class="sync-check"><input type="checkbox" id="sync-processes" checked> <span style="font-size:0.75rem; font-weight:600;">🔄 Protsess bosqichlari</span></label>
+                                    </div>
+                                </div>
+
+                                <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;">
+                                    <button class="sz-btn sz-btn-green" onclick="window.sozSaveGmail()">💾 Saqlash</button>
+                                    <button class="sz-btn sz-btn-ghost" onclick="window.sozTestGmail()">📤 Test Xabar</button>
+                                    <button class="sz-btn sz-btn-ghost" onclick="window.sozSendBackup()">📊 To'liq Hisobot</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ▸ 4. TARIX BO'LIMI (KOD: 777) -->
+                    <div class="sz-panel panel-purple" id="panel-history">
+                        <div class="sz-panel-header" onclick="togglePanel('panel-history')">
+                            <div class="sz-panel-icon">📜</div>
+                            <div class="sz-panel-info">
+                                <h3 class="sz-panel-title">
+                                    Tizim Tarixi
+                                    <span style="font-size:0.55rem; background:rgba(168,85,247,0.15); color:var(--sz-purple); padding:2px 8px; border-radius:6px; font-weight:700;">🔒 HIMOYALANGAN</span>
+                                </h3>
+                                <p class="sz-panel-subtitle">Barcha o'zgarishlar, ishlab chiqarishlar va kirishlar tarixi</p>
+                            </div>
+                            <span class="sz-count-badge" id="history-count-badge">0 YOZUV</span>
+                            <div class="sz-chevron">▼</div>
+                        </div>
+                        <div class="sz-panel-body">
+                            <!-- GATE -->
+                            <div class="history-gate" id="history-gate">
+                                <div class="history-gate-lock">🔒</div>
+                                <p style="font-size:0.85rem; font-weight:600; color:var(--sz-text2); text-align:center;">
+                                    Tarix bo'limiga kirish uchun<br>maxsus kodni kiriting
+                                </p>
+                                <input type="password" class="history-code-input" id="history-code-input" placeholder="•••" maxlength="3" />
+                                <button class="sz-btn sz-btn-yellow" onclick="window.sozUnlockHistory()">🔓 Ochish</button>
+                                <p style="font-size:0.55rem; color:rgba(168,85,247,0.4);">3 raqamli maxsus kod</p>
+                            </div>
+
+                            <!-- UNLOCKED CONTENT -->
+                            <div class="history-unlocked" id="history-unlocked">
+                                <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;">
+                                    <button class="filter-pill active" onclick="window.sozFilter('all',this)">Barchasi</button>
+                                    <button class="filter-pill" onclick="window.sozFilter('production',this)">⚙️ Ishlab Chiqarish</button>
+                                    <button class="filter-pill" onclick="window.sozFilter('warehouse',this)">📦 Ombor</button>
+                                    <button class="filter-pill" onclick="window.sozFilter('employee',this)">👥 Xodimlar</button>
+                                    <button class="filter-pill" onclick="window.sozFilter('settings',this)">🛠️ Sozlamalar</button>
+                                    <button class="filter-pill" onclick="window.sozFilter('login',this)">🔐 Kirishlar</button>
+                                </div>
+                                <input type="text" class="sz-input" id="history-search" placeholder="🔍 Tarixdan qidirish..." oninput="window.sozSearchHist(this.value)" style="margin-bottom:14px;" />
+                                <div id="history-timeline" style="max-height:480px; overflow-y:auto;"></div>
+                                <div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
+                                    <button class="sz-btn sz-btn-ghost" onclick="window.sozExportHistory()">📥 Excel</button>
+                                    <button class="sz-btn sz-btn-red sz-btn-sm" onclick="window.sozClearHistory()">🗑️ Tozalash</button>
+                                    <button class="sz-btn sz-btn-ghost sz-btn-sm" onclick="window.sozLockHistory()">🔒 Qulflash</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ▸ 5. UMUMIY SOZLAMALAR -->
+                    <div class="sz-panel panel-yellow" id="panel-general">
+                        <div class="sz-panel-header" onclick="togglePanel('panel-general')">
+                            <div class="sz-panel-icon">⚙️</div>
+                            <div class="sz-panel-info">
+                                <h3 class="sz-panel-title">Umumiy Sozlamalar</h3>
+                                <p class="sz-panel-subtitle">Avtomatik reja, Telegram bot, ovozli bildirishnomalar</p>
+                            </div>
+                            <span class="sz-count-badge">3 TA FAOL</span>
+                            <div class="sz-chevron">▼</div>
+                        </div>
+                        <div class="sz-panel-body">
+                            <div style="display:flex; flex-direction:column; gap:10px;">
+                                <div class="reset-row">
+                                    <div class="reset-row-left">
+                                        <div class="reset-row-icon" style="background:rgba(250,187,24,0.06);">📋</div>
+                                        <div>
+                                            <div class="reset-row-name">Avtomatik reja yangilash</div>
+                                            <div class="reset-row-sub">Har 5 daqiqada sinxronlanadi</div>
+                                        </div>
+                                    </div>
+                                    <span style="color:var(--sz-green); font-weight:800; font-size:0.72rem;">YOQILGAN ✅</span>
+                                </div>
+                                <div class="reset-row">
+                                    <div class="reset-row-left">
+                                        <div class="reset-row-icon" style="background:rgba(250,187,24,0.06);">🤖</div>
+                                        <div>
+                                            <div class="reset-row-name">Telegram bot xabarnomasi</div>
+                                            <div class="reset-row-sub">Muhim voqealar haqida xabar keladi</div>
+                                        </div>
+                                    </div>
+                                    <span style="color:var(--sz-green); font-weight:800; font-size:0.72rem;">YOQILGAN ✅</span>
+                                </div>
+                                <div class="reset-row">
+                                    <div class="reset-row-left">
+                                        <div class="reset-row-icon" style="background:rgba(250,187,24,0.06);">🔔</div>
+                                        <div>
+                                            <div class="reset-row-name">Ovozli bildirishnomalar</div>
+                                            <div class="reset-row-sub">Premium ovoz effekti</div>
+                                        </div>
+                                    </div>
+                                    <span style="color:var(--sz-green); font-weight:800; font-size:0.72rem;">YOQILGAN ✅</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div><!-- /accordion -->
+            </section>
+        </main>
+    </div>
+
+    <!-- ═══ CREDENTIAL MODAL ═══ -->
+    <div class="sz-overlay" id="credModal">
+        <div class="sz-modal">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:16px; margin-bottom:18px; border-bottom:1px solid rgba(255,255,255,0.05);">
+                <h3 style="font-size:1.05rem; font-weight:800; margin:0; display:flex; align-items:center; gap:8px;">
+                    <span id="cm-icon">🔐</span> <span id="cm-title">Xodim Qo'shish</span>
+                </h3>
+                <button onclick="window.sozCloseCM()" style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); color:rgba(255,255,255,0.5); width:28px; height:28px; border-radius:50%; cursor:pointer; font-size:0.7rem; display:flex; align-items:center; justify-content:center;">✖</button>
+            </div>
+            <input type="hidden" id="cm-edit-id" />
+            <div style="display:flex; flex-direction:column; gap:14px;">
+                <div><label class="sz-label">XODIM ISMI</label><input type="text" class="sz-input" id="cm-name" placeholder="Masalan: Jaloliddin R." /></div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                    <div><label class="sz-label">LOGIN</label><input type="text" class="sz-input" id="cm-login" placeholder="7007" /></div>
+                    <div><label class="sz-label">PAROL</label><input type="text" class="sz-input" id="cm-pass" placeholder="1234" /></div>
+                </div>
+                <div><label class="sz-label">BO'LIM</label>
+                    <select class="sz-select" id="cm-role">
+                        <option value="stanok">🔧 Stanok Operatori</option>
+                        <option value="kraska">🎨 Kraska Bo'limi</option>
+                        <option value="qadoqlash">📦 Qadoqlash Bo'limi</option>
+                        <option value="ac_manager">📊 Boshqaruvchi</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:22px; padding-top:18px; border-top:1px solid rgba(255,255,255,0.04);">
+                <button class="sz-btn sz-btn-ghost" onclick="window.sozCloseCM()" style="flex:1; justify-content:center;">Bekor</button>
+                <button class="sz-btn sz-btn-blue" onclick="window.sozSaveCred()" style="flex:1.2; justify-content:center;">💾 Saqlash</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="sz-toast" id="sz-toast">
+        <span id="sz-toast-icon" style="font-size:1.1rem;">✅</span>
+        <span id="sz-toast-text" style="font-size:0.8rem; font-weight:600;">Saqlandi</span>
+    </div>
+
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
+    <script type="module">
+        import { supabase } from '@/core/supabase.js';
+
+        /* ═══ SOUND ═══ */
+        let ctx = null;
+        window.playPremiumTick = () => {
+            try {
+                if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if (ctx.state === 'suspended') ctx.resume();
+                const o = ctx.createOscillator(), g = ctx.createGain();
+                o.type = 'sine';
+                o.frequency.setValueAtTime(1100, ctx.currentTime);
+                o.frequency.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+                g.gain.setValueAtTime(0.04, ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.08);
+                o.connect(g); g.connect(ctx.destination);
+                o.start(); o.stop(ctx.currentTime + 0.08);
+            } catch(e) {}
+        };
+
+        /* ═══ ACCORDION TOGGLE ═══ */
+        window.togglePanel = (id) => {
+            const panel = document.getElementById(id);
+            if (!panel) return;
+            const wasOpen = panel.classList.contains('open');
+            // Close all
+            document.querySelectorAll('.sz-panel').forEach(p => p.classList.remove('open'));
+            // Toggle
+            if (!wasOpen) panel.classList.add('open');
+            window.playPremiumTick();
+        };
+
+        /* ═══ TOAST ═══ */
+        function toast(msg, icon = '✅') {
+            const t = document.getElementById('sz-toast');
+            document.getElementById('sz-toast-icon').textContent = icon;
+            document.getElementById('sz-toast-text').textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3500);
+        }
+
+        /* ═══ HISTORY LOGGER ═══ */
+        function logH(type, title, desc) {
+            const logs = JSON.parse(localStorage.getItem('ac_history_logs') || '[]');
+            logs.unshift({
+                id: Date.now(), type, title, description: desc,
+                timestamp: new Date().toISOString(),
+                user: (() => { try { return JSON.parse(localStorage.getItem('currentUser'))?.name || 'Admin'; } catch(e) { return 'Admin'; } })()
+            });
+            if (logs.length > 500) logs.length = 500;
+            localStorage.setItem('ac_history_logs', JSON.stringify(logs));
+            updateHistoryBadge();
+        }
+        window.logHistory = logH;
+
+        function updateHistoryBadge() {
+            const n = JSON.parse(localStorage.getItem('ac_history_logs') || '[]').length;
+            const b = document.getElementById('history-count-badge');
+            if (b) b.textContent = `${n} YOZUV`;
+        }
+
+        /* ═══ 1. RESET ═══ */
+        window.sozUnlockReset = () => {
+            if (document.getElementById('reset-code-input').value === '0777') {
+                document.getElementById('reset-gate').style.display = 'none';
+                document.getElementById('reset-unlocked').classList.add('show');
+                logH('settings', 'Tozalash bo\'limi ochildi', 'Maxsus kod bilan kirish');
+                toast('Tozalash bo\'limi ochildi', '🔓');
+            } else {
+                alert('Maxsus kod noto\'g\'ri!');
+                document.getElementById('reset-code-input').value = '';
+            }
+        };
+        window.sozLockReset = () => {
+            document.getElementById('reset-gate').style.display = 'flex';
+            document.getElementById('reset-unlocked').classList.remove('show');
+            document.getElementById('reset-code-input').value = '';
+            toast('Tozalash bo\'limi qulflandi', '🔒');
+        };
+        document.getElementById('reset-code-input').addEventListener('keypress', e => { if (e.key === 'Enter') window.sozUnlockReset(); });
+
+        async function clearTable(tableName) {
+            try {
+                const { data } = await supabase.from(tableName).select('id');
+                if (data && data.length > 0) {
+                    const ids = data.map(d => d.id);
+                    // Bulk delete in chunks of 50 to avoid URL too long
+                    for (let i = 0; i < ids.length; i += 50) {
+                        const chunk = ids.slice(i, i + 50);
+                        await supabase.from(tableName).delete().in('id', chunk);
+                    }
+                }
+            } catch(e) { console.error('Error clearing ' + tableName, e); }
+        }
+
+        window.sozResetProducts = async () => {
+            if (!confirm('⚠️ Tayyor mahsulotlar va Ombor bazasi tozalansinmi? (Ishlab chiqarishga ta\'sir qilmaydi)')) return;
+            toast('Tayyor mahsulotlar tozalanmoqda...', '⏳');
+            await clearTable('clapak_inventory');
+            await clearTable('warehouse_products');
+            await clearTable('warehouse_transactions');
+            localStorage.removeItem('clapak_products_v4');
+            localStorage.removeItem('clapak_set_price');
+            logH('settings', 'Ombor tozalandi', 'Tayyor mahsulotlar va ombor tozalandi');
+            toast('Ombor tozalandi', '🗑️');
+        };
+        window.sozResetSessions = async () => {
+            if (!confirm('⚠️ Xodimlar bazasi va Sessiyalar tozalansinmi?')) return;
+            toast('Xodimlar tozalanmoqda...', '⏳');
+            // Delete attendance FIRST to avoid foreign key constraints
+            await clearTable('attendance');
+            await clearTable('employees');
+            await clearTable('clapak_employees');
+            await clearTable('buh_employees');
+            ['stanok_session','kraska_session','qadoqlash_session','ac_manager_session'].forEach(k => localStorage.removeItem(k));
+            logH('settings', 'Xodimlar tozalandi', 'Barcha xodimlar va sessiyalar tozalandi');
+            toast('Xodimlar tozalandi', '🗑️');
+        };
+        window.sozResetSales = () => {
+            if (!confirm('⚠️ Sotuv keshi tozalansinmi?')) return;
+            localStorage.removeItem('clapak_sales_sync_v2');
+            logH('settings', 'Sotuv keshi tozalandi', 'Sotuv sinxronlash ma\'lumotlari tozalandi');
+            toast('Sotuv keshi tozalandi', '🗑️');
+        };
+        window.sozResetProduction = async () => {
+            if (!confirm('⚠️ Ishlab chiqarish jarayonidagi BARCHA mahsulotlar tozalansinmi?')) return;
+            toast('Ishlab chiqarish tozalanmoqda...', '⏳');
+            await clearTable('clapak_production');
+            localStorage.removeItem('clapak_kraska_logs_local');
+            logH('settings', 'Ishlab chiqarish tozalandi', 'Ishlab chiqarishdagi barcha jarayonlar tozalandi');
+            toast('Ishlab chiqarish tozalandi', '🗑️');
+        };
+        window.sozResetAll = async () => {
+            if (!confirm('⚠️⚠️⚠️ BARCHA MA\'LUMOTLAR O\'CHIRILADI!\n\nDavom etasizmi?')) return;
+            if (!confirm('Oxirgi tasdiqlash — haqiqatan ham?')) return;
+            toast('Barcha baza tozalanmoqda. Kuting...', '⏳');
+            
+            await clearTable('clapak_production');
+            await clearTable('clapak_inventory');
+            await clearTable('warehouse_products');
+            await clearTable('warehouse_transactions');
+            await clearTable('attendance');
+            await clearTable('employees');
+            await clearTable('clapak_employees');
+            await clearTable('buh_employees');
+
+            logH('settings', '🚨 TIZIM TOZALANDI', 'Barcha lokal va baza ma\'lumotlari o\'chirildi');
+            const rm = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                if (k && (k.startsWith('clapak_') || k.includes('_session') || k === 'activeAutoTab' || k === 'activeRomixSection' || k === 'ac_gmail_config' || k === 'ac_credentials' || k === 'theme')) rm.push(k);
+            }
+            rm.forEach(k => localStorage.removeItem(k));
+            toast('Tizim tozalandi! Qayta yuklanmoqda...', '⚠️');
+            setTimeout(() => location.reload(), 2000);
+        };
+
+        /* ═══ 2. CREDENTIALS ═══ */
+        const DEF_CREDS = [
+            { id:'c1', name:'Jaloliddin R.', login:'7007', password:'1234', role:'stanok' },
+            { id:'c2', name:'Sardorbek M.', login:'8008', password:'1234', role:'stanok' },
+            { id:'c3', name:'Rassom 1', login:'Kraska1', password:'123', role:'kraska' },
+            { id:'c4', name:'Rassom 2', login:'Kraska2', password:'123', role:'kraska' },
+            { id:'c5', name:'Qadoqlovchi 1', login:'Q1', password:'123', role:'qadoqlash' },
+            { id:'c6', name:'Ishlab Chiqarish Boshlig\'i', login:'AC1', password:'123', role:'ac_manager' }
+        ];
+        const RI = { stanok:'🔧', kraska:'🎨', qadoqlash:'📦', ac_manager:'📊' };
+        const RC = { stanok:'#00d2ff', kraska:'#a855f7', qadoqlash:'#00ff88', ac_manager:'#fabb18' };
+        const RN = { stanok:'Stanok Operatori', kraska:'Kraska Bo\'limi', qadoqlash:'Qadoqlash Bo\'limi', ac_manager:'Boshqaruvchi' };
+
+        function getCreds() { return JSON.parse(localStorage.getItem('ac_credentials')) || DEF_CREDS; }
+        function saveCreds(c) { localStorage.setItem('ac_credentials', JSON.stringify(c)); }
+
+        function renderCreds() {
+            const creds = getCreds();
+            const box = document.getElementById('credentials-list');
+            const badge = document.getElementById('cred-count-badge');
+            if (badge) badge.textContent = `${creds.length} XODIM`;
+
+            box.innerHTML = creds.map(c => {
+                const ic = RI[c.role]||'👤', cl = RC[c.role]||'#fff', rn = RN[c.role]||c.role;
+                return `<div class="cred-row">
+                    <div class="cred-avatar" style="background:${cl}10; color:${cl};">${ic}</div>
+                    <div class="cred-main">
+                        <div class="cred-main-name">${c.name}</div>
+                        <div class="cred-main-role">${rn}</div>
+                    </div>
+                    <div class="cred-meta">
+                        <div class="cred-meta-login" style="color:${cl};">${c.login}</div>
+                        <div class="cred-meta-pass">Parol: ${c.password}</div>
+                    </div>
+                    <div class="cred-actions">
+                        <button class="sz-btn sz-btn-ghost sz-btn-sm" onclick="window.sozEditCred('${c.id}')">✏️</button>
+                        <button class="sz-btn sz-btn-red sz-btn-sm" onclick="window.sozDelCred('${c.id}')" style="padding:7px 9px;">🗑️</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        window.sozRefreshCreds = () => { renderCreds(); toast('Yangilandi', '🔄'); };
+        window.sozOpenAddCred = () => {
+            document.getElementById('cm-edit-id').value = '';
+            document.getElementById('cm-name').value = '';
+            document.getElementById('cm-login').value = '';
+            document.getElementById('cm-pass').value = '';
+            document.getElementById('cm-role').value = 'stanok';
+            document.getElementById('cm-title').textContent = 'Yangi Xodim Qo\'shish';
+            document.getElementById('cm-icon').textContent = '➕';
+            document.getElementById('credModal').classList.add('show');
+        };
+        window.sozEditCred = (id) => {
+            const c = getCreds().find(x => x.id === id); if(!c)return;
+            document.getElementById('cm-edit-id').value = c.id;
+            document.getElementById('cm-name').value = c.name;
+            document.getElementById('cm-login').value = c.login;
+            document.getElementById('cm-pass').value = c.password;
+            document.getElementById('cm-role').value = c.role;
+            document.getElementById('cm-title').textContent = 'Tahrirlash';
+            document.getElementById('cm-icon').textContent = '✏️';
+            document.getElementById('credModal').classList.add('show');
+        };
+        window.sozCloseCM = () => document.getElementById('credModal').classList.remove('show');
+        window.sozSaveCred = () => {
+            const eid = document.getElementById('cm-edit-id').value;
+            const nm = document.getElementById('cm-name').value.trim();
+            const lg = document.getElementById('cm-login').value.trim();
+            const pw = document.getElementById('cm-pass').value.trim();
+            const rl = document.getElementById('cm-role').value;
+            if (!nm||!lg||!pw) { alert('Barcha maydonlarni to\'ldiring!'); return; }
+            let creds = getCreds();
+            if (eid) {
+                const i = creds.findIndex(x=>x.id===eid);
+                if (i!==-1) { creds[i] = {...creds[i], name:nm, login:lg, password:pw, role:rl}; }
+                logH('employee',`Tahrirlandi: ${nm}`,`Login: ${lg}, Rol: ${RN[rl]}`);
+            } else {
+                creds.push({ id:'c'+Date.now(), name:nm, login:lg, password:pw, role:rl });
+                logH('employee',`Yangi xodim: ${nm}`,`Login: ${lg}, Rol: ${RN[rl]}`);
+            }
+            saveCreds(creds); renderCreds(); window.sozCloseCM();
+            toast(eid?'Yangilandi':'Qo\'shildi','✅');
+        };
+        window.sozDelCred = (id) => {
+            const c = getCreds().find(x=>x.id===id); if(!c)return;
+            if (!confirm(`"${c.name}" o'chirilsinmi?`)) return;
+            saveCreds(getCreds().filter(x=>x.id!==id));
+            logH('employee',`O'chirildi: ${c.name}`,`Login: ${c.login}`);
+            renderCreds(); toast('O\'chirildi','🗑️');
+        };
+
+        /* ═══ 3. GMAIL ═══ */
+        function loadGmail() {
+            const cfg = JSON.parse(localStorage.getItem('ac_gmail_config')||'null');
+            if (cfg?.email) {
+                document.getElementById('gmail-address').value = cfg.email;
+                document.getElementById('gmail-app-password').value = cfg.appPassword||'';
+                if (cfg.syncOmbor!==undefined) document.getElementById('sync-ombor').checked = cfg.syncOmbor;
+                if (cfg.syncProduction!==undefined) document.getElementById('sync-production').checked = cfg.syncProduction;
+                if (cfg.syncEmployees!==undefined) document.getElementById('sync-employees').checked = cfg.syncEmployees;
+                if (cfg.syncProcesses!==undefined) document.getElementById('sync-processes').checked = cfg.syncProcesses;
+                if (cfg.connected) {
+                    document.getElementById('gmail-dot').className = 'gmail-pulse on';
+                    document.getElementById('gmail-status-text').textContent = cfg.email;
+                    document.getElementById('gmail-status-sub').textContent = 'Oxirgi: ' + (cfg.lastSync||'—');
+                    document.getElementById('gmail-action-btn').textContent = '🔌 Uzish';
+                    document.getElementById('gmail-action-btn').onclick = window.sozDisconnectGmail;
+                    document.getElementById('gmail-badge').textContent = 'ULANGAN ✅';
+                }
+            }
+        }
+        window.sozConnectGmail = () => { document.getElementById('gmail-address').focus(); toast('Gmail kiriting','📧'); };
+        window.sozSaveGmail = () => {
+            const email = document.getElementById('gmail-address').value.trim();
+            const pw = document.getElementById('gmail-app-password').value.trim();
+            if (!email?.includes('@')) { alert('To\'g\'ri email kiriting!'); return; }
+            if (!pw) { alert('App Password kiriting!'); return; }
+            const cfg = {
+                email, appPassword:pw, connected:true,
+                syncOmbor: document.getElementById('sync-ombor').checked,
+                syncProduction: document.getElementById('sync-production').checked,
+                syncEmployees: document.getElementById('sync-employees').checked,
+                syncProcesses: document.getElementById('sync-processes').checked,
+                lastSync: new Date().toLocaleString('uz-UZ')
+            };
+            localStorage.setItem('ac_gmail_config', JSON.stringify(cfg));
+            logH('settings','Gmail ulandi',`${email} ulandi`);
+            document.getElementById('gmail-dot').className = 'gmail-pulse on';
+            document.getElementById('gmail-status-text').textContent = email;
+            document.getElementById('gmail-status-sub').textContent = 'Hozir ulandi';
+            document.getElementById('gmail-action-btn').textContent = '🔌 Uzish';
+            document.getElementById('gmail-action-btn').onclick = window.sozDisconnectGmail;
+            document.getElementById('gmail-badge').textContent = 'ULANGAN ✅';
+            toast('Gmail ulandi!','📧');
+        };
+        window.sozDisconnectGmail = () => {
+            if (!confirm('Gmail uzilsinmi?')) return;
+            localStorage.removeItem('ac_gmail_config');
+            document.getElementById('gmail-dot').className = 'gmail-pulse off';
+            document.getElementById('gmail-status-text').textContent = 'Ulanmagan';
+            document.getElementById('gmail-status-sub').textContent = 'Gmail sozlanmagan';
+            document.getElementById('gmail-action-btn').textContent = '📧 Ulash';
+            document.getElementById('gmail-action-btn').onclick = window.sozConnectGmail;
+            document.getElementById('gmail-address').value = '';
+            document.getElementById('gmail-app-password').value = '';
+            document.getElementById('gmail-badge').textContent = 'ULANMAGAN';
+            logH('settings','Gmail uzildi',''); toast('Gmail uzildi','🔌');
+        };
+        window.sozTestGmail = async () => {
+            const cfg = JSON.parse(localStorage.getItem('ac_gmail_config')||'null');
+            if (!cfg?.connected) { alert('Avval Gmail ulang!'); return; }
+            toast('Test yuborilmoqda...','📤');
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const {data:prod} = await supabase.from('clapak_production').select('*').gte('start_time',`${today}T00:00:00.000Z`).lte('start_time',`${today}T23:59:59.999Z`);
+                const rpt = buildReport(prod||[]);
+                const subj = encodeURIComponent(`[Auto Clapak] Hisobot — ${today}`);
+                window.open(`mailto:${cfg.email}?subject=${subj}&body=${encodeURIComponent(rpt)}`,'_blank');
+                cfg.lastSync = new Date().toLocaleString('uz-UZ');
+                localStorage.setItem('ac_gmail_config',JSON.stringify(cfg));
+                logH('settings','Test yuborildi',`${cfg.email}`); toast('Yuborildi!','✅');
+            } catch(e) { toast('Xatolik!','❌'); }
+        };
+        window.sozSendBackup = async () => {
+            const cfg = JSON.parse(localStorage.getItem('ac_gmail_config')||'null');
+            if (!cfg?.connected) { alert('Avval Gmail ulang!'); return; }
+            toast('Hisobot tayyorlanmoqda...','📊');
+            try {
+                const {data:all} = await supabase.from('clapak_production').select('*').order('start_time',{ascending:false}).limit(200);
+                const rpt = buildFullReport(all||[]);
+                window.open(`mailto:${cfg.email}?subject=${encodeURIComponent(`[Auto Clapak] TO'LIQ HISOBOT`)}&body=${encodeURIComponent(rpt)}`,'_blank');
+                cfg.lastSync = new Date().toLocaleString('uz-UZ');
+                localStorage.setItem('ac_gmail_config',JSON.stringify(cfg));
+                logH('settings','To\'liq hisobot yuborildi',`${cfg.email}`); toast('Yuborildi!','✅');
+            } catch(e) { toast('Xatolik!','❌'); }
+        };
+        function buildReport(prod) {
+            const fin = prod.filter(p=>p.stage==='finished'||p.stage==='warehouse_pending');
+            const tq = fin.reduce((s,p)=>s+(p.quantity||0),0);
+            let t = `AUTO CLAPAK — KUNLIK HISOBOT\nSana: ${new Date().toLocaleDateString('uz-UZ')}\n${'═'.repeat(40)}\n\n`;
+            t += `Jami: ${tq} dona (${Math.floor(tq/4)} komplekt)\nFaol: ${prod.length-fin.length}\nTugallangan: ${fin.length}\n\n`;
+            prod.forEach((p,i)=>{ t+=`${i+1}. ${p.model} — ${p.quantity} dona — ${p.stage} — ${p.operator||'-'}\n`; });
+            return t;
+        }
+        function buildFullReport(prod) {
+            let t = `AUTO CLAPAK — TO'LIQ HISOBOT\n${new Date().toLocaleString('uz-UZ')}\n${'═'.repeat(45)}\n\n`;
+            const byD = {};
+            prod.forEach(p=>{ const d=p.start_time?p.start_time.split('T')[0]:'?'; if(!byD[d])byD[d]=[]; byD[d].push(p); });
+            Object.keys(byD).sort().reverse().forEach(d=>{
+                const it=byD[d], tq=it.reduce((s,p)=>s+(p.quantity||0),0);
+                t+=`\n📅 ${d} — ${it.length} arava, ${tq} dona\n${'─'.repeat(35)}\n`;
+                it.forEach((p,i)=>{ t+=`  ${i+1}. ${p.model} | ${p.quantity} | ${p.stage} | ${p.operator||'-'}\n`; });
+            });
+            const creds = getCreds();
+            t+=`\n\n👥 XODIMLAR:\n${'─'.repeat(35)}\n`;
+            creds.forEach(c=>{ t+=`  ${c.name} — ${c.login} — ${RN[c.role]||c.role}\n`; });
+            return t;
+        }
+
+        /* ═══ 4. HISTORY ═══ */
+        window.sozUnlockHistory = () => {
+            if (document.getElementById('history-code-input').value === '777') {
+                document.getElementById('history-gate').style.display = 'none';
+                document.getElementById('history-unlocked').classList.add('show');
+                renderHist(); logH('login','Tarix ochildi','Maxsus kod bilan kirish'); toast('Tarix ochildi','🔓');
+            } else { alert('Kod xato!'); document.getElementById('history-code-input').value = ''; }
+        };
+        window.sozLockHistory = () => {
+            document.getElementById('history-gate').style.display = 'flex';
+            document.getElementById('history-unlocked').classList.remove('show');
+            document.getElementById('history-code-input').value = '';
+            toast('Qulflandi','🔒');
+        };
+        document.getElementById('history-code-input').addEventListener('keypress', e => { if(e.key==='Enter') window.sozUnlockHistory(); });
+
+        let curFilter = 'all';
+        function renderHist(filter=curFilter, search='') {
+            let logs = JSON.parse(localStorage.getItem('ac_history_logs')||'[]');
+            if (filter!=='all') logs = logs.filter(l=>l.type===filter);
+            if (search) { const s=search.toLowerCase(); logs=logs.filter(l=>l.title.toLowerCase().includes(s)||l.description.toLowerCase().includes(s)); }
+            const box = document.getElementById('history-timeline');
+            if (!logs.length) { box.innerHTML=`<div style="text-align:center;padding:30px;color:var(--sz-text3);"><div style="font-size:2.5rem;margin-bottom:8px;">📭</div><p style="font-size:0.8rem;">Tarix topilmadi</p></div>`; return; }
+            const BM = {
+                production:{c:'rgba(250,187,24,0.1)',t:'#fabb18',l:'ISHLAB CHIQARISH',d:'#fabb18'},
+                warehouse:{c:'rgba(0,255,136,0.1)',t:'#00ff88',l:'OMBOR',d:'#00ff88'},
+                employee:{c:'rgba(0,210,255,0.1)',t:'#00d2ff',l:'XODIM',d:'#00d2ff'},
+                settings:{c:'rgba(255,77,79,0.1)',t:'#ff4d4f',l:'SOZLAMA',d:'#ff4d4f'},
+                login:{c:'rgba(168,85,247,0.1)',t:'#a855f7',l:'KIRISH',d:'#a855f7'}
+            };
+            box.innerHTML = logs.map((l,i) => {
+                const b = BM[l.type]||BM.settings;
+                const ts = new Date(l.timestamp);
+                return `<div class="tl-item">
+                    <div class="tl-dot-col"><div class="tl-dot" style="background:${b.d};"></div>${i<logs.length-1?'<div class="tl-line"></div>':''}</div>
+                    <div class="tl-body">
+                        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                            <span class="tl-badge" style="background:${b.c};color:${b.t};">${b.l}</span>
+                            <span class="tl-title">${l.title}</span>
+                        </div>
+                        <div class="tl-desc">${l.description}</div>
+                        <div class="tl-time">🕐 ${ts.toLocaleDateString('uz-UZ')} ${ts.toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'})} — 👤 ${l.user||'Tizim'}</div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        window.sozFilter = (f, el) => {
+            curFilter = f;
+            document.querySelectorAll('.filter-pill').forEach(p=>p.classList.remove('active'));
+            if(el) el.classList.add('active');
+            renderHist(f, document.getElementById('history-search')?.value||'');
+        };
+        window.sozSearchHist = (v) => renderHist(curFilter, v);
+        window.sozClearHistory = () => {
+            if(!confirm('Tarix tozalansinmi?'))return;
+            localStorage.removeItem('ac_history_logs'); renderHist(); updateHistoryBadge(); toast('Tozalandi','🗑️');
+        };
+        window.sozExportHistory = () => {
+            const logs = JSON.parse(localStorage.getItem('ac_history_logs')||'[]');
+            if(!logs.length) { alert('Tarix bo\'sh'); return; }
+            if(typeof XLSX==='undefined') { alert('Excel yuklanmadi'); return; }
+            const ws = XLSX.utils.json_to_sheet(logs.map(l=>({
+                Sana:new Date(l.timestamp).toLocaleDateString('uz-UZ'),
+                Vaqt:new Date(l.timestamp).toLocaleTimeString('uz-UZ'),
+                Tur:l.type, Sarlavha:l.title, Tavsif:l.description, Foydalanuvchi:l.user||'Tizim'
+            })));
+            ws['!cols']=[{wch:12},{wch:10},{wch:15},{wch:35},{wch:50},{wch:20}];
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb,ws,'Tarix');
+            XLSX.writeFile(wb,`AC_Tarix_${new Date().toISOString().split('T')[0]}.xlsx`);
+            toast('Excel yuklandi','📥');
+        };
+
+        /* ═══ INIT ═══ */
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCreds();
+            loadGmail();
+            updateHistoryBadge();
+            document.querySelectorAll('.nav-link-item, button, .filter-pill').forEach(el => {
+                el.addEventListener('click', () => window.playPremiumTick());
+            });
+        });
+    </script>
+    <script type="module" src="/src/projects/autoclapak/js/admin.js?v=6.0"></script>
+</body>
+</html>

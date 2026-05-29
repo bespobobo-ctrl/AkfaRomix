@@ -1689,3 +1689,125 @@ body.dark-mode .warehouse-body {
     color: var(--adm-text) !important;
 }
 
+/* 💎 PREMIUM HEADER STYLING (Professional UI/UX) */
+.premium-header {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 15px 30px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 20px !important;
+    height: auto !important;
+    transition: all 0.3s ease;
+}
+
+body.dark-mode .premium-header {
+    background: rgba(13, 22, 34, 0.8) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+.header-upper-tier {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.user-profile-cluster {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.avatar-wrapper {
+    position: relative;
+    width: 48px;
+    height: 48px;
+}
+
+.header-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 16px;
+    object-fit: cover;
+    border: 2px solid var(--adm-accent);
+    padding: 2px;
+}
+
+.online-indicator {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 12px;
+    height: 12px;
+    background: #00ff88;
+    border: 2px solid var(--adm-surface);
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+}
+
+.user-info-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.greeting-text {
+    font-size: 0.75rem;
+    color: var(--adm-text-sec);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.user-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--adm-text);
+}
+
+.action-cluster {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.action-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    border: 1px solid var(--adm-border);
+    background: rgba(0, 0, 0, 0.03);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color: var(--adm-text);
+}
+
+body.dark-mode .action-btn {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.action-btn:hover {
+    background: var(--adm-accent);
+    color: #fff;
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 124, 82, 0.2);
+}
+
+.notif-wrapper {
+    position: relative;
+}
+
+/* responsive/mobile sizing */
+@media (max-width: 1024px) {
+    .premium-header {
+        padding: 12px 15px !important;
+        gap: 12px !important;
+    }
+}
+
+

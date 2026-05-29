@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AKFA Bo'yash Bo'limi | Kraska Panel</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div id="app">
+        <!-- 🔐 SCREEN: AUTH -->
+        <div id="login-screen" class="screen">
+            <div class="glass-auth" style="margin: auto;">
+                <div class="setup-header">
+                    <div class="logo-shield" style="background: linear-gradient(135deg, #ba00ff, #00f2ff);">PAINT</div>
+                    <p>BO'YASH BO'LIMI</p>
+                </div>
+                <div class="elite-input-group">
+                    <label class="elite-label">TIZIM LOGIN (USER)</label>
+                    <input type="text" id="login-id" class="huge-input" placeholder="Kraska1"
+                        style="font-size: 1.5rem; padding: 20px;">
+                </div>
+                <div class="elite-input-group">
+                    <label class="elite-label">KIRISH PAROLI</label>
+                    <input type="password" id="login-pass" class="huge-input" placeholder="••••"
+                        style="font-size: 1.5rem; padding: 20px;">
+                </div>
+                <button id="login-btn" class="btn-stop" style="background: linear-gradient(135deg, #ba00ff, #7f00ff); margin-top: 20px; box-shadow: 0 0 20px rgba(186,0,255,0.4);">KIRISHNI TASDIQLASH</button>
+            </div>
+        </div>
+
+        <!-- 📟 SCREEN: DASHBOARD -->
+        <div id="dashboard-screen" class="screen" style="display: none;">
+            <header class="dash-header">
+                <div class="live-badge">
+                    <div class="pulse-dot" style="background:#ba00ff; box-shadow: 0 0 10px #ba00ff;"></div>
+                    <span id="active-operator">Rassom</span> // <span>BO'YASH BO'LIMI</span>
+                </div>
+                <button onclick="window.logout()" class="btn-logout-mini">CHIQISH 🚪</button>
+            </header>
+
+            <div class="dashboard-banner">
+                <h2>SOVUTISH XONASIDAGI ARAVALAR</h2>
+                <p>Bo'yashni boshlash uchun aravachani tanlang</p>
+            </div>
+
+            <!-- Active Carts Grid -->
+            <div class="carts-scroll-container">
+                <div class="carts-grid" id="cooling-carts-list">
+                    <!-- Loaded dynamically -->
+                    <div class="empty-state">SOVUTISH XONASI BO'SH... ❄️</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🎨 SCREEN: PAINTING -->
+        <div id="painting-screen" class="screen" style="display: none;">
+            <header class="dash-header">
+                <div class="live-badge">
+                    <div class="pulse-dot" style="background:#00f2ff; box-shadow:0 0 10px #00f2ff; animation: clapak-pulse 1s infinite;"></div>
+                    <span id="paint-cart-title">ARAVA #1</span> // <span id="paint-model-title">MALIBU-2</span>
+                </div>
+                <div class="mega-timer" id="paint-timer">00:00</div>
+            </header>
+
+            <div class="card-elite prod-visualizer" style="background: linear-gradient(135deg, rgba(186,0,255,0.08), rgba(0,242,255,0.03)); border-color: rgba(186,0,255,0.3);">
+                <div class="main-counter">
+                    <span class="count-label" style="color: #00f2ff;">JARIYADA BO'YALMOQDA 🎨</span>
+                    <div class="count-number" id="paint-qty-val" style="color: #fff; font-size: 3rem;">36 <small style="font-size: 1rem; color: rgba(255,255,255,0.4);">dona karkas</small></div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <span class="count-label" style="font-size: 0.6rem;">BO'YASH DAVOMIYLIGI:</span>
+                        <span style="color: #00f2ff; font-weight: 800; font-size: 0.7rem;" id="timer-status">SEKUNDMA-SEKUND HISOB-KITOB</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Defects / Brak tracker -->
+            <div class="brak-tracker-card">
+                <h3 class="elite-label" style="color: #ff4d4f; letter-spacing: 1.5px; text-align: center; margin-bottom: 15px;">NUQSONLARNI QAYD ETISH (BRAK)</h3>
+                <div class="brak-controls">
+                    <button class="btn-cyber warning" id="brak-minus" style="font-size: 2rem; background: rgba(255,77,79,0.1); border-color: rgba(255,77,79,0.3); color: #ff4d4f; height: 60px;">-1</button>
+                    <div class="brak-counter-val" id="brak-count-val">0</div>
+                    <button class="btn-cyber warning" id="brak-plus" style="font-size: 2rem; background: rgba(255,77,79,0.15); border-color: rgba(255,77,79,0.4); color: #ff4d4f; height: 60px;">+1</button>
+                </div>
+            </div>
+
+            <div class="bottom-bar" style="position: relative; margin-top: auto; padding: 20px 0;">
+                <button id="finish-paint-btn" class="btn-stop" style="background: linear-gradient(135deg, #ba00ff, #00f2ff); color: #000; box-shadow: 0 0 20px rgba(186,0,255,0.3); font-weight: 900; height: 65px; border-radius: 20px;">BO'YASHNI YAKUNLASH VA PASPORT GENERATSIYA QILISH ➜</button>
+            </div>
+        </div>
+
+        <!-- 📊 MODAL: PASSPORT -->
+        <div id="passport-modal" class="report-overlay" style="display: none;">
+            <div class="report-panel" style="border: 1px solid rgba(186,0,255,0.4); box-shadow: 0 15px 40px rgba(186,0,255,0.15); background: rgba(10,12,18,0.95);">
+                <div class="passport-header-visual">
+                    <div class="passport-shield">ARAVA PASPORTI</div>
+                    <p style="font-size: 0.65rem; color: #ba00ff; font-weight: 800; letter-spacing: 2px; margin-top: 5px;">SUSHILKA UCHUN RASMIY YO'LLANMA</p>
+                </div>
+
+                <div class="report-row"><span class="label">ARAVA RAQAMI</span> <span class="value" id="pass-cart-num" style="color:#00f2ff;">ARAVA #1</span></div>
+                <div class="report-row"><span class="label">MAHSULOT MODELI</span> <span class="value" id="pass-model">MALIBU-2</span></div>
+                <div class="report-row"><span class="label">TAYYOR KARKAS</span> <span class="value" id="pass-qty" style="color: var(--emerald);">36 dona</span></div>
+                <div class="report-row"><span class="label">ANIQLANGAN NUQSON (BRAK)</span> <span class="value" id="pass-brak" style="color: var(--rose);">0 dona</span></div>
+                <div class="report-row"><span class="label">BO'YASH DAVOMIYLIGI</span> <span class="value" id="pass-duration">12 daqiqa</span></div>
+                <div class="report-row"><span class="label">SUSHILKAGA YO'LLANGAN VAQT</span> <span class="value" id="pass-time">10:35</span></div>
+                <div class="report-row" style="border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 12px; margin-top: 10px;">
+                    <span class="label">PASPORT KODI (ID)</span> 
+                    <span class="value" id="pass-id" style="font-family: monospace; font-size: 0.65rem; color: rgba(255,255,255,0.4);">#PAS-87C5E</span>
+                </div>
+
+                <div class="paint-type-selector" style="margin-top: 20px; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 15px; border: 1px solid rgba(186,0,255,0.3);">
+                    <p style="font-size: 0.8rem; color: #ba00ff; font-weight: 800; letter-spacing: 1px; margin-bottom: 10px; text-align: center;">🎨 BO'YOQ TURINI TANLANG (ZDELNIY UCHUN)</p>
+                    <select id="paint-type-select" style="width: 100%; padding: 12px; background: #0d121a; color: #fff; border: 1px solid #00f2ff; border-radius: 10px; font-size: 1rem; font-weight: 700; outline: none; appearance: none;">
+                        <option value="Serisi">SERISI (25,600 so'm / arava)</option>
+                        <option value="Redlayn">REDLAYN (33,000 so'm / arava)</option>
+                        <option value="Kombo">KOMBO (50,000 so'm / arava)</option>
+                    </select>
+                </div>
+
+                <div style="margin-top: 25px;">
+                    <button class="finish-btn" id="sushilka-transmit-btn" style="background: linear-gradient(135deg, #ba00ff, #00f2ff); color: #000; font-weight: 900; box-shadow: 0 0 25px rgba(186,0,255,0.3); font-size: 1.05rem;">SUSHILKAGA YO'LLASH VA SMENANI YANGILASH 🚀</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast">Ma'lumotlar sinxronlashtirildi ✅</div>
+
+    <script type="module" src="./app.js"></script>
+</body>
+
+</html>

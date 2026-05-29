@@ -74,15 +74,15 @@ export const authService = {
         }
 
         switch (role) {
-            case 'admin': return base + 'admin_dashboard.html';
-            case 'hr': return base + 'hr_dashboard.html';
-            case 'employee': return base + 'akfa_hr_mini.html';
-            case 'manager': return base + 'warehouse_dashboard.html';
-            case 'sotuv': return base + 'sales_dashboard.html';
-            case 'showroom': return base + 'showroom_dashboard.html';
-            case 'ishlab_chiqarish': return base + 'production_dashboard.html';
-            case 'ac_manager': return base + 'admin_dashboard.html';
-            default: return base + 'generic_dashboard.html';
+            case 'admin': return base + 'src/projects/autoclapak/pages/admin_dashboard.html';
+            case 'hr': return base + 'src/projects/romix/pages/hr_dashboard.html';
+            case 'employee': return base + 'src/projects/romix/pages/akfa_hr_mini.html';
+            case 'manager': return base + 'src/projects/romix/pages/warehouse_dashboard.html';
+            case 'sotuv': return base + 'src/projects/romix/pages/sales_dashboard.html';
+            case 'showroom': return base + 'src/projects/romix/pages/showroom_dashboard.html';
+            case 'ishlab_chiqarish': return base + 'src/projects/romix/pages/production_dashboard.html';
+            case 'ac_manager': return base + 'src/projects/autoclapak/pages/admin_dashboard.html';
+            default: return base + 'src/projects/romix/pages/generic_dashboard.html';
         }
     }
 };

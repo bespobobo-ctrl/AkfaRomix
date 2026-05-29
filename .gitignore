@@ -8,3 +8,4 @@ logs/
 *.log
 debug_output.txt
 output.txt
+.vercel

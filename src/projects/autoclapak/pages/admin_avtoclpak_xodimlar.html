@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Avto Clapak — Xodimlar Boshqaruvi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="/src/css/style.css" />
+    
+    <script>
+        // Anti-Flash & RBAC Role Protection (Ultimate Sync Edition)
+        try {
+            var savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                var u = JSON.parse(savedUser);
+                if (u.role === 'ac_manager') {
+                    var style = document.createElement('style');
+                    style.innerHTML = `
+                        .sidebar-slim { display: none !important; }
+                        .executive-tabs { display: none !important; }
+                        .admin-main { margin-left: 0 !important; }
+                        .mobile-bottom-nav { display: none !important; }
+                        #section-dashboard { display: none !important; }
+                        #section-autoclapak { display: block !important; opacity: 1 !important; transform: scale(1) !important; animation: none !important; }
+                        .nav-link-item[data-auto-tab="auto-buhgalteriya"],
+                        .nav-link-item[data-auto-tab="auto-sozlamalar"] {
+                            display: none !important;
+                        }
+                        .btn-icon-elite.delete, .btn-icon-elite.edit, 
+                        button[onclick*="deleteProduct"], button[onclick*="confirmProductPrice"],
+                        button[onclick*="editProductSelector"], button[onclick*="addBuhEmployee"],
+                        button[onclick*="addBuhRecipeItem"], button[onclick*="addBuhSale"],
+                        button[onclick*="addBuhTransaction"], button[onclick*="addBuhUtility"] {
+                            display: none !important;
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+            } else {
+                window.location.href = '/index.html';
+            }
+        } catch(e) {}
+    </script>
+    
+    <style>
+        :root {
+            --clapak-accent: #00ff88;
+            --clapak-glow: rgba(0, 255, 136, 0.4);
+            --clapak-dark: #070f19;
+            --clapak-border: rgba(255, 255, 255, 0.08);
+            --transition-premium: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .admin-v2-body {
+            background-color: #020813 !important;
+            color: #fff !important;
+            overflow-x: hidden;
+        }
+
+        /* Unified Sidebar Style */
+        .sidebar-slim {
+            width: 80px;
+            background: rgba(7, 15, 25, 0.85);
+            border-right: 1px solid var(--clapak-border);
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px 0;
+            z-index: 1000;
+            backdrop-filter: blur(20px);
+        }
+
+        .nav-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            color: rgba(255,255,255,0.4);
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: var(--transition-premium);
+            border: 1px solid transparent;
+        }
+
+        .nav-icon:hover {
+            color: #fff;
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.08);
+        }
+
+        .nav-icon.active {
+            color: #00ff88;
+            background: rgba(0,255,136,0.08);
+            border-color: rgba(0,255,136,0.25);
+            box-shadow: 0 0 20px rgba(0,255,136,0.12);
+        }
+
+        .admin-main {
+            margin-left: 80px;
+            padding: 25px 40px;
+            min-height: 100vh;
+            background: radial-gradient(circle at 50% 0%, #0c1626 0%, #020813 80%);
+            position: relative;
+        }
+
+        /* --- CYBERPUNK LABELS & FORMS --- */
+        .clapak-label {
+            display: block;
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.4);
+            font-weight: 800;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .unit-chip, .cat-chip, .curr-chip {
+            flex: 1;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+            text-transform: uppercase;
+        }
+
+        .unit-chip:hover, .cat-chip:hover, .curr-chip:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: #fff;
+        }
+
+        .unit-chip.active, .cat-chip.active {
+            background: rgba(0, 255, 136, 0.1);
+            border-color: #00ff88;
+            color: #00ff88;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.2);
+        }
+
+        .curr-chip.active {
+            background: rgba(0, 210, 255, 0.1);
+            border-color: #00d2ff;
+            color: #00d2ff;
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
+        }
+
+        /* --- STAT CARDS --- */
+        .stat-grid-cyber {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card-cyber {
+            background: linear-gradient(145deg, rgba(11,20,35,0.7), rgba(4,10,20,0.5));
+            border: 1px solid rgba(255,255,255,0.04);
+            padding: 24px;
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: 0.3s;
+        }
+
+        .stat-card-cyber::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--clapak-accent);
+        }
+
+        .stat-card-cyber.blue::before {
+            background: #00d2ff;
+        }
+
+        .stat-card-cyber.orange::before {
+            background: #ffaa00;
+        }
+
+        .stat-card-cyber:hover {
+            transform: translateY(-3px);
+            border-color: rgba(255,255,255,0.08);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+        }
+
+        /* --- TABLE & LISTS --- */
+        .cyber-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        .cyber-table th {
+            padding: 18px 20px;
+            background: rgba(7, 15, 25, 0.6);
+            color: rgba(255,255,255,0.4);
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .cyber-table td {
+            padding: 18px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            font-size: 0.85rem;
+            color: #fff;
+        }
+
+        .cyber-table tbody tr {
+            transition: 0.3s;
+        }
+
+        .cyber-table tbody tr:hover {
+            background: rgba(255,255,255,0.02);
+        }
+
+        /* --- PREMIUM FUT CARD STYLE (FIFA AESTHETIC) --- */
+        .fifa-card-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 35px;
+            padding: 20px 10px;
+        }
+
+        .fifa-card {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 2.2 / 3;
+            background: linear-gradient(135deg, #1f1b0f 0%, #0d121c 100%);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6), inset 0 0 0 2px rgba(255,215,0,0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            border-bottom: 5px solid rgba(255,215,0,0.8);
+        }
+
+        .fifa-card::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: conic-gradient(transparent, rgba(255,215,0,0.1), transparent 30%);
+            animation: rotateGlow 6s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes rotateGlow {
+            100% { transform: rotate(360deg); }
+        }
+
+        .fifa-card:hover {
+            transform: translateY(-10px) scale(1.03);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.8), inset 0 0 0 2px rgba(255,215,0,0.8);
+        }
+
+        .fifa-card-top {
+            position: relative;
+            width: 100%;
+            height: 55%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            padding-bottom: 10px;
+        }
+
+        .fifa-card-rating {
+            position: absolute;
+            top: 20px; left: 20px;
+            text-align: center;
+            z-index: 2;
+        }
+        .fifa-card-rating-num {
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: #ffd700;
+            line-height: 1;
+            text-shadow: 0 2px 10px rgba(255,215,0,0.4);
+            font-family: 'Outfit', sans-serif;
+        }
+        .fifa-card-rating-pos {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: rgba(255,255,255,0.9);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 2px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            padding-top: 2px;
+        }
+
+        .fifa-avatar {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+            z-index: 1;
+        }
+
+        .fifa-card-bottom {
+            width: 100%;
+            height: 45%;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(13,22,34,0.95) 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 5px 20px 20px 20px;
+            z-index: 2;
+        }
+
+        .fifa-name {
+            font-size: 1.3rem;
+            font-weight: 900;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(255,215,0,0.3);
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+            width: 90%;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .fifa-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            width: 100%;
+            gap: 8px 15px;
+        }
+
+        .fifa-stat-col {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .fifa-stat-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .fifa-stat-val {
+            font-size: 1.05rem;
+            font-weight: 900;
+            color: #fff;
+            width: 35px;
+            text-align: right;
+        }
+
+        .fifa-stat-lbl {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #ffd700;
+        }
+
+        .fifa-actions {
+            position: absolute;
+            bottom: -60px; /* Hidden initially */
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 15px;
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(10px);
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 10;
+        }
+
+        .fifa-card:hover .fifa-actions {
+            bottom: 0;
+        }
+
+        .fifa-btn {
+            padding: 8px 0;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            cursor: pointer;
+            border: none;
+            flex: 1;
+            color: #000;
+            text-transform: uppercase;
+            transition: 0.2s;
+        }
+        .fifa-btn.bejik { background: #00d2ff; }
+        .fifa-btn.edit { background: #ffd700; }
+        .fifa-btn.delete { background: #ff4d4f; color: #fff; }
+
+        .fifa-btn:hover {
+            filter: brightness(1.2);
+            transform: scale(1.05);
+        }
+
+        .badge-pill-cyber {
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-pill-cyber.aklad {
+            background: rgba(0, 210, 255, 0.1);
+            border: 1px solid rgba(0, 210, 255, 0.25);
+            color: #00d2ff;
+        }
+
+        .badge-pill-cyber.zdelniy {
+            background: rgba(255, 170, 0, 0.1);
+            border: 1px solid rgba(255, 170, 0, 0.25);
+            color: #ffaa00;
+        }
+
+        /* --- MEDIA PRINT FOR ID BADGE --- */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printableBadgeArea, #printableBadgeArea * {
+                visibility: visible;
+            }
+            #printableBadgeArea {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100vw;
+                height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: white !important;
+            }
+            .cyber-badge {
+                box-shadow: none !important;
+                border: 2px solid #000 !important;
+                color: #000 !important;
+            }
+        }
+
+        /* 🤖 PREMIUM CYBER BUTTON STYLES (Elite UI/UX) */
+        .clapak-btn-primary {
+            padding: 13px 26px;
+            border-radius: 16px;
+            border: none;
+            background: linear-gradient(135deg, #00ff88 0%, #00aba9 100%);
+            color: #020813;
+            font-weight: 800;
+            font-size: 0.88rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 8px 25px rgba(0, 255, 136, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-family: 'Outfit', sans-serif;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .clapak-btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(0, 255, 136, 0.45);
+            filter: brightness(1.08);
+        }
+
+        .clapak-btn-primary:active {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 15px rgba(0, 255, 136, 0.3);
+        }
+
+        .clapak-btn-secondary {
+            padding: 13px 26px;
+            border-radius: 16px;
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            background: rgba(255, 255, 255, 0.02);
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.88rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-family: 'Outfit', sans-serif;
+            letter-spacing: 0.5px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .clapak-btn-secondary:hover {
+            transform: translateY(-3px);
+            background: rgba(0, 255, 136, 0.06);
+            border-color: rgba(0, 255, 136, 0.5);
+            box-shadow: 0 8px 25px rgba(0, 255, 136, 0.15);
+            color: #00ff88;
+        }
+
+        .clapak-btn-secondary:active {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(0, 255, 136, 0.1);
+        }
+    </style>
+</head>
+
+<body class="admin-v2-body">
+    <div class="admin-layout">
+        <!-- Slim Sidebar -->
+        <aside class="sidebar-slim">
+            <div class="logo-icon-v2" style="font-size: 1.5rem; color: #007c52; margin-bottom: 40px; font-weight: 900;">Q</div>
+            <div class="nav-icon" data-section="dashboard" title="AKFA Romix">🏢</div>
+            <div class="nav-icon" data-section="rassrochka" title="AKFA Romix Rassrochka">💳</div>
+            <div class="nav-icon" data-section="oynak" title="AKFA Romix Oynek">💎</div>
+            <div class="nav-icon active" data-section="autoclapak" title="AKFA Avto Clapak">🚗</div>
+
+            <div class="nav-icon" style="margin-top: auto;">⚙️</div>
+            <div class="nav-icon" id="sidebarLogout">🚪</div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- 💎 PROFESSIONAL EXECUTIVE HEADER (Elite UI/UX) -->
+            <nav class="top-nav-v2 premium-header" style="margin-bottom: 25px;">
+                <div class="header-upper-tier">
+                    <div class="user-profile-cluster">
+                        <div class="avatar-wrapper">
+                            <img id="adminAvatar" src="https://ui-avatars.com/api/?name=Rahbar&background=007c52&color=fff" class="header-avatar">
+                            <div class="online-indicator"></div>
+                        </div>
+                        <div class="user-info-text">
+                            <span class="greeting-text">Xush kelibsiz</span>
+                            <span class="user-name" id="adminName">Admin</span>
+                        </div>
+                    </div>
+                    <div class="action-cluster">
+                        <button id="themeToggle" class="action-btn" title="Tungi/Kunduzgi rejim">🌙</button>
+                        <div class="notif-wrapper">
+                            <button class="action-btn">🔔</button>
+                            <span id="global-notif-dot" class="notif-pulse"></span>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Section: Avto Clapak Container -->
+            <section id="section-autoclapak" class="admin-section autoclapak-system active" style="padding-top: 10px;">
+                <div class="clapak-header-v3">
+                    <div class="clapak-title-group">
+                        <h1>Auto Clapak <span style="color:var(--clapak-accent);">Xodimlar bo'limi</span></h1>
+                        <p>Zavod seh xodimlari va ishchilar boshqaruvi</p>
+                    </div>
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:10px;">
+                        <div class="clapak-status-badge">
+                            <span class="clapak-status-dot"></span>
+                            LIVE: HR TIZIMI FAOL
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 8-Tab Premium Navigation Bar (Point to modular files!) -->
+                <div class="nav-links-v2 autoclapak-tabs premium-tabs"
+                    style="margin-bottom: 35px; display: flex; gap: 12px; padding: 6px; background: rgba(255,255,255,0.03); border-radius: 18px; border: 1px solid rgba(255,255,255,0.05); overflow-x: auto; scrollbar-width: none;">
+                    <a href="admin_dashboard.html" class="nav-link-item" data-auto-tab="auto-main"><span class="tab-icon">📊</span> Asosiy Panel</a>
+                    <a href="admin_ombor.html" class="nav-link-item" data-auto-tab="auto-ombor"><span class="tab-icon">📦</span> Ombor</a>
+                    <a href="admin_tayyor.html" class="nav-link-item" data-auto-tab="auto-tayyor"><span class="tab-icon">🏭</span> Tayyor Mahsulot</a>
+                    <a href="admin_sotuv.html" class="nav-link-item" data-auto-tab="auto-sotuv"><span class="tab-icon">📈</span> Sotuv</a>
+                    <a href="admin_buhgalteriya.html" class="nav-link-item" data-auto-tab="auto-buhgalteriya"><span class="tab-icon">💰</span> Buxgalteriya</a>
+                    <a href="admin_ishlab_chiqarish.html" class="nav-link-item" data-auto-tab="auto-ishlab-chiqarish"><span class="tab-icon">⚙️</span> Ishlab Chiqarish</a>
+                    <a href="admin_avtoclpak_xodimlar.html" class="nav-link-item active" data-auto-tab="auto-xodimlar"><span class="tab-icon">👥</span> Xodimlar</a>
+                    <a href="admin_sozlamalar.html" class="nav-link-item" data-auto-tab="auto-sozlamalar"><span class="tab-icon">🛠️</span> Sozlamalar</a>
+                </div>
+
+                <!-- --- CYBER STATISTICS PANEL --- -->
+                <div class="stat-grid-cyber">
+                    <div class="stat-card-cyber">
+                        <div style="font-size:0.75rem; color:rgba(255,255,255,0.4); font-weight:800; text-transform:uppercase; margin-bottom:5px;">Jami Seh Ishchilari</div>
+                        <div id="statTotal" style="font-size:2rem; font-weight:900; font-family:'Outfit';">0 ta</div>
+                    </div>
+                    <div class="stat-card-cyber blue">
+                        <div style="font-size:0.75rem; color:rgba(255,255,255,0.4); font-weight:800; text-transform:uppercase; margin-bottom:5px;">Aklad Oluvchilar</div>
+                        <div id="statAklad" style="font-size:2rem; font-weight:900; font-family:'Outfit';">0 ta</div>
+                    </div>
+                    <div class="stat-card-cyber orange">
+                        <div style="font-size:0.75rem; color:rgba(255,255,255,0.4); font-weight:800; text-transform:uppercase; margin-bottom:5px;">Zdelniy Ishchilar</div>
+                        <div id="statZdelniy" style="font-size:2rem; font-weight:900; font-family:'Outfit';">0 ta</div>
+                    </div>
+                    <div class="stat-card-cyber">
+                        <div style="font-size:0.75rem; color:rgba(255,255,255,0.4); font-weight:800; text-transform:uppercase; margin-bottom:5px;">Jami Oylik Fondi</div>
+                        <div id="statPayroll" style="font-size:1.6rem; font-weight:900; color:#00ff88; font-family:'Outfit';">0 UZS</div>
+                    </div>
+                </div>
+
+                <!-- --- FILTER & CONTROL BAR --- -->
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:20px; margin-bottom:25px;">
+                    <div style="display:flex; gap:15px; flex:1; max-width:600px;">
+                        <input type="text" id="staffSearchInput" placeholder="Xodimlarni ism yoki lavozimi bo'yicha qidirish..." class="form-input-v2" style="margin-bottom:0 !important; font-size:0.85rem;">
+                        <select id="staffFilterType" class="form-input-v2" style="margin-bottom:0 !important; width:180px; font-size:0.85rem; background:#0b1423; cursor:pointer;">
+                            <option value="ALL">Barchasi</option>
+                            <option value="AKLAD">Aklad (Klassik)</option>
+                            <option value="ZDELNIY">Zdelniy (Baybay)</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; gap:12px;">
+                        <button onclick="window.toggleView()" class="clapak-btn-secondary">
+                            <span id="viewIcon">📱 Grid ko'rinishi</span>
+                        </button>
+                        <button onclick="window.openAddModal()" class="clapak-btn-primary">
+                            <span>Yangi Xodim Qo'shish</span> <span style="font-size:1.1rem;">👤</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- --- DATA CONTAINER --- -->
+                <div id="staffDataContainer" style="animation: fadeIn 0.4s ease;">
+                    <!-- Real-time loading indicator -->
+                    <div style="text-align:center; padding:100px 0; opacity:0.5;">
+                        <span>Kutib turing, ma'lumotlar yuklanmoqda... ⏳</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 👥 MODAL: XODIM QO'SHISH VA TAHRIRLASH -->
+    <div id="workerModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.92); backdrop-filter:blur(30px); z-index:1000002; align-items:center; justify-content:center; padding:20px;">
+        <div class="clapak-card" style="width:100%; max-width:700px; background:linear-gradient(145deg, rgba(13,22,34,0.95), rgba(20,30,45,0.85)); border:1px solid rgba(0,255,136,0.3); padding:35px; border-radius:35px; box-shadow: 0 40px 80px rgba(0,0,0,0.8);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+                <div>
+                    <h2 id="modalTitle" style="font-size:1.8rem; font-weight:900; color:#fff; margin-bottom:5px;">Yangi Xodim Qo'shish</h2>
+                    <p style="color:#00ff88; font-size:0.8rem; font-weight:600; opacity:0.8;">Auto Clapak sexiga yangi ishchi ma'lumotlarini kiritish</p>
+                </div>
+                <div style="width:60px; height:60px; background:rgba(0,255,136,0.1); border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:2rem;">👤</div>
+            </div>
+
+            <!-- Modal fields layout -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:30px;">
+                <div class="input-group">
+                    <label class="clapak-label">Ismi</label>
+                    <input type="text" id="empFname" placeholder="Masalan: Jamshid" class="form-input-v2">
+                </div>
+                <div class="input-group">
+                    <label class="clapak-label">Familyasi</label>
+                    <input type="text" id="empLname" placeholder="Masalan: Karimov" class="form-input-v2">
+                </div>
+                <div class="input-group">
+                    <label class="clapak-label">Tug'ilgan Yili</label>
+                    <input type="number" id="empBirth" placeholder="Masalan: 1995" class="form-input-v2">
+                </div>
+                <div class="input-group">
+                    <label class="clapak-label">Ishga Kirgan Yili</label>
+                    <input type="number" id="empJoined" placeholder="Masalan: 2024" class="form-input-v2">
+                </div>
+                <div class="input-group">
+                    <label class="clapak-label">Lavozimi (Role)</label>
+                    <input type="text" id="empRole" placeholder="Masalan: Stanok operatori" class="form-input-v2">
+                </div>
+                <div class="input-group">
+                    <label class="clapak-label">Telefon Raqami</label>
+                    <input type="text" id="empPhone" placeholder="+998901234567" class="form-input-v2">
+                </div>
+                <div class="input-group">
+                    <label class="clapak-label">Oylik To'lov Tizimi</label>
+                    <input type="hidden" id="empPayType" value="Aklad">
+                    <div style="display:flex; gap:8px;">
+                        <div class="cat-chip active" id="payTypeAklad" onclick="window.selectPayType('Aklad')">Aklad (Fixed)</div>
+                        <div class="cat-chip" id="payTypeZdelniy" onclick="window.selectPayType('Zdelniy')">Zdelniy (Piece)</div>
+                    </div>
+                </div>
+                <div class="input-group" id="empSalaryGroup">
+                    <label class="clapak-label">Maosh / Oylik stavkasi (UZS)</label>
+                    <input type="number" id="empSalary" placeholder="Masalan: 6500000" class="form-input-v2">
+                </div>
+                <div class="input-group" id="empPriceSerisiGroup" style="display:none;">
+                    <label class="clapak-label" style="color:#00ff88;">Serisi Narxi (UZS)</label>
+                    <input type="number" id="empPriceSerisi" value="25600" class="form-input-v2">
+                </div>
+                <div class="input-group" id="empPriceRedlaynGroup" style="display:none;">
+                    <label class="clapak-label" style="color:#00d2ff;">Redlayn Narxi (UZS)</label>
+                    <input type="number" id="empPriceRedlayn" value="33000" class="form-input-v2">
+                </div>
+                <div class="input-group" id="empPriceKomboGroup" style="display:none;">
+                    <label class="clapak-label" style="color:#ba00ff;">Kombo Narxi (UZS)</label>
+                    <input type="number" id="empPriceKombo" value="50000" class="form-input-v2">
+                </div>
+                <div class="input-group" style="grid-column: span 2;">
+                    <label class="clapak-label">Profil Rasmi (JPG / PNG)</label>
+                    <div style="display:flex; align-items:center; gap:20px;">
+                        <input type="file" id="empPhotoFile" accept="image/*" style="display:none;" onchange="window.handlePhotoUpload(this)">
+                        <button onclick="document.getElementById('empPhotoFile').click()" class="clapak-btn-primary" style="background:rgba(255,255,255,0.05); color:#fff; border:1px solid rgba(255,255,255,0.1); box-shadow:none; padding:12px 20px;">
+                            Rasm tanlash 📷
+                        </button>
+                        <div style="position:relative;">
+                            <img id="photoPreview" src="" style="width:60px; height:60px; border-radius:15px; border:2px solid var(--clapak-accent); object-fit:cover; display:none;">
+                            <div id="photoClearBtn" onclick="window.clearPhoto()" style="display:none; position:absolute; top:-8px; right:-8px; background:#ff4d4f; width:20px; height:20px; border-radius:50%; align-items:center; justify-content:center; font-size:0.65rem; color:#fff; cursor:pointer; font-weight:900;">X</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:15px;">
+                <button id="saveWorkerBtn" onclick="window.saveEmployeeData()" style="flex:2; background:linear-gradient(135deg, #00ff88, #00aba9); color:#000; border:none; padding:18px; border-radius:15px; font-weight:900; font-size:1rem; cursor:pointer; box-shadow:0 15px 30px rgba(0,255,136,0.25);">
+                    Saqlash ⚡
+                </button>
+                <button onclick="window.closeModal()" style="flex:1; background:rgba(255,255,255,0.03); color:#fff; border:1px solid rgba(255,255,255,0.1); padding:18px; border-radius:15px; font-weight:700; cursor:pointer;">Bekor qilish</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 💳 MODAL: PREMIUM ID ACCESS BEJIK & QR CODE -->
+    <div id="badgeModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); backdrop-filter:blur(40px); z-index:1000003; align-items:center; justify-content:center; padding:20px; overflow-y:auto;">
+        <div style="display:flex; flex-direction:column; align-items:center; gap:25px;">
+            
+            <!-- Real physical card template layout -->
+            <div id="printableBadgeArea" class="cyber-badge" style="width:330px; height:520px; background:linear-gradient(135deg, #091321 0%, #030811 100%); border:3px solid #00ff88; border-radius:32px; box-shadow:0 0 50px rgba(0,255,136,0.15); padding:35px; display:flex; flex-direction:column; align-items:center; justify-content:space-between; position:relative; overflow:hidden;">
+                
+                <!-- Background decorative shapes -->
+                <div style="position:absolute; top:-50px; left:-50px; width:150px; height:150px; border-radius:50%; background:rgba(0,255,136,0.02); filter:blur(40px);"></div>
+                <div style="position:absolute; bottom:-50px; right:-50px; width:150px; height:150px; border-radius:50%; background:rgba(0,210,255,0.02); filter:blur(40px);"></div>
+                
+                <!-- Badge top headers -->
+                <div style="display:flex; flex-direction:column; align-items:center; text-align:center;">
+                    <div style="font-size:0.6rem; font-weight:900; color:rgba(255,255,255,0.3); letter-spacing:4px; text-transform:uppercase; margin-bottom:4px;">AKFA Group</div>
+                    <div style="font-size:0.95rem; font-weight:900; color:#00ff88; letter-spacing:1px; text-transform:uppercase;">Auto Clapak</div>
+                    <div style="width:35px; height:2px; background:linear-gradient(90deg, #00ff88, #00d2ff); margin-top:8px;"></div>
+                </div>
+
+                <!-- Avatar frame with neon glow -->
+                <div style="width:130px; height:130px; border-radius:50%; border:3px solid #00ff88; padding:5px; box-shadow:0 0 25px rgba(0,255,136,0.25); display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.02); margin:15px 0;">
+                    <img id="badgeAvatar" src="" style="width:100%; height:100%; border-radius:50%; object-fit:cover; background:#0a121c;">
+                </div>
+
+                <!-- Employee meta information -->
+                <div style="text-align:center;">
+                    <div id="badgeFullName" style="font-size:1.35rem; font-weight:900; color:#fff; letter-spacing:-0.5px; text-transform:uppercase; margin-bottom:4px;">Noma'lum xodim</div>
+                    <div id="badgeRole" style="font-size:0.75rem; font-weight:800; color:#00d2ff; letter-spacing:1px; text-transform:uppercase; background:rgba(0,210,255,0.07); padding:4px 12px; border-radius:8px; border:1px solid rgba(0,210,255,0.15); display:inline-block;">Lavozim</div>
+                </div>
+
+                <!-- Dynamic QR server container -->
+                <div style="width:110px; height:110px; background:#fff; border-radius:15px; display:flex; align-items:center; justify-content:center; padding:10px; box-shadow:0 10px 30px rgba(0,0,0,0.5); margin:10px 0;">
+                    <img id="badgeQr" src="" style="width:100%; height:100%;">
+                </div>
+
+                <!-- Employee ID tag footer -->
+                <div style="display:flex; flex-direction:column; align-items:center;">
+                    <div id="badgeIdText" style="font-size:0.6rem; font-weight:900; color:rgba(255,255,255,0.3); letter-spacing:2px; font-family:monospace;">ID: CLAPAK-0000</div>
+                    <div style="font-size:0.5rem; color:#00ff88; font-weight:800; letter-spacing:1px; text-transform:uppercase; margin-top:3px;">Zavod Ruxsatnomasi</div>
+                </div>
+            </div>
+
+            <!-- Action buttons underneath -->
+            <div style="display:flex; gap:12px; width:330px;">
+                <button onclick="window.printBadge()" style="flex:1; background:#00ff88; color:#000; border:none; padding:15px; border-radius:15px; font-weight:900; font-size:0.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <span>Chop Etish</span> <span>🖨️</span>
+                </button>
+                <button onclick="window.closeBadge()" style="flex:1; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:15px; border-radius:15px; font-weight:800; font-size:0.9rem; cursor:pointer;">
+                    Yopish
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Required Reporting & QR Code assets -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+
+    <script type="module">
+        import { supabase } from '/src/js/core/supabase.js';
+
+        let staffList = [];
+        let isGridView = false;
+        let activeEditId = null;
+        let tempPhotoData = '';
+
+        // Fetch All Employees isolated by 'clapak_employees'
+        window.loadStaffData = async () => {
+            const container = document.getElementById('staffDataContainer');
+            try {
+                if (!supabase) throw new Error("Supabase ulanishi mavjud emas!");
+                
+                const { data, error } = await supabase
+                    .from('clapak_employees')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    // Fail gracefully and show SQL notice if table doesn't exist
+                    if (error.message.includes("public.clapak_employees")) {
+                        container.innerHTML = `
+                            <div style="padding:40px; border:1px solid rgba(255,77,79,0.3); background:rgba(255,77,79,0.05); border-radius:20px; text-align:left; color:#ff4d4f; line-height:1.6; max-width:800px; margin:0 auto;">
+                                <h3 style="font-weight:900; font-size:1.15rem; margin-bottom:10px;">⚠️ Supabase-da 'clapak_employees' jadvali topilmadi!</h3>
+                                <p style="font-size:0.85rem; color:rgba(255,255,255,0.8); margin-bottom:15px;">Xodimlarni boshqalar bilan aralashib ketmasdan, to'liq ajratilgan holda saqlash uchun Supabase ma'lumotlar bazasida jadval yaratishingiz kerak. Quyidagi SQL kodini ko'chirib oling va Supabase Dashboard-dagi **SQL Editor** bo'limida ishga tushiring:</p>
+                                <pre style="background:#020813; padding:15px; border-radius:10px; color:#00ff88; font-size:0.75rem; border:1px solid rgba(255,255,255,0.05); overflow-x:auto;">
+CREATE TABLE IF NOT EXISTS public.clapak_employees (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    full_name TEXT NOT NULL,
+    first_name TEXT,
+    last_name TEXT,
+    role TEXT,
+    salary_info TEXT,
+    status TEXT DEFAULT 'MA''LUMOT YO''Q',
+    birth_year INTEGER,
+    phone TEXT,
+    avatar_url TEXT,
+    joined_year INTEGER,
+    price_serisi NUMERIC DEFAULT 25600,
+    price_redlayn NUMERIC DEFAULT 33000,
+    price_kombo NUMERIC DEFAULT 50000,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Existing table alter script if it already exists:
+ALTER TABLE public.clapak_employees ADD COLUMN IF NOT EXISTS price_serisi NUMERIC DEFAULT 25600;
+ALTER TABLE public.clapak_employees ADD COLUMN IF NOT EXISTS price_redlayn NUMERIC DEFAULT 33000;
+ALTER TABLE public.clapak_employees ADD COLUMN IF NOT EXISTS price_kombo NUMERIC DEFAULT 50000;
+
+ALTER TABLE public.clapak_employees ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public Read" ON public.clapak_employees FOR SELECT USING (true);
+CREATE POLICY "Public Write" ON public.clapak_employees FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public Update" ON public.clapak_employees FOR UPDATE USING (true);
+CREATE POLICY "Public Delete" ON public.clapak_employees FOR DELETE USING (true);</pre>
+                            </div>
+                        `;
+                        return;
+                    }
+                    throw error;
+                }
+
+                staffList = data || [];
+                window.renderStaff();
+                window.calculateStats();
+
+            } catch (err) {
+                console.error("Staff load error:", err);
+                container.innerHTML = `<div style="text-align:center; padding:50px; color:#ff4d4f;">⚠️ Xatolik yuz berdi: ${err.message}</div>`;
+            }
+        };
+
+        // Render staff either in high-tech dense table or animated cyber cards
+        window.renderStaff = () => {
+            const container = document.getElementById('staffDataContainer');
+            const searchVal = document.getElementById('staffSearchInput').value.toLowerCase();
+            const filterVal = document.getElementById('staffFilterType').value;
+
+            // Apply search & filter locally
+            const filtered = staffList.filter(emp => {
+                const matchesSearch = emp.full_name.toLowerCase().includes(searchVal) || (emp.role && emp.role.toLowerCase().includes(searchVal));
+                const salaryStr = (emp.salary_info || '').toUpperCase();
+                
+                let matchesFilter = true;
+                if (filterVal === 'AKLAD') matchesFilter = salaryStr.includes('AKLAD');
+                else if (filterVal === 'ZDELNIY') matchesFilter = salaryStr.includes('ZDELNIY');
+                
+                return matchesSearch && matchesFilter;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding:80px 0; opacity:0.4;">Bunday mezonlarga mos ishchilar topilmadi 🔍</div>`;
+                return;
+            }
+
+            if (isGridView) {
+                // Premium FUT Card Grid View (FIFA Aesthetic)
+                let html = `<div class="fifa-card-container">`;
+                filtered.forEach(emp => {
+                    const avatar = emp.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=0b1423&color=00ff88`;
+                    const parts = (emp.salary_info || '').split('|');
+                    const payType = parts[0]?.trim() || 'AKLAD';
+                    const payAmt = parseInt(parts[1]?.replace(/\D/g, '') || '0').toLocaleString();
+                    const age = emp.birth_year ? (new Date().getFullYear() - emp.birth_year) : '??';
+                    const exp = emp.joined_year ? (new Date().getFullYear() - emp.joined_year) : '??';
+                    const shortRole = (emp.role || 'ISHCHI').substring(0, 3).toUpperCase();
+                    // Generate a "rating" based on experience (just for visual effect)
+                    const rating = emp.joined_year ? Math.min(99, 75 + (new Date().getFullYear() - emp.joined_year) * 3) : 75;
+
+                    const payDisplay = payType === 'Zdelniy' ? 'Ishbay' : `${(parseInt(parts[1]?.replace(/\D/g, '') || '0') / 1000000).toFixed(1)}M`;
+
+                    html += `
+                        <div class="fifa-card">
+                            <div class="fifa-card-top">
+                                <div class="fifa-card-rating">
+                                    <div class="fifa-card-rating-num">${rating}</div>
+                                    <div class="fifa-card-rating-pos">${shortRole}</div>
+                                </div>
+                                <img src="${avatar}" class="fifa-avatar" alt="Avatar">
+                            </div>
+                            <div class="fifa-card-bottom">
+                                <div class="fifa-name">${emp.first_name || emp.full_name.split(' ')[0]}</div>
+                                <div class="fifa-stats">
+                                    <div class="fifa-stat-col">
+                                        <div class="fifa-stat-row">
+                                            <span class="fifa-stat-val">${age}</span>
+                                            <span class="fifa-stat-lbl">YOSHI</span>
+                                        </div>
+                                        <div class="fifa-stat-row">
+                                            <span class="fifa-stat-val">${exp}</span>
+                                            <span class="fifa-stat-lbl">STAJI</span>
+                                        </div>
+                                    </div>
+                                    <div class="fifa-stat-col">
+                                        <div class="fifa-stat-row">
+                                            <span class="fifa-stat-val" style="font-size:0.85rem">${payType.substring(0,3)}</span>
+                                            <span class="fifa-stat-lbl">TURI</span>
+                                        </div>
+                                        <div class="fifa-stat-row">
+                                            <span class="fifa-stat-val" style="font-size:0.75rem">${payDisplay}</span>
+                                            <span class="fifa-stat-lbl">MAOSH</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="fifa-actions">
+                                <button onclick="window.viewBadge('${emp.id}'); event.stopPropagation();" class="fifa-btn bejik">🪪 Bejik</button>
+                                <button onclick="window.editEmployee('${emp.id}'); event.stopPropagation();" class="fifa-btn edit">✏️ Tahrir</button>
+                                <button onclick="window.deleteEmployee('${emp.id}', '${emp.full_name}'); event.stopPropagation();" class="fifa-btn delete">🗑 O'chirish</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+                container.innerHTML = html;
+            } else {
+                // Table View
+                let html = `
+                    <div style="background:rgba(13,22,34,0.6); border:1px solid rgba(255,255,255,0.05); border-radius:24px; overflow:hidden;">
+                        <table class="cyber-table">
+                            <thead>
+                                <tr>
+                                    <th>Ishchi</th>
+                                    <th>Lavozimi</th>
+                                    <th>Staj / Yoshi</th>
+                                    <th>Telefon</th>
+                                    <th>Tizim / Maoshi</th>
+                                    <th style="text-align:right;">Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                filtered.forEach(emp => {
+                    const avatar = emp.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=0b1423&color=00ff88`;
+                    const parts = (emp.salary_info || '').split('|');
+                    const payType = parts[0]?.trim() || 'Aklad';
+                    const payAmt = parseInt(parts[1]?.replace(/\D/g, '') || '0').toLocaleString();
+                    const age = emp.birth_year ? (new Date().getFullYear() - emp.birth_year) : '---';
+                    const exp = emp.joined_year ? (new Date().getFullYear() - emp.joined_year + ' yil') : '---';
+
+                    html += `
+                        <tr>
+                            <td>
+                                <div style="display:flex; align-items:center; gap:12px;">
+                                    <img src="${avatar}" style="width:36px; height:36px; border-radius:10px; object-fit:cover;">
+                                    <div>
+                                        <div style="font-weight:700;">${emp.full_name}</div>
+                                        <div style="font-size:0.7rem; color:rgba(255,255,255,0.3); font-family:monospace; margin-top:2px;">ID: ${emp.id.substring(0,8).toUpperCase()}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span style="color:#00ff88; font-weight:600;">${emp.role || 'Ishchi'}</span></td>
+                            <td>
+                                <div>${exp} staj</div>
+                                <div style="font-size:0.75rem; opacity:0.5; margin-top:3px;">${age} yosh</div>
+                            </td>
+                            <td>${emp.phone || '---'}</td>
+                            <td>
+                                <span class="badge-pill-cyber ${payType.toLowerCase()}" style="font-size:0.6rem; padding:2px 6px;">${payType}</span>
+                                ${payType === 'Zdelniy' ? `
+                                    <div style="font-size:0.72rem; color:rgba(255,255,255,0.6); line-height:1.4; margin-top:5px;">
+                                        <span style="color:#00ff88; font-weight:700;">S: ${(emp.price_serisi || 25600).toLocaleString()}</span><br>
+                                        <span style="color:#00d2ff; font-weight:700;">R: ${(emp.price_redlayn || 33000).toLocaleString()}</span><br>
+                                        <span style="color:#ba00ff; font-weight:700;">K: ${(emp.price_kombo || 50000).toLocaleString()}</span>
+                                    </div>
+                                ` : `
+                                    <div style="font-weight:700; margin-top:5px; font-size:0.8rem;">${payAmt} UZS</div>
+                                `}
+                            </td>
+                            <td>
+                                <div style="display:flex; justify-content:flex-end; gap:8px;">
+                                    <button onclick="window.viewBadge('${emp.id}')" class="clapak-btn-primary" style="padding:6px 12px; font-size:0.7rem; background:rgba(0, 210, 255, 0.1); border:1px solid rgba(0, 210, 255, 0.2); color:#00d2ff; box-shadow:none;">Bejik</button>
+                                    <button onclick="window.editEmployee('${emp.id}')" class="clapak-btn-primary" style="padding:6px 12px; font-size:0.7rem; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; box-shadow:none;">Tahrirlash</button>
+                                    <button onclick="window.deleteEmployee('${emp.id}', '${emp.full_name}')" class="clapak-btn-primary" style="padding:6px 12px; font-size:0.7rem; background:rgba(255, 77, 79, 0.1); border:1px solid rgba(255, 77, 79, 0.2); color:#ff4d4f; box-shadow:none;">O'chirish</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+                html += `</tbody></table></div>`;
+                container.innerHTML = html;
+            }
+        };
+
+        // Calculate dashboard stats based on loaded employees
+        window.calculateStats = () => {
+            const total = staffList.length;
+            
+            const aklad = staffList.filter(emp => (emp.salary_info || '').toUpperCase().includes('AKLAD')).length;
+            const zdelniy = staffList.filter(emp => (emp.salary_info || '').toUpperCase().includes('ZDELNIY')).length;
+
+            let totalPayroll = 0;
+            staffList.forEach(emp => {
+                const parts = (emp.salary_info || '').split('|');
+                const amt = parseInt(parts[1]?.replace(/\D/g, '') || 0);
+                totalPayroll += amt;
+            });
+
+            document.getElementById('statTotal').textContent = total + ' ta';
+            document.getElementById('statAklad').textContent = aklad + ' ta';
+            document.getElementById('statZdelniy').textContent = zdelniy + ' ta';
+            document.getElementById('statPayroll').textContent = totalPayroll.toLocaleString() + ' UZS';
+        };
+
+        // View toggle Grid vs Table
+        window.toggleView = () => {
+            isGridView = !isGridView;
+            document.getElementById('viewIcon').textContent = isGridView ? "📋 Jadval ko'rinishi" : "📱 Grid ko'rinishi";
+            window.renderStaff();
+        };
+
+        // Setup real-time search & filters
+        document.getElementById('staffSearchInput').addEventListener('input', () => window.renderStaff());
+        document.getElementById('staffFilterType').addEventListener('change', () => window.renderStaff());
+
+        // --- ADD/EDIT MODAL CONTROL ENGINE ---
+        window.openAddModal = () => {
+            activeEditId = null;
+            tempPhotoData = '';
+            document.getElementById('modalTitle').textContent = "Yangi Xodim Qo'shish";
+            document.getElementById('saveWorkerBtn').textContent = "Saqlash ⚡";
+            
+            // Clear inputs
+            ['empFname', 'empLname', 'empBirth', 'empJoined', 'empRole', 'empPhone', 'empSalary'].forEach(id => {
+                document.getElementById(id).value = '';
+            });
+            document.getElementById('empPriceSerisi').value = '25600';
+            document.getElementById('empPriceRedlayn').value = '33000';
+            document.getElementById('empPriceKombo').value = '50000';
+            window.selectPayType('Aklad');
+            window.clearPhoto();
+
+            document.getElementById('workerModal').style.display = 'flex';
+        };
+
+        window.closeModal = () => {
+            document.getElementById('workerModal').style.display = 'none';
+        };
+
+        window.selectPayType = (type) => {
+            document.getElementById('empPayType').value = type;
+            document.querySelectorAll('#payTypeAklad, #payTypeZdelniy').forEach(el => el.classList.remove('active'));
+            if (type === 'Aklad') {
+                document.getElementById('payTypeAklad').classList.add('active');
+                document.getElementById('empSalaryGroup').style.display = 'block';
+                document.getElementById('empPriceSerisiGroup').style.display = 'none';
+                document.getElementById('empPriceRedlaynGroup').style.display = 'none';
+                document.getElementById('empPriceKomboGroup').style.display = 'none';
+            } else {
+                document.getElementById('payTypeZdelniy').classList.add('active');
+                document.getElementById('empSalaryGroup').style.display = 'none';
+                document.getElementById('empPriceSerisiGroup').style.display = 'block';
+                document.getElementById('empPriceRedlaynGroup').style.display = 'block';
+                document.getElementById('empPriceKomboGroup').style.display = 'block';
+            }
+        };
+
+        // Base64 profile photo processing
+        window.handlePhotoUpload = (input) => {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                tempPhotoData = e.target.result;
+                const preview = document.getElementById('photoPreview');
+                preview.src = tempPhotoData;
+                preview.style.display = 'block';
+                document.getElementById('photoClearBtn').style.display = 'flex';
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.clearPhoto = () => {
+            tempPhotoData = '';
+            document.getElementById('empPhotoFile').value = '';
+            document.getElementById('photoPreview').style.display = 'none';
+            document.getElementById('photoClearBtn').style.display = 'none';
+        };
+
+        // Fetch single and edit worker details
+        window.editEmployee = (id) => {
+            const emp = staffList.find(x => x.id == id);
+            if (!emp) return;
+
+            activeEditId = id;
+            document.getElementById('modalTitle').textContent = "Ishchi Ma'lumotlarini Tahrirlash";
+            document.getElementById('saveWorkerBtn').textContent = "Yangilash 💾";
+
+            document.getElementById('empFname').value = emp.first_name || '';
+            document.getElementById('empLname').value = emp.last_name || '';
+            document.getElementById('empBirth').value = emp.birth_year || '';
+            document.getElementById('empJoined').value = emp.joined_year || '';
+            document.getElementById('empRole').value = emp.role || '';
+            document.getElementById('empPhone').value = emp.phone || '';
+            
+            const parts = (emp.salary_info || '').split('|');
+            const payType = parts[0]?.trim() || 'Aklad';
+            const payAmt = parts[1]?.replace(/\D/g, '') || '';
+            
+            window.selectPayType(payType);
+            document.getElementById('empSalary').value = payAmt;
+            
+            document.getElementById('empPriceSerisi').value = emp.price_serisi !== undefined ? emp.price_serisi : 25600;
+            document.getElementById('empPriceRedlayn').value = emp.price_redlayn !== undefined ? emp.price_redlayn : 33000;
+            document.getElementById('empPriceKombo').value = emp.price_kombo !== undefined ? emp.price_kombo : 50000;
+
+            if (emp.avatar_url) {
+                tempPhotoData = emp.avatar_url;
+                const preview = document.getElementById('photoPreview');
+                preview.src = tempPhotoData;
+                preview.style.display = 'block';
+                document.getElementById('photoClearBtn').style.display = 'flex';
+            } else {
+                window.clearPhoto();
+            }
+
+            document.getElementById('workerModal').style.display = 'flex';
+        };
+
+        window.saveEmployeeData = async () => {
+            const btn = document.getElementById('saveWorkerBtn');
+            const fname = document.getElementById('empFname').value.trim();
+            const lname = document.getElementById('empLname').value.trim();
+            const birth = document.getElementById('empBirth').value.trim();
+            const joined = document.getElementById('empJoined').value.trim();
+            const role = document.getElementById('empRole').value.trim();
+            const phone = document.getElementById('empPhone').value.trim();
+            const payType = document.getElementById('empPayType').value;
+            const salary = document.getElementById('empSalary').value.trim();
+            const priceSerisi = document.getElementById('empPriceSerisi').value.trim();
+            const priceRedlayn = document.getElementById('empPriceRedlayn').value.trim();
+            const priceKombo = document.getElementById('empPriceKombo').value.trim();
+
+            if (payType === 'Aklad') {
+                if (!fname || !lname || !role || !salary) {
+                    alert("Iltimos, Ism, Familya, Lavozim va Maosh maydonlarini to'ldiring! ⚠️");
+                    return;
+                }
+            } else {
+                if (!fname || !lname || !role || !priceSerisi || !priceRedlayn || !priceKombo) {
+                    alert("Iltimos, Ism, Familya, Lavozim va barcha Kraska narxlarini to'ldiring! ⚠️");
+                    return;
+                }
+            }
+
+            btn.textContent = "Saqlanmoqda...";
+            btn.disabled = true;
+
+            const fullName = `${fname} ${lname}`;
+            const salaryInfo = payType === 'Aklad' ? `${payType} | ${salary}` : `${payType} | 0`;
+
+            const payload = {
+                full_name: fullName,
+                first_name: fname,
+                last_name: lname,
+                role: role,
+                salary_info: salaryInfo,
+                phone: phone || '',
+                birth_year: birth ? parseInt(birth) : null,
+                joined_year: joined ? parseInt(joined) : null,
+                avatar_url: tempPhotoData || `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=0b1423&color=00ff88`,
+                price_serisi: payType === 'Zdelniy' ? parseInt(priceSerisi) : 25600,
+                price_redlayn: payType === 'Zdelniy' ? parseInt(priceRedlayn) : 33000,
+                price_kombo: payType === 'Zdelniy' ? parseInt(priceKombo) : 50000
+            };
+
+            try {
+                let res;
+                let targetId = activeEditId;
+
+                if (activeEditId) {
+                    res = await supabase
+                        .from('clapak_employees')
+                        .update(payload)
+                        .eq('id', activeEditId);
+                } else {
+                    res = await supabase
+                        .from('clapak_employees')
+                        .insert([payload])
+                        .select();
+                    if (!res.error && res.data && res.data[0]) {
+                        targetId = res.data[0].id;
+                    }
+                }
+
+                if (res.error) throw res.error;
+
+                // Sync to buh_employees table for Buhgalteriya tab!
+                if (targetId) {
+                    try {
+                        await supabase
+                            .from('buh_employees')
+                            .upsert({
+                                id: targetId.toString(),
+                                name: fullName,
+                                type: payType.toLowerCase(),
+                                salary: payType === 'Aklad' ? parseInt(salary) : 0,
+                                position: role,
+                                price_serisi: payType === 'Zdelniy' ? parseInt(priceSerisi) : 25600,
+                                price_redlayn: payType === 'Zdelniy' ? parseInt(priceRedlayn) : 33000,
+                                price_kombo: payType === 'Zdelniy' ? parseInt(priceKombo) : 50000
+                            });
+                    } catch (buhErr) {
+                        console.error("Buhgalteriya sync failed:", buhErr);
+                    }
+                }
+
+                alert(activeEditId ? "📝 Ishchi ma'lumotlari muvaffaqiyatli yangilandi!" : "✅ Yangi ishchi qo'shildi!");
+                window.closeModal();
+                window.loadStaffData();
+
+            } catch (err) {
+                alert("Xatolik yuz berdi: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Saqlash ⚡";
+            }
+        };
+
+        // Delete xodim
+        window.deleteEmployee = async (id, name) => {
+            if (!confirm(`Haqiqatdan ham "${name}" ni ishchilar ro'yxatidan o'chirmoqchimisiz?`)) return;
+            try {
+                const { error } = await supabase
+                    .from('clapak_employees')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                // Also delete from buh_employees
+                try {
+                    await supabase
+                        .from('buh_employees')
+                        .delete()
+                        .eq('id', id.toString());
+                } catch (buhErr) {
+                    console.error("Buhgalteriya delete failed:", buhErr);
+                }
+
+                alert("🗑 Ishchi muvaffaqiyatli o'chirildi!");
+                window.loadStaffData();
+            } catch (err) {
+                alert("O'chirishda xatolik: " + err.message);
+            }
+        };
+
+        // --- ID BADGE ACCESS CARD PORTAL ---
+        window.viewBadge = (id) => {
+            const emp = staffList.find(x => x.id == id);
+            if (!emp) return;
+
+            const avatar = emp.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.full_name)}&background=0b1423&color=00ff88`;
+            document.getElementById('badgeAvatar').src = avatar;
+            document.getElementById('badgeFullName').textContent = emp.full_name;
+            document.getElementById('badgeRole').textContent = emp.role || 'Ishchi';
+            document.getElementById('badgeIdText').textContent = 'ID: CLAPAK-' + emp.id.substring(0, 8).toUpperCase();
+            
+            // Render high-res QR code mapping to employee ID
+            document.getElementById('badgeQr').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=000000&data=${encodeURIComponent('CLAPAK-STAFF-' + emp.id)}`;
+
+            document.getElementById('badgeModal').style.display = 'flex';
+        };
+
+        window.closeBadge = () => {
+            document.getElementById('badgeModal').style.display = 'none';
+        };
+
+        window.printBadge = () => {
+            window.print();
+        };
+
+        // Load initially
+        document.addEventListener('DOMContentLoaded', () => {
+            window.loadStaffData();
+        });
+    </script>
+</body>
+
+</html>

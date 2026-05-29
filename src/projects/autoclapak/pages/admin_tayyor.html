@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Avto Clapak — Tayyor Mahsulotlar</title>
+    <!-- Google Fonts: Outfit -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="/src/css/style.css" />
+    
+    <script>
+        // Anti-Flash & RBAC Role Protection (Ultimate Sync Edition)
+        try {
+            var savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                var u = JSON.parse(savedUser);
+                if (u.role === 'ac_manager') {
+                    var style = document.createElement('style');
+                    style.innerHTML = `
+                        .sidebar-slim { display: none !important; }
+                        .executive-tabs { display: none !important; }
+                        .admin-main { margin-left: 0 !important; }
+                        .mobile-bottom-nav { display: none !important; }
+                        #section-dashboard { display: none !important; }
+                        #section-autoclapak { display: block !important; opacity: 1 !important; transform: scale(1) !important; animation: none !important; }
+                        .nav-link-item[data-auto-tab="auto-buhgalteriya"],
+                        .nav-link-item[data-auto-tab="auto-sozlamalar"] {
+                            display: none !important;
+                        }
+                        .btn-icon-elite.delete, .btn-icon-elite.edit, 
+                        button[onclick*="deleteProduct"], button[onclick*="confirmProductPrice"],
+                        button[onclick*="editProductSelector"], button[onclick*="addBuhEmployee"],
+                        button[onclick*="addBuhRecipeItem"], button[onclick*="addBuhSale"],
+                        button[onclick*="addBuhTransaction"], button[onclick*="addBuhUtility"] {
+                            display: none !important;
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+            } else {
+                window.location.href = '/index.html';
+            }
+        } catch(e) {}
+    </script>
+    
+    <style>
+        :root {
+            --clapak-accent: #00d2ff;
+            --clapak-glow: rgba(0, 210, 255, 0.4);
+            --clapak-dark: #070f19;
+            --clapak-border: rgba(255, 255, 255, 0.08);
+            --transition-premium: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .admin-v2-body {
+            background-color: #020813 !important;
+            color: #fff !important;
+            overflow-x: hidden;
+        }
+
+        /* Unified Sidebar Style */
+        .sidebar-slim {
+            width: 80px;
+            background: rgba(7, 15, 25, 0.85);
+            border-right: 1px solid var(--clapak-border);
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px 0;
+            z-index: 1000;
+            backdrop-filter: blur(20px);
+        }
+
+        .nav-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            color: rgba(255,255,255,0.4);
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: var(--transition-premium);
+            border: 1px solid transparent;
+        }
+
+        .nav-icon:hover {
+            color: #fff;
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.08);
+        }
+
+        .nav-icon.active {
+            color: #00ff88;
+            background: rgba(0,255,136,0.08);
+            border-color: rgba(0,255,136,0.25);
+            box-shadow: 0 0 20px rgba(0,255,136,0.12);
+        }
+
+        .admin-main {
+            margin-left: 80px;
+            padding: 25px 40px;
+            min-height: 100vh;
+            background: radial-gradient(circle at 50% 0%, #0c1626 0%, #020813 80%);
+            position: relative;
+        }
+
+        .clapak-btn-primary {
+            background: var(--clapak-accent);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 14px;
+            color: #000;
+            font-weight: 800;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 8px 20px rgba(0, 210, 255, 0.2);
+        }
+
+        .clapak-btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 25px rgba(0, 210, 255, 0.3);
+        }
+    </style>
+</head>
+
+<body class="admin-v2-body">
+    <div class="admin-layout">
+        <!-- Slim Sidebar -->
+        <aside class="sidebar-slim">
+            <div class="logo-icon-v2" style="font-size: 1.5rem; color: #007c52; margin-bottom: 40px; font-weight: 900;">Q</div>
+            <div class="nav-icon" data-section="dashboard" title="AKFA Romix">🏢</div>
+            <div class="nav-icon" data-section="rassrochka" title="AKFA Romix Rassrochka">💳</div>
+            <div class="nav-icon" data-section="oynak" title="AKFA Romix Oynek">💎</div>
+            <div class="nav-icon active" data-section="autoclapak" title="AKFA Avto Clapak">🚗</div>
+
+            <div class="nav-icon" style="margin-top: auto;">⚙️</div>
+            <div class="nav-icon" id="sidebarLogout">🚪</div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- 💎 PROFESSIONAL EXECUTIVE HEADER (Elite UI/UX) -->
+            <nav class="top-nav-v2 premium-header" style="margin-bottom: 25px;">
+                <div class="header-upper-tier">
+                    <div class="user-profile-cluster">
+                        <div class="avatar-wrapper">
+                            <img id="adminAvatar" src="https://ui-avatars.com/api/?name=Rahbar&background=007c52&color=fff" class="header-avatar">
+                            <div class="online-indicator"></div>
+                        </div>
+                        <div class="user-info-text">
+                            <span class="greeting-text">Xush kelibsiz</span>
+                            <span class="user-name" id="adminName">Admin</span>
+                        </div>
+                    </div>
+                    <div class="action-cluster">
+                        <button id="themeToggle" class="action-btn" title="Tungi/Kunduzgi rejim">🌙</button>
+                        <div class="notif-wrapper">
+                            <button class="action-btn">🔔</button>
+                            <span id="global-notif-dot" class="notif-pulse"></span>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Section: Avto Clapak Container -->
+            <section id="section-autoclapak" class="admin-section autoclapak-system active" style="padding-top: 10px;">
+                <div class="clapak-header-v3">
+                    <div class="clapak-title-group">
+                        <h1>Auto Clapak <span style="color:var(--clapak-accent);">Tayyor Mahsulotlar</span></h1>
+                        <p>Zaxiradagi tayyor komplekt calpaklar nazorati</p>
+                    </div>
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:10px;">
+                        <div class="clapak-status-badge" style="border-color:rgba(0, 210, 255, 0.3); color:#00d2ff;">
+                            <span class="clapak-status-dot" style="background:#00d2ff; box-shadow: 0 0 8px #00d2ff;"></span>
+                            LIVE: SHOWROOM AKTIV
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 8-Tab Premium Navigation Bar (Point to modular files!) -->
+                <div class="nav-links-v2 autoclapak-tabs premium-tabs"
+                    style="margin-bottom: 35px; display: flex; gap: 12px; padding: 6px; background: rgba(255,255,255,0.03); border-radius: 18px; border: 1px solid rgba(255,255,255,0.05); overflow-x: auto; scrollbar-width: none;">
+                    <a href="admin_dashboard.html" class="nav-link-item" data-auto-tab="auto-main"><span class="tab-icon">📊</span> Asosiy Panel</a>
+                    <a href="admin_ombor.html" class="nav-link-item" data-auto-tab="auto-ombor"><span class="tab-icon">📦</span> Ombor</a>
+                    <a href="admin_tayyor.html" class="nav-link-item active" data-auto-tab="auto-tayyor"><span class="tab-icon">🏭</span> Tayyor Mahsulot</a>
+                    <a href="admin_sotuv.html" class="nav-link-item" data-auto-tab="auto-sotuv"><span class="tab-icon">📈</span> Sotuv</a>
+                    <a href="admin_buhgalteriya.html" class="nav-link-item" data-auto-tab="auto-buhgalteriya"><span class="tab-icon">💰</span> Buxgalteriya</a>
+                    <a href="admin_ishlab_chiqarish.html" class="nav-link-item" data-auto-tab="auto-ishlab-chiqarish"><span class="tab-icon">⚙️</span> Ishlab Chiqarish</a>
+                    <a href="admin_avtoclpak_xodimlar.html" class="nav-link-item" data-auto-tab="auto-xodimlar"><span class="tab-icon">👥</span> Xodimlar</a>
+                    <a href="admin_sozlamalar.html" class="nav-link-item" data-auto-tab="auto-sozlamalar"><span class="tab-icon">🛠️</span> Sozlamalar</a>
+                </div>
+
+                <!-- Sub-pages Area -->
+                <div id="autoclapak-pages" style="animation: fadeIn 0.5s ease;">
+                    
+                    <!-- 3. Tayyor Mahsulot Ombori - Premium Isolated Version -->
+                    <div id="sub-auto-tayyor" class="auto-tab-content" style="display:block; padding:0px;">
+                        <!-- TOP KPI OVERVIEW CARDS -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 25px;">
+                            
+                            <!-- Card 1: Jami Komplekt (Boxes) -->
+                            <div class="clapak-card" style="background: linear-gradient(135deg, rgba(0, 255, 136, 0.08), rgba(0, 255, 136, 0.01)); border-color: rgba(0, 255, 136, 0.2); box-shadow: 0 8px 30px rgba(0, 255, 136, 0.05); position: relative; overflow: hidden; transition: 0.3s; padding: 20px;">
+                                <div style="position: absolute; right: 15px; bottom: 10px; font-size: 3rem; opacity: 0.05; transform: rotate(15deg);">📦</div>
+                                <span class="card-label" style="font-size: 0.7rem; letter-spacing: 1px; color: rgba(255,255,255,0.4);">ZAXIRADAGI KOMPLEKTLAR</span>
+                                <div class="card-value" style="font-size: 2.2rem; font-weight: 900; color: #00ff88; margin-top: 10px;" id="fg-total-boxes">0 <small style="font-size: 0.8rem; font-weight: 500; color: rgba(255,255,255,0.5);">KOMPLEKT</small></div>
+                                <div style="font-size: 0.7rem; color: rgba(255,255,255,0.3); margin-top: 5px;" id="fg-today-added">+0 Komplekt bugun qo'shildi</div>
+                            </div>
+
+                            <!-- Card 2: Dona Hisobida (Units) -->
+                            <div class="clapak-card" style="background: linear-gradient(135deg, rgba(0, 210, 255, 0.08), rgba(0, 210, 255, 0.01)); border-color: rgba(0, 210, 255, 0.2); box-shadow: 0 8px 30px rgba(0, 210, 255, 0.05); position: relative; overflow: hidden; transition: 0.3s; padding: 20px;">
+                                <div style="position: absolute; right: 15px; bottom: 10px; font-size: 3rem; opacity: 0.05; transform: rotate(15deg);">⚙️</div>
+                                <span class="card-label" style="font-size: 0.7rem; letter-spacing: 1px; color: rgba(255,255,255,0.4);">DONA HISOBLANGAN</span>
+                                <div class="card-value" style="font-size: 2.2rem; font-weight: 900; color: #00d2ff; margin-top: 10px;" id="fg-total-units">0 <small style="font-size: 0.8rem; font-weight: 500; color: rgba(255,255,255,0.5);">DONA</small></div>
+                                <div style="font-size: 0.7rem; color: rgba(255,255,255,0.3); margin-top: 5px;">1 Komplekt = 4 Dona Calpak</div>
+                            </div>
+
+                            <!-- Card 3: Belgilangan Sotuv Narxi -->
+                            <div class="clapak-card" style="background: linear-gradient(135deg, rgba(250, 187, 24, 0.08), rgba(250, 187, 24, 0.01)); border-color: rgba(250, 187, 24, 0.2); box-shadow: 0 8px 30px rgba(250, 187, 24, 0.05); position: relative; overflow: hidden; transition: 0.3s; padding: 20px;">
+                                <div style="position: absolute; right: 15px; bottom: 10px; font-size: 3rem; opacity: 0.05; transform: rotate(15deg);">💵</div>
+                                <span class="card-label" style="font-size: 0.7rem; letter-spacing: 1px; color: rgba(255,255,255,0.4);">O'RTACHA KOMPLEKT NARXI</span>
+                                <div class="card-value" style="font-size: 2.2rem; font-weight: 900; color: #fabb18; margin-top: 10px;" id="fg-set-price">150,000 <small style="font-size: 0.8rem; font-weight: 500; color: rgba(255,255,255,0.5);">UZS</small></div>
+                                <div style="font-size: 0.7rem; color: rgba(255,255,255,0.3); margin-top: 5px;">Har bir tovar alohida narxlanadi</div>
+                            </div>
+
+                            <!-- Card 4: Zaxira Jami Qiymati -->
+                            <div class="clapak-card" style="background: linear-gradient(135deg, rgba(186, 0, 255, 0.08), rgba(186, 0, 255, 0.01)); border-color: rgba(186, 0, 255, 0.2); box-shadow: 0 8px 30px rgba(186, 0, 255, 0.05); position: relative; overflow: hidden; transition: 0.3s; padding: 20px;">
+                                <div style="position: absolute; right: 15px; bottom: 10px; font-size: 3rem; opacity: 0.05; transform: rotate(15deg);">📊</div>
+                                <span class="card-label" style="font-size: 0.7rem; letter-spacing: 1px; color: rgba(255,255,255,0.4);">JAMI ZAXIRA QIYMATI</span>
+                                <div class="card-value" style="font-size: 2.2rem; font-weight: 900; color: #ba00ff; margin-top: 10px;" id="fg-total-valuation">0 <small style="font-size: 0.8rem; font-weight: 500; color: rgba(255,255,255,0.5);">UZS</small></div>
+                                <div style="font-size: 0.7rem; color: rgba(0, 255, 136, 0.8); margin-top: 5px; font-weight: 700;" class="clapak-pulse">● Balans hisoblangan</div>
+                            </div>
+
+                        </div>
+
+                        <!-- PREMIUM PRODUCT SHOWROOM GRID -->
+                        <div class="clapak-card" style="background: rgba(13,22,34,0.6); border: 1px solid rgba(255,255,255,0.05); padding: 25px; border-radius: 24px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                                <h3 style="font-size: 1.15rem; font-weight: 800; color: #fff; margin: 0; display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 1.3rem;">🏪</span> Ombor Tayyor Mahsulotlar Showroomi
+                                </h3>
+                                <button onclick="window.sendToSalesDepartment()" class="clapak-btn-primary" style="padding: 10px 20px; border-radius: 12px; background: linear-gradient(135deg, #00d2ff, #0072ff); color: #fff; font-size: 0.75rem; font-weight: 800; border: none; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(0,114,255,0.2); display: flex; align-items: center; gap: 6px;">
+                                    <span>🚀</span> Sotuv Bo'limiga Sinxronlash
+                                </button>
+                            </div>
+                            <div id="fg-showroom-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px;">
+                                <!-- Populated dynamically as premium cards -->
+                                <div style="text-align: center; color: rgba(255,255,255,0.3); padding: 40px; grid-column: 1/-1;">
+                                    Mahsulotlar yuklanmoqda...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 🌟 PREMIUM EDIT PRODUCT MODAL -->
+    <div id="editProductModal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 8, 16, 0.85); backdrop-filter: blur(12px); z-index: 10000; align-items: center; justify-content: center; transition: all 0.3s ease;">
+        <div style="background: rgba(13, 22, 34, 0.95); border: 1.5px solid rgba(255, 255, 255, 0.08); width: 100%; max-width: 480px; padding: 30px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; gap: 20px; box-sizing: border-box; position: relative;">
+            
+            <!-- Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 15px;">
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: #fff; margin: 0; display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.4rem;">✏️</span> Mahsulotni Tahrirlash
+                </h3>
+                <button onclick="window.closeEditProductModal()" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); font-size: 0.75rem; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;"
+                        onmouseenter="this.style.background='rgba(255,77,79,0.1)'; this.style.color='#ff4d4f'; this.style.borderColor='rgba(255,77,79,0.2)';"
+                        onmouseleave="this.style.background='rgba(255,255,255,0.04)'; this.style.color='rgba(255,255,255,0.6)'; this.style.borderColor='rgba(255,255,255,0.1)';">
+                    ✖
+                </button>
+            </div>
+
+            <!-- Form Content -->
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                
+                <!-- Model & Design choice in grid -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <label style="font-size: 0.65rem; color: rgba(255,255,255,0.4); font-weight: 700;">MODEL TURI</label>
+                        <select id="modal-prod-model" class="auth-input" style="width: 100%; padding: 10px 15px; font-size: 0.85rem; font-weight: 700; color: #fff; border-radius: 12px; background: rgba(0,0,0,0.3); border: 1.5px solid rgba(255,255,255,0.08); cursor: pointer; color-scheme: dark; box-sizing: border-box;">
+                            <option value="Gentra">Gentra</option>
+                            <option value="Malibu-2">Malibu-2</option>
+                            <option value="Cobalt">Cobalt</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <label style="font-size: 0.65rem; color: rgba(255,255,255,0.4); font-weight: 700;">DIZAYN TANLOVI</label>
+                        <select id="modal-prod-design" class="auth-input" style="width: 100%; padding: 10px 15px; font-size: 0.85rem; font-weight: 700; color: #fff; border-radius: 12px; background: rgba(0,0,0,0.3); border: 1.5px solid rgba(255,255,255,0.08); cursor: pointer; color-scheme: dark; box-sizing: border-box;">
+                            <option value="gentra">Gentra Silver Multi</option>
+                            <option value="malibu">Malibu Carbon-Sport</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 0.65rem; color: rgba(255,255,255,0.4); font-weight: 700;">MAHSULOT NOMI</label>
+                    <input type="text" id="modal-prod-name" class="auth-input" style="width: 100%; padding: 12px 15px; font-size: 0.85rem; font-weight: 700; color: #fff; border-radius: 12px; background: rgba(0,0,0,0.3); border: 1.5px solid rgba(255,255,255,0.08); box-sizing: border-box;" placeholder="Masalan: Gentra Silver Cover" />
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 0.65rem; color: rgba(255,255,255,0.4); font-weight: 700;">KOMPLEKT SOTUV NARXI (UZS)</label>
+                    <input type="number" id="modal-prod-price" class="auth-input" style="width: 100%; padding: 12px 15px; font-size: 0.85rem; font-weight: 700; color: #fff; border-radius: 12px; background: rgba(0,0,0,0.3); border: 1.5px solid rgba(255,255,255,0.08); box-sizing: border-box;" placeholder="150000" />
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div style="display: flex; gap: 12px; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 20px;">
+                <button onclick="window.closeEditProductModal()" style="flex: 1; padding: 12px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); color: #fff; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: 0.2s;"
+                        onmouseenter="this.style.background='rgba(255,255,255,0.06)';"
+                        onmouseleave="this.style.background='rgba(255,255,255,0.03)';">
+                    Bekor Qilish
+                </button>
+                <button onclick="window.saveModalProduct()" style="flex: 1.2; padding: 12px; border-radius: 12px; border: none; background: #00d2ff; color: #000; font-weight: 800; font-size: 0.85rem; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 6px 15px rgba(0,210,255,0.25);"
+                        onmouseenter="this.style.transform='translateY(-2px)';"
+                        onmouseleave="this.style.transform='translateY(0)';">
+                    <span>💾</span> Saqlash
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reporting Libraries & main module page logic -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    
+    <script type="module">
+        // Spatial Synthesized Tick Sound
+        let audioCtx = null;
+        window.playPremiumTick = () => {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1100, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.08);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.08);
+            } catch(e) {}
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.nav-link-item, button').forEach(el => {
+                el.addEventListener('click', () => window.playPremiumTick());
+            });
+        });
+    </script>
+    <script type="module" src="/src/projects/autoclapak/js/admin.js?v=6.0"></script>
+</body>
+
+</html>

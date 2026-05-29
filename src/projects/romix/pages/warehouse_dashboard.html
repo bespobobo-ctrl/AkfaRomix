@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AKFA WMS - Enterprise Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css" />
+    <style>
+        .warehouse-body {
+            background: var(--adm-bg);
+            color: var(--adm-text);
+            transition: 0.3s;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* --- Premium Bento System --- */
+        .bento-container {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 20px;
+            padding: 20px 0;
+        }
+
+        .bento-item {
+            background: var(--adm-surface);
+            border-radius: 24px;
+            padding: 24px;
+            border: 1px solid var(--adm-border);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dark-mode .bento-item {
+            background: rgba(20, 30, 45, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .bento-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+            border-color: var(--adm-accent);
+        }
+
+        .bento-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        /* --- Staff Cards --- */
+        .staff-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .staff-avatar-wrapper {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .staff-avatar {
+            width: 140px;
+            height: 140px;
+            border-radius: 30px;
+            object-fit: cover;
+            border: 4px solid var(--adm-surface);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            transition: 0.3s;
+        }
+
+        .staff-card:hover .staff-avatar {
+            border-radius: 50%;
+            transform: scale(1.05);
+        }
+
+        .qr-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: inherit;
+            opacity: 0;
+            transition: 0.3s;
+            backdrop-filter: blur(4px);
+        }
+
+        .staff-avatar-wrapper:hover .qr-overlay {
+            opacity: 1;
+        }
+
+        /* --- Typography & Badges --- */
+        .premium-id {
+            font-family: 'Monospace';
+            font-size: 0.7rem;
+            color: var(--adm-accent);
+            background: rgba(0, 124, 82, 0.1);
+            padding: 2px 8px;
+            border-radius: 6px;
+            margin-top: 5px;
+            display: inline-block;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--adm-text-sec);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--adm-text);
+        }
+
+        /* --- Layout Utils --- */
+        .auto-layout-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            width: 100%;
+        }
+
+        .auto-layout-col {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body class="warehouse-body">
+    <div id="mainApp" class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar-slim">
+            <div class="logo-icon-v2" style="font-size: 1.5rem; color: #007c52; margin-bottom: 40px; font-weight: 900;">
+                W</div>
+            <div class="nav-icon active" data-tab="inventory" title="Ombor Qoldig'i">📦</div>
+            <div class="nav-icon" data-tab="staff" title="Hodimlar">👥</div>
+            <div class="nav-icon" data-tab="history" title="Amallar Tarixi">📑</div>
+            <div class="nav-icon" id="logoutBtn">🚪</div>
+        </aside>
+
+        <main class="admin-main">
+            <!-- Top Nav -->
+            <nav class="top-nav-v2">
+                <div class="nav-links-v2">
+                    <button class="tab-btn active" data-tab="inventory">Ombor Holati</button>
+                    <button class="tab-btn" data-tab="staff">Hodimlar (Auto Clapak)</button>
+                    <button class="tab-btn" data-tab="history">Hujjatlar Tarixi</button>
+                </div>
+                <div style="display: flex; gap: 20px; align-items: center;">
+                    <button id="themeToggle" class="theme-toggle">🌙</button>
+                    <div style="text-align: right;">
+                        <div id="userName" style="font-weight: 600; font-size: 0.9rem;">Rahbar</div>
+                        <div id="userRole" style="font-size: 0.7rem; color: var(--adm-text-sec);">SENIOR OPERATOR</div>
+                    </div>
+                </div>
+            </nav>
+
+            <section id="inventory-view" class="warehouse-section">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px;">
+                    <div>
+                        <h1 style="font-size: 2.2rem; font-weight: 600;">Inventarizatsiya</h1>
+                        <p style="color: var(--adm-text-sec);">Mahsulotlar va xom-ashyo nazorati</p>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button id="openScanModal" class="primary-btn"
+                            style="background:#00d2ff; color:#000; border:none; padding:12px 20px; border-radius:15px; font-weight:700; cursor:pointer;">📷
+                            Skayner (QR) Qabul</button>
+                        <button id="openKirimModal" class="primary-btn"
+                            style="background:#007c52; color:#fff; border:none; padding:12px 25px; border-radius:15px; font-weight:600; cursor:pointer;">+
+                            Yangi Kirim Amali</button>
+                    </div>
+                </div>
+
+                <!-- Modal: QR Ruxsatnoma Skayner -->
+                <div id="qrScanModal" class="hidden"
+                    style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center;">
+                    <div class="user-form-modal" style="width: 600px; background:var(--adm-surface);">
+                        <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+                            <span style="font-size: 1.5rem;">📷</span>
+                            <h2 style="color:var(--adm-text);">Ruxsatnomani Qabul Qilish</h2>
+                        </div>
+                        <p style="font-size:0.9rem; color:var(--adm-text-sec); margin-bottom:15px;">Mijoz/Brigada taqdim
+                            etgan qog'ozdagi id kodini yoki QR skayner orqali id kodini kiriting:</p>
+
+                        <div style="display:flex; gap:10px;">
+                            <input type="text" id="qrReqId" class="form-input-v2" placeholder="Masalan: 3f8a9e..."
+                                style="flex:1;">
+                            <button id="searchReqBtn"
+                                style="background:#334155; color:#fff; border:none; border-radius:12px; padding:0 15px; font-weight:700; cursor:pointer;">🔎
+                                Qidirish</button>
+                        </div>
+
+                        <div id="reqResultArea" class="hidden"
+                            style="margin-top:20px; background:rgba(255,255,255,0.05); padding:15px; border-radius:10px;">
+                            <h3 style="color:#00d2ff; margin-bottom:10px;" id="reqGroupName">Guruh Nomi</h3>
+                            <ul id="reqMatList"
+                                style="list-style:none; padding:0; margin-bottom:15px; max-height:200px; overflow-y:auto; font-size:0.9rem; color:#ccc;">
+                            </ul>
+                            <div style="display:flex; gap:10px; margin-top:15px;">
+                                <button id="approveReqBtn"
+                                    style="flex:1; background:#00ff88; color:#000; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">Tasdiqlash
+                                    va Chiqim Qilish</button>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; gap:10px; margin-top:20px;">
+                            <button id="closeScanModal"
+                                style="flex:1; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; padding:12px; border-radius:12px; cursor:pointer;">Yopish</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bento-container">
+                    <!-- Stat Card 1 -->
+                    <div class="bento-item" style="grid-column: span 3;">
+                        <span class="stat-label">Jami Mahsulotlar</span>
+                        <div class="stat-value" id="statTotalItems">--</div>
+                        <div style="font-size: 0.8rem; color: #007c52; margin-top: 10px;">↑ 12% o'sish</div>
+                    </div>
+                    <!-- Stat Card 2 -->
+                    <div class="bento-item" style="grid-column: span 3;">
+                        <span class="stat-label">Kamaygan Zaxira</span>
+                        <div class="stat-value" id="statLowStock" style="color: #ff4d4f;">--</div>
+                        <div style="font-size: 0.8rem; color: #ff4d4f; margin-top: 10px;">⚠️ Tezkor to'ldirish kerak
+                        </div>
+                    </div>
+                    <!-- Stat Card 3 -->
+                    <div class="bento-item" style="grid-column: span 3;">
+                        <span class="stat-label">Bugungi Kirim</span>
+                        <div class="stat-value" id="statTodayIn">--</div>
+                        <div style="font-size: 0.8rem; color: var(--adm-text-sec); margin-top: 10px;">Yangi hujjatlar
+                            asosida</div>
+                    </div>
+                    <!-- Stat Card 4 -->
+                    <div class="bento-item" style="grid-column: span 3;">
+                        <span class="stat-label">Hodimlar (Auto Clapak)</span>
+                        <div class="stat-value" id="statStaffCount">--</div>
+                        <div style="font-size: 0.8rem; color: var(--adm-text-sec); margin-top: 10px;">Faol navbatchilik
+                        </div>
+                    </div>
+
+                    <!-- Main Inventory Table -->
+                    <div class="bento-item" style="grid-column: span 12;">
+                        <div class="bento-header">
+                            <h3 style="font-weight: 700;">Inventarizatsiya Ro'yxati</h3>
+                            <div class="auto-layout-row">
+                                <input type="text" id="inventorySearch" placeholder="Qidiruv..." class="form-input-v2"
+                                    style="width: 250px; margin-bottom:0;">
+                                <button class="icon-btn">🔃</button>
+                            </div>
+                        </div>
+                        <table class="v2-table">
+                            <thead>
+                                <tr>
+                                    <th>Mahsulot</th>
+                                    <th>Kategoriya</th>
+                                    <th>Mavjud</th>
+                                    <th>Birlik</th>
+                                    <th>Narxi</th>
+                                    <th>Status</th>
+                                    <th>Harakat</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventoryTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section id="staff-view" class="warehouse-section hidden">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px;">
+                    <div>
+                        <h1 style="font-size: 2.2rem; font-weight: 600;">Hodimlar Boshqaruvi</h1>
+                        <p style="color: var(--adm-text-sec);">Auto Clapak xodimlari, yuz ko'rinishi va QR kodlar</p>
+                    </div>
+                    <button id="openStaffModal" class="primary-btn"
+                        style="background:var(--adm-accent); color:#fff; border:none; padding:12px 25px; border-radius:15px; font-weight:600; cursor:pointer;">+
+                        Yangi Hodim</button>
+                </div>
+                <div class="bento-grid" id="staffGrid"
+                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+                    <!-- Staff cards will be loaded here -->
+                </div>
+            </section>
+
+            <section id="history-view" class="warehouse-section hidden">
+                <div style="margin-bottom: 25px;">
+                    <h1 style="font-size: 2.2rem; font-weight: 600;">Hujjatlar Tarixi</h1>
+                    <p style="color: var(--adm-text-sec);">Barcha qilingan kirim/chiqim amallari arxivi</p>
+                </div>
+                <div class="bento-card" style="grid-column: span 4;">
+                    <table class="v2-table">
+                        <thead>
+                            <tr>
+                                <th>Sana / ID</th>
+                                <th>Mahsulot</th>
+                                <th>Tur</th>
+                                <th>Miqdor / Birlik</th>
+                                <th>Harakat</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTable"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal: Yangi Kirim Amali -->
+    <div id="kirimModal" class="hidden"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px;">
+        <div class="user-form-modal"
+            style="width: 750px; max-height:95vh; overflow-y:auto; background:var(--adm-surface);">
+            <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+                <span style="font-size: 2rem;">📥</span>
+                <h2 style="color:var(--adm-text);">Yangi Kirim Amali</h2>
+            </div>
+
+            <div class="grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                <div>
+                    <label class="form-label">Mahsulot Nomi</label>
+                    <input type="text" id="kName" placeholder="Masalan: Alyumen Profil" class="form-input-v2">
+                </div>
+                <div>
+                    <label class="form-label">Kategoriya</label>
+                    <select id="kCategory" class="form-input-v2">
+                        <option value="Xomashyo">Xomashyo (Raw Material)</option>
+                        <option value="Aksessuar">Aksessuar (Accessories)</option>
+                        <option value="PVX">PVX</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Mahsulot Xususiyati</label>
+                    <input type="text" id="kDesc" placeholder="Rangi, o'lchami va h.k." class="form-input-v2">
+                </div>
+                <div>
+                    <label class="form-label">O'lchov Birligi</label>
+                    <select id="kUnit" class="form-input-v2">
+                        <option value="kg">kg (Kilogram)</option>
+                        <option value="dona">dona (Pcs)</option>
+                        <option value="pachka">pachka (Pack)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Brutto Og'irligi (kg)</label>
+                    <input type="number" id="kGross" placeholder="0.00" class="form-input-v2">
+                </div>
+                <div>
+                    <label class="form-label">Netto Og'irligi (kg)</label>
+                    <input type="number" id="kNet" placeholder="0.00" class="form-input-v2">
+                </div>
+                <div>
+                    <label class="form-label">Taminotchi Ismi</label>
+                    <input type="text" id="kSupplier" placeholder="Firma yoki shaxs" class="form-input-v2">
+                </div>
+                <div>
+                    <label class="form-label">Taminotchi Tel:</label>
+                    <input type="text" id="kPhone" placeholder="+998" class="form-input-v2">
+                </div>
+                <div>
+                    <label class="form-label">Kirim Miqdori</label>
+                    <input type="number" id="kQty" placeholder="0.00" class="form-input-v2">
+                </div>
+                <div>
+                    <label class="form-label">Mahsulot Narxi ($/so'm)</label>
+                    <input type="number" id="kPrice" placeholder="0.00" class="form-input-v2">
+                </div>
+            </div>
+
+            <div style="margin-top:15px;">
+                <label class="form-label">Mahsulot Rasmi</label>
+                <input type="file" id="kImage" accept="image/*" class="form-input-v2">
+            </div>
+
+            <div style="display:flex; gap:15px; margin-top:25px;">
+                <button id="saveKirimBtn"
+                    style="flex:1; background:#007c52; color:#fff; border:none; padding:15px; border-radius:15px; font-weight:700; cursor:pointer;">Tasdiqlash
+                    va Hujjat tayyorlash</button>
+                <button id="closeKirimModal"
+                    style="flex:1; background:rgba(0,0,0,0.1); color:var(--adm-text); border:none; padding:15px; border-radius:15px; cursor:pointer;">Bekor
+                    qilish</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Mahsulotni Tahrirlash -->
+    <div id="editProductModal" class="hidden"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px;">
+        <div class="user-form-modal" style="width: 500px; background:var(--adm-surface);">
+            <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+                <span style="font-size: 1.5rem;">✏️</span>
+                <h2 style="color:var(--adm-text);">Mahsulotni Tahrirlash</h2>
+            </div>
+            <label class="form-label">Mahsulot Nomi</label>
+            <input type="text" id="eName" class="form-input-v2">
+            <label class="form-label">Soni (Qoldiq)</label>
+            <input type="number" id="eQty" class="form-input-v2">
+            <label class="form-label">Narxi</label>
+            <input type="number" id="ePrice" class="form-input-v2">
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button id="saveEditBtn"
+                    style="flex:1; background:var(--adm-accent); color:#fff; border:none; padding:12px; border-radius:12px; font-weight:600; cursor:pointer;">Saqlash</button>
+                <button id="closeEditModal"
+                    style="flex:1; background:rgba(0,0,0,0.1); color:var(--adm-text); border:none; padding:12px; border-radius:12px; cursor:pointer;">Yopish</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Yangi Hodim Qo'shish -->
+    <div id="staffModal" class="hidden"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px;">
+        <div class="user-form-modal" style="width: 500px; background:var(--adm-surface);">
+            <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+                <span style="font-size: 1.5rem;">👤</span>
+                <h2 style="color:var(--adm-text);">Yangi Hodim Qo'shish</h2>
+            </div>
+            <label class="form-label">F.I.SH (To'liq ism)</label>
+            <input type="text" id="sName" placeholder="Masalan: Azizov Anvar" class="form-input-v2">
+
+            <label class="form-label">Lavozimi</label>
+            <select id="sRole" class="form-input-v2">
+                <option value="Operator">Operator</option>
+                <option value="Master">Master</option>
+                <option value="Yordamchi">Yordamchi</option>
+            </select>
+
+            <label class="form-label">Yuz Ko'rinishi (Rasm yuklash)</label>
+            <input type="file" id="sPhoto" accept="image/*" class="form-input-v2">
+
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button id="saveStaffBtn"
+                    style="flex:1; background:var(--adm-accent); color:#fff; border:none; padding:12px; border-radius:12px; font-weight:600; cursor:pointer;">Saqlash</button>
+                <button id="closeStaffModal"
+                    style="flex:1; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; padding:12px; border-radius:12px; cursor:pointer;">Yopish</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="printArea" class="hidden">
+        <div class="invoice-container">
+            <div class="invoice-header">
+                <div>
+                    <h1 style="font-size:2.5rem; margin:0;">Kirim Hujjati</h1>
+                    <p style="margin:5px 0 0 0; opacity:0.8;" id="invNumber">No. 000000</p>
+                </div>
+                <div style="text-align:right;">
+                    <h2 style="margin:0;">AKFA Romix</h2>
+                    <p id="invDate">13 Dekabr, 2025</p>
+                </div>
+            </div>
+            <div class="invoice-body">
+                <div class="invoice-grid">
+                    <div class="info-box">
+                        <h4 style="margin:0 0 10px 0; color:#00aba9;">TAMINOTCHI</h4>
+                        <p id="invSupplier" style="font-weight:700; margin:0;"></p>
+                        <p id="invPhone" style="margin:5px 0 0 0;"></p>
+                    </div>
+                    <div class="info-box">
+                        <h4 style="margin:0 0 10px 0; color:#00aba9;">QABUL QILUVCHI</h4>
+                        <p id="invRecipient" style="font-weight:700; margin:0;">AKFA Ombor Xizmati</p>
+                        <p style="margin:5px 0 0 0;">Asosiy Ombor</p>
+                    </div>
+                </div>
+
+                <div style="margin-top:30px;">
+                    <table style="width:100%; border-collapse:collapse;">
+                        <thead>
+                            <tr style="background:#f0f7f7;">
+                                <th style="padding:15px; text-align:left;">Mahsulot</th>
+                                <th style="padding:15px; text-align:center;">Hajm</th>
+                                <th style="padding:15px; text-align:center;">Birlik</th>
+                                <th style="padding:15px; text-align:right;">Narxi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="padding:20px 15px; border-bottom:1px solid #eee;">
+                                    <strong id="invProdName"></strong><br>
+                                    <small id="invSubInfo" style="color:#888;"></small>
+                                </td>
+                                <td id="invQty"
+                                    style="padding:20px 15px; border-bottom:1px solid #eee; text-align:center; font-weight:700;">
+                                </td>
+                                <td id="invUnit"
+                                    style="padding:20px 15px; border-bottom:1px solid #eee; text-align:center;"></td>
+                                <td id="invPrice"
+                                    style="padding:20px 15px; border-bottom:1px solid #eee; text-align:right; font-weight:700; color:#007c52;">
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="invoice-grid" style="margin-top:40px; align-items:center;">
+                    <div class="qr-container">
+                        <h4 style="margin-bottom:10px;">QR KOD (Chiqim uchun)</h4>
+                        <div id="invQR"></div>
+                        <p style="font-size:0.7rem; color:#888; margin-top:5px;">Shtrix-kod orqali tezkor chiqim qilish
+                        </p>
+                    </div>
+                    <div style="text-align:right;">
+                        <p style="margin-bottom:50px;">Mas'ul shaxs imzosii: ________________</p>
+                        <p style="font-weight:700;">Manager: <span id="invAdm"></span></p>
+                    </div>
+                </div>
+            </div>
+            <div class="no-print" style="margin-top:20px; text-align:center;">
+                <button onclick="window.print()"
+                    style="padding:12px 30px; background:#00aba9; color:#fff; border:none; border-radius:30px; cursor:pointer; font-weight:600;">Hujjatni
+                    Chiqarish (Print)</button>
+                <button id="closePrintBtn"
+                    style="padding:12px 30px; background:#666; color:#fff; border:none; border-radius:30px; cursor:pointer; font-weight:600; margin-left:10px;">Yopish</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/projects/romix/js/warehouse.js"></script>
+</body>
+
+</html>
