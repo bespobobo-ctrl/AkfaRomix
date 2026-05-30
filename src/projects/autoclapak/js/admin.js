@@ -2295,8 +2295,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const acEl = document.getElementById('active-carts-count');
         if (acEl) acEl.textContent = activeCarts;
 
-        const totalDona = 1440 + window.pipelineData.finished.reduce((sum, x) => sum + (x.qty || 0), 0);
-        const totalBoxes = 360 + window.pipelineData.finished.filter(x => x.stage === 'finished' || x.stage.startsWith('finished')).reduce((sum, x) => sum + x.boxes, 0);
+        const totalDona = window.pipelineData.finished.reduce((sum, x) => sum + (x.qty || 0), 0);
+        const totalBoxes = window.pipelineData.finished.filter(x => x.stage === 'finished' || x.stage.startsWith('finished')).reduce((sum, x) => sum + x.boxes, 0);
 
         const tdEl = document.getElementById('today-total-production');
         const tbEl = document.getElementById('today-total-boxes');
