@@ -952,7 +952,7 @@
             await clearTable('clapak_inventory');
             await clearTable('warehouse_products');
             await clearTable('warehouse_transactions');
-            localStorage.removeItem('clapak_products_v4');
+            localStorage.setItem('clapak_products_v4', '[]');
             localStorage.removeItem('clapak_set_price');
             logH('settings', 'Ombor tozalandi', 'Tayyor mahsulotlar va ombor tozalandi');
             toast('Ombor tozalandi', '🗑️');
@@ -1004,6 +1004,7 @@
                 if (k && (k.startsWith('clapak_') || k.includes('_session') || k === 'activeAutoTab' || k === 'activeRomixSection' || k === 'ac_gmail_config' || k === 'ac_credentials' || k === 'theme')) rm.push(k);
             }
             rm.forEach(k => localStorage.removeItem(k));
+            localStorage.setItem('clapak_products_v4', '[]');
             toast('Tizim tozalandi! Qayta yuklanmoqda...', '⚠️');
             setTimeout(() => location.reload(), 2000);
         };
