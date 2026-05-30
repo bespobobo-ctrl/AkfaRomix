@@ -488,11 +488,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 const priceSpecHtml = isConfirmed
                     ? `<div style="display: flex; justify-content: space-between; align-items: center;">
-                          <span style="font-size: 0.65rem; color: rgba(255,255,255,0.4);">Narxi:</span>
+                          <span style="font-size: 0.65rem; color: rgba(255,255,255,0.4);">Narxi (1 komplekt / 4 dona):</span>
                           <span style="font-size: 0.75rem; font-weight: 800; color: #fabb18;">${(p.price || 0).toLocaleString()} UZS</span>
                        </div>`
                     : `<div style="display: flex; justify-content: space-between; align-items: center; background: rgba(250,187,24,0.08); padding: 4px 6px; border-radius: 6px; border: 1px dashed rgba(250,187,24,0.3); margin: 2px 0;">
-                          <span style="font-size: 0.65rem; color: #fabb18; font-weight: 700;">Narxi:</span>
+                          <span style="font-size: 0.65rem; color: #fabb18; font-weight: 700;">Narxi (1 komplekt):</span>
                           <span style="font-size: 0.75rem; font-weight: 800; color: #fabb18;">${(p.price || 0).toLocaleString()} UZS ⚠️</span>
                        </div>`;
 
@@ -523,8 +523,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 return `
                     <div class="${cardClass}" style="background: rgba(13,22,34,0.75); border: ${cardBorder}; border-radius: 16px; overflow: hidden; padding: 0; box-shadow: 0 8px 24px rgba(0,0,0,0.3); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; width: 100%; box-sizing: border-box;" 
-                        onmouseenter="this.style.transform='translateY(-4px)'; this.style.borderColor='${hoverBorderColor}';" 
-                        onmouseleave="this.style.transform='translateY(0)'; this.style.borderColor='${normalBorderColor}';">
+                        onmouseenter="this.style.borderColor='${hoverBorderColor}';" 
+                        onmouseleave="this.style.borderColor='${normalBorderColor}';">
                         
                         <!-- Image -->
                         <div style="width: 100%; height: 130px; position: relative; background: #070f19; overflow: hidden; display: flex; align-items: center; justify-content: center;">
@@ -741,8 +741,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                     return `
                         <div class="clapak-card" style="background: rgba(13,22,34,0.75); border: 1.5px solid rgba(0,210,255,0.15); border-radius: 16px; overflow: hidden; padding: 0; box-shadow: 0 8px 24px rgba(0,0,0,0.3); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; width: 100%; box-sizing: border-box;"
-                            onmouseenter="this.style.transform='translateY(-4px)'; this.style.borderColor='rgba(0,210,255,0.4)';" 
-                            onmouseleave="this.style.transform='translateY(0)'; this.style.borderColor='rgba(0,210,255,0.15)';" >
+                            onmouseenter="this.style.borderColor='rgba(0,210,255,0.4)';" 
+                            onmouseleave="this.style.borderColor='rgba(0,210,255,0.15)';" >
                             
                             <!-- Image Area -->
                             <div style="width: 100%; height: 130px; position: relative; background: #070f19; overflow: hidden; display: flex; align-items: center; justify-content: center;">
@@ -764,7 +764,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                             <span style="font-size: 0.75rem; font-weight: 800; color: #00ff88;">${currentBoxes.toLocaleString()} Komplekt <span style="font-size: 0.6rem; color: rgba(255,255,255,0.4); font-weight: 500;">(${currentUnits.toLocaleString()} dona)</span></span>
                                         </div>
                                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                                            <span style="font-size: 0.65rem; color: rgba(255,255,255,0.4);">Komplekt:</span>
+                                            <span style="font-size: 0.65rem; color: rgba(255,255,255,0.4);">Narxi (1 komplekt / 4 dona):</span>
                                             <span style="font-size: 0.75rem; font-weight: 800; color: #fabb18;">${(p.price || 0).toLocaleString()} UZS</span>
                                         </div>
                                         <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px; margin-top: 2px;">
@@ -4571,37 +4571,8 @@ CREATE TABLE IF NOT EXISTS buh_sales (
 });
 
     window.applyParallaxShowroom = () => {
-        document.querySelectorAll('#fg-showroom-grid > div, #sales-showroom-grid > div').forEach(card => {
-            card.style.transformStyle = 'preserve-3d';
-            card.style.transition = 'transform 0.15s cubic-bezier(0.25, 1, 0.5, 1), border-color 0.3s';
-            
-            const img = card.querySelector('img');
-            if (img) {
-                img.style.transition = 'transform 0.25s cubic-bezier(0.25, 1, 0.5, 1)';
-            }
-            
-            card.addEventListener('mousemove', (e) => {
-                const rect = card.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                const xc = rect.width / 2;
-                const yc = rect.height / 2;
-                const angleX = (yc - y) / 8; // Max 10 deg tilt
-                const angleY = (x - xc) / 8;
-                
-                card.style.transform = `perspective(1000px) rotateX(${angleX}deg) rotateY(${angleY}deg) translateY(-4px)`;
-                if (img) {
-                    img.style.transform = 'scale(1.1) translateZ(15px)';
-                }
-            });
-            
-            card.addEventListener('mouseleave', () => {
-                card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px)';
-                if (img) {
-                    img.style.transform = 'scale(1) translateZ(0px)';
-                }
-            });
-        });
+        // Disabled dynamically applied 3D transformations, tilt, and scaling 
+        // to keep product cards fully stable during user interaction.
     };
 
     // ==========================================
