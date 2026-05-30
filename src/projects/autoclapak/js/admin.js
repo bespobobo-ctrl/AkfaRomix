@@ -506,11 +506,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                            </button>
                        </div>`
                     : `<div style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px; width: 100%;">
-                           <button onclick="window.confirmProductPrice('${p.id}')" style="width: 100%; padding: 8px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 900; border: none; background: linear-gradient(135deg, #fabb18 0%, #ff9800 100%); color: #000; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(250,187,24,0.25);"
-                               onmouseenter="this.style.transform='scale(1.02)'; this.style.boxShadow='0 6px 16px rgba(250,187,24,0.4)';"
-                               onmouseleave="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(250,187,24,0.25)';">
-                               <span>✅</span> Narxni Tasdiqlash
-                           </button>
+                           <div style="display: flex; gap: 6px; width: 100%;">
+                               <button onclick="window.confirmProductPrice('${p.id}')" style="flex: 1; padding: 8px 6px; border-radius: 8px; font-size: 0.65rem; font-weight: 900; border: none; background: #00d2ff; color: #000; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                                   <span>✅</span> Tasdiqlash
+                               </button>
+                               <button onclick="window.openCostReviewModal('${p.id}')" style="flex: 1; padding: 8px 6px; border-radius: 8px; font-size: 0.65rem; font-weight: 900; border: none; background: linear-gradient(135deg, #fabb18 0%, #ff9800 100%); color: #000; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 4px 12px rgba(250,187,24,0.25);"
+                                   onmouseenter="this.style.transform='scale(1.02)';" onmouseleave="this.style.transform='scale(1)';">
+                                   <span>📊</span> Ko'rib chiqish
+                               </button>
+                           </div>
                            <div style="display: flex; gap: 6px; width: 100%;">
                                <button onclick="window.editProductSelector('${p.id}')" style="flex: 1; padding: 6px 10px; border-radius: 8px; font-size: 0.65rem; font-weight: 800; border: 1.5px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); color: #fff; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 4px;">
                                    <span>✏️</span> O'zgartirish
@@ -629,14 +633,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const p = window.clapakProducts.find(x => x.id === window.editingProductId);
         if (p) {
-            p.model = model;
-            p.design = design;
+            // BUG FIX: Do NOT update p.model or p.design here. 
+            // Changing them breaks the mapping with auto-detected production items and causes duplicates.
             p.name = name;
             p.price = price;
             
             p.priceConfirmed = true;
             
-            p.image = design === 'malibu' 
+            // Re-assign image based on existing design to be safe
+            p.image = p.design === 'malibu' 
                 ? '/src/assets/images/malibu_calpak.png' 
                 : '/src/assets/images/gentra_calpak.png';
         }
@@ -655,6 +660,93 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.loadAutoFinishedGoods();
             window.showPremiumToast("Narx Tasdiqlandi", `"${p.name}" uchun ${p.price.toLocaleString()} UZS narxi muvaffaqiyatli tasdiqlandi.`, true);
         }
+    };
+
+    // ==========================================
+    // COST REVIEW (TAN NARX) MODAL LOGIC
+    // ==========================================
+    window.costReviewProductId = null;
+    
+    window.openCostReviewModal = (id) => {
+        const p = window.clapakProducts.find(x => x.id === id);
+        if (!p) return;
+        window.costReviewProductId = id;
+        
+        // Fetch raw material config
+        const rawPerUnit = p.rawPerUnit || 0.6; // default 0.6 kg per piece
+        const rawKg = (rawPerUnit * 36).toFixed(1); // 1 cart = 36 pieces
+        document.getElementById('cost-lbl-raw-kg').textContent = rawKg;
+        
+        // Open Modal
+        const modal = document.getElementById('costReviewModal');
+        if (modal) modal.style.display = 'flex';
+        
+        // Initial Calculation
+        window.recalcCostReview();
+    };
+
+    window.closeCostReviewModal = () => {
+        const modal = document.getElementById('costReviewModal');
+        if (modal) modal.style.display = 'none';
+        window.costReviewProductId = null;
+    };
+
+    window.recalcCostReview = () => {
+        const p = window.clapakProducts.find(x => x.id === window.costReviewProductId);
+        if (!p) return;
+        
+        // Get values from inputs
+        const rawPricePerKg = parseFloat(document.getElementById('cost-raw-price').value) || 0;
+        const paintPricePerUnit = parseFloat(document.getElementById('cost-paint-price').value) || 0;
+        const stanokPrice = parseFloat(document.getElementById('cost-stanok-price').value) || 0;
+        const profitPerKomplekt = parseFloat(document.getElementById('cost-profit').value) || 0;
+        
+        // Calculate Cost Elements
+        const rawPerUnit = p.rawPerUnit || 0.6;
+        const rawKg = rawPerUnit * 36;
+        const totalRawCost = rawKg * rawPricePerKg;
+        const totalPaintCost = paintPricePerUnit * 36;
+        
+        // Update Breakdown UI Elements
+        document.getElementById('cost-val-raw').textContent = totalRawCost.toLocaleString() + ' UZS';
+        document.getElementById('cost-val-stanok').textContent = stanokPrice.toLocaleString() + ' UZS';
+        document.getElementById('cost-val-paint').textContent = totalPaintCost.toLocaleString() + ' UZS';
+        
+        // Calculate Totals
+        const totalCartCost = totalRawCost + totalPaintCost + stanokPrice;
+        document.getElementById('cost-val-total-cart').textContent = totalCartCost.toLocaleString() + ' UZS';
+        
+        // 36 pieces = 9 komplekt (sets)
+        const costPerKomplekt = totalCartCost / 9; 
+        document.getElementById('cost-val-komplekt').textContent = Math.round(costPerKomplekt).toLocaleString() + ' UZS';
+        
+        // Final Sale Price
+        const finalSalePrice = Math.round(costPerKomplekt + profitPerKomplekt);
+        document.getElementById('cost-val-final-sale').textContent = finalSalePrice.toLocaleString() + ' UZS';
+    };
+
+    window.saveCostReviewModal = () => {
+        if (!window.costReviewProductId) return;
+        const p = window.clapakProducts.find(x => x.id === window.costReviewProductId);
+        if (!p) return;
+        
+        // Final recalculation to save correct price
+        const rawPricePerKg = parseFloat(document.getElementById('cost-raw-price').value) || 0;
+        const paintPricePerUnit = parseFloat(document.getElementById('cost-paint-price').value) || 0;
+        const stanokPrice = parseFloat(document.getElementById('cost-stanok-price').value) || 0;
+        const profitPerKomplekt = parseFloat(document.getElementById('cost-profit').value) || 0;
+        
+        const rawKg = (p.rawPerUnit || 0.6) * 36;
+        const totalCartCost = (rawKg * rawPricePerKg) + (paintPricePerUnit * 36) + stanokPrice;
+        const finalSalePrice = Math.round((totalCartCost / 9) + profitPerKomplekt);
+        
+        p.price = finalSalePrice;
+        p.priceConfirmed = true;
+        
+        localStorage.setItem('clapak_products_v4', JSON.stringify(window.clapakProducts));
+        window.closeCostReviewModal();
+        window.loadAutoFinishedGoods();
+        window.showPremiumToast("Narx Saqlandi", `Yangi tan narxi tasdiqlandi: ${finalSalePrice.toLocaleString()} UZS`, true);
     };
 
     window.deleteProduct = (id) => {

@@ -333,6 +333,81 @@
         </div>
     </div>
 
+    <!-- Cost Review Modal (Tan Narxni Hisoblash) -->
+    <div id="costReviewModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 10000; align-items: center; justify-content: center;">
+        <div style="background: linear-gradient(145deg, #0f172a, #0b1120); border: 1.5px solid rgba(0,210,255,0.2); border-radius: 20px; width: 90%; max-width: 500px; padding: 25px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 15px;">
+                <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 1.3rem;">📊</span> Tan Narxni Hisoblash
+                </h3>
+                <button onclick="window.closeCostReviewModal()" style="background: none; border: none; color: rgba(255,255,255,0.4); font-size: 1.5rem; cursor: pointer; transition: 0.2s;" onmouseenter="this.style.color='#ff4d4f';" onmouseleave="this.style.color='rgba(255,255,255,0.4)';">×</button>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <!-- Base Settings -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: rgba(0,210,255,0.03); padding: 10px; border-radius: 12px; border: 1px dashed rgba(0,210,255,0.2);">
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <label style="font-size: 0.6rem; color: rgba(255,255,255,0.5);">XOM ASHYO 1 KG (UZS)</label>
+                        <input type="number" id="cost-raw-price" value="15000" oninput="window.recalcCostReview()" class="auth-input" style="width: 100%; padding: 8px; font-size: 0.8rem; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; box-sizing: border-box;" />
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <label style="font-size: 0.6rem; color: rgba(255,255,255,0.5);">KRASKA (1 DONA UCHUN, UZS)</label>
+                        <input type="number" id="cost-paint-price" value="2000" oninput="window.recalcCostReview()" class="auth-input" style="width: 100%; padding: 8px; font-size: 0.8rem; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; box-sizing: border-box;" />
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 4px; grid-column: span 2;">
+                        <label style="font-size: 0.6rem; color: rgba(255,255,255,0.5);">STANOK XARAJATI (1 ARAVA - 36 DONA UCHUN, UZS)</label>
+                        <input type="number" id="cost-stanok-price" value="10000" oninput="window.recalcCostReview()" class="auth-input" style="width: 100%; padding: 8px; font-size: 0.8rem; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; box-sizing: border-box;" />
+                    </div>
+                </div>
+
+                <!-- Live Breakdown -->
+                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; display: flex; flex-direction: column; gap: 8px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa;">
+                        <span>Xom ashyo (<span id="cost-lbl-raw-kg">21.6</span> kg):</span>
+                        <strong id="cost-val-raw" style="color: #fff;">0 UZS</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa;">
+                        <span>Stanok & Tok:</span>
+                        <strong id="cost-val-stanok" style="color: #fff;">0 UZS</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa;">
+                        <span>Kraska Xizmati (36 dona):</span>
+                        <strong id="cost-val-paint" style="color: #fff;">0 UZS</strong>
+                    </div>
+                    <hr style="border: none; border-top: 1px dashed rgba(255,255,255,0.1); margin: 5px 0;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa;">
+                        <span>Umumiy Tan Narxi (1 aravacha - 36 dona):</span>
+                        <strong id="cost-val-total-cart" style="color: #00ff88;">0 UZS</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 700; color: #fff; margin-top: 5px;">
+                        <span>1 KOMPLEKT (4 dona) TAN NARXI:</span>
+                        <strong id="cost-val-komplekt" style="color: #00ff88;">0 UZS</strong>
+                    </div>
+                </div>
+
+                <!-- Profit & Final Sale Price -->
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 0.65rem; color: #fabb18; font-weight: 700;">USTAMA FOYDA (1 KOMPLEKT UCHUN, UZS)</label>
+                    <input type="number" id="cost-profit" value="20000" oninput="window.recalcCostReview()" class="auth-input" style="width: 100%; padding: 12px 15px; font-size: 0.85rem; font-weight: 700; color: #fabb18; border-radius: 12px; background: rgba(250,187,24,0.05); border: 1.5px solid rgba(250,187,24,0.2); box-sizing: border-box;" />
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,210,255,0.1); padding: 15px; border-radius: 12px; border: 1.5px solid rgba(0,210,255,0.3); margin-top: 5px;">
+                    <span style="font-size: 0.8rem; font-weight: 700; color: rgba(255,255,255,0.8);">YAKUNIY SOTUV NARXI:</span>
+                    <strong id="cost-val-final-sale" style="font-size: 1.2rem; font-weight: 900; color: #00d2ff;">0 UZS</strong>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div style="display: flex; gap: 12px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 20px;">
+                <button onclick="window.saveCostReviewModal()" style="flex: 1; padding: 12px; border-radius: 12px; border: none; background: #00ff88; color: #000; font-weight: 800; font-size: 0.85rem; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 6px 15px rgba(0,255,136,0.25);"
+                        onmouseenter="this.style.transform='translateY(-2px)';"
+                        onmouseleave="this.style.transform='translateY(0)';">
+                    <span>✅</span> Narxni Tasdiqlash va Saqlash
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Reporting Libraries & main module page logic -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
