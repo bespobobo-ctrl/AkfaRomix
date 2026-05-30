@@ -383,6 +383,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     ];
 
+    // FIX DUPLICATE IDs IN CORRUPTED LOCAL STORAGE
+    const uniqueIds = new Set();
+    window.clapakProducts.forEach(p => {
+        if (uniqueIds.has(p.id)) {
+            p.id = p.id + '-' + Date.now() + Math.floor(Math.random() * 1000);
+        }
+        uniqueIds.add(p.id);
+    });
+
     window.showPremiumToast = (title, message, isSuccess = true) => {
         const toast = document.getElementById('premium-toast');
         const toastTitle = document.getElementById('toast-title');
@@ -440,7 +449,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const defaultPrice = model.toLowerCase().includes('malibu') ? 280000 : 150000;
                 
                 window.clapakProducts.push({
-                    id: 'prod-' + model.toLowerCase().replace(/[^a-z0-9]/g, ''),
+                    id: 'prod-' + Date.now() + '-' + Math.floor(Math.random() * 10000),
                     name: defaultName,
                     model: model,
                     price: defaultPrice,
@@ -676,6 +685,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const rawPerUnit = p.rawPerUnit || 0.6; // default 0.6 kg per piece
         const rawKg = (rawPerUnit * 36).toFixed(1); // 1 cart = 36 pieces
         document.getElementById('cost-lbl-raw-kg').textContent = rawKg;
+        
+        // Get last painter info for this model
+        let lastPainterInfo = "Noma'lum (Kiritilmagan)";
+        if (window.pipelineData && window.pipelineData.finished) {
+            const finishedForModel = window.pipelineData.finished.filter(x => x.model === p.model && x.painter);
+            if (finishedForModel.length > 0) {
+                lastPainterInfo = finishedForModel[finishedForModel.length - 1].painter;
+            }
+        }
+        const painterEl = document.getElementById('cost-lbl-painter-info');
+        if (painterEl) painterEl.textContent = lastPainterInfo;
         
         // Open Modal
         const modal = document.getElementById('costReviewModal');
