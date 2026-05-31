@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AKFA Romix - Ombor Tizimi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/css/style.css" />
+    <style>
+        .warehouse-body {
+            background: var(--adm-bg);
+            color: var(--adm-text);
+            transition: 0.3s;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* --- Premium Bento System --- */
+        .bento-container {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 20px;
+            padding: 40px 0;
+        }
+
+        .bento-item {
+            background: var(--adm-surface);
+            border-radius: 24px;
+            padding: 30px;
+            border: 1px solid var(--adm-border);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .dark-mode .bento-item {
+            background: rgba(20, 30, 45, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .bento-item:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .bento-item.plast:hover {
+            border-color: #81C784;
+            box-shadow: 0 15px 35px rgba(129, 199, 132, 0.15);
+        }
+
+        .bento-item.aksesuar:hover {
+            border-color: #BA68C8;
+            box-shadow: 0 15px 35px rgba(186, 104, 200, 0.15);
+        }
+
+        .bento-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 15px 0 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .plast .bento-title {
+            color: #81C784;
+        }
+
+        .aksesuar .bento-title {
+            color: #BA68C8;
+        }
+
+        /* --- Premium Buttons --- */
+        .btn-glass {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--adm-text);
+            backdrop-filter: blur(10px);
+            padding: 12px 25px;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-glass:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+
+<body class="warehouse-body">
+    <div id="mainApp" class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar-slim">
+            <div class="logo-icon-v2" style="font-size: 1.5rem; color: #007c52; margin-bottom: 40px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(0, 124, 82, 0.1); width: 45px; height: 45px; border-radius: 12px;" onclick="window.location.href='../romix_dashboard.html'" title="Asosiy Panelga Qaytish">
+                ↩️</div>
+            <div class="nav-icon active" title="Ombor Tizimi">📦</div>
+            <div class="nav-icon" onclick="window.location.href='romix_ombor_profil.html'" title="Profil Ombori">👥</div>
+            <div class="nav-icon" id="logoutBtn" onclick="localStorage.removeItem('currentUser'); window.location.href = '/';">🚪</div>
+        </aside>
+
+        <main class="admin-main">
+            <!-- Top Nav -->
+            <nav class="top-nav-v2">
+                <div class="nav-links-v2" style="display: flex; align-items: center; gap: 8px;">
+                    <a href="../romix_dashboard.html" class="btn-glass" style="background: rgba(0, 210, 255, 0.1); color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.2); border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; padding: 8px 16px; margin-right: 10px;">
+                        ⬅️ Panelga Qaytish
+                    </a>
+                    <button class="tab-btn active">Romix Ombori</button>
+                </div>
+                <div style="display: flex; gap: 20px; align-items: center;">
+                    <button id="themeToggle" class="theme-toggle" onclick="document.body.classList.toggle('dark-mode');">🌙</button>
+                    <div style="text-align: right;">
+                        <div id="userName" style="font-weight: 600; font-size: 0.9rem;">Rahbar</div>
+                        <div id="userRole" style="font-size: 0.7rem; color: var(--adm-text-sec);">SENIOR OPERATOR</div>
+                    </div>
+                </div>
+            </nav>
+
+            <div style="margin-top: 30px;">
+                <h1 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 5px;">Romix Ombor Tizimi</h1>
+                <p style="color: var(--adm-text-sec); font-size: 1.1rem;">Boshqarish uchun kerakli ombor bo'limini tanlang</p>
+            </div>
+
+            <div class="bento-container">
+                <!-- Card 1: Profil Ombori -->
+                <a href="romix_ombor_profil.html" class="bento-item plast" style="grid-column: span 6;">
+                    <div style="font-size: 3rem;">📦</div>
+                    <div class="bento-title">
+                        Romix Plast (Profil Ombori)
+                        <span>&rarr;</span>
+                    </div>
+                    <p style="color: var(--adm-text-sec); font-size: 1rem; line-height: 1.5; margin-top: 10px;">
+                        PVX profillar, alyuminiy profillar, shtapiklar, tokchalar va lambri mahsulotlari balansi, kirim/chiqim hisoboti va QR-kodli material qabuli.
+                    </p>
+                    <button style="width: 100%; padding: 14px; margin-top: 25px; border-radius: 16px; background: rgba(129, 199, 132, 0.15); border: 1px solid rgba(129, 199, 132, 0.3); color: #81C784; font-weight: 800; cursor: pointer; transition: 0.2s;">
+                        Omborga Kirish &rarr;
+                    </button>
+                </a>
+
+                <!-- Card 2: Aksessuar Ombori -->
+                <a href="romix_ombor_aksesuvar.html" class="bento-item aksesuar" style="grid-column: span 6;">
+                    <div style="font-size: 3rem;">⚙️</div>
+                    <div class="bento-title">
+                        Romix Aksessuar Ombori
+                        <span>&rarr;</span>
+                    </div>
+                    <p style="color: var(--adm-text-sec); font-size: 1rem; line-height: 1.5; margin-top: 10px;">
+                        Eshik va oyna aksessuarlari, qulflar, tutqichlar (ruchka), rezina qistirmalar va boshqa butlovchi qismlar nazorati va kirim tarixi.
+                    </p>
+                    <button style="width: 100%; padding: 14px; margin-top: 25px; border-radius: 16px; background: rgba(186, 104, 200, 0.15); border: 1px solid rgba(186, 104, 200, 0.3); color: #BA68C8; font-weight: 800; cursor: pointer; transition: 0.2s;">
+                        Omborga Kirish &rarr;
+                    </button>
+                </a>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Set User profile
+        const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        if (user) {
+            const name = user.full_name || user.username || 'RAHBAR';
+            document.getElementById('userName').textContent = name.toUpperCase();
+        }
+        
+        // Theme toggle memory
+        if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
+    </script>
+</body>
+
+</html>

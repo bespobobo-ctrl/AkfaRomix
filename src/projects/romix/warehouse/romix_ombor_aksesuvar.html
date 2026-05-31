@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AKFA Romix Aksessuar - Aksessuar Ombori</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/css/style.css" />
+    <style>
+        .warehouse-body {
+            background: var(--adm-bg);
+            color: var(--adm-text);
+            transition: 0.3s;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* --- Bento System --- */
+        .bento-container {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 20px;
+            padding: 20px 0;
+        }
+
+        .bento-item {
+            background: var(--adm-surface);
+            border-radius: 24px;
+            padding: 24px;
+            border: 1px solid var(--adm-border);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dark-mode .bento-item {
+            background: rgba(20, 30, 45, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .bento-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+            border-color: var(--adm-accent);
+        }
+
+        .bento-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--adm-text-sec);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--adm-text);
+        }
+
+        .btn-glass {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--adm-text);
+            backdrop-filter: blur(10px);
+            padding: 12px 25px;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-glass:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+
+<body class="warehouse-body">
+    <div id="mainApp" class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar-slim">
+            <div class="logo-icon-v2" style="font-size: 1.5rem; color: #007c52; margin-bottom: 40px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(0, 124, 82, 0.1); width: 45px; height: 45px; border-radius: 12px;" onclick="window.location.href='romix_ombor.html'" title="Romix Omboriga Qaytish">
+                ↩️</div>
+            <div class="nav-icon active" title="Aksessuarlar">⚙️</div>
+            <div class="nav-icon" id="logoutBtn" onclick="localStorage.removeItem('currentUser'); window.location.href = '/';">🚪</div>
+        </aside>
+
+        <main class="admin-main">
+            <!-- Top Nav -->
+            <nav class="top-nav-v2">
+                <div class="nav-links-v2" style="display: flex; align-items: center; gap: 8px;">
+                    <button class="tab-btn" onclick="window.location.href='romix_ombor.html'" style="background: rgba(0, 210, 255, 0.1); color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.2); border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; padding: 8px 16px; margin-right: 10px;">
+                        ⬅️ Romix Omboriga Qaytish
+                    </button>
+                    <button class="tab-btn active">Aksessuar Holati</button>
+                </div>
+                <div style="display: flex; gap: 20px; align-items: center;">
+                    <button id="themeToggle" class="theme-toggle" onclick="document.body.classList.toggle('dark-mode');">🌙</button>
+                    <div style="text-align: right;">
+                        <div id="userName" style="font-weight: 600; font-size: 0.9rem;">Rahbar</div>
+                        <div id="userRole" style="font-size: 0.7rem; color: var(--adm-text-sec);">SENIOR OPERATOR</div>
+                    </div>
+                </div>
+            </nav>
+
+            <section class="warehouse-section">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px;">
+                    <div>
+                        <h1 style="font-size: 2.2rem; font-weight: 600;">Aksessuarlar Ombori</h1>
+                        <p style="color: var(--adm-text-sec);">Ruchkalar, zamoklar va butlovchi materiallar</p>
+                    </div>
+                    <div style="display:flex; gap:12px;">
+                        <button class="btn-glass" onclick="alert('Yangi kirim faqat Profil ombori uchun faollashtirilgan!')">
+                            <span style="font-size: 1.2rem;">+</span> Yangi Kirim
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bento-container">
+                    <div class="bento-item" style="grid-column: span 4;">
+                        <span class="stat-label">Jami Turlar</span>
+                        <div class="stat-value">5 xil</div>
+                        <div style="font-size: 0.8rem; color: #007c52; margin-top: 10px;">Aksessuarlar to'plami</div>
+                    </div>
+                    <div class="bento-item" style="grid-column: span 4;">
+                        <span class="stat-label">Umumiy Miqdor</span>
+                        <div class="stat-value">12,450 dona</div>
+                        <div style="font-size: 0.8rem; color: #007c52; margin-top: 10px;">Zaxira yetarli</div>
+                    </div>
+                    <div class="bento-item" style="grid-column: span 4;">
+                        <span class="stat-label">Holat</span>
+                        <div class="stat-value" style="color:#00ff88;">Norma ✓</div>
+                        <div style="font-size: 0.8rem; color: var(--adm-text-sec); margin-top: 10px;">Zaxiralar barqaror</div>
+                    </div>
+
+                    <!-- Table -->
+                    <div class="bento-item" style="grid-column: span 12;">
+                        <div class="bento-header">
+                            <h3 style="font-weight: 700;">Aksessuar Inventarizatsiya Ro'yxati</h3>
+                            <input type="text" id="accSearch" placeholder="Qidiruv..." class="form-input-v2" style="width: 250px; margin-bottom:0;">
+                        </div>
+                        <table class="v2-table">
+                            <thead>
+                                <tr>
+                                    <th>Mahsulot</th>
+                                    <th>Kategoriya</th>
+                                    <th>Mavjud</th>
+                                    <th>Birlik</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="accTableBody">
+                                <tr>
+                                    <td><strong>AKFA Eshik Qulflari</strong></td>
+                                    <td>Zamoklar</td>
+                                    <td style="font-weight:700;">1,200</td>
+                                    <td>dona</td>
+                                    <td><span class="stock-badge high">Yetarli</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Oyna Ruchkalari Premium</strong></td>
+                                    <td>Ruchkalar</td>
+                                    <td style="font-weight:700;">2,500</td>
+                                    <td>dona</td>
+                                    <td><span class="stock-badge high">Yetarli</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Rezina Qistirma 8mm</strong></td>
+                                    <td>Qistirmalar</td>
+                                    <td style="font-weight:700;">7,350</td>
+                                    <td>metr</td>
+                                    <td><span class="stock-badge high">Yetarli</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Burchak Biriktiruvchi PVX</strong></td>
+                                    <td>Biriktiruvchilar</td>
+                                    <td style="font-weight:700;">1,400</td>
+                                    <td>dona</td>
+                                    <td><span class="stock-badge high">Yetarli</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Real time search
+        document.getElementById('accSearch').oninput = function() {
+            const query = this.value.toLowerCase().trim();
+            const rows = document.querySelectorAll('#accTableBody tr');
+            rows.forEach(row => {
+                if(row.textContent.toLowerCase().includes(query)) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+        };
+        
+        // Theme init
+        if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
+        
+        // User init
+        const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        if (user) {
+            document.getElementById('userName').textContent = (user.full_name || user.username || 'RAHBAR').toUpperCase();
+        }
+    </script>
+</body>
+
+</html>
