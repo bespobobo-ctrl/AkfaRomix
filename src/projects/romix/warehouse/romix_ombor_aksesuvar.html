@@ -688,6 +688,240 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* --- 2026 Premium Tab and Sidebar Styles --- */
+        .sidebar-slim {
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            padding: 20px 0 !important;
+            height: 100vh !important;
+        }
+
+        .sidebar-slim .nav-icon {
+            color: rgba(255, 255, 255, 0.4) !important;
+            border: 1px solid transparent !important;
+            font-size: 1.25rem !important;
+            width: 45px !important;
+            height: 45px !important;
+            border-radius: 12px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            cursor: pointer !important;
+            transition: all 0.3s !important;
+        }
+
+        .sidebar-slim .nav-icon:hover {
+            color: #00d2ff !important;
+            background: rgba(0, 210, 255, 0.08) !important;
+            border-color: rgba(0, 210, 255, 0.15) !important;
+            box-shadow: 0 0 10px rgba(0, 210, 255, 0.1) !important;
+        }
+
+        .sidebar-slim .nav-icon.active {
+            color: #00ff88 !important;
+            background: rgba(0, 255, 136, 0.08) !important;
+            border-color: rgba(0, 255, 136, 0.25) !important;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.15) !important;
+        }
+
+        /* --- 2026 History Timeline Styles --- */
+        .timeline-wrapper {
+            position: relative;
+            padding-left: 30px;
+            border-left: 2px solid rgba(255, 255, 255, 0.05);
+            margin: 10px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .timeline-item {
+            position: relative;
+            background: rgba(20, 30, 45, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            padding: 18px 22px;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .timeline-item:hover {
+            transform: translateX(4px);
+            border-color: rgba(0, 210, 255, 0.2);
+            background: rgba(20, 30, 45, 0.5);
+            box-shadow: 0 5px 20px rgba(0, 210, 255, 0.05);
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: -37px;
+            top: 24px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #111b27;
+            border: 3px solid #00d2ff;
+            box-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .timeline-item:hover .timeline-dot {
+            transform: scale(1.2);
+            background: #00d2ff;
+        }
+
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .timeline-action-badge {
+            font-size: 0.72rem;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .timeline-action-badge.kirim {
+            background: rgba(0, 255, 136, 0.08);
+            color: #00ff88;
+            border: 1px solid rgba(0, 255, 136, 0.2);
+        }
+
+        .timeline-action-badge.tahrir {
+            background: rgba(255, 170, 0, 0.08);
+            color: #ffaa00;
+            border: 1px solid rgba(255, 170, 0, 0.2);
+        }
+
+        .timeline-action-badge.ochirish {
+            background: rgba(255, 77, 79, 0.08);
+            color: #ff4d4f;
+            border: 1px solid rgba(255, 77, 79, 0.2);
+        }
+
+        .timeline-meta {
+            font-size: 0.75rem;
+            color: var(--adm-text-sec);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .timeline-details {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.85);
+            line-height: 1.4;
+        }
+
+        /* --- 2026 Category Settings Styles --- */
+        .settings-categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 15px;
+        }
+
+        .category-settings-card {
+            background: rgba(20, 30, 45, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .category-settings-card:hover {
+            border-color: rgba(255, 170, 0, 0.2);
+            background: rgba(20, 30, 45, 0.5);
+            box-shadow: 0 5px 15px rgba(255, 170, 0, 0.03);
+        }
+
+        .cat-settings-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .cat-settings-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .cat-settings-name {
+            font-weight: 700;
+            color: #fff;
+            font-size: 0.95rem;
+        }
+
+        /* --- Modern CSS Toggle Switch --- */
+        .cyber-switch-label {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .cyber-switch-label input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .cyber-switch-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 34px;
+        }
+
+        .cyber-switch-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: rgba(255, 255, 255, 0.6);
+            transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        input:checked + .cyber-switch-slider {
+            background-color: rgba(0, 255, 136, 0.1);
+            border-color: rgba(0, 255, 136, 0.3);
+        }
+
+        input:checked + .cyber-switch-slider:before {
+            transform: translateX(20px);
+            background-color: #00ff88;
+            box-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+        }
     </style>
 </head>
 
@@ -695,13 +929,20 @@
     <div id="mainApp" class="admin-layout">
         <!-- Sidebar -->
         <aside class="sidebar-slim">
-            <div class="logo-icon-v2"
-                style="font-size: 1.5rem; color: #007c52; margin-bottom: 40px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(0, 124, 82, 0.1); width: 45px; height: 45px; border-radius: 12px;"
-                onclick="window.location.href='romix_ombor.html'" title="Romix Omboriga Qaytish">
-                ↩️</div>
-            <div class="nav-icon active" title="Aksessuarlar">⚙️</div>
-            <div class="nav-icon" id="logoutBtn"
-                onclick="localStorage.removeItem('currentUser'); window.location.href = '/';">🚪</div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 15px; width: 100%;">
+                <div class="logo-icon-v2"
+                    style="font-size: 1.5rem; color: #007c52; margin-bottom: 25px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(0, 124, 82, 0.1); width: 45px; height: 45px; border-radius: 12px; transition: all 0.3s;"
+                    onclick="window.location.href='romix_ombor.html'" title="Romix Omboriga Qaytish">
+                    ↩️</div>
+                <div class="nav-icon active" id="tabMainBtn" onclick="setViewTab('main')" title="Asosiy Ombor">📦</div>
+                <div class="nav-icon" id="tabHistoryBtn" onclick="setViewTab('history')" title="Amallar Tarixi (Kesh)">📜</div>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 15px; width: 100%;">
+                <div class="nav-icon" id="tabSettingsBtn" onclick="setViewTab('settings')" title="Kategoriya Sozlamalari">⚙️</div>
+                <div class="nav-icon" id="logoutBtn"
+                    onclick="localStorage.removeItem('currentUser'); window.location.href = '/';" title="Tizimdan Chiqish">🚪</div>
+            </div>
         </aside>
 
         <main class="admin-main">
@@ -718,7 +959,8 @@
                 </div>
             </nav>
 
-            <section class="warehouse-section">
+            <!-- BO'LIM 1: ASOSIY OMBOR (MAIN INVENTORY) -->
+            <section id="sectionMain" class="warehouse-section page-section active">
                 <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px;">
                     <div>
                         <h1 style="font-size: 2.2rem; font-weight: 600;">Aksessuarlar Ombori</h1>
@@ -773,6 +1015,67 @@
                         <!-- Dynamic Content View Container -->
                         <div id="accViewContainer" style="margin-top: 15px; min-height: 200px;">
                             <!-- Dynamically loaded via renderInventory() -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- BO'LIM 2: AMALLAR TARIXI (HISTORY LOG) -->
+            <section id="sectionHistory" class="warehouse-section page-section" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px;">
+                    <div>
+                        <h1 style="font-size: 2.2rem; font-weight: 600; color: #00d2ff;">📜 Amallar Tarixi (Kesh Loglari)</h1>
+                        <p style="color: var(--adm-text-sec);">Omborda bajarilgan barcha kirim, tahrir va o'chirish amallarining batafsil jurnali</p>
+                    </div>
+                    <div>
+                        <button class="btn-glass" onclick="clearHistoryLog()" style="border-color: rgba(255, 77, 79, 0.3); color: #ff4d4f;">
+                            🗑️ Tarixni Tozalash
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bento-container">
+                    <div class="bento-item" style="grid-column: span 12;">
+                        <div class="timeline-container" id="historyLogTimeline" style="margin-top: 10px;">
+                            <!-- Dynamically loaded via JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- BO'LIM 3: KATEGORIYALAR SOZLAMALARI (SETTINGS) -->
+            <section id="sectionSettings" class="warehouse-section page-section" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px;">
+                    <div>
+                        <h1 style="font-size: 2.2rem; font-weight: 600; color: #ffaa00;">⚙️ Kategoriya Sozlamalari</h1>
+                        <p style="color: var(--adm-text-sec);">Kategoriyalarni tahrirlash, qo'shish, o'chirish va ularning ombordagi ko'rinuvchanligini boshqarish</p>
+                    </div>
+                </div>
+
+                <div class="bento-container">
+                    <!-- Yangi Kategoriya Qo'shish -->
+                    <div class="bento-item" style="grid-column: span 4; height: fit-content;">
+                        <h3 style="font-weight: 700; margin-bottom: 20px; color: #ffaa00;">➕ Yangi Kategoriya</h3>
+                        <form id="addCategoryForm" onsubmit="handleAddCategory(event)">
+                            <div class="form-group">
+                                <label for="newCatName">Kategoriya Nomi</label>
+                                <input type="text" id="newCatName" class="form-input-premium" placeholder="Masalan: Alyumin..." required>
+                            </div>
+                            <div class="form-group">
+                                <label for="newCatIcon">Emoji Belgisi (Icon)</label>
+                                <input type="text" id="newCatIcon" class="form-input-premium" placeholder="Masalan: 🛡️, 📦, ⛓️..." required maxlength="3">
+                            </div>
+                            <button type="submit" class="btn-premium primary" style="width: 100%; background: linear-gradient(135deg, #ffaa00 0%, #cc8800 100%); margin-top: 10px;">
+                                KATEGORIYA QO'SHISH
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Mavjud Kategoriyalar Ro'yxati -->
+                    <div class="bento-item" style="grid-column: span 8;">
+                        <h3 style="font-weight: 700; margin-bottom: 20px;">🗂️ Kategoriyalar Ro'yxati</h3>
+                        <div class="settings-categories-grid" id="settingsCategoriesList">
+                            <!-- Loaded dynamically via JS -->
                         </div>
                     </div>
                 </div>
@@ -1098,16 +1401,31 @@
             localStorage.setItem('romix_accessories_inventory', JSON.stringify(inventory));
         }
 
-        // Mapping categories to their specific icons for dropdowns & receipt rendering
-        const CATEGORY_ICONS = {
-            "Zamoklar": "🔒",
-            "Ruchkalar": "🚪",
-            "Qistirmalar": "🌀",
-            "Biriktiruvchilar": "🧩",
-            "Boshqa...": "⚙️"
-        };
-        function getCategoryIcon(cat) {
-            return CATEGORY_ICONS[cat] || "⚙️";
+        // --- Dynamic Categories State Management ---
+        const DEFAULT_CATEGORIES = [
+            { name: "Zamoklar", icon: "🔒", visible: true },
+            { name: "Ruchkalar", icon: "🚪", visible: true },
+            { name: "Qistirmalar", icon: "🌀", visible: true },
+            { name: "Biriktiruvchilar", icon: "🧩", visible: true }
+        ];
+
+        let categories = JSON.parse(localStorage.getItem('romix_accessories_categories'));
+        if (!categories || categories.length === 0) {
+            categories = DEFAULT_CATEGORIES;
+            localStorage.setItem('romix_accessories_categories', JSON.stringify(categories));
+        }
+
+        // Helper to get only active inventory items (whose category visibility is set to true)
+        function getActiveInventory() {
+            return inventory.map((item, originalIdx) => ({ ...item, originalIdx })).filter(wrapper => {
+                const catMatch = categories.find(c => c.name.toLowerCase() === wrapper.category.toLowerCase());
+                return catMatch ? catMatch.visible : true; // default to true if category not found in settings
+            });
+        }
+
+        function getCategoryIcon(catName) {
+            const match = categories.find(c => c.name.toLowerCase() === catName.toLowerCase());
+            return match ? match.icon : "⚙️";
         }
 
         const UNIT_ICONS = {
@@ -1154,12 +1472,13 @@
 
         function updateBentoStats() {
             let totalQty = 0;
-            inventory.forEach(item => {
+            const activeItems = getActiveInventory();
+            activeItems.forEach(item => {
                 totalQty += item.qty;
             });
 
             // Update Bento Statistics
-            document.getElementById('totalTypesCount').textContent = `${inventory.length} xil`;
+            document.getElementById('totalTypesCount').textContent = `${activeItems.length} xil`;
             document.getElementById('totalItemsCount').textContent = `${totalQty.toLocaleString()} dona`;
 
             // Update State Metric
@@ -1200,8 +1519,11 @@
             `;
 
             const tableBody = document.getElementById('accTableBody');
+            const activeItems = getActiveInventory();
             
-            inventory.forEach((item, idx) => {
+            activeItems.forEach(wrapper => {
+                const item = wrapper;
+                const idx = wrapper.originalIdx;
                 const isLow = item.qty < 500;
                 const badgeClass = isLow ? 'stock-badge low' : 'stock-badge high';
                 const badgeText = isLow ? 'Kam zaxira' : 'Yetarli';
@@ -1236,8 +1558,11 @@
             if (!container) return;
 
             let html = `<div class="cyber-grid-container" id="accGridBody">`;
+            const activeItems = getActiveInventory();
 
-            inventory.forEach((item, idx) => {
+            activeItems.forEach(wrapper => {
+                const item = wrapper;
+                const idx = wrapper.originalIdx;
                 const isLow = item.qty < 500;
                 
                 // Progress-bar capacity calculation (relative to 5,000 as a standard capacity baseline)
@@ -1299,10 +1624,12 @@
 
             // Group inventory dynamically by category
             const grouped = {};
-            inventory.forEach((item, idx) => {
-                const cat = item.category || 'Boshqa...';
+            const activeItems = getActiveInventory();
+
+            activeItems.forEach(wrapper => {
+                const cat = wrapper.category || 'Boshqa...';
                 if (!grouped[cat]) grouped[cat] = [];
-                grouped[cat].push({ item, idx });
+                grouped[cat].push({ item: wrapper, idx: wrapper.originalIdx });
             });
 
             let html = `<div class="bento-accordion-container" id="accBentoBody">`;
@@ -1436,6 +1763,251 @@
         // Unified search input listener
         document.getElementById('accSearch').oninput = filterInventory;
 
+        // --- 5. Tarix Timeline (Cache Log) Logic ---
+        function addHistoryLog(action, details) {
+            const curUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const operator = (curUser.full_name || curUser.username || 'RAHBAR').toUpperCase();
+            
+            const now = new Date();
+            const timeStr = now.toLocaleDateString('uz-UZ') + ' ' + now.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+            
+            let logs = JSON.parse(localStorage.getItem('romix_accessories_history_log')) || [];
+            logs.unshift({
+                timestamp: timeStr,
+                action: action,
+                details: details,
+                operator: operator
+            });
+            
+            if (logs.length > 100) logs.pop(); // limit to 100 logs
+            
+            localStorage.setItem('romix_accessories_history_log', JSON.stringify(logs));
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('historyLogTimeline');
+            if (!container) return;
+
+            const logs = JSON.parse(localStorage.getItem('romix_accessories_history_log')) || [];
+            
+            if (logs.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--adm-text-sec); font-size: 0.95rem;">
+                        <span style="font-size: 2.5rem; display: block; margin-bottom: 15px;">📜</span>
+                        Tarix kesh loglari hozircha bo'sh.
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `<div class="timeline-wrapper">`;
+
+            logs.forEach(log => {
+                let badgeClass = 'timeline-action-badge';
+                if (log.action.includes('Kirim')) badgeClass += ' kirim';
+                else if (log.action.includes('Tahrir')) badgeClass += ' tahrir';
+                else if (log.action.includes('O\'chirish')) badgeClass += ' ochirish';
+
+                html += `
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-header">
+                            <span class="${badgeClass}">${log.action}</span>
+                            <div class="timeline-meta">
+                                <span>🕒 ${log.timestamp}</span>
+                                <span>👤 Operator: <strong>${log.operator}</strong></span>
+                            </div>
+                        </div>
+                        <div class="timeline-details">${log.details}</div>
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+
+        function clearHistoryLog() {
+            if (confirm("Haqiqatdan ham barcha kesh tarixini tozalashni xohlaysizmi?")) {
+                localStorage.removeItem('romix_accessories_history_log');
+                renderHistory();
+            }
+        }
+
+        // --- 6. Sozlamalar (Category Toggles) Panel Logic ---
+        function renderSettings() {
+            const container = document.getElementById('settingsCategoriesList');
+            if (!container) return;
+
+            if (categories.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 30px; color: var(--adm-text-sec);">
+                        Kategoriyalar ro'yxati bo'sh. Yangi qo'shing.
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<div class="settings-categories-grid">';
+            categories.forEach((cat, idx) => {
+                const checkedAttr = cat.visible ? 'checked' : '';
+                html += `
+                    <div class="category-settings-card">
+                        <div class="cat-settings-info">
+                            <div class="cat-settings-icon">${cat.icon || '📦'}</div>
+                            <span class="cat-settings-name">${cat.name}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <label class="cyber-switch-label" title="Ko'rsatish/Berkitish">
+                                <input type="checkbox" ${checkedAttr} onchange="toggleCategoryVisibility(${idx}, this.checked)">
+                                <span class="cyber-switch-slider"></span>
+                            </label>
+                            <button type="button" class="btn-glass" onclick="deleteCategory(${idx})" style="padding: 6px 10px; border-radius: 8px; border-color: rgba(255, 77, 79, 0.2); color: #ff4d4f;" title="O'chirish">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+
+            container.innerHTML = html;
+        }
+
+        function toggleCategoryVisibility(idx, isChecked) {
+            if (categories[idx]) {
+                categories[idx].visible = isChecked;
+                localStorage.setItem('romix_accessories_categories', JSON.stringify(categories));
+                
+                // Live rebuild inventory stats & dropdown lists
+                renderInventory();
+                
+                const cat = categories[idx];
+                addHistoryLog("Tahrir ✏️", `"${cat.name}" kategoriyasi ko'rinuvchanligi ${isChecked ? 'yoqildi' : 'o\'chirildi'}.`);
+            }
+        }
+
+        function handleAddCategory(event) {
+            event.preventDefault();
+            const nameInput = document.getElementById('newCatName');
+            const iconInput = document.getElementById('newCatIcon');
+
+            const name = nameInput.value.trim();
+            const icon = iconInput.value.trim() || '📦';
+
+            if (!name) return;
+
+            const duplicate = categories.some(c => c.name.toLowerCase() === name.toLowerCase());
+            if (duplicate) {
+                alert("Bunday kategoriya allaqachon mavjud!");
+                return;
+            }
+
+            categories.push({
+                name: name,
+                icon: icon,
+                visible: true
+            });
+
+            localStorage.setItem('romix_accessories_categories', JSON.stringify(categories));
+            addHistoryLog("Kirim 📥", `Yangi "${name}" (${icon}) kategoriyasi sozlamalarda yaratildi.`);
+
+            nameInput.value = '';
+            iconInput.value = '';
+
+            renderSettings();
+            syncCategoryDropdowns();
+            renderInventory();
+        }
+
+        function deleteCategory(idx) {
+            const cat = categories[idx];
+            if (!cat) return;
+
+            if (confirm(`Haqiqatdan ham "${cat.name}" kategoriyasini o'chirmoqchisiz? Bu kategoriya ostidagi mahsulotlar o'chib ketmaydi, lekin kategoriya sozlamalardan o'chadi.`)) {
+                categories.splice(idx, 1);
+                localStorage.setItem('romix_accessories_categories', JSON.stringify(categories));
+                addHistoryLog("O'chirish 🗑️", `"${cat.name}" kategoriyasi sozlamalardan butunlay o'chirib tashlandi.`);
+
+                renderSettings();
+                syncCategoryDropdowns();
+                renderInventory();
+            }
+        }
+
+        function syncCategoryDropdowns() {
+            const kirimDropdown = document.querySelector('#wrapper_accCategory .premium-select-dropdown');
+            const editDropdown = document.querySelector('#wrapper_editAccCategory .premium-select-dropdown');
+
+            if (!kirimDropdown || !editDropdown) return;
+
+            let dropdownHtml = '';
+            categories.forEach(cat => {
+                dropdownHtml += `
+                    <div class="premium-option" data-value="${cat.name}" onclick="selectOption('accCategory', '${cat.name}', '${cat.icon}', this)">
+                        <span class="option-icon">${cat.icon}</span>
+                        <span class="option-text">${cat.name}</span>
+                    </div>
+                `;
+            });
+            dropdownHtml += `
+                <div class="premium-option" data-value="Boshqa..." onclick="selectOption('accCategory', 'Boshqa...', '⚙️', this)">
+                    <span class="option-icon">⚙️</span>
+                    <span class="option-text">Boshqa...</span>
+                </div>
+            `;
+            kirimDropdown.innerHTML = dropdownHtml;
+
+            let editDropdownHtml = '';
+            categories.forEach(cat => {
+                editDropdownHtml += `
+                    <div class="premium-option" data-value="${cat.name}" onclick="selectOption('editAccCategory', '${cat.name}', '${cat.icon}', this)">
+                        <span class="option-icon">${cat.icon}</span>
+                        <span class="option-text">${cat.name}</span>
+                    </div>
+                `;
+            });
+            editDropdownHtml += `
+                <div class="premium-option" data-value="Boshqa..." onclick="selectOption('editAccCategory', 'Boshqa...', '⚙️', this)">
+                    <span class="option-icon">⚙️</span>
+                    <span class="option-text">Boshqa...</span>
+                </div>
+            `;
+            editDropdown.innerHTML = editDropdownHtml;
+        }
+
+        // --- 7. SPA Single Page Navigation Control ---
+        let currentTab = 'main';
+
+        function setViewTab(tab) {
+            currentTab = tab;
+
+            // Manage active styles in Sidebarslim
+            document.querySelectorAll('.sidebar-slim .nav-icon').forEach(icon => {
+                icon.classList.remove('active');
+            });
+            
+            if (tab === 'main') {
+                document.getElementById('tabMainBtn').classList.add('active');
+                document.getElementById('sectionMain').style.display = 'block';
+                document.getElementById('sectionHistory').style.display = 'none';
+                document.getElementById('sectionSettings').style.display = 'none';
+                renderInventory();
+            } else if (tab === 'history') {
+                document.getElementById('tabHistoryBtn').classList.add('active');
+                document.getElementById('sectionMain').style.display = 'none';
+                document.getElementById('sectionHistory').style.display = 'block';
+                document.getElementById('sectionSettings').style.display = 'none';
+                renderHistory();
+            } else if (tab === 'settings') {
+                document.getElementById('tabSettingsBtn').classList.add('active');
+                document.getElementById('sectionMain').style.display = 'none';
+                document.getElementById('sectionHistory').style.display = 'none';
+                document.getElementById('sectionSettings').style.display = 'block';
+                renderSettings();
+            }
+        }
+
         // --- Custom Dropdown Control ---
         function toggleDropdown(id) {
             const wrapper = document.getElementById(`wrapper_${id}`);
@@ -1562,6 +2134,9 @@
             localStorage.setItem('romix_accessories_inventory', JSON.stringify(inventory));
             renderInventory();
 
+            // Add history log
+            addHistoryLog("Kirim 📥", `"${finalName}" mahsulotidan ${qty.toLocaleString()} ${unit} kirim qilindi. Kategoriya: ${finalCategory}. Xususiyati: ${spec}.`);
+
             // Close Input Modal
             closeAccKirimModal();
 
@@ -1644,6 +2219,7 @@
 
             // Update item in inventory
             if (inventory[idx]) {
+                const oldItem = { ...inventory[idx] };
                 inventory[idx] = {
                     name: name,
                     category: finalCategory,
@@ -1654,6 +2230,10 @@
 
                 localStorage.setItem('romix_accessories_inventory', JSON.stringify(inventory));
                 renderInventory();
+                
+                // Add history log
+                addHistoryLog("Tahrir ✏️", `"${oldItem.name}" mahsuloti tahrirlandi: Yangi Nomi: "${name}", Kategoriya: "${finalCategory}", Miqdor: ${qty.toLocaleString()} ${unit}, Xususiyati: "${spec}".`);
+                
                 closeAccEditModal();
             }
         }
@@ -1671,10 +2251,14 @@
         function executeDelete() {
             const idx = parseInt(document.getElementById('deleteTargetIndex').value);
             if (!isNaN(idx) && inventory[idx]) {
+                const item = inventory[idx];
                 // Splice array, save and refresh
                 inventory.splice(idx, 1);
                 localStorage.setItem('romix_accessories_inventory', JSON.stringify(inventory));
                 renderInventory();
+                
+                // Add history log
+                addHistoryLog("O'chirish 🗑️", `"${item.name}" mahsuloti ombordan butunlay o'chirildi. Miqdori: ${item.qty.toLocaleString()} ${item.unit}.`);
             }
             closeDeleteConfirmModal();
         }
@@ -1709,6 +2293,12 @@
 
             // Render Inventory dynamic views
             renderInventory();
+            
+            // Sync custom category dropdowns
+            syncCategoryDropdowns();
+            
+            // Set default view tab
+            setViewTab('main');
         });
     </script>
 </body>
