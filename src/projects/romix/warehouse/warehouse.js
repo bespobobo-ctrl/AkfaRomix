@@ -276,7 +276,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         Object.keys(groups).forEach(series => {
             const items = groups[series];
             const activeColor = window.seriesColorFilters[series] || 'Barchasi';
-            const isOpen = window.expandedSeries[series] !== false; // Expand by default
+            const isOpen = window.expandedSeries[series] === true; // Collapse by default
 
             // Filter items within this series by Color
             let seriesFilteredItems = items;
