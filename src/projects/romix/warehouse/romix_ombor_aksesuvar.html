@@ -831,56 +831,81 @@
         /* --- 2026 Category Settings Styles --- */
         .settings-categories-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
         }
 
         .category-settings-card {
-            background: rgba(20, 30, 45, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            border-radius: 16px;
-            padding: 16px;
+            background: rgba(30, 41, 59, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 18px 22px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
         }
 
         .category-settings-card:hover {
-            border-color: rgba(255, 170, 0, 0.2);
-            background: rgba(20, 30, 45, 0.5);
-            box-shadow: 0 5px 15px rgba(255, 170, 0, 0.03);
+            border-color: rgba(0, 210, 255, 0.25);
+            background: rgba(30, 41, 59, 0.65);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0, 210, 255, 0.08);
         }
 
         .cat-settings-info {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 16px;
         }
 
         .cat-settings-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.03);
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: rgba(0, 210, 255, 0.08);
+            border: 1px solid rgba(0, 210, 255, 0.15);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.1rem;
+            font-size: 1.4rem;
+            color: #00d2ff;
+            box-shadow: inset 0 0 10px rgba(0, 210, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .category-settings-card:hover .cat-settings-icon {
+            transform: scale(1.08) rotate(5deg);
+            background: rgba(0, 210, 255, 0.15);
+            border-color: rgba(0, 210, 255, 0.3);
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
         }
 
         .cat-settings-name {
             font-weight: 700;
-            color: #fff;
-            font-size: 0.95rem;
+            color: #ffffff;
+            font-size: 1.05rem;
+            letter-spacing: -0.3px;
         }
 
-        /* --- Modern CSS Toggle Switch --- */
+        .cat-settings-meta {
+            font-size: 0.78rem;
+            color: var(--adm-text-sec);
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* --- Premium Custom Switch Slider --- */
         .cyber-switch-label {
             position: relative;
             display: inline-block;
-            width: 44px;
-            height: 24px;
+            width: 52px;
+            height: 28px;
         }
 
         .cyber-switch-label input {
@@ -893,34 +918,109 @@
             position: absolute;
             cursor: pointer;
             inset: 0;
-            background-color: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+            background-color: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: .4s cubic-bezier(0.4, 0, 0.2, 1);
             border-radius: 34px;
         }
 
         .cyber-switch-slider:before {
             position: absolute;
             content: "";
-            height: 16px;
-            width: 16px;
+            height: 20px;
+            width: 20px;
             left: 3px;
             bottom: 3px;
-            background-color: rgba(255, 255, 255, 0.6);
-            transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+            background-color: #94a3b8;
+            transition: .4s cubic-bezier(0.4, 0, 0.2, 1);
             border-radius: 50%;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
         }
 
         input:checked + .cyber-switch-slider {
-            background-color: rgba(0, 255, 136, 0.1);
-            border-color: rgba(0, 255, 136, 0.3);
+            background-color: rgba(0, 255, 136, 0.12);
+            border-color: rgba(0, 255, 136, 0.4);
         }
 
         input:checked + .cyber-switch-slider:before {
-            transform: translateX(20px);
+            transform: translateX(24px);
             background-color: #00ff88;
-            box-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.6);
+        }
+
+        /* --- Custom Premium Glass Cards --- */
+        .card-settings-glass {
+            background: rgba(24, 18, 12, 0.45) !important;
+            border: 1px solid rgba(255, 170, 0, 0.15) !important;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), inset 0 0 25px rgba(255, 170, 0, 0.03) !important;
+            transition: all 0.4s ease !important;
+        }
+        
+        .card-settings-glass:hover {
+            border-color: rgba(255, 170, 0, 0.35) !important;
+            box-shadow: 0 25px 50px rgba(255, 170, 0, 0.06), inset 0 0 25px rgba(255, 170, 0, 0.06) !important;
+        }
+
+        .card-list-glass {
+            background: rgba(13, 20, 30, 0.45) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35) !important;
+            transition: all 0.4s ease !important;
+        }
+        
+        .card-list-glass:hover {
+            border-color: rgba(0, 210, 255, 0.15) !important;
+            box-shadow: 0 25px 50px rgba(0, 210, 255, 0.04) !important;
+        }
+
+        /* --- Elegant Submit and Delete Buttons --- */
+        .btn-settings-submit {
+            background: linear-gradient(135deg, #ffaa00 0%, #d47a00 100%) !important;
+            color: #ffffff !important;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            font-size: 0.9rem;
+            padding: 14px;
+            border-radius: 14px;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(255, 170, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: inherit;
+        }
+        
+        .btn-settings-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 170, 0, 0.35);
+            background: linear-gradient(135deg, #ffbb33 0%, #e68a00 100%) !important;
+        }
+
+        .btn-trash-premium {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            background: rgba(255, 77, 79, 0.06);
+            border: 1px solid rgba(255, 77, 79, 0.15);
+            color: #ff4d4f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 0.95rem;
+        }
+
+        .btn-trash-premium:hover {
+            background: #ff4d4f;
+            color: #ffffff;
+            border-color: #ff4d4f;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 77, 79, 0.4);
         }
     </style>
 </head>
@@ -1054,8 +1154,10 @@
 
                 <div class="bento-container">
                     <!-- Yangi Kategoriya Qo'shish -->
-                    <div class="bento-item" style="grid-column: span 4; height: fit-content;">
-                        <h3 style="font-weight: 700; margin-bottom: 20px; color: #ffaa00;">➕ Yangi Kategoriya</h3>
+                    <div class="bento-item card-settings-glass" style="grid-column: span 4; height: fit-content;">
+                        <h3 style="font-weight: 700; margin-bottom: 20px; color: #ffaa00; display: flex; align-items: center; gap: 8px;">
+                            <span>➕</span> Yangi Kategoriya
+                        </h3>
                         <form id="addCategoryForm" onsubmit="handleAddCategory(event)">
                             <div class="form-group">
                                 <label for="newCatName">Kategoriya Nomi</label>
@@ -1065,15 +1167,17 @@
                                 <label for="newCatIcon">Emoji Belgisi (Icon)</label>
                                 <input type="text" id="newCatIcon" class="form-input-premium" placeholder="Masalan: 🛡️, 📦, ⛓️..." required maxlength="3">
                             </div>
-                            <button type="submit" class="btn-premium primary" style="width: 100%; background: linear-gradient(135deg, #ffaa00 0%, #cc8800 100%); margin-top: 10px;">
-                                KATEGORIYA QO'SHISH
+                            <button type="submit" class="btn-settings-submit" style="margin-top: 10px;">
+                                ➕ KATEGORIYA QO'SHISH
                             </button>
                         </form>
                     </div>
 
                     <!-- Mavjud Kategoriyalar Ro'yxati -->
-                    <div class="bento-item" style="grid-column: span 8;">
-                        <h3 style="font-weight: 700; margin-bottom: 20px;">🗂️ Kategoriyalar Ro'yxati</h3>
+                    <div class="bento-item card-list-glass" style="grid-column: span 8;">
+                        <h3 style="font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                            <span>🗂️</span> Kategoriyalar Ro'yxati
+                        </h3>
                         <div class="settings-categories-grid" id="settingsCategoriesList">
                             <!-- Loaded dynamically via JS -->
                         </div>
@@ -1841,7 +1945,8 @@
 
             if (categories.length === 0) {
                 container.innerHTML = `
-                    <div style="text-align: center; padding: 30px; color: var(--adm-text-sec);">
+                    <div style="text-align: center; padding: 40px; color: var(--adm-text-sec); font-size: 0.95rem;">
+                        <span style="font-size: 2.5rem; display: block; margin-bottom: 15px;">🗂️</span>
                         Kategoriyalar ro'yxati bo'sh. Yangi qo'shing.
                     </div>
                 `;
@@ -1850,19 +1955,43 @@
 
             let html = '<div class="settings-categories-grid">';
             categories.forEach((cat, idx) => {
+                // Calculate dynamics statistics
+                const catProducts = inventory.filter(item => item.category.toLowerCase() === cat.name.toLowerCase());
+                const totalTypes = catProducts.length;
+                const totalQty = catProducts.reduce((sum, p) => sum + p.qty, 0);
+
+                let statText = '';
+                if (totalTypes === 0) {
+                    statText = '<span style="color: var(--adm-text-sec); font-size: 0.72rem; text-transform: uppercase; font-weight: 600; letter-spacing: 0.3px;">Mahsulot yo\'q</span>';
+                } else {
+                    statText = `
+                        <span style="background: rgba(0, 210, 255, 0.08); color: #00d2ff; padding: 2px 8px; border-radius: 8px; font-size: 0.72rem; font-weight: 700; border: 1px solid rgba(0, 210, 255, 0.15);">
+                            ${totalTypes} xil tur
+                        </span>
+                        <span style="background: rgba(0, 255, 136, 0.08); color: #00ff88; padding: 2px 8px; border-radius: 8px; font-size: 0.72rem; font-weight: 700; border: 1px solid rgba(0, 255, 136, 0.15); margin-left: 6px;">
+                            ${totalQty.toLocaleString()} dona
+                        </span>
+                    `;
+                }
+
                 const checkedAttr = cat.visible ? 'checked' : '';
                 html += `
-                    <div class="category-settings-card">
+                    <div class="category-settings-card" style="opacity: ${cat.visible ? 1 : 0.65};">
                         <div class="cat-settings-info">
-                            <div class="cat-settings-icon">${cat.icon || '📦'}</div>
-                            <span class="cat-settings-name">${cat.name}</span>
+                            <div class="cat-settings-icon" style="background: ${cat.visible ? 'rgba(0, 210, 255, 0.08)' : 'rgba(255,255,255,0.03)'}; border-color: ${cat.visible ? 'rgba(0, 210, 255, 0.15)' : 'rgba(255,255,255,0.05)'};">
+                                ${cat.icon || '📦'}
+                            </div>
+                            <div>
+                                <span class="cat-settings-name" style="text-decoration: ${cat.visible ? 'none' : 'line-through'}; opacity: ${cat.visible ? 1 : 0.65};">${cat.name}</span>
+                                <div class="cat-settings-meta">${statText}</div>
+                            </div>
                         </div>
                         <div style="display: flex; align-items: center; gap: 15px;">
                             <label class="cyber-switch-label" title="Ko'rsatish/Berkitish">
                                 <input type="checkbox" ${checkedAttr} onchange="toggleCategoryVisibility(${idx}, this.checked)">
                                 <span class="cyber-switch-slider"></span>
                             </label>
-                            <button type="button" class="btn-glass" onclick="deleteCategory(${idx})" style="padding: 6px 10px; border-radius: 8px; border-color: rgba(255, 77, 79, 0.2); color: #ff4d4f;" title="O'chirish">
+                            <button type="button" class="btn-trash-premium" onclick="deleteCategory(${idx})" title="O'chirish">
                                 🗑️
                             </button>
                         </div>
