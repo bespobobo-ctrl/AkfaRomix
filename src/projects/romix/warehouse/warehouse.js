@@ -452,8 +452,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (openKirimModalBtn) openKirimModalBtn.onclick = () => kirimModal.classList.remove('hidden');
     document.getElementById('closeKirimModal').onclick = () => kirimModal.classList.add('hidden');
     
-    if (openProfilKirimModal) openProfilKirimModal.onclick = () => profilKirimModal.classList.remove('hidden');
-    if (closeProfilKirim) closeProfilKirim.onclick = () => profilKirimModal.classList.add('hidden');
+    if (openProfilKirimModal) openProfilKirimModal.onclick = () => {
+        if (window.resetProfilKirimForm) window.resetProfilKirimForm();
+        profilKirimModal.classList.remove('hidden');
+    };
+    if (closeProfilKirim) closeProfilKirim.onclick = () => {
+        if (window.resetProfilKirimForm) window.resetProfilKirimForm();
+        profilKirimModal.classList.add('hidden');
+    };
 
     document.getElementById('saveProfilBtn').onclick = async () => {
         const uzunligi = document.getElementById('pkUzunligi').value.trim();
@@ -530,6 +536,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             showInvoice(virtualTx, product);
             profilKirimModal.classList.add('hidden');
+            if (window.resetProfilKirimForm) window.resetProfilKirimForm();
             loadInventory();
         } catch (err) {
             console.error("Profil Kirim Error:", err);

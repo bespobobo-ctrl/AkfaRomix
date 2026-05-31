@@ -200,6 +200,184 @@
             transform: translateY(-3px);
             box-shadow: 0 8px 20px rgba(0, 210, 255, 0.2);
         }
+
+        /* --- Premium Custom Dropdowns --- */
+        .premium-select-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .premium-select-trigger {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 14px 18px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--adm-text);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(5px);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .premium-select-trigger:hover {
+            border-color: rgba(0, 210, 255, 0.4);
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 0 12px rgba(0, 210, 255, 0.15);
+        }
+
+        .premium-select-wrapper.open .premium-select-trigger {
+            border-color: #00d2ff;
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.25);
+            background: rgba(0, 210, 255, 0.02);
+        }
+
+        .trigger-arrow {
+            font-size: 0.75rem;
+            color: var(--adm-text-sec);
+            transition: transform 0.3s ease;
+        }
+
+        .premium-select-wrapper.open .trigger-arrow {
+            transform: rotate(180deg);
+            color: #00d2ff;
+        }
+
+        .premium-select-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            width: 100%;
+            max-height: 280px;
+            overflow-y: auto;
+            background: rgba(18, 25, 41, 0.96);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 16px;
+            box-shadow: 0 20px 45px rgba(0,0,0,0.6);
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(-10px) scale(0.98);
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .premium-select-wrapper.open .premium-select-dropdown {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+
+        .premium-option {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+        }
+
+        .premium-option:last-child {
+            border-bottom: none;
+        }
+
+        .premium-option:hover {
+            background: rgba(0, 210, 255, 0.15);
+            color: #ffffff;
+            padding-left: 20px;
+        }
+
+        .option-visual {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.7);
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+
+        .premium-option:hover .option-visual {
+            background: rgba(0, 210, 255, 0.2);
+            color: #00d2ff;
+            transform: scale(1.08);
+        }
+
+        .svg-visual {
+            width: 22px;
+            height: 22px;
+        }
+
+        .brand-logo-visual {
+            height: 24px;
+            width: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .brand-logo-svg {
+            height: 100%;
+            width: 100%;
+        }
+
+        .color-swatch {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 6px rgba(0,0,0,0.3);
+        }
+
+        .option-text {
+            font-size: 0.95rem;
+            font-weight: 550;
+        }
+
+        /* Custom scrollbar for dropdown */
+        .premium-select-dropdown::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .premium-select-dropdown::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .premium-select-dropdown::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .premium-select-dropdown::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 210, 255, 0.3);
+        }
+
+        .premium-option span {
+            color: #e2e8f0;
+        }
+
+        .premium-option:hover span {
+            color: #ffffff;
+        }
+
+        /* Active option style */
+        .premium-option.selected {
+            background: rgba(0, 210, 255, 0.1);
+            border-left: 3px solid #00d2ff;
+        }
+
+        .premium-option.selected span {
+            color: #00d2ff;
+            font-weight: 600;
+        }
     </style>
 </head>
 
@@ -628,75 +806,294 @@
                     <!-- Profil turi -->
                     <div>
                         <label class="form-label" style="margin-bottom:8px; display:block; font-weight:600;">Profil</label>
-                        <select id="pkProfil" class="form-input-v2 select-glass" style="background:rgba(255,255,255,0.02); padding:15px; border-radius:12px; margin:0; width:100%;">
-                            <option value="" disabled selected>Tanlang</option>
-                            <option value="Profil">Profil</option>
-                            <option value="Shtapik">Shtapik</option>
-                            <option value="Tokcha">Tokcha</option>
-                            <option value="Lambri">Lambri</option>
-                        </select>
+                        <input type="hidden" id="pkProfil" value="">
+                        <div class="premium-select-wrapper" id="wrapper_pkProfil">
+                            <div class="premium-select-trigger" onclick="toggleDropdown('pkProfil')">
+                                <span class="trigger-value"><span style="opacity: 0.6;">Tanlang</span></span>
+                                <span class="trigger-arrow">▼</span>
+                            </div>
+                            <div class="premium-select-dropdown">
+                                <div class="premium-option" data-value="Profil" onclick="selectOption('pkProfil', 'Profil', this)">
+                                    <div class="option-visual">
+                                        <svg viewBox="0 0 100 100" class="svg-visual">
+                                            <rect x="25" y="25" width="50" height="50" rx="4" fill="none" stroke="currentColor" stroke-width="3"/>
+                                            <rect x="35" y="35" width="30" height="30" rx="2" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3,1"/>
+                                            <line x1="25" y1="50" x2="75" y2="50" stroke="currentColor" stroke-width="2"/>
+                                            <line x1="50" y1="25" x2="50" y2="75" stroke="currentColor" stroke-width="2"/>
+                                        </svg>
+                                    </div>
+                                    <span class="option-text">Profil</span>
+                                </div>
+                                <div class="premium-option" data-value="Shtapik" onclick="selectOption('pkProfil', 'Shtapik', this)">
+                                    <div class="option-visual">
+                                        <svg viewBox="0 0 100 100" class="svg-visual">
+                                            <path d="M 30,30 L 70,30 L 70,70 L 45,70 L 30,50 Z" fill="none" stroke="currentColor" stroke-width="3"/>
+                                            <path d="M 40,40 L 60,40 L 60,60" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="2,2"/>
+                                        </svg>
+                                    </div>
+                                    <span class="option-text">Shtapik</span>
+                                </div>
+                                <div class="premium-option" data-value="Tokcha" onclick="selectOption('pkProfil', 'Tokcha', this)">
+                                    <div class="option-visual">
+                                        <svg viewBox="0 0 100 100" class="svg-visual">
+                                            <path d="M 20,40 L 80,40 L 80,50 L 70,60 L 20,60 Z" fill="none" stroke="currentColor" stroke-width="3"/>
+                                            <line x1="35" y1="40" x2="35" y2="60" stroke="currentColor" stroke-width="2"/>
+                                            <line x1="50" y1="40" x2="50" y2="60" stroke="currentColor" stroke-width="2"/>
+                                            <line x1="65" y1="40" x2="65" y2="60" stroke="currentColor" stroke-width="2"/>
+                                        </svg>
+                                    </div>
+                                    <span class="option-text">Tokcha</span>
+                                </div>
+                                <div class="premium-option" data-value="Lambri" onclick="selectOption('pkProfil', 'Lambri', this)">
+                                    <div class="option-visual">
+                                        <svg viewBox="0 0 100 100" class="svg-visual">
+                                            <path d="M 15,35 L 70,35 L 75,45 L 85,45 L 85,55 L 75,55 L 70,65 L 15,65 Z" fill="none" stroke="currentColor" stroke-width="3"/>
+                                            <line x1="30" y1="35" x2="30" y2="65" stroke="currentColor" stroke-width="2" stroke-dasharray="2,2"/>
+                                            <line x1="50" y1="35" x2="50" y2="65" stroke="currentColor" stroke-width="2" stroke-dasharray="2,2"/>
+                                        </svg>
+                                    </div>
+                                    <span class="option-text">Lambri</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Brend -->
                     <div>
                         <label class="form-label" style="margin-bottom:8px; display:block; font-weight:600;">Brend</label>
-                        <select id="pkBrend" class="form-input-v2 select-glass" style="background:rgba(255,255,255,0.02); padding:15px; border-radius:12px; margin:0; width:100%;">
-                            <option value="" disabled selected>Tanlang</option>
-                            <option value="AKFA Plastik">AKFA Plastik</option>
-                            <option value="AKFA Alyuminiy">AKFA Alyuminiy</option>
-                            <option value="AKFA Termo">AKFA Termo</option>
-                            <option value="RETPEN Plastik">RETPEN Plastik</option>
-                            <option value="Ekopen Plastik">Ekopen Plastik</option>
-                        </select>
+                        <input type="hidden" id="pkBrend" value="">
+                        <div class="premium-select-wrapper" id="wrapper_pkBrend">
+                            <div class="premium-select-trigger" onclick="toggleDropdown('pkBrend')">
+                                <span class="trigger-value"><span style="opacity: 0.6;">Tanlang</span></span>
+                                <span class="trigger-arrow">▼</span>
+                            </div>
+                            <div class="premium-select-dropdown">
+                                <div class="premium-option" data-value="AKFA Plastik" onclick="selectOption('pkBrend', 'AKFA Plastik', this)">
+                                    <div class="brand-logo-visual">
+                                        <svg viewBox="0 0 120 40" class="brand-logo-svg"><text x="10" y="28" font-family="'Outfit', sans-serif" font-weight="900" font-size="28" fill="#FF3333">akfa</text><rect x="75" y="10" width="8" height="20" fill="#FF3333" rx="2"/><circle cx="95" cy="20" r="4" fill="#FF3333"/></svg>
+                                    </div>
+                                    <span class="option-text">Plastik</span>
+                                </div>
+                                <div class="premium-option" data-value="AKFA Alyuminiy" onclick="selectOption('pkBrend', 'AKFA Alyuminiy', this)">
+                                    <div class="brand-logo-visual">
+                                        <svg viewBox="0 0 120 40" class="brand-logo-svg"><text x="10" y="28" font-family="'Outfit', sans-serif" font-weight="900" font-size="28" fill="#FF3333">akfa</text><polygon points="75,30 85,10 95,30" fill="#888888"/></svg>
+                                    </div>
+                                    <span class="option-text">Alyuminiy</span>
+                                </div>
+                                <div class="premium-option" data-value="AKFA Termo" onclick="selectOption('pkBrend', 'AKFA Termo', this)">
+                                    <div class="brand-logo-visual">
+                                        <svg viewBox="0 0 120 40" class="brand-logo-svg"><text x="10" y="28" font-family="'Outfit', sans-serif" font-weight="900" font-size="28" fill="#FF3333">akfa</text><circle cx="85" cy="20" r="8" stroke="#FF8800" stroke-width="3" fill="none"/></svg>
+                                    </div>
+                                    <span class="option-text">Termo</span>
+                                </div>
+                                <div class="premium-option" data-value="RETPEN Plastik" onclick="selectOption('pkBrend', 'RETPEN Plastik', this)">
+                                    <div class="brand-logo-visual">
+                                        <svg viewBox="0 0 120 40" class="brand-logo-svg"><text x="5" y="28" font-family="'Outfit', sans-serif" font-weight="800" font-size="20" fill="#00D2FF">RETPEN</text></svg>
+                                    </div>
+                                    <span class="option-text">Plastik</span>
+                                </div>
+                                <div class="premium-option" data-value="RETPEN Alyuminiy" onclick="selectOption('pkBrend', 'RETPEN Alyuminiy', this)">
+                                    <div class="brand-logo-visual">
+                                        <svg viewBox="0 0 120 40" class="brand-logo-svg"><text x="5" y="28" font-family="'Outfit', sans-serif" font-weight="800" font-size="20" fill="#00D2FF">RETPEN</text><polygon points="90,28 98,12 106,28" fill="#00FF88"/></svg>
+                                    </div>
+                                    <span class="option-text">Alyuminiy</span>
+                                </div>
+                                <div class="premium-option" data-value="ALTA PLAST Plastik" onclick="selectOption('pkBrend', 'ALTA PLAST Plastik', this)">
+                                    <div class="brand-logo-visual">
+                                        <svg viewBox="0 0 120 40" class="brand-logo-svg"><text x="5" y="28" font-family="'Outfit', sans-serif" font-weight="700" font-size="16" fill="#FFFFFF">ALTA PLAST</text></svg>
+                                    </div>
+                                    <span class="option-text">Plastik</span>
+                                </div>
+                                <div class="premium-option" data-value="ALUBEST Alyuminiy" onclick="selectOption('pkBrend', 'ALUBEST Alyuminiy', this)">
+                                    <div class="brand-logo-visual">
+                                        <svg viewBox="0 0 120 40" class="brand-logo-svg"><text x="5" y="28" font-family="'Outfit', sans-serif" font-weight="800" font-size="18" fill="#007AFF">ALUBEST</text></svg>
+                                    </div>
+                                    <span class="option-text">Alyuminiy</span>
+                                </div>
+                                <div class="premium-option" data-value="ALUTEX Alyuminiy" onclick="selectOption('pkBrend', 'ALUTEX Alyuminiy', this)">
+                                    <div class="brand-logo-visual">
+                                        <svg viewBox="0 0 120 40" class="brand-logo-svg"><text x="5" y="28" font-family="'Outfit', sans-serif" font-weight="800" font-size="18" fill="#00E5FF">ALUTEX</text></svg>
+                                    </div>
+                                    <span class="option-text">Alyuminiy</span>
+                                </div>
+                                <div class="premium-option" data-value="Ekopen Plastik" onclick="selectOption('pkBrend', 'Ekopen Plastik', this)">
+                                    <div class="brand-logo-visual">
+                                        <svg viewBox="0 0 120 40" class="brand-logo-svg"><text x="5" y="28" font-family="'Outfit', sans-serif" font-weight="800" font-size="20" fill="#FF8800">Ekopen</text></svg>
+                                    </div>
+                                    <span class="option-text">Plastik</span>
+                                </div>
+                                <div class="premium-option" data-value="Ekopen Alyuminiy" onclick="selectOption('pkBrend', 'Ekopen Alyuminiy', this)">
+                                    <div class="brand-logo-visual">
+                                        <svg viewBox="0 0 120 40" class="brand-logo-svg"><text x="5" y="28" font-family="'Outfit', sans-serif" font-weight="800" font-size="20" fill="#FF8800">Ekopen</text><polygon points="90,28 98,12 106,28" fill="#FF8800"/></svg>
+                                    </div>
+                                    <span class="option-text">Alyuminiy</span>
+                                </div>
+                                <div class="premium-option" data-value="CRA Alyuminiy" onclick="selectOption('pkBrend', 'CRA Alyuminiy', this)">
+                                    <div class="brand-logo-visual">
+                                        <svg viewBox="0 0 120 40" class="brand-logo-svg"><text x="5" y="28" font-family="'Outfit', sans-serif" font-weight="900" font-size="22" fill="#FF4D4F">CRA</text></svg>
+                                    </div>
+                                    <span class="option-text">Alyuminiy</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Seriya -->
                     <div>
                         <label class="form-label" style="margin-bottom:8px; display:block; font-weight:600;">Seriya</label>
-                        <select id="pkSeriya" class="form-input-v2 select-glass" style="background:rgba(255,255,255,0.02); padding:15px; border-radius:12px; margin:0; width:100%;">
-                            <option value="" disabled selected>Tanlang</option>
-                            <option value="6000 QVT">6000 QVT</option>
-                            <option value="6000 TRIO">6000 TRIO</option>
-                            <option value="7000 AKFA EKO">7000 AKFA EKO</option>
-                            <option value="5800 TRIO">5800 TRIO</option>
-                            <option value="5200 QVT">5200 QVT</option>
-                            <option value="6500 PENTA">6500 PENTA</option>
-                            <option value="Engelberg 7000">Engelberg 7000</option>
-                        </select>
+                        <input type="hidden" id="pkSeriya" value="">
+                        <div class="premium-select-wrapper" id="wrapper_pkSeriya">
+                            <div class="premium-select-trigger" onclick="toggleDropdown('pkSeriya')">
+                                <span class="trigger-value"><span style="opacity: 0.6;">Tanlang</span></span>
+                                <span class="trigger-arrow">▼</span>
+                            </div>
+                            <div class="premium-select-dropdown">
+                                <div class="premium-option" data-value="6000 QVT" onclick="selectOption('pkSeriya', '6000 QVT', this)">
+                                    <div class="option-visual">
+                                        <svg viewBox="0 0 100 100" class="svg-visual"><circle cx="50" cy="50" r="35" fill="none" stroke="currentColor" stroke-width="6"/><text x="50" y="58" font-size="26" font-weight="bold" fill="currentColor" text-anchor="middle">S</text></svg>
+                                    </div>
+                                    <span class="option-text">6000 QVT</span>
+                                </div>
+                                <div class="premium-option" data-value="6000 TRIO" onclick="selectOption('pkSeriya', '6000 TRIO', this)">
+                                    <div class="option-visual">
+                                        <svg viewBox="0 0 100 100" class="svg-visual"><circle cx="50" cy="50" r="35" fill="none" stroke="currentColor" stroke-width="6"/><text x="50" y="58" font-size="26" font-weight="bold" fill="currentColor" text-anchor="middle">S</text></svg>
+                                    </div>
+                                    <span class="option-text">6000 TRIO</span>
+                                </div>
+                                <div class="premium-option" data-value="7000 AKFA EKO" onclick="selectOption('pkSeriya', '7000 AKFA EKO', this)">
+                                    <div class="option-visual">
+                                        <svg viewBox="0 0 100 100" class="svg-visual"><circle cx="50" cy="50" r="35" fill="none" stroke="currentColor" stroke-width="6"/><text x="50" y="58" font-size="26" font-weight="bold" fill="currentColor" text-anchor="middle">S</text></svg>
+                                    </div>
+                                    <span class="option-text">7000 AKFA EKO</span>
+                                </div>
+                                <div class="premium-option" data-value="5800 TRIO" onclick="selectOption('pkSeriya', '5800 TRIO', this)">
+                                    <div class="option-visual">
+                                        <svg viewBox="0 0 100 100" class="svg-visual"><circle cx="50" cy="50" r="35" fill="none" stroke="currentColor" stroke-width="6"/><text x="50" y="58" font-size="26" font-weight="bold" fill="currentColor" text-anchor="middle">S</text></svg>
+                                    </div>
+                                    <span class="option-text">5800 TRIO</span>
+                                </div>
+                                <div class="premium-option" data-value="5200 QVT" onclick="selectOption('pkSeriya', '5200 QVT', this)">
+                                    <div class="option-visual">
+                                        <svg viewBox="0 0 100 100" class="svg-visual"><circle cx="50" cy="50" r="35" fill="none" stroke="currentColor" stroke-width="6"/><text x="50" y="58" font-size="26" font-weight="bold" fill="currentColor" text-anchor="middle">S</text></svg>
+                                    </div>
+                                    <span class="option-text">5200 QVT</span>
+                                </div>
+                                <div class="premium-option" data-value="6500 PENTA" onclick="selectOption('pkSeriya', '6500 PENTA', this)">
+                                    <div class="option-visual">
+                                        <svg viewBox="0 0 100 100" class="svg-visual"><circle cx="50" cy="50" r="35" fill="none" stroke="currentColor" stroke-width="6"/><text x="50" y="58" font-size="26" font-weight="bold" fill="currentColor" text-anchor="middle">S</text></svg>
+                                    </div>
+                                    <span class="option-text">6500 PENTA</span>
+                                </div>
+                                <div class="premium-option" data-value="Engelberg 7000" onclick="selectOption('pkSeriya', 'Engelberg 7000', this)">
+                                    <div class="option-visual">
+                                        <svg viewBox="0 0 100 100" class="svg-visual"><circle cx="50" cy="50" r="35" fill="none" stroke="currentColor" stroke-width="6"/><text x="50" y="58" font-size="26" font-weight="bold" fill="currentColor" text-anchor="middle">S</text></svg>
+                                    </div>
+                                    <span class="option-text">Engelberg 7000</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Shakli -->
                     <div>
                         <label class="form-label" style="margin-bottom:8px; display:block; font-weight:600;">Shakli</label>
-                        <select id="pkShakli" class="form-input-v2 select-glass" style="background:rgba(255,255,255,0.02); padding:15px; border-radius:12px; margin:0; width:100%;">
-                            <option value="" disabled selected>Tanlang</option>
-                            <option value="To'g'ri">To'g'ri</option>
-                            <option value="Burchakli">Burchakli</option>
-                            <option value="Yumaloq">Yumaloq</option>
-                        </select>
+                        <input type="hidden" id="pkShakli" value="">
+                        <div class="premium-select-wrapper" id="wrapper_pkShakli">
+                            <div class="premium-select-trigger" onclick="toggleDropdown('pkShakli')">
+                                <span class="trigger-value"><span style="opacity: 0.6;">Tanlang</span></span>
+                                <span class="trigger-arrow">▼</span>
+                            </div>
+                            <div class="premium-select-dropdown">
+                                <div class="premium-option" data-value="To'g'ri" onclick="selectOption('pkShakli', 'To\'g\'ri', this)">
+                                    <div class="option-visual">
+                                        <svg viewBox="0 0 100 100" class="svg-visual"><rect x="15" y="35" width="70" height="30" rx="2" fill="none" stroke="currentColor" stroke-width="3"/></svg>
+                                    </div>
+                                    <span class="option-text">To'g'ri</span>
+                                </div>
+                                <div class="premium-option" data-value="Burchakli" onclick="selectOption('pkShakli', 'Burchakli', this)">
+                                    <div class="option-visual">
+                                        <svg viewBox="0 0 100 100" class="svg-visual"><path d="M 25,25 L 25,75 L 75,75" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
+                                    </div>
+                                    <span class="option-text">Burchakli</span>
+                                </div>
+                                <div class="premium-option" data-value="Yumaloq" onclick="selectOption('pkShakli', 'Yumaloq', this)">
+                                    <div class="option-visual">
+                                        <svg viewBox="0 0 100 100" class="svg-visual"><circle cx="50" cy="50" r="30" fill="none" stroke="currentColor" stroke-width="3"/></svg>
+                                    </div>
+                                    <span class="option-text">Yumaloq</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Rang turi -->
                     <div>
                         <label class="form-label" style="margin-bottom:8px; display:block; font-weight:600;">Rang turi</label>
-                        <select id="pkRangTuri" class="form-input-v2 select-glass" style="background:rgba(255,255,255,0.02); padding:15px; border-radius:12px; margin:0; width:100%;">
-                            <option value="" disabled selected>Tanlang</option>
-                            <option value="Matoviy">Matoviy</option>
-                            <option value="Yaltiroq">Yaltiroq</option>
-                            <option value="Teksturali">Teksturali</option>
-                        </select>
+                        <input type="hidden" id="pkRangTuri" value="">
+                        <div class="premium-select-wrapper" id="wrapper_pkRangTuri">
+                            <div class="premium-select-trigger" onclick="toggleDropdown('pkRangTuri')">
+                                <span class="trigger-value"><span style="opacity: 0.6;">Tanlang</span></span>
+                                <span class="trigger-arrow">▼</span>
+                            </div>
+                            <div class="premium-select-dropdown">
+                                <div class="premium-option" data-value="Matoviy" onclick="selectOption('pkRangTuri', 'Matoviy', this)">
+                                    <div class="option-visual">
+                                        <svg viewBox="0 0 100 100" class="svg-visual"><circle cx="50" cy="50" r="30" fill="none" stroke="currentColor" stroke-width="3" stroke-dasharray="3,3"/><circle cx="50" cy="50" r="15" fill="currentColor"/></svg>
+                                    </div>
+                                    <span class="option-text">Matoviy</span>
+                                </div>
+                                <div class="premium-option" data-value="Yaltiroq" onclick="selectOption('pkRangTuri', 'Yaltiroq', this)">
+                                    <div class="option-visual">
+                                        <svg viewBox="0 0 100 100" class="svg-visual"><path d="M 50,15 L 53,35 L 73,38 L 53,41 L 50,61 L 47,41 L 27,38 L 47,35 Z" fill="currentColor"/><path d="M 75,55 L 77,65 L 87,67 L 77,69 L 75,79 L 73,69 L 63,67 L 73,65 Z" fill="currentColor"/></svg>
+                                    </div>
+                                    <span class="option-text">Yaltiroq</span>
+                                </div>
+                                <div class="premium-option" data-value="Teksturali" onclick="selectOption('pkRangTuri', 'Teksturali', this)">
+                                    <div class="option-visual">
+                                        <svg viewBox="0 0 100 100" class="svg-visual"><line x1="15" y1="25" x2="85" y2="25" stroke="currentColor" stroke-width="2"/><line x1="20" y1="40" x2="80" y2="40" stroke="currentColor" stroke-width="2"/><line x1="15" y1="55" x2="85" y2="55" stroke="currentColor" stroke-width="2"/><line x1="25" y1="70" x2="75" y2="70" stroke="currentColor" stroke-width="2"/></svg>
+                                    </div>
+                                    <span class="option-text">Teksturali</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Rangi -->
                     <div>
                         <label class="form-label" style="margin-bottom:8px; display:block; font-weight:600;">Rangi</label>
-                        <select id="pkRangi" class="form-input-v2 select-glass" style="background:rgba(255,255,255,0.02); padding:15px; border-radius:12px; margin:0; width:100%;">
-                            <option value="" disabled selected>Tanlang</option>
-                            <option value="Oq">Oq</option>
-                            <option value="Qora">Qora</option>
-                            <option value="Zolotoy Dub">Zolotoy Dub</option>
-                            <option value="Mocha">Mocha</option>
-                        </select>
+                        <input type="hidden" id="pkRangi" value="">
+                        <div class="premium-select-wrapper" id="wrapper_pkRangi">
+                            <div class="premium-select-trigger" onclick="toggleDropdown('pkRangi')">
+                                <span class="trigger-value"><span style="opacity: 0.6;">Tanlang</span></span>
+                                <span class="trigger-arrow">▼</span>
+                            </div>
+                            <div class="premium-select-dropdown">
+                                <div class="premium-option" data-value="Oq" onclick="selectOption('pkRangi', 'Oq', this)">
+                                    <div class="option-visual">
+                                        <div class="color-swatch" style="background:#FFFFFF;"></div>
+                                    </div>
+                                    <span class="option-text">Oq</span>
+                                </div>
+                                <div class="premium-option" data-value="Qora" onclick="selectOption('pkRangi', 'Qora', this)">
+                                    <div class="option-visual">
+                                        <div class="color-swatch" style="background:#111111;"></div>
+                                    </div>
+                                    <span class="option-text">Qora</span>
+                                </div>
+                                <div class="premium-option" data-value="Zolotoy Dub" onclick="selectOption('pkRangi', 'Zolotoy Dub', this)">
+                                    <div class="option-visual">
+                                        <div class="color-swatch" style="background:#CD7F32;"></div>
+                                    </div>
+                                    <span class="option-text">Zolotoy Dub</span>
+                                </div>
+                                <div class="premium-option" data-value="Mocha" onclick="selectOption('pkRangi', 'Mocha', this)">
+                                    <div class="option-visual">
+                                        <div class="color-swatch" style="background:#4B3621;"></div>
+                                    </div>
+                                    <span class="option-text">Mocha</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -709,6 +1106,88 @@
             </div>
         </div>
     </div>
+
+    <!-- Dropdown Interaction Helper Scripts -->
+    <script>
+        // Global Dropdown Managers
+        window.toggleDropdown = function(id) {
+            const wrapper = document.getElementById('wrapper_' + id);
+            if (!wrapper) return;
+            
+            // Close all other dropdowns
+            document.querySelectorAll('.premium-select-wrapper').forEach(w => {
+                if (w !== wrapper) w.classList.remove('open');
+            });
+            
+            wrapper.classList.toggle('open');
+        };
+
+        window.selectOption = function(id, value, optionEl) {
+            const wrapper = document.getElementById('wrapper_' + id);
+            const input = document.getElementById(id);
+            if (!wrapper || !input) return;
+            
+            // Set hidden input value
+            input.value = value;
+            
+            // Trigger change event
+            const event = new Event('change', { bubbles: true });
+            input.dispatchEvent(event);
+            
+            // Update trigger value content (copying the visual + text)
+            const triggerVal = wrapper.querySelector('.trigger-value');
+            if (triggerVal) {
+                const visual = optionEl.querySelector('.option-visual, .brand-logo-visual');
+                const text = optionEl.querySelector('.option-text').textContent;
+                
+                let visualHtml = '';
+                if (visual) {
+                    visualHtml = visual.outerHTML;
+                }
+                
+                triggerVal.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        ${visualHtml}
+                        <span>${text}</span>
+                    </div>
+                `;
+            }
+            
+            // Update selected class styling
+            wrapper.querySelectorAll('.premium-option').forEach(opt => opt.classList.remove('selected'));
+            optionEl.classList.add('selected');
+            
+            // Close dropdown
+            wrapper.classList.remove('open');
+        };
+
+        window.resetProfilKirimForm = function() {
+            const pkUzunligi = document.getElementById('pkUzunligi');
+            const pkSoni = document.getElementById('pkSoni');
+            if (pkUzunligi) pkUzunligi.value = '';
+            if (pkSoni) pkSoni.value = '';
+            
+            const ids = ['pkProfil', 'pkBrend', 'pkSeriya', 'pkShakli', 'pkRangTuri', 'pkRangi'];
+            ids.forEach(id => {
+                const input = document.getElementById(id);
+                if (input) input.value = '';
+                
+                const wrapper = document.getElementById('wrapper_' + id);
+                if (wrapper) {
+                    const triggerVal = wrapper.querySelector('.trigger-value');
+                    if (triggerVal) triggerVal.innerHTML = `<span style="opacity: 0.6;">Tanlang</span>`;
+                    wrapper.querySelectorAll('.premium-option').forEach(opt => opt.classList.remove('selected'));
+                }
+            });
+        };
+
+        // Close on outside click
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.premium-select-wrapper')) {
+                document.querySelectorAll('.premium-select-wrapper').forEach(w => w.classList.remove('open'));
+            }
+        });
+    </script>
 
     <script type="module" src="/src/projects/romix/warehouse/warehouse.js"></script>
 </body>
