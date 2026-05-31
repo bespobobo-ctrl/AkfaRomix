@@ -406,7 +406,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const qtyClass = isLowStock ? 'qty-low' : 'qty-normal';
 
                     row.innerHTML = `
-                        <div class="card-badge-shape">${shakli !== '---' ? shakli : 'Profil'}</div>
+                        <div class="card-visual-container" style="height: 130px; overflow: hidden; border-radius: 14px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.05); margin-bottom: 8px; display: flex; align-items: center; justify-content: center; position: relative;">
+                            <img src="/src/assets/images/window_profile.png" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s;" class="card-visual-img" />
+                            <div class="card-badge-shape" style="position: absolute; top: 10px; left: 10px; margin: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1);">${shakli !== '---' ? shakli : 'Profil'}</div>
+                        </div>
                         <div class="card-details">
                             <h4 class="card-product-name">${displayName}</h4>
                             <div class="card-specs-row">
