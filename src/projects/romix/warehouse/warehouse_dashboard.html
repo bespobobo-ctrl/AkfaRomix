@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AKFA WMS - Enterprise Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/src/css/style.css" />
     <style>
         .warehouse-body {
             background: var(--adm-bg);
@@ -152,6 +152,54 @@
             padding-right: 40px;
             font-weight: 600;
         }
+
+        /* --- Premium Buttons --- */
+        .btn-glass {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--adm-text);
+            backdrop-filter: blur(10px);
+            padding: 12px 25px;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-glass:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-accent {
+            background: linear-gradient(135deg, #00d2ff, #007aff);
+            color: #fff;
+            border: none;
+            box-shadow: 0 8px 20px rgba(0, 210, 255, 0.3);
+        }
+
+        .btn-accent:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 25px rgba(0, 210, 255, 0.4);
+            background: linear-gradient(135deg, #00e0ff, #1a8cff);
+        }
+
+        .btn-outline-accent {
+            background: transparent;
+            border: 2px solid #00d2ff;
+            color: #00d2ff;
+        }
+
+        .btn-outline-accent:hover {
+            background: rgba(0, 210, 255, 0.1);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 210, 255, 0.2);
+        }
     </style>
 </head>
 
@@ -190,16 +238,16 @@
                         <h1 style="font-size: 2.2rem; font-weight: 600;">Inventarizatsiya</h1>
                         <p style="color: var(--adm-text-sec);">Mahsulotlar va xom-ashyo nazorati</p>
                     </div>
-                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                        <button id="openScanModal" class="primary-btn"
-                            style="background:#00d2ff; color:#000; border:none; padding:12px 20px; border-radius:15px; font-weight:700; cursor:pointer;">📷
-                            Skayner (QR) Qabul</button>
-                        <button id="openProfilKirimModal" class="primary-btn"
-                            style="background:var(--adm-surface); border:1px solid var(--adm-accent); color:var(--adm-text); padding:12px 20px; border-radius:15px; font-weight:700; cursor:pointer;">+
-                            Profil Kirim</button>
-                        <button id="openKirimModal" class="primary-btn"
-                            style="background:#007c52; color:#fff; border:none; padding:12px 25px; border-radius:15px; font-weight:600; cursor:pointer;">+
-                            Yangi Kirim</button>
+                    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                        <button id="openScanModal" class="btn-glass" title="Skayner yordamida qabul qilish">
+                            <span style="font-size: 1.2rem;">📷</span> Skayner (QR) Qabul
+                        </button>
+                        <button id="openProfilKirimModal" class="btn-glass btn-outline-accent">
+                            <span style="font-size: 1.2rem;">+</span> Profil Kirim
+                        </button>
+                        <button id="openKirimModal" class="btn-glass btn-accent">
+                            <span style="font-size: 1.2rem;">+</span> Yangi Kirim
+                        </button>
                     </div>
                 </div>
 
