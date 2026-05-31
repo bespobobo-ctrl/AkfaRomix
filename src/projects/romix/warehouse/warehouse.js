@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const { data, error } = await supabase.from('romix_inventory').select('*').order('created_at', { ascending: false });
         if (error) {
             console.error("Inventory error:", error);
-            inventoryTable.innerHTML = '<tr><td colspan="7" style="text-align:center; color:red;">Jadval topilmadi yoki xatolik! Supabase\'da romix_inventory jadvali borligini tekshiring.</td></tr>';
+            inventoryTable.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:red; padding:40px; font-weight:700;">Hujjatlar yuklanishida xatolik yuz berdi!</div>';
             return;
         }
 
@@ -70,34 +70,151 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         document.getElementById('statTotalItems').textContent = totalItems;
         document.getElementById('statLowStock').textContent = lowStock;
-        document.getElementById('statTodayIn').textContent = `$${totalValue.toLocaleString()}`; // Using total value as a demo stat
+        document.getElementById('statTodayIn').textContent = `$${totalValue.toLocaleString()}`;
 
         inventoryTable.innerHTML = '';
+        if (data.length === 0) {
+            inventoryTable.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:50px; color:#888; font-weight:600; font-size:1.1rem;">Hozircha omborda mahsulotlar mavjud emas.</div>';
+            return;
+        }
+
         data.forEach(p => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>
-                    <div style="display:flex; align-items:center; gap:12px;">
-                        <img src="${p.image_url || 'https://via.placeholder.com/45'}" style="width:45px; height:45px; border-radius:8px; object-fit:cover;">
-                        <div>
-                            <strong>${p.product_name}</strong><br>
-                            <small style="color:#888;">${p.description || '---'}</small>
+            const metadata = p.metadata || {};
+            
+            // Defensive parsing of specs
+            const uzunligi = metadata.uzunligi || p.description?.match(/(\d+)mm/)?.[1] || '---';
+            const shakli = metadata.shakli || p.description?.split('|')?.[1]?.trim() || '---';
+            const rangi = metadata.rangi || p.description?.split('|')?.[2]?.split('(')?.[0]?.trim() || '---';
+            const rangTuri = metadata.rangTuri || p.description?.match(/\(([^)]+)\)/)?.[1] || '---';
+
+            // Brand Logo Visual
+            let brandName = metadata.brend || '';
+            if (!brandName) {
+                const brandsList = ['AKFA', 'RETPEN', 'Ekopen', 'ALTA PLAST', 'ALUBEST', 'ALUTEX', 'CRA'];
+                for (let b of brandsList) {
+                    if (p.product_name.toUpperCase().includes(b.toUpperCase())) {
+                        brandName = b;
+                        break;
+                    }
+                }
+            }
+
+            let brandBadgeHtml = '';
+            if (brandName) {
+                let logoSvg = '';
+                if (brandName.toUpperCase().includes('AKFA')) {
+                    logoSvg = `<svg viewBox="0 0 120 40" class="brand-logo-svg" style="height: 12px; width: 40px; margin-top:2px;"><text x="0" y="28" font-family="'Outfit', sans-serif" font-weight="900" font-size="28" fill="#FF3333">akfa</text></svg>`;
+                } else if (brandName.toUpperCase().includes('RETPEN')) {
+                    logoSvg = `<svg viewBox="0 0 120 40" class="brand-logo-svg" style="height: 12px; width: 45px; margin-top:2px;"><text x="0" y="28" font-family="'Outfit', sans-serif" font-weight="800" font-size="22" fill="#00D2FF">RETPEN</text></svg>`;
+                } else if (brandName.toUpperCase().includes('EKOPEN')) {
+                    logoSvg = `<svg viewBox="0 0 120 40" class="brand-logo-svg" style="height: 12px; width: 45px; margin-top:2px;"><text x="0" y="28" font-family="'Outfit', sans-serif" font-weight="800" font-size="22" fill="#FF8800">Ekopen</text></svg>`;
+                } else {
+                    logoSvg = `<span style="color:#ffffff; font-weight:700; font-size:0.65rem;">${brandName}</span>`;
+                }
+                brandBadgeHtml = `<span class="badge-pill brand-badge-pill" style="display:flex; align-items:center;">${logoSvg}</span>`;
+            }
+
+            // Color Swatch Matching
+            let swatchColor = '';
+            if (rangi) {
+                const rUpper = rangi.toUpperCase();
+                if (rUpper.includes('OQ')) swatchColor = '#FFFFFF';
+                else if (rUpper.includes('QORA')) swatchColor = '#111111';
+                else if (rUpper.includes('DUB') || rUpper.includes('TILLA')) swatchColor = '#CD7F32';
+                else if (rUpper.includes('MOCHA')) swatchColor = '#4B3621';
+            }
+            
+            let colorSwatchHtml = '';
+            if (swatchColor) {
+                colorSwatchHtml = `<div class="color-swatch" style="background:${swatchColor}; width:12px; height:12px; display:inline-block; border-radius:50%; border:1px solid rgba(255,255,255,0.3); margin-right:4px;"></div>`;
+            }
+
+            // Category visual image or SVG placeholder
+            let mediaHtml = '';
+            if (p.image_url) {
+                mediaHtml = `<img src="${p.image_url}" class="card-visual-img">`;
+            } else {
+                let svgIcon = '';
+                const catLower = (p.category || '').toLowerCase();
+                const nameLower = (p.product_name || '').toLowerCase();
+                
+                if (catLower.includes('shtapik') || nameLower.includes('shtapik')) {
+                    svgIcon = `<svg viewBox="0 0 100 100" class="card-visual-svg" style="stroke:rgba(255,255,255,0.3);"><path d="M 35,30 L 65,30 L 65,70 L 45,70 L 35,55 Z" fill="none" stroke="currentColor" stroke-width="3"/><path d="M 43,40 L 57,40 L 57,60" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="2,2"/></svg>`;
+                } else if (catLower.includes('tokcha') || nameLower.includes('tokcha')) {
+                    svgIcon = `<svg viewBox="0 0 100 100" class="card-visual-svg" style="stroke:rgba(255,255,255,0.3);"><path d="M 20,42 L 80,42 L 80,48 L 70,58 L 20,58 Z" fill="none" stroke="currentColor" stroke-width="3"/><line x1="35" y1="42" x2="35" y2="58" stroke="currentColor" stroke-width="2"/><line x1="50" y1="42" x2="50" y2="58" stroke="currentColor" stroke-width="2"/><line x1="65" y1="42" x2="65" y2="58" stroke="currentColor" stroke-width="2"/></svg>`;
+                } else if (catLower.includes('lambri') || nameLower.includes('lambri')) {
+                    svgIcon = `<svg viewBox="0 0 100 100" class="card-visual-svg" style="stroke:rgba(255,255,255,0.3);"><path d="M 15,35 L 70,35 L 75,45 L 85,45 L 85,55 L 75,55 L 70,65 L 15,65 Z" fill="none" stroke="currentColor" stroke-width="3"/><line x1="30" y1="35" x2="30" y2="65" stroke="currentColor" stroke-width="2" stroke-dasharray="2,2"/><line x1="50" y1="35" x2="50" y2="65" stroke="currentColor" stroke-width="2" stroke-dasharray="2,2"/></svg>`;
+                } else {
+                    svgIcon = `<svg viewBox="0 0 100 100" class="card-visual-svg" style="stroke:rgba(255,255,255,0.3);"><rect x="25" y="25" width="50" height="50" rx="4" fill="none" stroke="currentColor" stroke-width="3"/><rect x="35" y="35" width="30" height="30" rx="2" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3,1"/><line x1="25" y1="50" x2="75" y2="50" stroke="currentColor" stroke-width="2"/><line x1="50" y1="25" x2="50" y2="75" stroke="currentColor" stroke-width="2"/></svg>`;
+                }
+                mediaHtml = svgIcon;
+            }
+
+            const card = document.createElement('div');
+            card.className = `premium-product-card ${p.stock_quantity < 10 ? 'low-stock' : ''}`;
+            card.innerHTML = `
+                <div class="card-visual-container">
+                    ${mediaHtml}
+                    <span class="stock-badge-floating ${p.stock_quantity < 10 ? 'low' : 'high'}">
+                        ${p.stock_quantity < 10 ? '⚠️ Kam zaxira' : '✅ Yetarli'}
+                    </span>
+                </div>
+                <div class="card-content">
+                    <div class="card-badge-row">
+                        <span class="badge-pill category-badge">${p.category || 'Profil'}</span>
+                        ${brandBadgeHtml}
+                    </div>
+                    <h4 class="product-title">${p.product_name}</h4>
+                    
+                    <div class="specs-grid">
+                        <div class="spec-chip">
+                            <span class="spec-label">Uzunligi</span>
+                            <span class="spec-val">${uzunligi === '---' ? '---' : uzunligi + ' mm'}</span>
+                        </div>
+                        <div class="spec-chip">
+                            <span class="spec-label">Shakli</span>
+                            <span class="spec-val">${shakli}</span>
+                        </div>
+                        <div class="spec-chip">
+                            <span class="spec-label">Rangi</span>
+                            <span class="spec-val" style="display:flex; align-items:center;">
+                                ${colorSwatchHtml} ${rangi}
+                            </span>
+                        </div>
+                        <div class="spec-chip">
+                            <span class="spec-label">Yuzasi</span>
+                            <span class="spec-val">${rangTuri}</span>
                         </div>
                     </div>
-                </td>
-                <td>${p.category || 'Romix Ombori'}</td>
-                <td style="font-weight:700;">${p.stock_quantity} ${p.unit || ''}</td>
-                <td>${p.unit || '---'}</td>
-                <td style="color:#007c52; font-weight:600;">${p.price ? p.price.toLocaleString() : '0'}</td>
-                <td><span class="stock-badge ${p.stock_quantity < 10 ? 'low' : 'high'}">${p.stock_quantity < 10 ? 'Kam qolgan' : 'Yetarli'}</span></td>
-                <td>
-                    <button class="edit-btn action-icon" data-id="${p.id}">✏️</button>
-                    <button class="delete-btn action-icon" data-id="${p.id}" style="color:red;">🗑️</button>
-                </td>
+                    
+                    <div class="card-footer-metrics">
+                        <div class="metric-block">
+                            <span class="metric-label">Mavjud</span>
+                            <div class="metric-val-wrapper">
+                                <span class="metric-number">${p.stock_quantity}</span>
+                                <span class="metric-unit">${p.unit || 'dona'}</span>
+                            </div>
+                        </div>
+                        <div class="metric-block" style="text-align:right;">
+                            <span class="metric-label">Narxi</span>
+                            <span class="metric-price">${p.price ? '$' + p.price.toLocaleString() : '---'}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="card-actions-row">
+                        <button class="action-btn-glass edit-btn" data-id="${p.id}">
+                            ✏️ <span>Tahrirlash</span>
+                        </button>
+                        <button class="action-btn-glass delete-btn delete-accent" data-id="${p.id}">
+                            🗑️ <span>O'chirish</span>
+                        </button>
+                    </div>
+                </div>
             `;
-            inventoryTable.appendChild(tr);
+            inventoryTable.appendChild(card);
         });
 
+        // Rebind Edit/Delete listeners
         document.querySelectorAll('.delete-btn').forEach(b => {
             b.onclick = async () => {
                 if (confirm('Ushbu mahsulotni o\'chirmoqchimisiz?')) {
@@ -126,7 +243,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (inventorySearch) {
         inventorySearch.oninput = () => {
             const query = inventorySearch.value.toLowerCase().trim();
-            const rows = inventoryTable.querySelectorAll('tr');
+            const rows = inventoryTable.querySelectorAll('.premium-product-card');
             rows.forEach(row => {
                 const text = row.textContent.toLowerCase();
                 if (text.includes(query)) {
