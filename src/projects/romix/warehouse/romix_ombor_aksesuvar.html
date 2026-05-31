@@ -377,23 +377,23 @@
             <form id="accKirimForm" onsubmit="handleKirimSubmit(event)">
                 <div class="form-group">
                     <label for="accName">Mahsulot Nomi</label>
-                    <select id="accName" class="form-input-premium premium-select" onchange="handleProductNameChange(this)" required>
-                        <option value="AKFA Eshik Qulflari">AKFA Eshik Qulflari</option>
-                        <option value="Oyna Ruchkalari Premium">Oyna Ruchkalari Premium</option>
-                        <option value="Rezina Qistirma 8mm">Rezina Qistirma 8mm</option>
-                        <option value="Burchak Biriktiruvchi PVX">Burchak Biriktiruvchi PVX</option>
-                        <option value="Boshqa...">Boshqa...</option>
-                    </select>
-                </div>
-
-                <div class="form-group" id="customNameGroup" style="display: none;">
-                    <label for="accCustomName">Yangi Mahsulot Nomi</label>
-                    <input type="text" id="accCustomName" class="form-input-premium" placeholder="Nomini yozing...">
+                    <input type="text" id="accName" class="form-input-premium" placeholder="Masalan: AKFA Eshik Qulflari, Oyna Ruchkasi..." required>
                 </div>
 
                 <div class="form-group">
                     <label for="accCategory">Kategoriya</label>
-                    <input type="text" id="accCategory" class="form-input-premium" placeholder="Kategoriyani yozing..." required value="Zamoklar">
+                    <select id="accCategory" class="form-input-premium premium-select" onchange="handleCategoryChange(this)" required>
+                        <option value="Zamoklar">Zamoklar</option>
+                        <option value="Ruchkalar">Ruchkalar</option>
+                        <option value="Qistirmalar">Qistirmalar</option>
+                        <option value="Biriktiruvchilar">Biriktiruvchilar</option>
+                        <option value="Boshqa...">Boshqa...</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="customCategoryGroup" style="display: none;">
+                    <label for="accCustomCategory">Yangi Kategoriya Nomi</label>
+                    <input type="text" id="accCustomCategory" class="form-input-premium" placeholder="Kategoriya nomini yozing...">
                 </div>
 
                 <div class="form-group">
@@ -570,7 +570,7 @@
         function openAccKirimModal() {
             document.getElementById('accKirimModal').classList.add('active');
             document.getElementById('accKirimForm').reset();
-            handleProductNameChange(document.getElementById('accName'));
+            handleCategoryChange(document.getElementById('accCategory'));
         }
 
         function closeAccKirimModal() {
@@ -581,39 +581,19 @@
             document.getElementById('accReceiptModal').classList.remove('active');
         }
 
-        // Auto-change category and unit based on chosen product name
-        function handleProductNameChange(select) {
+        // Auto-change category group input display based on choice
+        function handleCategoryChange(select) {
             const val = select.value;
-            const customGroup = document.getElementById('customNameGroup');
-            const customInput = document.getElementById('accCustomName');
-            const categoryInput = document.getElementById('accCategory');
-            const unitSelect = document.getElementById('accUnit');
+            const customGroup = document.getElementById('customCategoryGroup');
+            const customInput = document.getElementById('accCustomCategory');
 
             if (val === 'Boshqa...') {
                 customGroup.style.display = 'block';
                 customInput.required = true;
-                categoryInput.value = '';
-                categoryInput.readOnly = false;
             } else {
                 customGroup.style.display = 'none';
                 customInput.required = false;
                 customInput.value = '';
-                categoryInput.readOnly = true;
-
-                // Autofill standard categories and units
-                if (val === 'AKFA Eshik Qulflari') {
-                    categoryInput.value = 'Zamoklar';
-                    unitSelect.value = 'dona';
-                } else if (val === 'Oyna Ruchkalari Premium') {
-                    categoryInput.value = 'Ruchkalar';
-                    unitSelect.value = 'dona';
-                } else if (val === 'Rezina Qistirma 8mm') {
-                    categoryInput.value = 'Qistirmalar';
-                    unitSelect.value = 'metr';
-                } else if (val === 'Burchak Biriktiruvchi PVX') {
-                    categoryInput.value = 'Biriktiruvchilar';
-                    unitSelect.value = 'dona';
-                }
             }
         }
 
@@ -621,16 +601,16 @@
         function handleKirimSubmit(event) {
             event.preventDefault();
 
-            const nameSelect = document.getElementById('accName').value;
-            const customName = document.getElementById('accCustomName').value.trim();
-            const category = document.getElementById('accCategory').value.trim();
+            const finalName = document.getElementById('accName').value.trim();
+            const categorySelect = document.getElementById('accCategory').value;
+            const customCategory = document.getElementById('accCustomCategory').value.trim();
             const spec = document.getElementById('accSpec').value.trim();
             const unit = document.getElementById('accUnit').value;
             const qty = parseInt(document.getElementById('accQty').value);
 
-            const finalName = nameSelect === 'Boshqa...' ? customName : nameSelect;
+            const finalCategory = categorySelect === 'Boshqa...' ? customCategory : categorySelect;
 
-            if (!finalName || !category || isNaN(qty) || qty <= 0) {
+            if (!finalName || !finalCategory || isNaN(qty) || qty <= 0) {
                 alert("Iltimos, barcha maydonlarni to'g'ri to'ldiring!");
                 return;
             }
@@ -639,14 +619,15 @@
             const matchedIndex = inventory.findIndex(item => item.name.toLowerCase() === finalName.toLowerCase());
 
             if (matchedIndex > -1) {
-                // Update existing quantity and specs
+                // Update existing quantity, specs, and category
                 inventory[matchedIndex].qty += qty;
                 inventory[matchedIndex].spec = spec; // Update to latest spec
+                inventory[matchedIndex].category = finalCategory; // Update category in case it was changed
             } else {
                 // Add new accessory type
                 inventory.push({
                     name: finalName,
-                    category: category,
+                    category: finalCategory,
                     qty: qty,
                     unit: unit,
                     spec: spec
@@ -672,7 +653,7 @@
             document.getElementById('receiptOperator').textContent = (curUser.full_name || curUser.username || 'RAHBAR').toUpperCase();
 
             document.getElementById('receiptItemName').textContent = finalName;
-            document.getElementById('receiptItemCategory').textContent = category;
+            document.getElementById('receiptItemCategory').textContent = finalCategory;
             document.getElementById('receiptItemSpec').textContent = spec;
             document.getElementById('receiptItemQtyUnit').textContent = `${qty.toLocaleString()} ${unit}`;
 
