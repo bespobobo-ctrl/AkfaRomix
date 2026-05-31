@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (tabId === 'inventory') loadInventory();
         if (tabId === 'staff') loadStaff();
         if (tabId === 'history') loadHistory();
+        if (tabId === 'settings') loadSettings();
     }
 
     navButtons.forEach(btn => {
@@ -61,6 +62,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.seriesColorFilters = {};
     window.expandedSeries = {};
     window.cachedInventoryData = [];
+
+    // Settings Config for Brands & Categories
+    const defaultBrands = [
+        { name: 'AKFA', visible: true },
+        { name: 'RETPEN', visible: true },
+        { name: 'Ekopen', visible: true },
+        { name: 'ALTA PLAST', visible: true },
+        { name: 'ALUBEST', visible: true },
+        { name: 'ALUTEX', visible: true },
+        { name: 'CRA', visible: true }
+    ];
+
+    const defaultCategories = [
+        { name: 'Barchasi', visible: true },
+        { name: 'Plastik', visible: true },
+        { name: 'Alyuminiy', visible: true },
+        { name: 'Tokcha', visible: true },
+        { name: 'Shtapik', visible: true },
+        { name: 'Lambri', visible: true }
+    ];
+
+    window.brandsConfig = JSON.parse(localStorage.getItem('romix_brands_config')) || defaultBrands;
+    window.categoriesConfig = JSON.parse(localStorage.getItem('romix_categories_config')) || defaultCategories;
 
     // Helper: Map brand logos
     function getBrandLogoSvg(brandName, isActive) {
@@ -110,10 +134,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const row = document.getElementById('brandSelectorRow');
         if (!row) return;
         
-        const brands = ['AKFA', 'RETPEN', 'Ekopen', 'ALTA PLAST', 'ALUBEST', 'ALUTEX', 'CRA'];
         row.innerHTML = '';
         
-        brands.forEach(b => {
+        // Only display visible brands
+        const visibleBrands = window.brandsConfig.filter(b => b.visible).map(b => b.name);
+        
+        // Ensure activeBrand is a valid visible brand
+        if (visibleBrands.length > 0 && !visibleBrands.some(b => b.toUpperCase() === window.activeBrand.toUpperCase())) {
+            window.activeBrand = visibleBrands[0];
+        }
+        
+        visibleBrands.forEach(b => {
             const card = document.createElement('div');
             const isActive = window.activeBrand.toUpperCase() === b.toUpperCase();
             
@@ -127,6 +158,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 else if (brandLower.includes('alubest')) activeClass = 'active-alubest';
                 else if (brandLower.includes('alutex')) activeClass = 'active-alutex';
                 else if (brandLower.includes('cra')) activeClass = 'active-cra';
+                else activeClass = 'active-generic';
             }
             
             card.className = `brand-card ${activeClass}`;
@@ -144,16 +176,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         const row = document.getElementById('categoryTabsRow');
         if (!row) return;
         
-        const categories = ['Barchasi', 'Plastik', 'Alyuminiy', 'Tokcha', 'Shtapik', 'Lambri'];
         row.innerHTML = '';
         
-        categories.forEach(c => {
+        // Only display visible categories
+        const visibleCategories = window.categoriesConfig.filter(c => c.visible);
+        const visibleCatNames = visibleCategories.map(c => c.name);
+        
+        // Ensure activeCategory is set to a valid visible category
+        if (visibleCatNames.length > 0 && !visibleCatNames.includes(window.activeCategory)) {
+            window.activeCategory = visibleCatNames[0];
+        }
+        
+        visibleCategories.forEach(c => {
             const tab = document.createElement('div');
-            const isActive = window.activeCategory === c;
+            const isActive = window.activeCategory === c.name;
             tab.className = `category-tab ${isActive ? 'active' : ''}`;
-            tab.textContent = c === 'Plastik' ? 'Plast (PVC)' : c === 'Alyuminiy' ? 'Alumin' : c;
+            tab.textContent = c.name === 'Plastik' ? 'Plast (PVC)' : c.name === 'Alyuminiy' ? 'Alumin' : c.name;
             tab.onclick = () => {
-                window.activeCategory = c;
+                window.activeCategory = c.name;
                 renderCategoryTabs();
                 renderCatalogGrid();
             };
@@ -183,7 +223,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const metadata = p.metadata || {};
             let brand = metadata.brend || '';
             if (!brand) {
-                const brands = ['AKFA', 'RETPEN', 'Ekopen', 'ALTA PLAST', 'ALUBEST', 'ALUTEX', 'CRA'];
+                const brands = window.brandsConfig.map(b => b.name);
                 for (let b of brands) {
                     if ((p.product_name || '').toUpperCase().includes(b.toUpperCase())) {
                         brand = b;
@@ -815,6 +855,137 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
 
     document.getElementById('logoutBtn').onclick = () => { localStorage.removeItem('currentUser'); window.location.href = '/'; };
+
+    function loadSettings() {
+        const brandsList = document.getElementById('brandsSettingsList');
+        const categoriesList = document.getElementById('categoriesSettingsList');
+        
+        if (!brandsList || !categoriesList) return;
+        
+        // 1. Render Brands
+        brandsList.innerHTML = '';
+        window.brandsConfig.forEach((b, idx) => {
+            const row = document.createElement('div');
+            row.className = 'settings-item-row';
+            row.innerHTML = `
+                <span class="settings-item-name">${b.name}</span>
+                <div class="settings-item-actions">
+                    <button class="settings-toggle-btn ${b.visible ? 'visible-active' : 'visible-inactive'}">
+                        ${b.visible ? '👁️ Ko\'rinadigan' : '🕶️ Yashirin'}
+                    </button>
+                    <button class="card-action-btn delete-brand-btn delete-accent" style="color:#ff4d4f;">🗑️</button>
+                </div>
+            `;
+            
+            // Toggle visibility
+            row.querySelector('.settings-toggle-btn').onclick = () => {
+                b.visible = !b.visible;
+                localStorage.setItem('romix_brands_config', JSON.stringify(window.brandsConfig));
+                loadSettings();
+                renderBrandSelector();
+                renderCatalogGrid();
+            };
+            
+            // Delete brand
+            row.querySelector('.delete-brand-btn').onclick = () => {
+                if (confirm(`"${b.name}" brendini o'chirmoqchimisiz?`)) {
+                    window.brandsConfig.splice(idx, 1);
+                    localStorage.setItem('romix_brands_config', JSON.stringify(window.brandsConfig));
+                    loadSettings();
+                    renderBrandSelector();
+                    renderCatalogGrid();
+                }
+            };
+            
+            brandsList.appendChild(row);
+        });
+
+        // 2. Render Categories
+        categoriesList.innerHTML = '';
+        window.categoriesConfig.forEach((c, idx) => {
+            const row = document.createElement('div');
+            row.className = 'settings-item-row';
+            const isAll = c.name === 'Barchasi';
+            
+            row.innerHTML = `
+                <span class="settings-item-name">${c.name === 'Plastik' ? 'Plast (PVC)' : c.name === 'Alyuminiy' ? 'Alumin' : c.name}</span>
+                <div class="settings-item-actions">
+                    ${isAll ? '' : `
+                        <button class="settings-toggle-btn ${c.visible ? 'visible-active' : 'visible-inactive'}">
+                            ${c.visible ? '👁️ Ko\'rinadigan' : '🕶️ Yashirin'}
+                        </button>
+                        <button class="card-action-btn delete-cat-btn delete-accent" style="color:#ff4d4f;">🗑️</button>
+                    `}
+                </div>
+            `;
+            
+            if (!isAll) {
+                // Toggle visibility
+                row.querySelector('.settings-toggle-btn').onclick = () => {
+                    c.visible = !c.visible;
+                    localStorage.setItem('romix_categories_config', JSON.stringify(window.categoriesConfig));
+                    loadSettings();
+                    renderCategoryTabs();
+                    renderCatalogGrid();
+                };
+                
+                // Delete category
+                row.querySelector('.delete-cat-btn').onclick = () => {
+                    if (confirm(`"${c.name}" kategoriyasini o'chirmoqchimisiz?`)) {
+                        window.categoriesConfig.splice(idx, 1);
+                        localStorage.setItem('romix_categories_config', JSON.stringify(window.categoriesConfig));
+                        loadSettings();
+                        renderCategoryTabs();
+                        renderCatalogGrid();
+                    }
+                };
+            }
+            
+            categoriesList.appendChild(row);
+        });
+    }
+
+    // Add new Brand
+    const addBrandBtn = document.getElementById('addBrandBtn');
+    if (addBrandBtn) {
+        addBrandBtn.onclick = () => {
+            const input = document.getElementById('newBrandName');
+            const val = input.value.trim();
+            if (!val) return alert('Brend nomini kiriting!');
+            
+            if (window.brandsConfig.some(b => b.name.toUpperCase() === val.toUpperCase())) {
+                return alert('Ushbu brend allaqachon mavjud!');
+            }
+            
+            window.brandsConfig.push({ name: val, visible: true });
+            localStorage.setItem('romix_brands_config', JSON.stringify(window.brandsConfig));
+            input.value = '';
+            loadSettings();
+            renderBrandSelector();
+            renderCatalogGrid();
+        };
+    }
+
+    // Add new Category
+    const addCategoryBtn = document.getElementById('addCategoryBtn');
+    if (addCategoryBtn) {
+        addCategoryBtn.onclick = () => {
+            const input = document.getElementById('newCategoryName');
+            const val = input.value.trim();
+            if (!val) return alert('Kategoriya nomini kiriting!');
+            
+            if (window.categoriesConfig.some(c => c.name.toUpperCase() === val.toUpperCase())) {
+                return alert('Ushbu kategoriya allaqachon mavjud!');
+            }
+            
+            window.categoriesConfig.push({ name: val, visible: true });
+            localStorage.setItem('romix_categories_config', JSON.stringify(window.categoriesConfig));
+            input.value = '';
+            loadSettings();
+            renderCategoryTabs();
+            renderCatalogGrid();
+        };
+    }
 
     loadInventory();
 });

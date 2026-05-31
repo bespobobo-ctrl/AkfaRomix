@@ -1093,6 +1093,62 @@
             border-color: rgba(255, 77, 79, 0.3);
             box-shadow: 0 0 8px rgba(255, 77, 79, 0.25);
         }
+
+        /* --- Settings Styles --- */
+        .settings-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 18px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .settings-item-row:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.1);
+            transform: translateX(3px);
+        }
+
+        .settings-item-name {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .settings-item-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .settings-toggle-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .settings-toggle-btn.visible-active {
+            border-color: #00ff88;
+            background: rgba(0, 255, 136, 0.08);
+            color: #00ff88;
+        }
+
+        .settings-toggle-btn.visible-inactive {
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.02);
+            color: rgba(255, 255, 255, 0.4);
+        }
     </style>
 </head>
 
@@ -1105,6 +1161,7 @@
             <div class="nav-icon active" data-tab="inventory" title="Ombor Qoldig'i">📦</div>
             <div class="nav-icon" data-tab="staff" title="Xodimlar">👥</div>
             <div class="nav-icon" data-tab="history" title="Amallar Tarixi">📑</div>
+            <div class="nav-icon" data-tab="settings" title="Sozlamalar">⚙️</div>
             <div class="nav-icon" id="logoutBtn">🚪</div>
         </aside>
 
@@ -1263,6 +1320,43 @@
                         </thead>
                         <tbody id="historyTable"></tbody>
                     </table>
+                </div>
+            </section>
+
+            <section id="settings-view" class="warehouse-section hidden">
+                <div style="margin-bottom: 25px;">
+                    <h1 style="font-size: 2.2rem; font-weight: 600;">Sozlamalar Panelini</h1>
+                    <p style="color: var(--adm-text-sec);">Brendlar va kategoriyalarni boshqarish, qo'shish, o'chirish va ko'rinishni boshqarish</p>
+                </div>
+                
+                <div class="bento-container">
+                    <!-- Brand Settings Card -->
+                    <div class="bento-item" style="grid-column: span 6; display: flex; flex-direction: column; gap: 20px;">
+                        <h2 style="font-size: 1.3rem; font-weight: 700; color: #ffffff; display:flex; align-items:center; gap:10px;">🏷️ Brendlarni Sozlash</h2>
+                        
+                        <div style="display:flex; gap:10px; background: rgba(255,255,255,0.02); padding: 12px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05);">
+                            <input type="text" id="newBrandName" class="form-input-v2" placeholder="Yangi brend nomi..." style="flex:1; margin-bottom:0; height:45px;">
+                            <button id="addBrandBtn" class="btn-glass btn-accent" style="height:45px; padding: 0 20px;">Qo'shish</button>
+                        </div>
+
+                        <div id="brandsSettingsList" style="display:flex; flex-direction:column; gap:10px; max-height:400px; overflow-y:auto; padding-right:5px;">
+                            <!-- Dynamically loaded brands -->
+                        </div>
+                    </div>
+
+                    <!-- Category Settings Card -->
+                    <div class="bento-item" style="grid-column: span 6; display: flex; flex-direction: column; gap: 20px;">
+                        <h2 style="font-size: 1.3rem; font-weight: 700; color: #ffffff; display:flex; align-items:center; gap:10px;">📂 Kategoriyalarni Sozlash</h2>
+                        
+                        <div style="display:flex; gap:10px; background: rgba(255,255,255,0.02); padding: 12px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05);">
+                            <input type="text" id="newCategoryName" class="form-input-v2" placeholder="Yangi kategoriya nomi..." style="flex:1; margin-bottom:0; height:45px;">
+                            <button id="addCategoryBtn" class="btn-glass btn-accent" style="height:45px; padding: 0 20px;">Qo'shish</button>
+                        </div>
+
+                        <div id="categoriesSettingsList" style="display:flex; flex-direction:column; gap:10px; max-height:400px; overflow-y:auto; padding-right:5px;">
+                            <!-- Dynamically loaded categories -->
+                        </div>
+                    </div>
                 </div>
             </section>
         </main>
