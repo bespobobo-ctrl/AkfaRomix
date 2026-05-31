@@ -466,6 +466,7 @@
                                     <th>Mavjud</th>
                                     <th>Birlik</th>
                                     <th>Status</th>
+                                    <th style="text-align: right; width: 120px;">Amallar</th>
                                 </tr>
                             </thead>
                             <tbody id="accTableBody">
@@ -586,6 +587,132 @@
         </div>
     </div>
 
+    <!-- ✏️ MODAL: AKSESSUARNI TAHRIRLASH -->
+    <div id="accEditModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span style="color: #ffaa00;">✏️ Aksessuarni Tahrirlash</span>
+                <span onclick="closeAccEditModal()" style="cursor:pointer; font-size: 1.5rem; opacity: 0.7;">&times;</span>
+            </div>
+            <form id="accEditForm" onsubmit="handleEditSubmit(event)">
+                <input type="hidden" id="editAccIndex">
+                
+                <div class="form-group">
+                    <label for="editAccName">Mahsulot Nomi</label>
+                    <input type="text" id="editAccName" class="form-input-premium" placeholder="Mahsulot nomini kiriting..." required>
+                </div>
+
+                <!-- Custom Dropdown: Kategoriya (Edit) -->
+                <div class="form-group">
+                    <label for="editAccCategory">Kategoriya</label>
+                    <input type="hidden" id="editAccCategory" value="Zamoklar">
+                    <div class="premium-select-wrapper" id="wrapper_editAccCategory">
+                        <div class="premium-select-trigger" onclick="toggleDropdown('editAccCategory')">
+                            <span class="trigger-value" id="val_editAccCategory">
+                                <span class="option-icon">🔒</span>
+                                <span>Zamoklar</span>
+                            </span>
+                            <span class="trigger-arrow">▼</span>
+                        </div>
+                        <div class="premium-select-dropdown">
+                            <div class="premium-option selected" data-value="Zamoklar" onclick="selectOption('editAccCategory', 'Zamoklar', '🔒', this)">
+                                <span class="option-icon">🔒</span>
+                                <span class="option-text">Zamoklar</span>
+                            </div>
+                            <div class="premium-option" data-value="Ruchkalar" onclick="selectOption('editAccCategory', 'Ruchkalar', '🚪', this)">
+                                <span class="option-icon">🚪</span>
+                                <span class="option-text">Ruchkalar</span>
+                            </div>
+                            <div class="premium-option" data-value="Qistirmalar" onclick="selectOption('editAccCategory', 'Qistirmalar', '🌀', this)">
+                                <span class="option-icon">🌀</span>
+                                <span class="option-text">Qistirmalar</span>
+                            </div>
+                            <div class="premium-option" data-value="Biriktiruvchilar" onclick="selectOption('editAccCategory', 'Biriktiruvchilar', '🧩', this)">
+                                <span class="option-icon">🧩</span>
+                                <span class="option-text">Biriktiruvchilar</span>
+                            </div>
+                            <div class="premium-option" data-value="Boshqa..." onclick="selectOption('editAccCategory', 'Boshqa...', '⚙️', this)">
+                                <span class="option-icon">⚙️</span>
+                                <span class="option-text">Boshqa...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group" id="editCustomCategoryGroup" style="display: none;">
+                    <label for="editAccCustomCategory">Yangi Kategoriya Nomi</label>
+                    <input type="text" id="editAccCustomCategory" class="form-input-premium" placeholder="Kategoriya nomini yozing...">
+                </div>
+
+                <div class="form-group">
+                    <label for="editAccSpec">Mahsulot Xususiyati</label>
+                    <input type="text" id="editAccSpec" class="form-input-premium" placeholder="Rangi, o'lchami yoki boshqa xususiyati..." required>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <!-- Custom Dropdown: O'lchov Birligi (Edit) -->
+                    <div class="form-group">
+                        <label for="editAccUnit">O'lchov Birligi</label>
+                        <input type="hidden" id="editAccUnit" value="dona">
+                        <div class="premium-select-wrapper" id="wrapper_editAccUnit">
+                            <div class="premium-select-trigger" onclick="toggleDropdown('editAccUnit')">
+                                <span class="trigger-value" id="val_editAccUnit">
+                                    <span class="option-icon">📦</span>
+                                    <span>dona</span>
+                                </span>
+                                <span class="trigger-arrow">▼</span>
+                            </div>
+                            <div class="premium-select-dropdown">
+                                <div class="premium-option selected" data-value="dona" onclick="selectOption('editAccUnit', 'dona', '📦', this)">
+                                    <span class="option-icon">📦</span>
+                                    <span class="option-text">dona</span>
+                                </div>
+                                <div class="premium-option" data-value="kg" onclick="selectOption('editAccUnit', 'kg', '⚖️', this)">
+                                    <span class="option-icon">⚖️</span>
+                                    <span class="option-text">kg</span>
+                                </div>
+                                <div class="premium-option" data-value="litr" onclick="selectOption('editAccUnit', 'litr', '🧪', this)">
+                                    <span class="option-icon">🧪</span>
+                                    <span class="option-text">litr</span>
+                                </div>
+                                <div class="premium-option" data-value="metr" onclick="selectOption('editAccUnit', 'metr', '📏', this)">
+                                    <span class="option-icon">📏</span>
+                                    <span class="option-text">metr</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editAccQty">Mavjud Miqdor</label>
+                        <input type="number" id="editAccQty" class="form-input-premium" min="0" placeholder="Qancha..." required>
+                    </div>
+                </div>
+
+                <div class="btn-group" style="display:flex; gap:12px; margin-top:25px;">
+                    <button type="button" class="btn-premium secondary" onclick="closeAccEditModal()" style="flex:1;">BEKOR QILISH</button>
+                    <button type="submit" class="btn-premium primary" style="flex:1.5; background:linear-gradient(135deg, #ffaa00 0%, #cc8800 100%); box-shadow: 0 5px 15px rgba(250, 170, 0, 0.2);">SAQLASH</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 🗑️ MODAL: O'CHIRISHNI TASDIQLASH (CONFIRMATION) -->
+    <div id="accDeleteConfirmModal" class="modal-overlay">
+        <div class="modal-content" style="background: #120b10; border: 1px solid rgba(255, 77, 79, 0.3); width: 420px; text-align: center; border-radius: 24px;">
+            <div style="font-size: 3.2rem; margin-bottom: 12px; animation: pulse 2s infinite;">⚠️</div>
+            <h2 style="color: #ff4d4f; margin-bottom: 10px; font-weight: 800; font-size: 1.5rem; letter-spacing: -0.5px;">O'chirishni Tasdiqlaysizmi?</h2>
+            <p style="font-size: 0.88rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 25px; line-height: 1.5; font-family: inherit;">
+                Ushbu mahsulot ombor inventar ro'yxatidan butunlay o'chiriladi. Bu amalni ortga qaytarib bo'lmaydi!
+            </p>
+            <input type="hidden" id="deleteTargetIndex">
+            <div class="btn-group" style="display:flex; gap:12px;">
+                <button type="button" class="btn-premium secondary" onclick="closeDeleteConfirmModal()" style="flex:1;">BEKOR QILISH</button>
+                <button type="button" class="btn-premium" onclick="executeDelete()" style="flex:1.2; background: linear-gradient(135deg, #ff4d4f 0%, #b32d2f 100%); color:#fff; box-shadow: 0 5px 15px rgba(255, 77, 79, 0.25);">O'CHIRISH</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 📄 MODAL: KIRIM HUJJATI (RECEIPT) -->
     <div id="accReceiptModal" class="modal-overlay">
         <div class="modal-content" style="background: #0b111a; border: 1px solid rgba(0, 255, 136, 0.3); width: 600px; max-width: 95%;">
@@ -670,6 +797,28 @@
             localStorage.setItem('romix_accessories_inventory', JSON.stringify(inventory));
         }
 
+        // Mapping categories to their specific icons for dropdowns & receipt rendering
+        const CATEGORY_ICONS = {
+            "Zamoklar": "🔒",
+            "Ruchkalar": "🚪",
+            "Qistirmalar": "🌀",
+            "Biriktiruvchilar": "🧩",
+            "Boshqa...": "⚙️"
+        };
+        function getCategoryIcon(cat) {
+            return CATEGORY_ICONS[cat] || "⚙️";
+        }
+
+        const UNIT_ICONS = {
+            "dona": "📦",
+            "kg": "⚖️",
+            "litr": "🧪",
+            "metr": "📏"
+        };
+        function getUnitIcon(unit) {
+            return UNIT_ICONS[unit] || "📦";
+        }
+
         // --- Render Inventory ---
         function renderTable() {
             const tableBody = document.getElementById('accTableBody');
@@ -678,7 +827,7 @@
             tableBody.innerHTML = '';
             let totalQty = 0;
 
-            inventory.forEach(item => {
+            inventory.forEach((item, idx) => {
                 totalQty += item.qty;
 
                 const isLow = item.qty < 500;
@@ -693,6 +842,10 @@
                     <td style="font-weight:700;">${item.qty.toLocaleString()}</td>
                     <td>${item.unit}</td>
                     <td><span class="${badgeClass}" style="${badgeStyle}">${badgeText}</span></td>
+                    <td style="text-align: right; white-space: nowrap;">
+                        <button class="btn-glass" onclick="openAccEditModal(${idx})" style="display:inline-flex; padding:6px 12px; border-radius:10px; font-size:0.8rem; border-color:rgba(0, 210, 255, 0.3); color:#00d2ff; margin-right:6px;" title="Tahrirlash">✏️</button>
+                        <button class="btn-glass" onclick="triggerDelete(${idx})" style="display:inline-flex; padding:6px 12px; border-radius:10px; font-size:0.8rem; border-color:rgba(255, 77, 79, 0.3); color:#ff4d4f;" title="O'chirish">🗑️</button>
+                    </td>
                 `;
                 tableBody.appendChild(row);
             });
@@ -758,9 +911,11 @@
             // Close dropdown
             wrapper.classList.remove('active');
 
-            // Category Change Actions
+            // Category Change Actions for Kirim and Edit modals
             if (inputId === 'accCategory') {
-                handleCategoryChange(value);
+                handleCategoryChange(value, 'customCategoryGroup', 'accCustomCategory');
+            } else if (inputId === 'editAccCategory') {
+                handleCategoryChange(value, 'editCustomCategoryGroup', 'editAccCustomCategory');
             }
         }
 
@@ -794,10 +949,10 @@
             document.getElementById('accReceiptModal').classList.remove('active');
         }
 
-        // Show/Hide custom category input
-        function handleCategoryChange(val) {
-            const customGroup = document.getElementById('customCategoryGroup');
-            const customInput = document.getElementById('accCustomCategory');
+        // Show/Hide custom category input (generic)
+        function handleCategoryChange(val, groupElementId, inputElementId) {
+            const customGroup = document.getElementById(groupElementId);
+            const customInput = document.getElementById(inputElementId);
 
             if (val === 'Boshqa...') {
                 customGroup.style.display = 'block';
@@ -809,7 +964,7 @@
             }
         }
 
-        // --- Form Submit Handler ---
+        // --- Form Submit Handler (Kirim) ---
         function handleKirimSubmit(event) {
             event.preventDefault();
 
@@ -871,6 +1026,100 @@
 
             // Open Receipt Modal
             document.getElementById('accReceiptModal').classList.add('active');
+        }
+
+        // --- Edit Modal Control & Submit ---
+        function openAccEditModal(idx) {
+            const item = inventory[idx];
+            if (!item) return;
+
+            document.getElementById('editAccIndex').value = idx;
+            document.getElementById('editAccName').value = item.name;
+            document.getElementById('editAccSpec').value = item.spec || '';
+            document.getElementById('editAccQty').value = item.qty;
+
+            // Custom dropdown Category set
+            let catVal = item.category;
+            const standardCategories = ["Zamoklar", "Ruchkalar", "Qistirmalar", "Biriktiruvchilar"];
+            const catWrapper = document.getElementById('wrapper_editAccCategory');
+            
+            if (standardCategories.includes(catVal)) {
+                const catOption = catWrapper.querySelector(`.premium-option[data-value="${catVal}"]`);
+                selectOption('editAccCategory', catVal, getCategoryIcon(catVal), catOption);
+            } else {
+                // If it's custom, select "Boshqa..." and populate custom category input
+                const catOption = catWrapper.querySelector('.premium-option[data-value="Boshqa..."]');
+                selectOption('editAccCategory', 'Boshqa...', '⚙️', catOption);
+                document.getElementById('editAccCustomCategory').value = catVal;
+            }
+
+            // Custom dropdown Unit set
+            const unitVal = item.unit || 'dona';
+            const unitWrapper = document.getElementById('wrapper_editAccUnit');
+            const unitOption = unitWrapper.querySelector(`.premium-option[data-value="${unitVal}"]`);
+            selectOption('editAccUnit', unitVal, getUnitIcon(unitVal), unitOption);
+
+            // Open Modal
+            document.getElementById('accEditModal').classList.add('active');
+        }
+
+        function closeAccEditModal() {
+            document.getElementById('accEditModal').classList.remove('active');
+        }
+
+        function handleEditSubmit(event) {
+            event.preventDefault();
+
+            const idx = parseInt(document.getElementById('editAccIndex').value);
+            const name = document.getElementById('editAccName').value.trim();
+            const categorySelect = document.getElementById('editAccCategory').value;
+            const customCategory = document.getElementById('editAccCustomCategory').value.trim();
+            const spec = document.getElementById('editAccSpec').value.trim();
+            const unit = document.getElementById('editAccUnit').value;
+            const qty = parseInt(document.getElementById('editAccQty').value);
+
+            const finalCategory = categorySelect === 'Boshqa...' ? customCategory : categorySelect;
+
+            if (!name || !finalCategory || isNaN(qty) || qty < 0) {
+                alert("Iltimos, barcha maydonlarni to'g'ri to'ldiring!");
+                return;
+            }
+
+            // Update item in inventory
+            if (inventory[idx]) {
+                inventory[idx] = {
+                    name: name,
+                    category: finalCategory,
+                    spec: spec,
+                    unit: unit,
+                    qty: qty
+                };
+
+                localStorage.setItem('romix_accessories_inventory', JSON.stringify(inventory));
+                renderTable();
+                closeAccEditModal();
+            }
+        }
+
+        // --- Deletion Flow ---
+        function triggerDelete(idx) {
+            document.getElementById('deleteTargetIndex').value = idx;
+            document.getElementById('accDeleteConfirmModal').classList.add('active');
+        }
+
+        function closeDeleteConfirmModal() {
+            document.getElementById('accDeleteConfirmModal').classList.remove('active');
+        }
+
+        function executeDelete() {
+            const idx = parseInt(document.getElementById('deleteTargetIndex').value);
+            if (!isNaN(idx) && inventory[idx]) {
+                // Splice array, save and refresh
+                inventory.splice(idx, 1);
+                localStorage.setItem('romix_accessories_inventory', JSON.stringify(inventory));
+                renderTable();
+            }
+            closeDeleteConfirmModal();
         }
 
         // --- Print Receipt ---
