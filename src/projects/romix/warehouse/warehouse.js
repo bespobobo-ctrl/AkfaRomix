@@ -116,7 +116,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         brands.forEach(b => {
             const card = document.createElement('div');
             const isActive = window.activeBrand.toUpperCase() === b.toUpperCase();
-            card.className = `brand-card ${isActive ? 'active' : ''}`;
+            
+            let activeClass = '';
+            if (isActive) {
+                const brandLower = b.toLowerCase();
+                if (brandLower.includes('akfa')) activeClass = 'active-akfa';
+                else if (brandLower.includes('retpen')) activeClass = 'active-retpen';
+                else if (brandLower.includes('ekopen')) activeClass = 'active-ekopen';
+                else if (brandLower.includes('alta')) activeClass = 'active-altaplast';
+                else if (brandLower.includes('alubest')) activeClass = 'active-alubest';
+                else if (brandLower.includes('alutex')) activeClass = 'active-alutex';
+                else if (brandLower.includes('cra')) activeClass = 'active-cra';
+            }
+            
+            card.className = `brand-card ${activeClass}`;
             card.innerHTML = getBrandLogoSvg(b, isActive);
             card.onclick = () => {
                 window.activeBrand = b;
@@ -252,13 +265,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <span class="series-title">${series}</span>
                         <span class="series-items-count">${seriesFilteredItems.length} mahsulot</span>
                     </div>
-                    <span class="series-chevron">▼</span>
+                    <div class="series-chevron-btn">▼</div>
                 </div>
                 <div class="series-card-body">
                     <!-- Color Swatches Chips row -->
                     <div class="color-chips-container"></div>
-                    <!-- Catalog Products List -->
-                    <div class="catalog-products-list"></div>
+                    <!-- Catalog Products Grid -->
+                    <div class="catalog-products-grid"></div>
                 </div>
             `;
 
@@ -297,13 +310,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             // Render List Items
-            const listContainer = accordion.querySelector('.catalog-products-list');
+            const listContainer = accordion.querySelector('.catalog-products-grid');
             if (seriesFilteredItems.length === 0) {
-                listContainer.innerHTML = '<div style="padding:15px; color:#888; font-size:0.85rem; text-align:center;">Ushbu rangda mahsulot topilmadi.</div>';
+                listContainer.innerHTML = '<div style="padding:15px; color:#888; font-size:0.85rem; text-align:center; grid-column: 1/-1;">Ushbu rangda mahsulot topilmadi.</div>';
             } else {
                 seriesFilteredItems.forEach(p => {
                     const row = document.createElement('div');
-                    row.className = 'catalog-item-row';
+                    row.className = 'catalog-item-card';
                     
                     // Clean product name to match mockup beautifully
                     let displayName = p.product_name;
@@ -317,16 +330,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const rangi = metadata.rangi || p.description?.split('|')?.[2]?.split('(')?.[0]?.trim() || '---';
                     const rangTuri = metadata.rangTuri || p.description?.match(/\(([^)]+)\)/)?.[1] || '---';
 
+                    // Quantity status
+                    const isLowStock = p.stock_quantity < 10;
+                    const qtyClass = isLowStock ? 'qty-low' : 'qty-normal';
+
                     row.innerHTML = `
-                        <div class="catalog-item-left">
-                            <span class="catalog-item-name">${displayName}</span>
-                            <span class="catalog-item-specs">${uzunligi === '---' ? '' : uzunligi + 'mm | '}${shakli} | ${rangi} (${rangTuri})</span>
+                        <div class="card-badge-shape">${shakli !== '---' ? shakli : 'Profil'}</div>
+                        <div class="card-details">
+                            <h4 class="card-product-name">${displayName}</h4>
+                            <div class="card-specs-row">
+                                ${uzunligi !== '---' ? `<span class="spec-chip">📏 ${uzunligi} mm</span>` : ''}
+                                ${rangi !== '---' ? `<span class="spec-chip">🎨 ${rangi}</span>` : ''}
+                                ${rangTuri !== '---' && rangTuri !== '---' ? `<span class="spec-chip tint-chip">${rangTuri}</span>` : ''}
+                            </div>
                         </div>
-                        <div class="catalog-item-right">
-                            <span class="catalog-item-qty">${p.stock_quantity} ${p.unit || 'dona'}</span>
-                            <div class="catalog-item-actions">
-                                <button class="catalog-action-btn edit-btn" data-id="${p.id}" title="Tahrirlash">✏️</button>
-                                <button class="catalog-action-btn delete-btn delete-accent" data-id="${p.id}" title="O'chirish" style="color:#ff4d4f;">🗑️</button>
+                        <div class="card-footer-row">
+                            <div class="qty-status-block">
+                                <span class="qty-label">Zaxira:</span>
+                                <span class="qty-val ${qtyClass}">${p.stock_quantity} ${p.unit || 'dona'}</span>
+                            </div>
+                            <div class="card-actions">
+                                <button class="card-action-btn edit-btn" data-id="${p.id}" title="Tahrirlash">✏️</button>
+                                <button class="card-action-btn delete-btn delete-accent" data-id="${p.id}" title="O'chirish" style="color:#ff4d4f;">🗑️</button>
                             </div>
                         </div>
                     `;

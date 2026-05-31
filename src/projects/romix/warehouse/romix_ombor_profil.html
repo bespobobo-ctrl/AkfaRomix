@@ -652,55 +652,96 @@
             display: flex;
             gap: 15px;
             overflow-x: auto;
-            padding: 5px 0 15px 0;
-            margin-bottom: 15px;
+            padding: 5px 2px 20px 2px;
+            margin-bottom: 20px;
             scroll-behavior: smooth;
         }
 
         .brand-selector-row::-webkit-scrollbar {
-            height: 4px;
+            height: 5px;
         }
 
         .brand-selector-row::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
         }
 
         .brand-card {
             background: rgba(20, 30, 45, 0.35);
             border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 16px;
-            padding: 10px 20px;
+            border-radius: 18px;
+            padding: 10px 24px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
-            backdrop-filter: blur(10px);
-            min-width: 110px;
-            height: 48px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(12px);
+            min-width: 125px;
+            height: 52px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            position: relative;
+            overflow: hidden;
         }
 
         .brand-card:hover {
             background: rgba(255, 255, 255, 0.02);
-            border-color: rgba(0, 210, 255, 0.25);
-            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-4px) scale(1.03);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
         }
 
-        .brand-card.active {
+        /* Brand-Specific Neon Active States */
+        .brand-card.active-akfa {
             background: rgba(0, 210, 255, 0.08);
             border-color: #00d2ff;
-            box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 210, 255, 0.35), inset 0 0 8px rgba(0, 210, 255, 0.1);
+        }
+
+        .brand-card.active-retpen {
+            background: rgba(0, 229, 255, 0.08);
+            border-color: #00e5ff;
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.35), inset 0 0 8px rgba(0, 229, 255, 0.1);
+        }
+
+        .brand-card.active-ekopen {
+            background: rgba(255, 136, 0, 0.08);
+            border-color: #ff8800;
+            box-shadow: 0 0 20px rgba(255, 136, 0, 0.35), inset 0 0 8px rgba(255, 136, 0, 0.1);
+        }
+
+        .brand-card.active-altaplast {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: #ffffff;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.25), inset 0 0 8px rgba(255, 255, 255, 0.1);
+        }
+
+        .brand-card.active-alubest {
+            background: rgba(0, 122, 255, 0.08);
+            border-color: #007aff;
+            box-shadow: 0 0 20px rgba(0, 122, 255, 0.35), inset 0 0 8px rgba(0, 122, 255, 0.1);
+        }
+
+        .brand-card.active-alutex {
+            background: rgba(0, 229, 255, 0.08);
+            border-color: #00e5ff;
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.35), inset 0 0 8px rgba(0, 229, 255, 0.1);
+        }
+
+        .brand-card.active-cra {
+            background: rgba(255, 77, 79, 0.08);
+            border-color: #ff4d4f;
+            box-shadow: 0 0 20px rgba(255, 77, 79, 0.35), inset 0 0 8px rgba(255, 77, 79, 0.1);
         }
 
         /* --- Category Tabs Row --- */
         .category-tabs-row {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             overflow-x: auto;
-            padding: 5px 0 15px 0;
-            margin-bottom: 20px;
+            padding: 5px 2px 20px 2px;
+            margin-bottom: 25px;
         }
 
         .category-tabs-row::-webkit-scrollbar {
@@ -708,61 +749,69 @@
         }
 
         .category-tabs-row::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.06);
             border-radius: 2px;
         }
 
         .category-tab {
             background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 8px 18px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 10px 22px;
             cursor: pointer;
-            color: var(--adm-text-sec);
+            color: rgba(255, 255, 255, 0.6);
             font-weight: 600;
-            font-size: 0.88rem;
-            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .category-tab:hover {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.06);
             color: #ffffff;
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.12);
         }
 
         .category-tab.active {
-            background: #007aff;
+            background: linear-gradient(135deg, #007aff, #00d2ff);
             color: #ffffff;
-            border-color: #007aff;
-            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+            border-color: transparent;
+            box-shadow: 0 8px 22px rgba(0, 122, 255, 0.35);
+            font-weight: 700;
         }
 
-        /* --- Series Accordion Cards --- */
+        /* --- Series Accordion Bento Cards --- */
         .series-accordion-card {
-            background: rgba(18, 25, 41, 0.45);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            margin-bottom: 15px;
+            background: rgba(18, 25, 41, 0.4);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 24px;
+            margin-bottom: 20px;
             overflow: hidden;
-            transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
             width: 100%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
         }
 
         .series-accordion-card.open {
-            border-color: rgba(0, 210, 255, 0.2);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border-color: rgba(0, 210, 255, 0.18);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+            background: rgba(20, 30, 50, 0.55);
         }
 
         .series-card-header {
-            padding: 16px 20px;
+            padding: 18px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             cursor: pointer;
             background: rgba(255, 255, 255, 0.01);
             user-select: none;
-            transition: background 0.3s;
+            transition: all 0.3s;
         }
 
         .series-card-header:hover {
@@ -772,41 +821,61 @@
         .series-header-left {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 15px;
         }
 
         .series-title {
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             font-weight: 700;
             color: #ffffff;
+            letter-spacing: 0.5px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .series-items-count {
             background: rgba(255, 255, 255, 0.05);
-            color: var(--adm-text-sec);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            letter-spacing: 0.3px;
+        }
+
+        .series-chevron-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.6);
             font-size: 0.75rem;
-            font-weight: 700;
-            padding: 2px 8px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .series-chevron {
-            font-size: 0.78rem;
-            color: var(--adm-text-sec);
-            transition: transform 0.3s ease;
+        .series-card-header:hover .series-chevron-btn {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
         }
 
-        .series-accordion-card.open .series-chevron {
+        .series-accordion-card.open .series-chevron-btn {
             transform: rotate(180deg);
-            color: #00d2ff;
+            color: #ffffff;
+            background: rgba(0, 210, 255, 0.2);
+            border-color: rgba(0, 210, 255, 0.4);
+            box-shadow: 0 0 12px rgba(0, 210, 255, 0.3);
         }
 
         .series-card-body {
-            padding: 0 20px 20px 20px;
+            padding: 0 24px 24px 24px;
             display: none;
-            border-top: 1px solid rgba(255,255,255,0.02);
-            background: rgba(0, 0, 0, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.03);
+            background: rgba(0, 0, 0, 0.12);
         }
 
         .series-accordion-card.open .series-card-body {
@@ -817,7 +886,7 @@
         .color-chips-container {
             display: flex;
             gap: 12px;
-            margin: 15px 0 20px 0;
+            margin: 18px 0 22px 0;
             overflow-x: auto;
             padding: 5px 0;
         }
@@ -833,126 +902,196 @@
 
         .color-chip {
             background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            padding: 6px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 8px 16px;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 0.8rem;
+            gap: 10px;
+            font-size: 0.85rem;
             font-weight: 600;
-            color: var(--adm-text-sec);
-            transition: all 0.2s ease;
+            color: rgba(255, 255, 255, 0.6);
+            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
             white-space: nowrap;
         }
 
         .color-chip:hover {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.06);
             color: #ffffff;
+            transform: translateY(-1px);
         }
 
         .color-chip.active {
             border-color: #00ff88;
-            background: rgba(0, 255, 136, 0.06);
+            background: rgba(0, 255, 136, 0.08);
             color: #ffffff;
-            box-shadow: 0 0 10px rgba(0, 255, 136, 0.1);
+            box-shadow: 0 0 12px rgba(0, 255, 136, 0.15);
         }
 
-        /* --- Product Catalog Item Row --- */
-        .catalog-products-list {
+        /* --- Product Catalog Item Grid & Cards --- */
+        .catalog-products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+            gap: 20px;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .catalog-item-card {
+            background: linear-gradient(135deg, rgba(25, 35, 52, 0.45) 0%, rgba(15, 22, 35, 0.55) 100%);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            width: 100%;
+            justify-content: space-between;
+            gap: 16px;
+            transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.15);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
         }
 
-        .catalog-item-row {
+        .catalog-item-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(0, 210, 255, 0.25);
+            box-shadow: 0 12px 30px rgba(0, 210, 255, 0.12), 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-badge-shape {
+            align-self: flex-start;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 3px 10px;
+            border-radius: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .card-details {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex-grow: 1;
+        }
+
+        .card-product-name {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #ffffff;
+            line-height: 1.4;
+            margin: 0;
+            letter-spacing: 0.2px;
+        }
+
+        .card-specs-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        .spec-chip {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 3px 8px;
+            font-size: 0.72rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.65);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .spec-chip.tint-chip {
+            border-color: rgba(0, 210, 255, 0.15);
+            background: rgba(0, 210, 255, 0.03);
+            color: #00d2ff;
+        }
+
+        .card-footer-row {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            padding: 12px 14px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-            transition: all 0.2s ease;
-            border-radius: 10px;
+            align-items: flex-end;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            padding-top: 14px;
+            margin-top: 6px;
         }
 
-        .catalog-item-row:last-child {
-            border-bottom: none;
-        }
-
-        .catalog-item-row:hover {
-            background: rgba(255, 255, 255, 0.02);
-        }
-
-        .catalog-item-left {
+        .qty-status-block {
             display: flex;
             flex-direction: column;
             gap: 3px;
         }
 
-        .catalog-item-name {
-            font-size: 0.95rem;
+        .qty-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
             font-weight: 600;
-            color: #e2e8f0;
+            letter-spacing: 0.5px;
         }
 
-        .catalog-item-row:hover .catalog-item-name {
-            color: #ffffff;
-        }
-
-        .catalog-item-specs {
-            font-size: 0.76rem;
-            color: var(--adm-text-sec);
-        }
-
-        .catalog-item-right {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .catalog-item-qty {
-            font-size: 1.1rem;
-            font-weight: 750;
-            color: #00ff88;
-            text-shadow: 0 0 8px rgba(0, 255, 136, 0.15);
+        .qty-val {
+            font-size: 1.25rem;
+            font-weight: 800;
             white-space: nowrap;
         }
 
-        .catalog-item-actions {
+        .qty-val.qty-normal {
+            color: #00ff88;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.25);
+        }
+
+        .qty-val.qty-low {
+            color: #ff8800;
+            text-shadow: 0 0 10px rgba(255, 136, 0, 0.25);
+        }
+
+        .card-actions {
             display: flex;
-            gap: 6px;
-            opacity: 0;
-            transition: opacity 0.2s ease;
+            gap: 8px;
+            opacity: 0.15;
+            transform: translateY(2px);
+            transition: all 0.25s ease;
         }
 
-        .catalog-item-row:hover .catalog-item-actions {
+        .catalog-item-card:hover .card-actions {
             opacity: 1;
+            transform: translateY(0);
         }
 
-        .catalog-action-btn {
+        .card-action-btn {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.06);
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             transition: all 0.2s ease;
         }
 
-        .catalog-action-btn:hover {
+        .card-action-btn:hover {
             background: rgba(0, 210, 255, 0.15);
             border-color: rgba(0, 210, 255, 0.3);
-            transform: scale(1.05);
+            transform: scale(1.08);
+            box-shadow: 0 0 8px rgba(0, 210, 255, 0.25);
         }
 
-        .catalog-action-btn.delete-accent:hover {
+        .card-action-btn.delete-accent:hover {
             background: rgba(255, 77, 79, 0.15);
             border-color: rgba(255, 77, 79, 0.3);
+            box-shadow: 0 0 8px rgba(255, 77, 79, 0.25);
         }
     </style>
 </head>
