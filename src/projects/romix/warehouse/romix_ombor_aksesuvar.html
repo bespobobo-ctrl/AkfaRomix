@@ -333,8 +333,10 @@
                 background: #ffffff !important;
                 color: #000000 !important;
                 height: auto !important;
+                min-height: auto !important; /* Collapses the screen's 100vh height */
                 margin: 0 !important;
                 padding: 0 !important;
+                display: block !important; /* Destroys any flexbox behavior */
             }
 
             #mainApp,
@@ -366,9 +368,9 @@
                 border: none !important;
                 box-shadow: none !important;
                 width: 100% !important;
-                max-width: 100% !important;
-                padding: 20px !important;
-                margin: 0 !important;
+                max-width: 600px !important; /* Nicely centered horizontally in print */
+                padding: 20px 0 !important;
+                margin: 0 auto !important; /* Starts right at the top left */
                 transform: none !important;
             }
 
@@ -1467,13 +1469,8 @@
                             <th style="padding:10px 5px; color:var(--adm-text-sec); font-size:0.8rem; font-weight:600; text-align:right;">Miqdori</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr style="border-bottom:1px dashed rgba(255,255,255,0.05);">
-                            <td id="receiptItemName" style="padding:12px 5px; font-weight:700; color:#fff;">-</td>
-                            <td id="receiptItemCategory" style="padding:12px 5px; color:var(--adm-text-sec);">-</td>
-                            <td id="receiptItemSpec" style="padding:12px 5px; color:var(--adm-text-sec);">-</td>
-                            <td id="receiptItemQtyUnit" style="padding:12px 5px; font-weight:800; color:#00ff88; text-align:right; font-size:1.1rem;">-</td>
-                        </tr>
+                    <tbody id="receiptTableBody">
+                        <!-- Loaded dynamically via currentReceiptItems -->
                     </tbody>
                 </table>
 
@@ -1512,6 +1509,8 @@
             inventory = DEFAULT_ACCESSORIES;
             localStorage.setItem('romix_accessories_inventory', JSON.stringify(inventory));
         }
+
+        let currentReceiptItems = [];
 
         // --- Dynamic Categories State Management ---
         const DEFAULT_CATEGORIES = [
@@ -2213,6 +2212,7 @@
 
         function closeAccReceiptModal() {
             document.getElementById('accReceiptModal').classList.remove('active');
+            currentReceiptItems = []; // Reset accumulated items for next receipt
         }
 
         // Show/Hide custom category input (generic)
@@ -2274,6 +2274,28 @@
             // Add history log
             addHistoryLog("Kirim 📥", `"${finalName}" mahsulotidan ${qty.toLocaleString()} ${unit} kirim qilindi. Kategoriya: ${finalCategory}. Xususiyati: ${spec}.`);
 
+            // Accumulate in session receipt array
+            currentReceiptItems.push({
+                name: finalName,
+                category: finalCategory,
+                spec: spec,
+                unit: unit,
+                qty: qty
+            });
+
+            // Reset inputs for next potential item entry
+            document.getElementById('accName').value = '';
+            document.getElementById('accSpec').value = '';
+            document.getElementById('accQty').value = '';
+
+            // Ask the user if there are more products to deposit
+            const askMore = confirm("Mahsulot kirim qilindi!\nYana kirim qilinadigan mahsulot bormi? (Ushbu hujjatga qo'shish uchun)");
+
+            if (askMore) {
+                // Simply return, keep Kirim modal open
+                return;
+            }
+
             // Close Input Modal
             closeAccKirimModal();
 
@@ -2288,10 +2310,21 @@
             const curUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
             document.getElementById('receiptOperator').textContent = (curUser.full_name || curUser.username || 'RAHBAR').toUpperCase();
 
-            document.getElementById('receiptItemName').textContent = finalName;
-            document.getElementById('receiptItemCategory').textContent = finalCategory;
-            document.getElementById('receiptItemSpec').textContent = spec;
-            document.getElementById('receiptItemQtyUnit').textContent = `${qty.toLocaleString()} ${unit}`;
+            // Render all accumulated items dynamically
+            const tableBody = document.getElementById('receiptTableBody');
+            tableBody.innerHTML = ''; // Clear first
+
+            currentReceiptItems.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px dashed rgba(255,255,255,0.05)';
+                tr.innerHTML = `
+                    <td style="padding:12px 5px; font-weight:700; color:#fff;">${item.name}</td>
+                    <td style="padding:12px 5px; color:var(--adm-text-sec);">${item.category}</td>
+                    <td style="padding:12px 5px; color:var(--adm-text-sec);">${item.spec}</td>
+                    <td style="padding:12px 5px; font-weight:800; color:#00ff88; text-align:right; font-size:1.1rem;">${item.qty.toLocaleString()} ${item.unit}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
 
             // Open Receipt Modal
             document.getElementById('accReceiptModal').classList.add('active');
