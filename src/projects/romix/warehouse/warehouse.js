@@ -448,7 +448,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // Generic
-    document.getElementById('openKirimModal').onclick = () => kirimModal.classList.remove('hidden');
+    const openKirimModalBtn = document.getElementById('openKirimModal');
+    if (openKirimModalBtn) openKirimModalBtn.onclick = () => kirimModal.classList.remove('hidden');
     document.getElementById('closeKirimModal').onclick = () => kirimModal.classList.add('hidden');
     
     if (openProfilKirimModal) openProfilKirimModal.onclick = () => profilKirimModal.classList.remove('hidden');
