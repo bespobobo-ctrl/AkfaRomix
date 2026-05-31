@@ -856,6 +856,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('logoutBtn').onclick = () => { localStorage.removeItem('currentUser'); window.location.href = '/'; };
 
+    // Collapsible Settings Cards (Brendlar & Kategoriyalar)
+    const brandSettingsHeader = document.getElementById('brandSettingsHeader');
+    const brandSettingsCard = document.getElementById('brandSettingsCard');
+    if (brandSettingsHeader && brandSettingsCard) {
+        brandSettingsHeader.onclick = () => {
+            brandSettingsCard.classList.toggle('open');
+        };
+    }
+
+    const catSettingsHeader = document.getElementById('catSettingsHeader');
+    const catSettingsCard = document.getElementById('catSettingsCard');
+    if (catSettingsHeader && catSettingsCard) {
+        catSettingsHeader.onclick = () => {
+            catSettingsCard.classList.toggle('open');
+        };
+    }
+
     function loadSettings() {
         const brandsList = document.getElementById('brandsSettingsList');
         const categoriesList = document.getElementById('categoriesSettingsList');
