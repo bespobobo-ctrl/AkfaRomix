@@ -328,41 +328,53 @@
 
         /* --- Print Styling --- */
         @media print {
-            body * {
-                visibility: hidden;
+            /* Collapse all other elements and backgrounds completely to avoid blank spacing */
+            html, body {
+                background: #ffffff !important;
+                color: #000000 !important;
+                height: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
 
-            #accReceiptModal,
-            #accReceiptModal * {
-                visibility: visible;
+            #mainApp,
+            .modal-overlay:not(#accReceiptModal),
+            .receipt-actions {
+                display: none !important;
             }
 
+            /* Render the receipt container beautifully at the top left */
             #accReceiptModal {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                background: white !important;
-                color: black !important;
-                box-shadow: none !important;
-                border: none !important;
+                position: static !important;
+                display: block !important;
+                opacity: 1 !important;
+                pointer-events: auto !important;
+                background: #ffffff !important;
+                color: #000000 !important;
+                width: 100% !important;
+                height: auto !important;
+                padding: 0 !important;
+                margin: 0 !important;
                 backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                box-shadow: none !important;
             }
 
-            .modal-content {
-                background: white !important;
-                color: black !important;
+            #accReceiptModal .modal-content {
+                background: #ffffff !important;
+                color: #000000 !important;
                 border: none !important;
                 box-shadow: none !important;
                 width: 100% !important;
                 max-width: 100% !important;
-                padding: 0 !important;
+                padding: 20px !important;
                 margin: 0 !important;
+                transform: none !important;
             }
 
             .receipt-paper {
-                color: black !important;
-                background: white !important;
+                color: #000000 !important;
+                background: #ffffff !important;
             }
 
             .receipt-paper h2,
@@ -370,19 +382,15 @@
             .receipt-paper span,
             .receipt-paper td,
             .receipt-paper th {
-                color: black !important;
+                color: #000000 !important;
             }
 
             .receipt-paper table th {
-                border-bottom: 2px solid black !important;
+                border-bottom: 2px solid #000000 !important;
             }
 
             .receipt-paper table td {
-                border-bottom: 1px dashed black !important;
-            }
-
-            .receipt-actions {
-                display: none !important;
+                border-bottom: 1px dashed #000000 !important;
             }
         }
 
