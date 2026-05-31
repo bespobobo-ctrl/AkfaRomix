@@ -1077,8 +1077,11 @@
                         <p style="color: var(--adm-text-sec);">Ruchkalar, zamoklar va butlovchi materiallar</p>
                     </div>
                     <div style="display:flex; gap:12px;">
-                        <button class="btn-glass" onclick="openAccKirimModal()">
-                            <span style="font-size: 1.2rem;">+</span> Yangi Kirim
+                        <button class="btn-glass" onclick="openAccKirimModal()" style="border-color: rgba(0, 255, 136, 0.25); color: #00ff88;">
+                            📥 Dona Kirim
+                        </button>
+                        <button class="btn-glass" onclick="openAccSpiskaModal()" style="border-color: rgba(0, 210, 255, 0.25); color: #00d2ff;">
+                            📜 Spiska Kirim
                         </button>
                     </div>
                 </div>
@@ -1427,6 +1430,139 @@
             <div class="btn-group" style="display:flex; gap:12px;">
                 <button type="button" class="btn-premium secondary" onclick="closeDeleteConfirmModal()" style="flex:1;">BEKOR QILISH</button>
                 <button type="button" class="btn-premium" onclick="executeDelete()" style="flex:1.2; background: linear-gradient(135deg, #ff4d4f 0%, #b32d2f 100%); color:#fff; box-shadow: 0 5px 15px rgba(255, 77, 79, 0.25);">O'CHIRISH</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📜 MODAL: SPISKA KIRIM (BATCH BUNDLE DEPOSIT) -->
+    <div id="accSpiskaModal" class="modal-overlay">
+        <div class="modal-content" style="width: 950px; max-width: 95%; background: #0b111a; border: 1px solid rgba(0, 210, 255, 0.25); border-radius: 28px;">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px; margin-bottom: 20px;">
+                <span style="color: #00d2ff; font-weight: 800; display: flex; align-items: center; gap: 8px; font-size: 1.25rem;">
+                    <span>📜</span> Spiska Kirim (Guruhli Kirim Hujjati)
+                </span>
+                <span onclick="closeAccSpiskaModal()" style="cursor:pointer; font-size: 1.5rem; opacity: 0.7;">&times;</span>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1.6fr; gap: 25px;">
+                <!-- Left Form: Add to Temp List -->
+                <div style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.03); padding: 20px; border-radius: 20px;">
+                    <h4 style="font-weight: 700; margin-bottom: 15px; color: #ffaa00; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">➕ Tovar Ma'lumotlari</h4>
+                    <form id="spiskaForm" onsubmit="addSpiskaTempItem(event)">
+                        <div class="form-group">
+                            <label for="spiskaName">Mahsulot Nomi</label>
+                            <input type="text" id="spiskaName" class="form-input-premium" placeholder="Masalan: AKFA Eshik Qulflari..." required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="spiskaCategory">Kategoriya</label>
+                            <input type="hidden" id="spiskaCategory" value="Zamoklar">
+                            <div class="premium-select-wrapper" id="wrapper_spiskaCategory">
+                                <div class="premium-select-trigger" onclick="toggleDropdown('spiskaCategory')">
+                                    <span class="trigger-value" id="val_spiskaCategory">
+                                        <span class="option-icon">🔒</span>
+                                        <span>Zamoklar</span>
+                                    </span>
+                                    <span class="trigger-arrow">▼</span>
+                                </div>
+                                <div class="premium-select-dropdown">
+                                    <!-- Populated dynamically to sync with categories list -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group" id="spiskaCustomCategoryGroup" style="display: none;">
+                            <label for="spiskaAccCustomCategory">Yangi Kategoriya Nomi</label>
+                            <input type="text" id="spiskaAccCustomCategory" class="form-input-premium" placeholder="Kategoriya nomini yozing...">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="spiskaSpec">Mahsulot Xususiyati</label>
+                            <input type="text" id="spiskaSpec" class="form-input-premium" placeholder="Rangi, o'lchami..." required>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 12px;">
+                            <div class="form-group">
+                                <label for="spiskaUnit">O'lchov Birligi</label>
+                                <input type="hidden" id="spiskaUnit" value="dona">
+                                <div class="premium-select-wrapper" id="wrapper_spiskaUnit">
+                                    <div class="premium-select-trigger" onclick="toggleDropdown('spiskaUnit')">
+                                        <span class="trigger-value" id="val_spiskaUnit">
+                                            <span class="option-icon">📦</span>
+                                            <span>dona</span>
+                                        </span>
+                                        <span class="trigger-arrow">▼</span>
+                                    </div>
+                                    <div class="premium-select-dropdown">
+                                        <div class="premium-option selected" data-value="dona" onclick="selectOption('spiskaUnit', 'dona', '📦', this)">
+                                            <span class="option-icon">📦</span>
+                                            <span class="option-text">dona</span>
+                                        </div>
+                                        <div class="premium-option" data-value="kg" onclick="selectOption('spiskaUnit', 'kg', '⚖️', this)">
+                                            <span class="option-icon">⚖️</span>
+                                            <span class="option-text">kg</span>
+                                        </div>
+                                        <div class="premium-option" data-value="litr" onclick="selectOption('spiskaUnit', 'litr', '🧪', this)">
+                                            <span class="option-icon">🧪</span>
+                                            <span class="option-text">litr</span>
+                                        </div>
+                                        <div class="premium-option" data-value="metr" onclick="selectOption('spiskaUnit', 'metr', '📏', this)">
+                                            <span class="option-icon">📏</span>
+                                            <span class="option-text">metr</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="spiskaQty">Miqdori</label>
+                                <input type="number" id="spiskaQty" class="form-input-premium" min="1" placeholder="Miqdor..." required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-settings-submit" style="margin-top: 15px; background: linear-gradient(135deg, #00d2ff 0%, #0076a3 100%) !important; box-shadow: 0 4px 12px rgba(0, 210, 255, 0.2);">
+                            ➕ Ro'yxatga Qo'shish
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Right Table: Live items currently in spiska -->
+                <div style="display: flex; flex-direction: column; justify-content: space-between; background: rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.02); padding: 20px; border-radius: 20px;">
+                    <div>
+                        <h4 style="font-weight: 700; margin-bottom: 15px; color: #00ff88; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center;">
+                            <span>📑 Hujjatdagi Tovar Ro'yxati</span>
+                            <span id="spiskaTempCount" style="font-size: 0.8rem; background: rgba(0, 255, 136, 0.1); color: #00ff88; border: 1px solid rgba(0, 255, 136, 0.2); padding: 2px 8px; border-radius: 10px;">0 ta tovar</span>
+                        </h4>
+                        
+                        <div style="max-height: 280px; overflow-y: auto; border-radius: 12px; border: 1px solid rgba(255,255,255,0.03);">
+                            <table class="v2-table" style="width: 100%; margin: 0; border-spacing: 0 4px;">
+                                <thead style="position: sticky; top: 0; background: #0f172a; z-index: 10;">
+                                    <tr>
+                                        <th style="padding: 10px; font-size: 0.75rem; color: var(--adm-text-sec);">Mahsulot</th>
+                                        <th style="padding: 10px; font-size: 0.75rem; color: var(--adm-text-sec);">Kategoriya</th>
+                                        <th style="padding: 10px; font-size: 0.75rem; color: var(--adm-text-sec);">Xususiyati</th>
+                                        <th style="padding: 10px; font-size: 0.75rem; color: var(--adm-text-sec); text-align: right;">Miqdor</th>
+                                        <th style="padding: 10px; font-size: 0.75rem; color: var(--adm-text-sec); text-align: right; width: 50px;">Amal</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="spiskaTempTableBody">
+                                    <!-- Dynamic rows from spiskaTempItems -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Footer Commit Actions -->
+                    <div style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px; margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="font-size: 0.85rem; color: var(--adm-text-sec);">
+                            Jami miqdor: <strong id="spiskaTempTotalQty" style="color: #00ff88; font-size: 1rem;">0 dona</strong>
+                        </div>
+                        <div style="display: flex; gap: 12px; width: 60%;">
+                            <button type="button" class="btn-premium secondary" onclick="closeAccSpiskaModal()" style="flex: 1; padding: 10px;">BEKOR QILISH</button>
+                            <button type="button" class="btn-premium primary" onclick="commitSpiskaDeposit()" style="flex: 1.5; padding: 10px; background: linear-gradient(135deg, #00ff88 0%, #00b359 100%); color: #fff; box-shadow: 0 4px 15px rgba(0, 255, 136, 0.25);">📥 TASDIQLASH</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -2074,6 +2210,7 @@
         function syncCategoryDropdowns() {
             const kirimDropdown = document.querySelector('#wrapper_accCategory .premium-select-dropdown');
             const editDropdown = document.querySelector('#wrapper_editAccCategory .premium-select-dropdown');
+            const spiskaDropdown = document.querySelector('#wrapper_spiskaCategory .premium-select-dropdown');
 
             if (!kirimDropdown || !editDropdown) return;
 
@@ -2110,6 +2247,25 @@
                 </div>
             `;
             editDropdown.innerHTML = editDropdownHtml;
+
+            if (spiskaDropdown) {
+                let spiskaDropdownHtml = '';
+                categories.forEach(cat => {
+                    spiskaDropdownHtml += `
+                        <div class="premium-option" data-value="${cat.name}" onclick="selectOption('spiskaCategory', '${cat.name}', '${cat.icon}', this)">
+                            <span class="option-icon">${cat.icon}</span>
+                            <span class="option-text">${cat.name}</span>
+                        </div>
+                    `;
+                });
+                spiskaDropdownHtml += `
+                    <div class="premium-option" data-value="Boshqa..." onclick="selectOption('spiskaCategory', 'Boshqa...', '⚙️', this)">
+                        <span class="option-icon">⚙️</span>
+                        <span class="option-text">Boshqa...</span>
+                    </div>
+                `;
+                spiskaDropdown.innerHTML = spiskaDropdownHtml;
+            }
         }
 
         // --- 7. SPA Single Page Navigation Control ---
@@ -2230,7 +2386,7 @@
             }
         }
 
-        // --- Form Submit Handler (Kirim) ---
+        // --- Form Submit Handler (Kirim - Dona Kirim) ---
         function handleKirimSubmit(event) {
             event.preventDefault();
 
@@ -2252,12 +2408,10 @@
             const matchedIndex = inventory.findIndex(item => item.name.toLowerCase() === finalName.toLowerCase());
 
             if (matchedIndex > -1) {
-                // Update existing quantity, specs, and category
                 inventory[matchedIndex].qty += qty;
-                inventory[matchedIndex].spec = spec; // Update to latest spec
-                inventory[matchedIndex].category = finalCategory; // Update category in case it was changed
+                inventory[matchedIndex].spec = spec;
+                inventory[matchedIndex].category = finalCategory;
             } else {
-                // Add new accessory type
                 inventory.push({
                     name: finalName,
                     category: finalCategory,
@@ -2272,29 +2426,16 @@
             renderInventory();
 
             // Add history log
-            addHistoryLog("Kirim 📥", `"${finalName}" mahsulotidan ${qty.toLocaleString()} ${unit} kirim qilindi. Kategoriya: ${finalCategory}. Xususiyati: ${spec}.`);
+            addHistoryLog("Kirim 📥", `"${finalName}" mahsulotidan ${qty.toLocaleString()} ${unit} Dona Kirim qilindi. Kategoriya: ${finalCategory}. Xususiyati: ${spec}.`);
 
-            // Accumulate in session receipt array
-            currentReceiptItems.push({
+            // Direct Receipt creation for Dona Kirim
+            currentReceiptItems = [{
                 name: finalName,
                 category: finalCategory,
                 spec: spec,
                 unit: unit,
                 qty: qty
-            });
-
-            // Reset inputs for next potential item entry
-            document.getElementById('accName').value = '';
-            document.getElementById('accSpec').value = '';
-            document.getElementById('accQty').value = '';
-
-            // Ask the user if there are more products to deposit
-            const askMore = confirm("Mahsulot kirim qilindi!\nYana kirim qilinadigan mahsulot bormi? (Ushbu hujjatga qo'shish uchun)");
-
-            if (askMore) {
-                // Simply return, keep Kirim modal open
-                return;
-            }
+            }];
 
             // Close Input Modal
             closeAccKirimModal();
@@ -2310,9 +2451,189 @@
             const curUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
             document.getElementById('receiptOperator').textContent = (curUser.full_name || curUser.username || 'RAHBAR').toUpperCase();
 
+            // Render the single item dynamically
+            const tableBody = document.getElementById('receiptTableBody');
+            tableBody.innerHTML = `
+                <tr style="border-bottom: 1px dashed rgba(255,255,255,0.05);">
+                    <td style="padding:12px 5px; font-weight:700; color:#fff;">${finalName}</td>
+                    <td style="padding:12px 5px; color:var(--adm-text-sec);">${finalCategory}</td>
+                    <td style="padding:12px 5px; color:var(--adm-text-sec);">${spec}</td>
+                    <td style="padding:12px 5px; font-weight:800; color:#00ff88; text-align:right; font-size:1.1rem;">${qty.toLocaleString()} ${unit}</td>
+                </tr>
+            `;
+
+            // Open Receipt Modal
+            document.getElementById('accReceiptModal').classList.add('active');
+        }
+
+        // --- Spiska Kirim (Batch Deposit) Logic & Variables ---
+        let spiskaTempItems = [];
+
+        function openAccSpiskaModal() {
+            spiskaTempItems = [];
+            document.getElementById('spiskaForm').reset();
+            document.getElementById('accSpiskaModal').classList.add('active');
+
+            // Reset Custom Dropdowns to Defaults in Spiska Modal
+            const catWrapper = document.getElementById('wrapper_spiskaCategory');
+            const catOption = catWrapper.querySelector('.premium-option[data-value="Zamoklar"]');
+            selectOption('spiskaCategory', 'Zamoklar', '🔒', catOption);
+
+            const unitWrapper = document.getElementById('wrapper_spiskaUnit');
+            const unitOption = unitWrapper.querySelector('.premium-option[data-value="dona"]');
+            selectOption('spiskaUnit', 'dona', '📦', unitOption);
+
+            renderSpiskaTempList();
+            syncCategoryDropdowns();
+        }
+
+        function closeAccSpiskaModal() {
+            document.getElementById('accSpiskaModal').classList.remove('active');
+            spiskaTempItems = [];
+        }
+
+        function addSpiskaTempItem(event) {
+            event.preventDefault();
+
+            const finalName = document.getElementById('spiskaName').value.trim();
+            const categorySelect = document.getElementById('spiskaCategory').value;
+            const customCategory = document.getElementById('spiskaAccCustomCategory').value.trim();
+            const spec = document.getElementById('spiskaSpec').value.trim();
+            const unit = document.getElementById('spiskaUnit').value;
+            const qty = parseInt(document.getElementById('spiskaQty').value);
+
+            const finalCategory = categorySelect === 'Boshqa...' ? customCategory : categorySelect;
+
+            if (!finalName || !finalCategory || isNaN(qty) || qty <= 0) {
+                alert("Iltimos, barcha maydonlarni to'g'ri to'ldiring!");
+                return;
+            }
+
+            // Check if item already exists inside our temporary list seans
+            const existingIdx = spiskaTempItems.findIndex(item => item.name.toLowerCase() === finalName.toLowerCase());
+
+            if (existingIdx > -1) {
+                // Accumulate quantity
+                spiskaTempItems[existingIdx].qty += qty;
+                spiskaTempItems[existingIdx].spec = spec; // Update latest spec
+                spiskaTempItems[existingIdx].category = finalCategory;
+            } else {
+                // Add new to temp list
+                spiskaTempItems.push({
+                    name: finalName,
+                    category: finalCategory,
+                    qty: qty,
+                    unit: unit,
+                    spec: spec
+                });
+            }
+
+            // Clean inputs for next product entry in form
+            document.getElementById('spiskaName').value = '';
+            document.getElementById('spiskaSpec').value = '';
+            document.getElementById('spiskaQty').value = '';
+            document.getElementById('spiskaName').focus();
+
+            renderSpiskaTempList();
+        }
+
+        function renderSpiskaTempList() {
+            const tableBody = document.getElementById('spiskaTempTableBody');
+            if (!tableBody) return;
+
+            tableBody.innerHTML = '';
+            let totalQtyCount = 0;
+
+            if (spiskaTempItems.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 25px; color: var(--adm-text-sec); font-size: 0.85rem;">
+                            Ro'yxat bo'sh. Tovar qo'shing...
+                        </td>
+                    </tr>
+                `;
+            } else {
+                spiskaTempItems.forEach((item, idx) => {
+                    totalQtyCount += item.qty;
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="padding: 10px; color: #fff; font-weight: 600;">${item.name}</td>
+                        <td style="padding: 10px; color: var(--adm-text-sec); font-size: 0.8rem;">${item.category}</td>
+                        <td style="padding: 10px; color: var(--adm-text-sec); font-size: 0.8rem;">${item.spec}</td>
+                        <td style="padding: 10px; text-align: right; color: #00ff88; font-weight: 700;">${item.qty.toLocaleString()} ${item.unit}</td>
+                        <td style="padding: 10px; text-align: right;">
+                            <button type="button" class="btn-trash-premium" onclick="removeSpiskaTempItem(${idx})" style="width: 26px; height: 26px; border-radius: 6px; font-size: 0.75rem; display: inline-flex;">
+                                🗑️
+                            </button>
+                        </td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            }
+
+            // Update stats
+            document.getElementById('spiskaTempCount').textContent = `${spiskaTempItems.length} ta tovar`;
+            document.getElementById('spiskaTempTotalQty').textContent = `${totalQtyCount.toLocaleString()} dona`;
+        }
+
+        function removeSpiskaTempItem(idx) {
+            spiskaTempItems.splice(idx, 1);
+            renderSpiskaTempList();
+        }
+
+        function commitSpiskaDeposit() {
+            if (spiskaTempItems.length === 0) {
+                alert("Iltimos, tasdiqlashdan oldin hech bo'lmaganda bitta mahsulot qo'shing!");
+                return;
+            }
+
+            // Commit all items to active warehouse inventory
+            spiskaTempItems.forEach(item => {
+                const matchedIndex = inventory.findIndex(inv => inv.name.toLowerCase() === item.name.toLowerCase());
+
+                if (matchedIndex > -1) {
+                    inventory[matchedIndex].qty += item.qty;
+                    inventory[matchedIndex].spec = item.spec;
+                    inventory[matchedIndex].category = item.category;
+                } else {
+                    inventory.push({
+                        name: item.name,
+                        category: item.category,
+                        qty: item.qty,
+                        unit: item.unit,
+                        spec: item.spec
+                    });
+                }
+
+                // Add history log for each item
+                addHistoryLog("Kirim 📥", `"${item.name}" mahsulotidan ${item.qty.toLocaleString()} ${item.unit} Spiska orqali guruhli kirim qilindi. Kategoriya: ${item.category}.`);
+            });
+
+            // Save to storage & Refresh inventory view
+            localStorage.setItem('romix_accessories_inventory', JSON.stringify(inventory));
+            renderInventory();
+
+            // Set receipt items
+            currentReceiptItems = [...spiskaTempItems];
+
+            // Close Spiska modal
+            closeAccSpiskaModal();
+
+            // Populate and Show Kirim Hujjati (Receipt)
+            const docNum = 'AC-' + Math.floor(10000 + Math.random() * 90000);
+            const now = new Date();
+            const dateTimeStr = now.toLocaleDateString('uz-UZ') + ' ' + now.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+            
+            document.getElementById('receiptDocNumber').textContent = `HUJJAT #${docNum}`;
+            document.getElementById('receiptDateTime').textContent = dateTimeStr;
+            
+            const curUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            document.getElementById('receiptOperator').textContent = (curUser.full_name || curUser.username || 'RAHBAR').toUpperCase();
+
             // Render all accumulated items dynamically
             const tableBody = document.getElementById('receiptTableBody');
-            tableBody.innerHTML = ''; // Clear first
+            tableBody.innerHTML = '';
 
             currentReceiptItems.forEach(item => {
                 const tr = document.createElement('tr');
