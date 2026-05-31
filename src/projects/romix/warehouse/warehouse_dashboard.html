@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AKFA WMS - Enterprise Edition</title>
+    <title>AKFA WMS - Romix Enterprise Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/css/style.css" />
     <style>
@@ -210,7 +210,7 @@
             <div class="logo-icon-v2" style="font-size: 1.5rem; color: #007c52; margin-bottom: 40px; font-weight: 900;">
                 W</div>
             <div class="nav-icon active" data-tab="inventory" title="Ombor Qoldig'i">📦</div>
-            <div class="nav-icon" data-tab="staff" title="Hodimlar">👥</div>
+            <div class="nav-icon" data-tab="staff" title="Xodimlar">👥</div>
             <div class="nav-icon" data-tab="history" title="Amallar Tarixi">📑</div>
             <div class="nav-icon" id="logoutBtn">🚪</div>
         </aside>
@@ -220,7 +220,7 @@
             <nav class="top-nav-v2">
                 <div class="nav-links-v2">
                     <button class="tab-btn active" data-tab="inventory">Ombor Holati</button>
-                    <button class="tab-btn" data-tab="staff">Hodimlar (Auto Clapak)</button>
+                    <button class="tab-btn" data-tab="staff">Xodimlar (Romix)</button>
                     <button class="tab-btn" data-tab="history">Hujjatlar Tarixi</button>
                 </div>
                 <div style="display: flex; gap: 20px; align-items: center;">
@@ -236,7 +236,7 @@
                 <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px;">
                     <div>
                         <h1 style="font-size: 2.2rem; font-weight: 600;">Inventarizatsiya</h1>
-                        <p style="color: var(--adm-text-sec);">Mahsulotlar va xom-ashyo nazorati</p>
+                        <p style="color: var(--adm-text-sec);">Romix Mahsulotlar va xom-ashyo nazorati</p>
                     </div>
                     <div style="display:flex; gap:12px; flex-wrap:wrap;">
                         <button id="openScanModal" class="btn-glass" title="Skayner yordamida qabul qilish">
@@ -313,7 +313,7 @@
                     </div>
                     <!-- Stat Card 4 -->
                     <div class="bento-item" style="grid-column: span 3;">
-                        <span class="stat-label">Hodimlar (Auto Clapak)</span>
+                        <span class="stat-label">Romix Xodimlari</span>
                         <div class="stat-value" id="statStaffCount">--</div>
                         <div style="font-size: 0.8rem; color: var(--adm-text-sec); margin-top: 10px;">Faol navbatchilik
                         </div>
@@ -350,8 +350,8 @@
             <section id="staff-view" class="warehouse-section hidden">
                 <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px;">
                     <div>
-                        <h1 style="font-size: 2.2rem; font-weight: 600;">Hodimlar Boshqaruvi</h1>
-                        <p style="color: var(--adm-text-sec);">Auto Clapak xodimlari, yuz ko'rinishi va QR kodlar</p>
+                        <h1 style="font-size: 2.2rem; font-weight: 600;">Xodimlar Boshqaruvi</h1>
+                        <p style="color: var(--adm-text-sec);">Romix xodimlari, yuz ko'rinishi va QR kodlar</p>
                     </div>
                     <button id="openStaffModal" class="primary-btn"
                         style="background:var(--adm-accent); color:#fff; border:none; padding:12px 25px; border-radius:15px; font-weight:600; cursor:pointer;">+
@@ -606,9 +606,10 @@
 
         <!-- Body -->
         <div style="flex:1; padding:20px; overflow-y:auto;">
-            <!-- Uzunligi -->
-            <div style="margin-bottom:20px;">
-                <input type="text" id="pkUzunligi" placeholder="Uzunligi (mm)" class="form-input-v2" style="background:var(--adm-surface); font-weight:600; padding:18px; border-radius:16px;">
+            <!-- Uzunligi & Soni -->
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:20px;">
+                <input type="text" id="pkUzunligi" placeholder="Uzunligi (mm)" class="form-input-v2" style="background:var(--adm-surface); font-weight:600; padding:18px; border-radius:16px; margin:0;">
+                <input type="number" id="pkSoni" placeholder="Soni (dona)" class="form-input-v2" style="background:var(--adm-surface); font-weight:600; padding:18px; border-radius:16px; margin:0;">
             </div>
 
             <!-- Grid 2x3 -->

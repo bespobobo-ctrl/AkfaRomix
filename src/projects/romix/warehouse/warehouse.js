@@ -1,5 +1,4 @@
 import { supabase } from '@/core/supabase.js';
-import { inventoryService } from '@projects/autoclapak/services/inventoryService.js';
 import { LayoutService } from '@/components/LayoutService.js';
 import { authService } from '@/services/auth/authService.js';
 import { ROLES } from '@/constants';
@@ -57,10 +56,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Inventory Logic ---
     async function loadInventory() {
-        const { data, error } = await supabase.from('clapak_inventory').select('*').order('created_at', { ascending: false });
+        const { data, error } = await supabase.from('romix_inventory').select('*').order('created_at', { ascending: false });
         if (error) {
             console.error("Inventory error:", error);
-            inventoryTable.innerHTML = '<tr><td colspan="7" style="text-align:center; color:red;">Jadval topilmadi yoki xatolik!</td></tr>';
+            inventoryTable.innerHTML = '<tr><td colspan="7" style="text-align:center; color:red;">Jadval topilmadi yoki xatolik! Supabase\'da romix_inventory jadvali borligini tekshiring.</td></tr>';
             return;
         }
 
@@ -86,7 +85,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </div>
                     </div>
                 </td>
-                <td>${p.category || 'Auto Clapak'}</td>
+                <td>${p.category || 'Romix Ombori'}</td>
                 <td style="font-weight:700;">${p.stock_quantity} ${p.unit || ''}</td>
                 <td>${p.unit || '---'}</td>
                 <td style="color:#007c52; font-weight:600;">${p.price ? p.price.toLocaleString() : '0'}</td>
@@ -102,7 +101,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.querySelectorAll('.delete-btn').forEach(b => {
             b.onclick = async () => {
                 if (confirm('Ushbu mahsulotni o\'chirmoqchimisiz?')) {
-                    await supabase.from('clapak_inventory').delete().eq('id', b.dataset.id);
+                    await supabase.from('romix_inventory').delete().eq('id', b.dataset.id);
                     loadInventory();
                 }
             };
@@ -122,15 +121,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // --- Search Feature ---
+    const inventorySearch = document.getElementById('inventorySearch');
+    if (inventorySearch) {
+        inventorySearch.oninput = () => {
+            const query = inventorySearch.value.toLowerCase().trim();
+            const rows = inventoryTable.querySelectorAll('tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(query)) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+        };
+    }
+
     // --- Staff Logic ---
     async function loadStaff() {
         const staffGrid = document.getElementById('staffGrid');
         staffGrid.innerHTML = '<div style="color:#888; padding:20px;">Yuklanmoqda...</div>';
 
-        const { data, error } = await supabase.from('clapak_staff').select('*').order('created_at', { ascending: false });
+        const { data, error } = await supabase.from('romix_staff').select('*').order('created_at', { ascending: false });
         if (error) {
             console.error(error);
-            staffGrid.innerHTML = '<div style="color:red; padding:20px;">Xatolik yuz berdi. clapak_staff jadvali ochilganini tekshiring.</div>';
+            staffGrid.innerHTML = '<div style="color:red; padding:20px;">Xatolik yuz berdi. Supabase\'da romix_staff jadvali ochilganini tekshiring.</div>';
             return;
         }
 
@@ -146,7 +162,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="staff-avatar-wrapper">
                     <img src="${s.photo_url || 'https://via.placeholder.com/150'}" class="staff-avatar">
                     <div class="qr-overlay">
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=STAFF-${s.id}" style="width:80px; border-radius:8px;">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=ROMIX-STAFF-${s.id}" style="width:80px; border-radius:8px;">
                     </div>
                 </div>
                 <h3 style="margin:0; font-weight:700;">${s.full_name}</h3>
@@ -166,7 +182,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.querySelectorAll('.delete-staff-btn').forEach(b => {
             b.onclick = async () => {
                 if (confirm('Ushbu xodimni o\'chirmoqchimisiz?')) {
-                    await supabase.from('clapak_staff').delete().eq('id', b.dataset.id);
+                    await supabase.from('romix_staff').delete().eq('id', b.dataset.id);
                     loadStaff();
                 }
             };
@@ -182,7 +198,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         let photoUrl = '';
         if (photoFile) {
-            const fileName = `staff/${Date.now()}_${photoFile.name}`;
+            const fileName = `romix_staff/${Date.now()}_${photoFile.name}`;
             const { data, error } = await supabase.storage.from('avatars').upload(fileName, photoFile);
             if (!error) {
                 const { data: publicData } = supabase.storage.from('avatars').getPublicUrl(fileName);
@@ -192,7 +208,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
-        const { error } = await supabase.from('clapak_staff').insert([{
+        const { error } = await supabase.from('romix_staff').insert([{
             full_name: name,
             role: role,
             photo_url: photoUrl
@@ -209,20 +225,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function loadHistory() {
         historyTable.innerHTML = '<tr><td colspan="5" style="text-align:center;">Yuklanmoqda...</td></tr>';
         const { data, error } = await supabase
-            .from('warehouse_transactions')
-            .select(`*, warehouse_products(name, unit)`)
+            .from('romix_transactions')
+            .select(`*, romix_inventory(product_name, unit)`)
             .order('created_at', { ascending: false });
 
-        if (error) return;
+        if (error) {
+            console.error("History loading error:", error);
+            historyTable.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Tarixni yuklashda xatolik!</td></tr>';
+            return;
+        }
         historyTable.innerHTML = '';
         data.forEach(tx => {
             const date = new Date(tx.created_at).toLocaleString();
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><small>${date}</small><br><strong>#${tx.id.slice(0, 8)}</strong></td>
-                <td>${tx.warehouse_products?.name || 'O\'chirilgan mahsulot'}</td>
+                <td>${tx.romix_inventory?.product_name || 'O\'chirilgan mahsulot'}</td>
                 <td><span style="color:${tx.type === 'IN' ? '#007c52' : '#ff4d4f'}; font-weight:700;">${tx.type === 'IN' ? 'KIRIM' : 'CHIQIM'}</span></td>
-                <td>${tx.quantity} ${tx.warehouse_products?.unit || ''}</td>
+                <td>${tx.quantity} ${tx.romix_inventory?.unit || ''}</td>
                 <td>
                     <button class="view-inv-btn" data-tx='${JSON.stringify(tx)}' style="background:#eee; border:none; padding:5px 12px; border-radius:10px; cursor:pointer;">👁️ Ko'rish</button>
                 </td>
@@ -239,11 +259,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function showInvoice(tx, directProduct = null) {
-        const prod = directProduct || tx.warehouse_products || { name: "Mahsulot", unit: "" };
+        const prod = directProduct || tx.romix_inventory || { product_name: "Mahsulot", unit: "" };
 
         document.getElementById('invNumber').textContent = `No. ${tx.id ? tx.id.slice(0, 8).toUpperCase() : 'NEW'}`;
         document.getElementById('invDate').textContent = new Date(tx.created_at || Date.now()).toLocaleDateString();
-        document.getElementById('invProdName').textContent = prod.product_name || prod.name || "Mahsulot";
+        document.getElementById('invProdName').textContent = prod.product_name || "Mahsulot";
         document.getElementById('invQty').textContent = tx.quantity;
         document.getElementById('invUnit').textContent = prod.unit || "";
 
@@ -259,7 +279,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // QR
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=TXID-${tx.id || 'NEW'}`;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=ROMIX-TXID-${tx.id || 'NEW'}`;
         document.getElementById('invQR').innerHTML = `<img src="${qrUrl}" style="width:130px;">`;
 
         mainApp.classList.add('hidden');
@@ -288,8 +308,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            // 1. Manage Product (using clapak_inventory)
-            const { data: existing } = await supabase.from('clapak_inventory').select('*').eq('product_name', name).maybeSingle();
+            // 1. Manage Product (using romix_inventory)
+            const { data: existing } = await supabase.from('romix_inventory').select('*').eq('product_name', name).maybeSingle();
             let product;
 
             const payload = {
@@ -306,24 +326,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
 
             if (existing) {
-                const { data, error } = await supabase.from('clapak_inventory').update(payload).eq('id', existing.id).select().single();
+                const { data, error } = await supabase.from('romix_inventory').update(payload).eq('id', existing.id).select().single();
                 if (error) throw error;
                 product = data;
             } else {
-                const { data, error } = await supabase.from('clapak_inventory').insert([payload]).select().single();
+                const { data, error } = await supabase.from('romix_inventory').insert([payload]).select().single();
                 if (error) throw error;
                 product = data;
             }
 
             // 2. Log Transaction
             const txData = {
-                product_id: null, // We keep this null if it doesn't reference warehouse_products
+                product_id: product.id,
                 type: 'IN',
                 quantity: qty,
-                note: `Auto Clapak - Taminotchi: ${supplier} | Brutto/Netto: ${gross}/${net}`
+                note: `Romix Ombori - Taminotchi: ${supplier} | Brutto/Netto: ${gross}/${net}`
             };
 
-            const { data: tx, error: txError } = await supabase.from('warehouse_transactions').insert([txData]).select().single();
+            const { data: tx, error: txError } = await supabase.from('romix_transactions').insert([txData]).select().single();
 
             // Build virtual transaction for invoice view
             const virtualTx = {
@@ -352,7 +372,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const name = document.getElementById('eName').value;
         const qty = parseFloat(document.getElementById('eQty').value);
         const price = parseFloat(document.getElementById('ePrice').value);
-        await supabase.from('clapak_inventory').update({ product_name: name, stock_quantity: qty, price }).eq('id', window.editingProdId);
+        await supabase.from('romix_inventory').update({ product_name: name, stock_quantity: qty, price }).eq('id', window.editingProdId);
         editModal.classList.add('hidden');
         loadInventory();
     };
@@ -402,19 +422,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Loop and subtract qty
         for (let m of req.materials_json) {
             // Get current stock
-            const { data: prod } = await supabase.from('warehouse_products').select('current_stock').eq('id', m.product_id).single();
+            const { data: prod } = await supabase.from('romix_inventory').select('stock_quantity').eq('id', m.product_id).maybeSingle();
             if (prod) {
                 // Subtract
-                await supabase.from('warehouse_products').update({
-                    current_stock: prod.current_stock - m.qty
+                await supabase.from('romix_inventory').update({
+                    stock_quantity: (parseFloat(prod.stock_quantity) || 0) - m.qty
                 }).eq('id', m.product_id);
 
                 // Add to transactions as 'OUT'
-                await supabase.from('warehouse_transactions').insert([{
+                await supabase.from('romix_transactions').insert([{
                     product_id: m.product_id,
                     type: 'OUT',
                     quantity: m.qty,
-                    note: `Sotuv Bo'limi (Buyurtma/Guruh: ${req.worker_group})`
+                    note: `Romix Sotuv (Buyurtma/Guruh: ${req.worker_group})`
                 }]);
             }
         }
@@ -434,8 +454,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (openProfilKirimModal) openProfilKirimModal.onclick = () => profilKirimModal.classList.remove('hidden');
     if (closeProfilKirim) closeProfilKirim.onclick = () => profilKirimModal.classList.add('hidden');
 
-    document.getElementById('saveProfilBtn').onclick = () => {
-        const uzunligi = document.getElementById('pkUzunligi').value;
+    document.getElementById('saveProfilBtn').onclick = async () => {
+        const uzunligi = document.getElementById('pkUzunligi').value.trim();
+        const soni = parseFloat(document.getElementById('pkSoni').value) || 0;
         const profil = document.getElementById('pkProfil').value;
         const brend = document.getElementById('pkBrend').value;
         const seriya = document.getElementById('pkSeriya').value;
@@ -443,14 +464,76 @@ document.addEventListener('DOMContentLoaded', async () => {
         const rangTuri = document.getElementById('pkRangTuri').value;
         const rangi = document.getElementById('pkRangi').value;
 
-        if(!uzunligi || !profil || !brend || !seriya || !shakli || !rangTuri || !rangi) {
-            alert("Barcha maydonlarni to'ldiring!");
+        if(!uzunligi || soni <= 0 || !profil || !brend || !seriya || !shakli || !rangTuri || !rangi) {
+            alert("Barcha maydonlarni to'g'ri to'ldiring!");
             return;
         }
 
-        // TODO: Database saqlash logikasi ulanadi
-        alert(`Tasdiqlandi!\nProfil: ${profil}\nBrend: ${brend}\nUzunligi: ${uzunligi}mm\nSeriya: ${seriya}\nShakli: ${shakli}\nRang: ${rangi} (${rangTuri})`);
-        profilKirimModal.classList.add('hidden');
+        const name = `${profil} ${brend} ${seriya}`;
+        const desc = `${uzunligi}mm | ${shakli} | ${rangi} (${rangTuri})`;
+
+        const metadata = {
+            uzunligi,
+            profil,
+            brend,
+            seriya,
+            shakli,
+            rangTuri,
+            rangi
+        };
+
+        try {
+            // Check if product exists in romix_inventory
+            const { data: existing } = await supabase.from('romix_inventory').select('*').eq('product_name', name).eq('description', desc).maybeSingle();
+            let product;
+
+            const payload = {
+                product_name: name,
+                category: 'Profil',
+                description: desc,
+                unit: 'dona',
+                price: 0,
+                stock_quantity: existing ? (parseFloat(existing.stock_quantity) || 0) + soni : soni,
+                metadata: metadata
+            };
+
+            if (existing) {
+                const { data, error } = await supabase.from('romix_inventory').update(payload).eq('id', existing.id).select().single();
+                if (error) throw error;
+                product = data;
+            } else {
+                const { data, error } = await supabase.from('romix_inventory').insert([payload]).select().single();
+                if (error) throw error;
+                product = data;
+            }
+
+            // Log Transaction
+            const txData = {
+                product_id: product.id,
+                type: 'IN',
+                quantity: soni,
+                note: `Profil Kirim - ${desc}`
+            };
+
+            const { data: tx, error: txError } = await supabase.from('romix_transactions').insert([txData]).select().single();
+
+            // Build virtual transaction for invoice view
+            const virtualTx = {
+                ...(tx || { id: 'NEW-' + Date.now(), created_at: new Date().toISOString() }),
+                quantity: soni,
+                supplier_name: 'Romix Ichki',
+                supplier_phone: '---',
+                price: 0,
+                note: desc
+            };
+
+            showInvoice(virtualTx, product);
+            profilKirimModal.classList.add('hidden');
+            loadInventory();
+        } catch (err) {
+            console.error("Profil Kirim Error:", err);
+            alert("Xatolik yuz berdi: " + err.message);
+        }
     };
 
     document.getElementById('openStaffModal').onclick = () => staffModal.classList.remove('hidden');
