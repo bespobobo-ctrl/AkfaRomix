@@ -830,82 +830,82 @@
 
         /* --- 2026 Category Settings Styles --- */
         .settings-categories-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
         .category-settings-card {
             background: rgba(30, 41, 59, 0.45);
             border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            padding: 18px 22px;
+            border-radius: 12px;
+            padding: 10px 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
         }
 
         .category-settings-card:hover {
-            border-color: rgba(0, 210, 255, 0.25);
-            background: rgba(30, 41, 59, 0.65);
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(0, 210, 255, 0.08);
+            border-color: rgba(0, 210, 255, 0.2);
+            background: rgba(30, 41, 59, 0.6);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0, 210, 255, 0.05);
         }
 
         .cat-settings-info {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
         }
 
         .cat-settings-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 14px;
-            background: rgba(0, 210, 255, 0.08);
-            border: 1px solid rgba(0, 210, 255, 0.15);
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(0, 210, 255, 0.06);
+            border: 1px solid rgba(0, 210, 255, 0.12);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.4rem;
+            font-size: 1.1rem;
             color: #00d2ff;
-            box-shadow: inset 0 0 10px rgba(0, 210, 255, 0.1);
+            box-shadow: inset 0 0 5px rgba(0, 210, 255, 0.05);
             transition: all 0.3s ease;
         }
 
         .category-settings-card:hover .cat-settings-icon {
-            transform: scale(1.08) rotate(5deg);
-            background: rgba(0, 210, 255, 0.15);
-            border-color: rgba(0, 210, 255, 0.3);
-            box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
+            transform: scale(1.05) rotate(3deg);
+            background: rgba(0, 210, 255, 0.12);
+            border-color: rgba(0, 210, 255, 0.25);
+            box-shadow: 0 0 10px rgba(0, 210, 255, 0.15);
         }
 
         .cat-settings-name {
             font-weight: 700;
             color: #ffffff;
-            font-size: 1.05rem;
-            letter-spacing: -0.3px;
+            font-size: 0.95rem;
+            letter-spacing: -0.2px;
         }
 
         .cat-settings-meta {
-            font-size: 0.78rem;
+            font-size: 0.72rem;
             color: var(--adm-text-sec);
-            margin-top: 4px;
+            margin-top: 2px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
 
         /* --- Premium Custom Switch Slider --- */
         .cyber-switch-label {
             position: relative;
             display: inline-block;
-            width: 52px;
-            height: 28px;
+            width: 44px;
+            height: 24px;
         }
 
         .cyber-switch-label input {
@@ -918,59 +918,59 @@
             position: absolute;
             cursor: pointer;
             inset: 0;
-            background-color: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: .4s cubic-bezier(0.4, 0, 0.2, 1);
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: .35s cubic-bezier(0.4, 0, 0.2, 1);
             border-radius: 34px;
         }
 
         .cyber-switch-slider:before {
             position: absolute;
             content: "";
-            height: 20px;
-            width: 20px;
+            height: 16px;
+            width: 16px;
             left: 3px;
             bottom: 3px;
             background-color: #94a3b8;
-            transition: .4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: .35s cubic-bezier(0.4, 0, 0.2, 1);
             border-radius: 50%;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
 
         input:checked + .cyber-switch-slider {
-            background-color: rgba(0, 255, 136, 0.12);
-            border-color: rgba(0, 255, 136, 0.4);
+            background-color: rgba(0, 255, 136, 0.1);
+            border-color: rgba(0, 255, 136, 0.35);
         }
 
         input:checked + .cyber-switch-slider:before {
-            transform: translateX(24px);
+            transform: translateX(20px);
             background-color: #00ff88;
-            box-shadow: 0 0 10px rgba(0, 255, 136, 0.6);
+            box-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
         }
 
         /* --- Custom Premium Glass Cards --- */
         .card-settings-glass {
-            background: rgba(24, 18, 12, 0.45) !important;
-            border: 1px solid rgba(255, 170, 0, 0.15) !important;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), inset 0 0 25px rgba(255, 170, 0, 0.03) !important;
+            background: rgba(24, 18, 12, 0.4) !important;
+            border: 1px solid rgba(255, 170, 0, 0.12) !important;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.35), inset 0 0 20px rgba(255, 170, 0, 0.02) !important;
             transition: all 0.4s ease !important;
         }
         
         .card-settings-glass:hover {
-            border-color: rgba(255, 170, 0, 0.35) !important;
-            box-shadow: 0 25px 50px rgba(255, 170, 0, 0.06), inset 0 0 25px rgba(255, 170, 0, 0.06) !important;
+            border-color: rgba(255, 170, 0, 0.25) !important;
+            box-shadow: 0 20px 40px rgba(255, 170, 0, 0.05), inset 0 0 20px rgba(255, 170, 0, 0.05) !important;
         }
 
         .card-list-glass {
-            background: rgba(13, 20, 30, 0.45) !important;
-            border: 1px solid rgba(255, 255, 255, 0.05) !important;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35) !important;
+            background: rgba(13, 20, 30, 0.4) !important;
+            border: 1px solid rgba(255, 255, 255, 0.04) !important;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3) !important;
             transition: all 0.4s ease !important;
         }
         
         .card-list-glass:hover {
-            border-color: rgba(0, 210, 255, 0.15) !important;
-            box-shadow: 0 25px 50px rgba(0, 210, 255, 0.04) !important;
+            border-color: rgba(0, 210, 255, 0.12) !important;
+            box-shadow: 0 20px 40px rgba(0, 210, 255, 0.03) !important;
         }
 
         /* --- Elegant Submit and Delete Buttons --- */
@@ -978,49 +978,49 @@
             background: linear-gradient(135deg, #ffaa00 0%, #d47a00 100%) !important;
             color: #ffffff !important;
             font-weight: 700;
-            letter-spacing: 0.8px;
-            font-size: 0.9rem;
-            padding: 14px;
-            border-radius: 14px;
+            letter-spacing: 0.5px;
+            font-size: 0.85rem;
+            padding: 10px 14px;
+            border-radius: 10px;
             border: none;
             cursor: pointer;
             width: 100%;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 15px rgba(255, 170, 0, 0.2);
+            box-shadow: 0 4px 12px rgba(255, 170, 0, 0.15);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 6px;
             font-family: inherit;
         }
         
         .btn-settings-submit:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(255, 170, 0, 0.35);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(255, 170, 0, 0.25);
             background: linear-gradient(135deg, #ffbb33 0%, #e68a00 100%) !important;
         }
 
         .btn-trash-premium {
-            width: 38px;
-            height: 38px;
-            border-radius: 12px;
-            background: rgba(255, 77, 79, 0.06);
-            border: 1px solid rgba(255, 77, 79, 0.15);
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(255, 77, 79, 0.05);
+            border: 1px solid rgba(255, 77, 79, 0.12);
             color: #ff4d4f;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            font-size: 0.95rem;
+            font-size: 0.85rem;
         }
 
         .btn-trash-premium:hover {
             background: #ff4d4f;
             color: #ffffff;
             border-color: #ff4d4f;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(255, 77, 79, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(255, 77, 79, 0.3);
         }
     </style>
 </head>
@@ -1144,7 +1144,7 @@
             </section>
 
             <!-- BO'LIM 3: KATEGORIYALAR SOZLAMALARI (SETTINGS) -->
-            <section id="sectionSettings" class="warehouse-section page-section" style="display: none;">
+            <section id="sectionSettings" class="warehouse-section page-section" style="display: none; max-width: 960px; margin: 0 auto;">
                 <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px;">
                     <div>
                         <h1 style="font-size: 2.2rem; font-weight: 600; color: #ffaa00;">⚙️ Kategoriya Sozlamalari</h1>
