@@ -207,8 +207,8 @@
     <div id="mainApp" class="admin-layout">
         <!-- Sidebar -->
         <aside class="sidebar-slim">
-            <div class="logo-icon-v2" style="font-size: 1.5rem; color: #007c52; margin-bottom: 40px; font-weight: 900;">
-                W</div>
+            <div class="logo-icon-v2" style="font-size: 1.5rem; color: #007c52; margin-bottom: 40px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(0, 124, 82, 0.1); width: 45px; height: 45px; border-radius: 12px;" onclick="window.location.href='../romix_dashboard.html'" title="Asosiy Panelga Qaytish">
+                ↩️</div>
             <div class="nav-icon active" data-tab="inventory" title="Ombor Qoldig'i">📦</div>
             <div class="nav-icon" data-tab="staff" title="Xodimlar">👥</div>
             <div class="nav-icon" data-tab="history" title="Amallar Tarixi">📑</div>
@@ -218,7 +218,10 @@
         <main class="admin-main">
             <!-- Top Nav -->
             <nav class="top-nav-v2">
-                <div class="nav-links-v2">
+                <div class="nav-links-v2" style="display: flex; align-items: center; gap: 8px;">
+                    <button class="tab-btn" onclick="window.location.href='../romix_dashboard.html'" style="background: rgba(0, 210, 255, 0.1); color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.2); border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; padding: 8px 16px; margin-right: 10px;">
+                        ⬅️ Panelga Qaytish
+                    </button>
                     <button class="tab-btn active" data-tab="inventory">Ombor Holati</button>
                     <button class="tab-btn" data-tab="staff">Xodimlar (Romix)</button>
                     <button class="tab-btn" data-tab="history">Hujjatlar Tarixi</button>
