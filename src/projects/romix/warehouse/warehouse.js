@@ -806,6 +806,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        // --- Pachka → Metr hisoblash ---
+        const METR_PER_PACHKA = 48;
+        const pachkaSoni = soni; // foydalanuvchi pachka sonini kiritadi
+        const jamiMetr = pachkaSoni * METR_PER_PACHKA; // jami metr
+
         const name = `${profil} ${brend} ${seriya}`;
         const desc = `${uzunligi}mm | ${shakli} | ${rangi} (${rangTuri})`;
 
@@ -828,9 +833,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 product_name: name,
                 category: 'Profil',
                 description: desc,
-                unit: 'dona',
+                unit: 'metr',
                 price: 0,
-                stock_quantity: existing ? (parseFloat(existing.stock_quantity) || 0) + soni : soni,
+                stock_quantity: existing ? (parseFloat(existing.stock_quantity) || 0) + jamiMetr : jamiMetr,
                 metadata: metadata
             };
 
@@ -844,12 +849,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 product = data;
             }
 
-            // Log Transaction
+            // Log Transaction (metr da yoziladi)
             const txData = {
                 product_id: product.id,
                 type: 'IN',
-                quantity: soni,
-                note: `Profil Kirim - ${desc}`
+                quantity: jamiMetr,
+                note: `Profil Kirim - ${pachkaSoni} pachka × ${METR_PER_PACHKA} = ${jamiMetr} metr | ${desc}`
             };
 
             const { data: tx, error: txError } = await supabase.from('romix_transactions').insert([txData]).select().single();
@@ -857,11 +862,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Build virtual transaction for invoice view
             const virtualTx = {
                 ...(tx || { id: 'NEW-' + Date.now(), created_at: new Date().toISOString() }),
-                quantity: soni,
+                quantity: jamiMetr,
                 supplier_name: 'Romix Ichki',
                 supplier_phone: '---',
                 price: 0,
-                note: desc
+                note: `${pachkaSoni} pachka × ${METR_PER_PACHKA} metr = ${jamiMetr} metr | ${desc}`
             };
 
             showInvoice(virtualTx, product);
