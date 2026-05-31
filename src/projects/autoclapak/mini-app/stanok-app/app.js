@@ -84,7 +84,7 @@ document.getElementById('login-btn').onclick = async () => {
     if (id.toUpperCase().replace(/\s+/g, '') === 'AC1' && pass.replace(/\s+/g, '') === '123') {
         const acUser = { id: 'AC1', username: 'AC1', name: 'Ishlab Chiqarish Boshlig\'i', role: 'ac_manager' };
         localStorage.setItem('currentUser', JSON.stringify(acUser));
-        location.href = '../../../admin_dashboard.html';
+        location.href = '/src/projects/autoclapak/pages/admin_dashboard.html';
         return;
     }
 

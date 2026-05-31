@@ -107,10 +107,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!target) {
             const sectionName = sectionId.replace('section-', '');
             if (sectionName === 'autoclapak') {
-                window.location.href = '../../autoclapak/pages/admin_dashboard.html';
+                window.location.href = '/src/projects/autoclapak/pages/admin_dashboard.html';
             } else {
                 localStorage.setItem('activeRomixSection', sectionId);
-                window.location.href = '../../romix/romix_dashboard.html';
+                window.location.href = '/src/projects/romix/romix_dashboard.html';
             }
             return;
         }
@@ -187,11 +187,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!targetSectionExists) {
                 // If the section doesn't exist in this file, we must redirect!
                 if (target === 'autoclapak') {
-                    window.location.href = '../../autoclapak/pages/admin_dashboard.html';
+                    window.location.href = '/src/projects/autoclapak/pages/admin_dashboard.html';
                 } else {
                     // For Romix sections (dashboard, rassrochka, oynak)
                     localStorage.setItem('activeRomixSection', `section-${target}`);
-                    window.location.href = '../../romix/romix_dashboard.html';
+                    window.location.href = '/src/projects/romix/romix_dashboard.html';
                 }
                 return;
             }
