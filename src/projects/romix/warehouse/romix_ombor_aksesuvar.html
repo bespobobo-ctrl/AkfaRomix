@@ -171,12 +171,123 @@
             background: rgba(0, 0, 0, 0.3);
         }
 
-        .premium-select {
-            appearance: none;
-            background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
-            background-repeat: no-repeat;
-            background-position: right 12px center;
-            background-size: 16px;
+        /* --- High-Fidelity Custom Dropdown System --- */
+        .premium-select-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .premium-select-trigger {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(0, 0, 0, 0.2);
+            color: #fff;
+            font-size: 0.95rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .premium-select-trigger:hover,
+        .premium-select-wrapper.active .premium-select-trigger {
+            border-color: #00d2ff;
+            box-shadow: 0 0 12px rgba(0, 210, 255, 0.15);
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .premium-select-trigger .trigger-value {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .premium-select-trigger .trigger-arrow {
+            font-size: 0.75rem;
+            color: var(--adm-text-sec);
+            transition: transform 0.3s ease;
+        }
+
+        .premium-select-wrapper.active .premium-select-trigger .trigger-arrow {
+            transform: rotate(180deg);
+            color: #00d2ff;
+        }
+
+        .premium-select-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            width: 100%;
+            background: #111b27;
+            border: 1px solid rgba(0, 210, 255, 0.2);
+            border-radius: 16px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            max-height: 250px;
+            overflow-y: auto;
+            opacity: 0;
+            transform: translateY(-10px);
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .premium-select-wrapper.active .premium-select-dropdown {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .premium-option {
+            padding: 12px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: rgba(255, 255, 255, 0.8);
+            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        .premium-option:last-child {
+            border-bottom: none;
+        }
+
+        .premium-option:hover {
+            background: rgba(0, 210, 255, 0.08);
+            color: #00d2ff;
+            padding-left: 20px;
+        }
+
+        .premium-option.selected {
+            background: rgba(0, 255, 136, 0.08);
+            color: #00ff88;
+            font-weight: 600;
+        }
+
+        .option-icon {
+            width: 28px;
+            height: 28px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .premium-option:hover .option-icon {
+            background: rgba(0, 210, 255, 0.15);
+            transform: scale(1.1);
+        }
+
+        .premium-option.selected .option-icon {
+            background: rgba(0, 255, 136, 0.15);
+            color: #00ff88;
         }
 
         .btn-premium {
@@ -380,15 +491,41 @@
                     <input type="text" id="accName" class="form-input-premium" placeholder="Masalan: AKFA Eshik Qulflari, Oyna Ruchkasi..." required>
                 </div>
 
+                <!-- Custom Dropdown: Kategoriya -->
                 <div class="form-group">
                     <label for="accCategory">Kategoriya</label>
-                    <select id="accCategory" class="form-input-premium premium-select" onchange="handleCategoryChange(this)" required>
-                        <option value="Zamoklar">Zamoklar</option>
-                        <option value="Ruchkalar">Ruchkalar</option>
-                        <option value="Qistirmalar">Qistirmalar</option>
-                        <option value="Biriktiruvchilar">Biriktiruvchilar</option>
-                        <option value="Boshqa...">Boshqa...</option>
-                    </select>
+                    <input type="hidden" id="accCategory" value="Zamoklar">
+                    <div class="premium-select-wrapper" id="wrapper_accCategory">
+                        <div class="premium-select-trigger" onclick="toggleDropdown('accCategory')">
+                            <span class="trigger-value" id="val_accCategory">
+                                <span class="option-icon">🔒</span>
+                                <span>Zamoklar</span>
+                            </span>
+                            <span class="trigger-arrow">▼</span>
+                        </div>
+                        <div class="premium-select-dropdown">
+                            <div class="premium-option selected" data-value="Zamoklar" onclick="selectOption('accCategory', 'Zamoklar', '🔒', this)">
+                                <span class="option-icon">🔒</span>
+                                <span class="option-text">Zamoklar</span>
+                            </div>
+                            <div class="premium-option" data-value="Ruchkalar" onclick="selectOption('accCategory', 'Ruchkalar', '🚪', this)">
+                                <span class="option-icon">🚪</span>
+                                <span class="option-text">Ruchkalar</span>
+                            </div>
+                            <div class="premium-option" data-value="Qistirmalar" onclick="selectOption('accCategory', 'Qistirmalar', '🌀', this)">
+                                <span class="option-icon">🌀</span>
+                                <span class="option-text">Qistirmalar</span>
+                            </div>
+                            <div class="premium-option" data-value="Biriktiruvchilar" onclick="selectOption('accCategory', 'Biriktiruvchilar', '🧩', this)">
+                                <span class="option-icon">🧩</span>
+                                <span class="option-text">Biriktiruvchilar</span>
+                            </div>
+                            <div class="premium-option" data-value="Boshqa..." onclick="selectOption('accCategory', 'Boshqa...', '⚙️', this)">
+                                <span class="option-icon">⚙️</span>
+                                <span class="option-text">Boshqa...</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-group" id="customCategoryGroup" style="display: none;">
@@ -402,14 +539,37 @@
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <!-- Custom Dropdown: O'lchov Birligi -->
                     <div class="form-group">
                         <label for="accUnit">O'lchov Birligi</label>
-                        <select id="accUnit" class="form-input-premium premium-select" required>
-                            <option value="dona">dona</option>
-                            <option value="kg">kg</option>
-                            <option value="litr">litr</option>
-                            <option value="metr">metr</option>
-                        </select>
+                        <input type="hidden" id="accUnit" value="dona">
+                        <div class="premium-select-wrapper" id="wrapper_accUnit">
+                            <div class="premium-select-trigger" onclick="toggleDropdown('accUnit')">
+                                <span class="trigger-value" id="val_accUnit">
+                                    <span class="option-icon">📦</span>
+                                    <span>dona</span>
+                                </span>
+                                <span class="trigger-arrow">▼</span>
+                            </div>
+                            <div class="premium-select-dropdown">
+                                <div class="premium-option selected" data-value="dona" onclick="selectOption('accUnit', 'dona', '📦', this)">
+                                    <span class="option-icon">📦</span>
+                                    <span class="option-text">dona</span>
+                                </div>
+                                <div class="premium-option" data-value="kg" onclick="selectOption('accUnit', 'kg', '⚖️', this)">
+                                    <span class="option-icon">⚖️</span>
+                                    <span class="option-text">kg</span>
+                                </div>
+                                <div class="premium-option" data-value="litr" onclick="selectOption('accUnit', 'litr', '🧪', this)">
+                                    <span class="option-icon">🧪</span>
+                                    <span class="option-text">litr</span>
+                                </div>
+                                <div class="premium-option" data-value="metr" onclick="selectOption('accUnit', 'metr', '📏', this)">
+                                    <span class="option-icon">📏</span>
+                                    <span class="option-text">metr</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -566,11 +726,64 @@
             });
         };
 
+        // --- Custom Dropdown Control ---
+        function toggleDropdown(id) {
+            const wrapper = document.getElementById(`wrapper_${id}`);
+            const isActive = wrapper.classList.contains('active');
+            
+            // Close other custom dropdowns
+            document.querySelectorAll('.premium-select-wrapper').forEach(w => w.classList.remove('active'));
+            
+            if (!isActive) {
+                wrapper.classList.add('active');
+            }
+        }
+
+        function selectOption(inputId, value, icon, element) {
+            const hiddenInput = document.getElementById(inputId);
+            hiddenInput.value = value;
+
+            // Update visual trigger
+            const triggerVal = document.getElementById(`val_${inputId}`);
+            triggerVal.innerHTML = `
+                <span class="option-icon">${icon}</span>
+                <span>${value}</span>
+            `;
+
+            // Mark option as selected visually
+            const wrapper = document.getElementById(`wrapper_${inputId}`);
+            wrapper.querySelectorAll('.premium-option').forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+
+            // Close dropdown
+            wrapper.classList.remove('active');
+
+            // Category Change Actions
+            if (inputId === 'accCategory') {
+                handleCategoryChange(value);
+            }
+        }
+
+        // Global click-outside listener to close dropdowns
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.premium-select-wrapper')) {
+                document.querySelectorAll('.premium-select-wrapper').forEach(w => w.classList.remove('active'));
+            }
+        });
+
         // --- Modal Control ---
         function openAccKirimModal() {
             document.getElementById('accKirimModal').classList.add('active');
             document.getElementById('accKirimForm').reset();
-            handleCategoryChange(document.getElementById('accCategory'));
+            
+            // Reset Custom Dropdowns to Defaults
+            const catWrapper = document.getElementById('wrapper_accCategory');
+            const catOption = catWrapper.querySelector('.premium-option[data-value="Zamoklar"]');
+            selectOption('accCategory', 'Zamoklar', '🔒', catOption);
+
+            const unitWrapper = document.getElementById('wrapper_accUnit');
+            const unitOption = unitWrapper.querySelector('.premium-option[data-value="dona"]');
+            selectOption('accUnit', 'dona', '📦', unitOption);
         }
 
         function closeAccKirimModal() {
@@ -581,9 +794,8 @@
             document.getElementById('accReceiptModal').classList.remove('active');
         }
 
-        // Auto-change category group input display based on choice
-        function handleCategoryChange(select) {
-            const val = select.value;
+        // Show/Hide custom category input
+        function handleCategoryChange(val) {
             const customGroup = document.getElementById('customCategoryGroup');
             const customInput = document.getElementById('accCustomCategory');
 
