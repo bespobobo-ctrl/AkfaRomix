@@ -83,8 +83,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         { name: 'Lambri', visible: true }
     ];
 
-    window.brandsConfig = JSON.parse(localStorage.getItem('romix_brands_config')) || defaultBrands;
-    window.categoriesConfig = JSON.parse(localStorage.getItem('romix_categories_config')) || defaultCategories;
+    // Parse & Normalize Brands
+    let storedBrands = localStorage.getItem('romix_brands_config');
+    if (storedBrands) {
+        try {
+            let parsed = JSON.parse(storedBrands);
+            if (Array.isArray(parsed)) {
+                window.brandsConfig = parsed.map(b => typeof b === 'string' ? { name: b, visible: true } : b);
+            } else {
+                window.brandsConfig = defaultBrands;
+            }
+        } catch(e) {
+            window.brandsConfig = defaultBrands;
+        }
+    } else {
+        window.brandsConfig = defaultBrands;
+    }
+
+    // Parse & Normalize Categories
+    let storedCats = localStorage.getItem('romix_categories_config');
+    if (storedCats) {
+        try {
+            let parsed = JSON.parse(storedCats);
+            if (Array.isArray(parsed)) {
+                window.categoriesConfig = parsed.map(c => typeof c === 'string' ? { name: c, visible: true } : c);
+            } else {
+                window.categoriesConfig = defaultCategories;
+            }
+        } catch(e) {
+            window.categoriesConfig = defaultCategories;
+        }
+    } else {
+        window.categoriesConfig = defaultCategories;
+    }
 
     // Helper: Map brand logos
     function getBrandLogoSvg(brandName, isActive) {

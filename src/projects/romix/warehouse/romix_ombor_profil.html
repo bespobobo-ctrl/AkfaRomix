@@ -1095,6 +1095,35 @@
         }
 
         /* --- Settings Styles --- */
+        .settings-accordion-card {
+            background: rgba(18, 25, 41, 0.4) !important;
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.06) !important;
+            border-radius: 24px !important;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+        }
+
+        .settings-accordion-card.open {
+            border-color: rgba(0, 210, 255, 0.25) !important;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+            background: rgba(20, 30, 50, 0.55) !important;
+        }
+
+        .settings-accordion-card.open .settings-card-body {
+            display: flex !important;
+        }
+
+        .settings-accordion-card.open .settings-chevron-btn {
+            transform: rotate(180deg);
+            color: #ffffff;
+            background: rgba(0, 210, 255, 0.2);
+            border-color: rgba(0, 210, 255, 0.4);
+            box-shadow: 0 0 12px rgba(0, 210, 255, 0.3);
+        }
+
         .settings-item-row {
             display: flex;
             justify-content: space-between;
