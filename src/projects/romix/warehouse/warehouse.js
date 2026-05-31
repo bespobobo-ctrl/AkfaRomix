@@ -20,6 +20,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const navButtons = document.querySelectorAll('.nav-icon, .tab-btn');
 
     const kirimModal = document.getElementById('kirimModal');
+    const profilKirimModal = document.getElementById('profilKirimModal');
+    const openProfilKirimModal = document.getElementById('openProfilKirimModal');
+    const closeProfilKirim = document.getElementById('closeProfilKirim');
     const editModal = document.getElementById('editProductModal');
     const staffModal = document.getElementById('staffModal');
     const mainApp = document.getElementById('mainApp');
@@ -427,6 +430,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Generic
     document.getElementById('openKirimModal').onclick = () => kirimModal.classList.remove('hidden');
     document.getElementById('closeKirimModal').onclick = () => kirimModal.classList.add('hidden');
+    
+    if (openProfilKirimModal) openProfilKirimModal.onclick = () => profilKirimModal.classList.remove('hidden');
+    if (closeProfilKirim) closeProfilKirim.onclick = () => profilKirimModal.classList.add('hidden');
+
+    document.getElementById('saveProfilBtn').onclick = () => {
+        const uzunligi = document.getElementById('pkUzunligi').value;
+        const profil = document.getElementById('pkProfil').value;
+        const brend = document.getElementById('pkBrend').value;
+        const seriya = document.getElementById('pkSeriya').value;
+        const shakli = document.getElementById('pkShakli').value;
+        const rangTuri = document.getElementById('pkRangTuri').value;
+        const rangi = document.getElementById('pkRangi').value;
+
+        if(!uzunligi || !profil || !brend || !seriya || !shakli || !rangTuri || !rangi) {
+            alert("Barcha maydonlarni to'ldiring!");
+            return;
+        }
+
+        // TODO: Database saqlash logikasi ulanadi
+        alert(`Tasdiqlandi!\nProfil: ${profil}\nBrend: ${brend}\nUzunligi: ${uzunligi}mm\nSeriya: ${seriya}\nShakli: ${shakli}\nRang: ${rangi} (${rangTuri})`);
+        profilKirimModal.classList.add('hidden');
+    };
+
     document.getElementById('openStaffModal').onclick = () => staffModal.classList.remove('hidden');
     document.getElementById('closeStaffModal').onclick = () => staffModal.classList.add('hidden');
     document.getElementById('closeEditModal').onclick = () => editModal.classList.add('hidden');

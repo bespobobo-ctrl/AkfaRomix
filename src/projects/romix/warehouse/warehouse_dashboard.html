@@ -142,6 +142,16 @@
         .hidden {
             display: none !important;
         }
+
+        .select-glass {
+            appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg fill="%23888888" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 20px;
+            padding-right: 40px;
+            font-weight: 600;
+        }
     </style>
 </head>
 
@@ -180,13 +190,16 @@
                         <h1 style="font-size: 2.2rem; font-weight: 600;">Inventarizatsiya</h1>
                         <p style="color: var(--adm-text-sec);">Mahsulotlar va xom-ashyo nazorati</p>
                     </div>
-                    <div style="display:flex; gap:10px;">
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
                         <button id="openScanModal" class="primary-btn"
                             style="background:#00d2ff; color:#000; border:none; padding:12px 20px; border-radius:15px; font-weight:700; cursor:pointer;">📷
                             Skayner (QR) Qabul</button>
+                        <button id="openProfilKirimModal" class="primary-btn"
+                            style="background:var(--adm-surface); border:1px solid var(--adm-accent); color:var(--adm-text); padding:12px 20px; border-radius:15px; font-weight:700; cursor:pointer;">+
+                            Profil Kirim</button>
                         <button id="openKirimModal" class="primary-btn"
                             style="background:#007c52; color:#fff; border:none; padding:12px 25px; border-radius:15px; font-weight:600; cursor:pointer;">+
-                            Yangi Kirim Amali</button>
+                            Yangi Kirim</button>
                     </div>
                 </div>
 
@@ -533,7 +546,105 @@
         </div>
     </div>
 
-    <script type="module" src="/src/projects/romix/js/warehouse.js"></script>
+    <!-- Modal: Profil Kirim -->
+    <div id="profilKirimModal" class="hidden"
+        style="position:fixed; inset:0; background:var(--adm-bg); z-index:3000; display:flex; flex-direction:column; animation: fadeIn 0.3s ease;">
+        
+        <!-- Top Bar -->
+        <div style="display:flex; align-items:center; padding:20px; border-bottom:1px solid var(--adm-border); background:var(--adm-surface);">
+            <button id="closeProfilKirim" style="background:none; border:none; color:var(--adm-text); font-size:1.8rem; cursor:pointer; padding:0 15px 0 0; font-weight:bold;">&lt;</button>
+            <h2 style="color:var(--adm-text); font-size:1.3rem; margin:0; flex:1; text-align:center; padding-right:30px; font-weight:700;">Omborxona</h2>
+        </div>
+
+        <!-- Body -->
+        <div style="flex:1; padding:20px; overflow-y:auto;">
+            <!-- Uzunligi -->
+            <div style="margin-bottom:20px;">
+                <input type="text" id="pkUzunligi" placeholder="Uzunligi (mm)" class="form-input-v2" style="background:var(--adm-surface); font-weight:600; padding:18px; border-radius:16px;">
+            </div>
+
+            <!-- Grid 2x3 -->
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                
+                <!-- Profil turi -->
+                <div>
+                    <select id="pkProfil" class="form-input-v2 select-glass" style="background:var(--adm-surface); padding:18px; border-radius:16px; margin:0;">
+                        <option value="" disabled selected>Profil</option>
+                        <option value="Profil">Profil</option>
+                        <option value="Shtapik">Shtapik</option>
+                        <option value="Tokcha">Tokcha</option>
+                        <option value="Lambri">Lambri</option>
+                    </select>
+                </div>
+
+                <!-- Brend -->
+                <div>
+                    <select id="pkBrend" class="form-input-v2 select-glass" style="background:var(--adm-surface); padding:18px; border-radius:16px; margin:0;">
+                        <option value="" disabled selected>Brend</option>
+                        <option value="AKFA Plastik">AKFA Plastik</option>
+                        <option value="AKFA Alyuminiy">AKFA Alyuminiy</option>
+                        <option value="AKFA Termo">AKFA Termo</option>
+                        <option value="RETPEN Plastik">RETPEN Plastik</option>
+                        <option value="Ekopen Plastik">Ekopen Plastik</option>
+                    </select>
+                </div>
+
+                <!-- Seriya -->
+                <div>
+                    <select id="pkSeriya" class="form-input-v2 select-glass" style="background:var(--adm-surface); padding:18px; border-radius:16px; margin:0;">
+                        <option value="" disabled selected>Seriya</option>
+                        <option value="6000 QVT">6000 QVT</option>
+                        <option value="6000 TRIO">6000 TRIO</option>
+                        <option value="7000 AKFA EKO">7000 AKFA EKO</option>
+                        <option value="5800 TRIO">5800 TRIO</option>
+                        <option value="5200 QVT">5200 QVT</option>
+                        <option value="6500 PENTA">6500 PENTA</option>
+                        <option value="Engelberg 7000">Engelberg 7000</option>
+                    </select>
+                </div>
+
+                <!-- Shakli -->
+                <div>
+                    <select id="pkShakli" class="form-input-v2 select-glass" style="background:var(--adm-surface); padding:18px; border-radius:16px; margin:0;">
+                        <option value="" disabled selected>Shakli</option>
+                        <option value="To'g'ri">To'g'ri</option>
+                        <option value="Burchakli">Burchakli</option>
+                        <option value="Yumaloq">Yumaloq</option>
+                    </select>
+                </div>
+
+                <!-- Rang turi -->
+                <div>
+                    <select id="pkRangTuri" class="form-input-v2 select-glass" style="background:var(--adm-surface); padding:18px; border-radius:16px; margin:0;">
+                        <option value="" disabled selected>Rang turi</option>
+                        <option value="Matoviy">Matoviy</option>
+                        <option value="Yaltiroq">Yaltiroq</option>
+                        <option value="Teksturali">Teksturali</option>
+                    </select>
+                </div>
+
+                <!-- Rangi -->
+                <div>
+                    <select id="pkRangi" class="form-input-v2 select-glass" style="background:var(--adm-surface); padding:18px; border-radius:16px; margin:0;">
+                        <option value="" disabled selected>Rangi</option>
+                        <option value="Oq">Oq</option>
+                        <option value="Qora">Qora</option>
+                        <option value="Zolotoy Dub">Zolotoy Dub</option>
+                        <option value="Mocha">Mocha</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Fixed Button -->
+        <div style="padding:20px; border-top:1px solid var(--adm-border); background:var(--adm-surface);">
+            <button id="saveProfilBtn" style="width:100%; background:#00d2ff; color:#000; border:none; padding:18px; border-radius:15px; font-weight:700; font-size:1.1rem; cursor:pointer; box-shadow: 0 5px 20px rgba(0, 210, 255, 0.3);">
+                + Yangi qo'shish
+            </button>
+        </div>
+    </div>
+
+    <script type="module" src="/src/projects/romix/warehouse/warehouse.js"></script>
 </body>
 
 </html>
