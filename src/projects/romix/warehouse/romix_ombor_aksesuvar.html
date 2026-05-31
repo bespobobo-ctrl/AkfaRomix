@@ -89,30 +89,220 @@
             transform: translateY(-3px);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
         }
+
+        /* --- Premium Modal Overlay & Form --- */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 15, 24, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: #141e2d;
+            border: 1px solid rgba(0, 210, 255, 0.2);
+            border-radius: 28px;
+            padding: 30px;
+            width: 500px;
+            max-width: 95%;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            transform: scale(0.9) translateY(20px);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            color: #fff;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-header {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #00d2ff;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--adm-text-sec);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-input-premium {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(0, 0, 0, 0.2);
+            color: #fff;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-input-premium:focus {
+            border-color: #00d2ff;
+            box-shadow: 0 0 10px rgba(0, 210, 255, 0.15);
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .premium-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+        }
+
+        .btn-premium {
+            padding: 12px 24px;
+            border-radius: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            font-size: 0.95rem;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-premium.primary {
+            background: linear-gradient(135deg, #00d2ff 0%, #0076a3 100%);
+            color: #fff;
+            box-shadow: 0 5px 15px rgba(0, 210, 255, 0.2);
+        }
+
+        .btn-premium.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 210, 255, 0.35);
+        }
+
+        .btn-premium.secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-premium.secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* --- Print Styling --- */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+
+            #accReceiptModal,
+            #accReceiptModal * {
+                visibility: visible;
+            }
+
+            #accReceiptModal {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: white !important;
+                color: black !important;
+                box-shadow: none !important;
+                border: none !important;
+                backdrop-filter: none !important;
+            }
+
+            .modal-content {
+                background: white !important;
+                color: black !important;
+                border: none !important;
+                box-shadow: none !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            .receipt-paper {
+                color: black !important;
+                background: white !important;
+            }
+
+            .receipt-paper h2,
+            .receipt-paper div,
+            .receipt-paper span,
+            .receipt-paper td,
+            .receipt-paper th {
+                color: black !important;
+            }
+
+            .receipt-paper table th {
+                border-bottom: 2px solid black !important;
+            }
+
+            .receipt-paper table td {
+                border-bottom: 1px dashed black !important;
+            }
+
+            .receipt-actions {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 
-<body class="warehouse-body">
+<body class="warehouse-body dark-mode">
     <div id="mainApp" class="admin-layout">
         <!-- Sidebar -->
         <aside class="sidebar-slim">
-            <div class="logo-icon-v2" style="font-size: 1.5rem; color: #007c52; margin-bottom: 40px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(0, 124, 82, 0.1); width: 45px; height: 45px; border-radius: 12px;" onclick="window.location.href='romix_ombor.html'" title="Romix Omboriga Qaytish">
+            <div class="logo-icon-v2"
+                style="font-size: 1.5rem; color: #007c52; margin-bottom: 40px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(0, 124, 82, 0.1); width: 45px; height: 45px; border-radius: 12px;"
+                onclick="window.location.href='romix_ombor.html'" title="Romix Omboriga Qaytish">
                 ↩️</div>
             <div class="nav-icon active" title="Aksessuarlar">⚙️</div>
-            <div class="nav-icon" id="logoutBtn" onclick="localStorage.removeItem('currentUser'); window.location.href = '/';">🚪</div>
+            <div class="nav-icon" id="logoutBtn"
+                onclick="localStorage.removeItem('currentUser'); window.location.href = '/';">🚪</div>
         </aside>
 
         <main class="admin-main">
             <!-- Top Nav -->
             <nav class="top-nav-v2">
                 <div class="nav-links-v2" style="display: flex; align-items: center; gap: 8px;">
-                    <button class="tab-btn" onclick="window.location.href='romix_ombor.html'" style="background: rgba(0, 210, 255, 0.1); color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.2); border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; padding: 8px 16px; margin-right: 10px;">
+                    <button class="tab-btn" onclick="window.location.href='romix_ombor.html'"
+                        style="background: rgba(0, 210, 255, 0.1); color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.2); border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; padding: 8px 16px; margin-right: 10px;">
                         ⬅️ Romix Omboriga Qaytish
                     </button>
                     <button class="tab-btn active">Aksessuar Holati</button>
                 </div>
                 <div style="display: flex; gap: 20px; align-items: center;">
-                    <button id="themeToggle" class="theme-toggle" onclick="document.body.classList.toggle('dark-mode');">🌙</button>
+                    <button id="themeToggle" class="theme-toggle"
+                        onclick="document.body.classList.toggle('dark-mode');">🌙</button>
                     <div style="text-align: right;">
                         <div id="userName" style="font-weight: 600; font-size: 0.9rem;">Rahbar</div>
                         <div id="userRole" style="font-size: 0.7rem; color: var(--adm-text-sec);">SENIOR OPERATOR</div>
@@ -127,7 +317,7 @@
                         <p style="color: var(--adm-text-sec);">Ruchkalar, zamoklar va butlovchi materiallar</p>
                     </div>
                     <div style="display:flex; gap:12px;">
-                        <button class="btn-glass" onclick="alert('Yangi kirim faqat Profil ombori uchun faollashtirilgan!')">
+                        <button class="btn-glass" onclick="openAccKirimModal()">
                             <span style="font-size: 1.2rem;">+</span> Yangi Kirim
                         </button>
                     </div>
@@ -136,25 +326,26 @@
                 <div class="bento-container">
                     <div class="bento-item" style="grid-column: span 4;">
                         <span class="stat-label">Jami Turlar</span>
-                        <div class="stat-value">5 xil</div>
+                        <div class="stat-value" id="totalTypesCount">4 xil</div>
                         <div style="font-size: 0.8rem; color: #007c52; margin-top: 10px;">Aksessuarlar to'plami</div>
                     </div>
                     <div class="bento-item" style="grid-column: span 4;">
                         <span class="stat-label">Umumiy Miqdor</span>
-                        <div class="stat-value">12,450 dona</div>
+                        <div class="stat-value" id="totalItemsCount">12,450 dona</div>
                         <div style="font-size: 0.8rem; color: #007c52; margin-top: 10px;">Zaxira yetarli</div>
                     </div>
                     <div class="bento-item" style="grid-column: span 4;">
                         <span class="stat-label">Holat</span>
-                        <div class="stat-value" style="color:#00ff88;">Norma ✓</div>
-                        <div style="font-size: 0.8rem; color: var(--adm-text-sec); margin-top: 10px;">Zaxiralar barqaror</div>
+                        <div class="stat-value" id="totalStatusVal" style="color:#00ff88;">Norma ✓</div>
+                        <div id="totalStatusText" style="font-size: 0.8rem; color: var(--adm-text-sec); margin-top: 10px;">Zaxiralar barqaror</div>
                     </div>
 
                     <!-- Table -->
                     <div class="bento-item" style="grid-column: span 12;">
                         <div class="bento-header">
                             <h3 style="font-weight: 700;">Aksessuar Inventarizatsiya Ro'yxati</h3>
-                            <input type="text" id="accSearch" placeholder="Qidiruv..." class="form-input-v2" style="width: 250px; margin-bottom:0;">
+                            <input type="text" id="accSearch" placeholder="Qidiruv..." class="form-input-v2"
+                                style="width: 250px; margin-bottom:0;">
                         </div>
                         <table class="v2-table">
                             <thead>
@@ -167,34 +358,7 @@
                                 </tr>
                             </thead>
                             <tbody id="accTableBody">
-                                <tr>
-                                    <td><strong>AKFA Eshik Qulflari</strong></td>
-                                    <td>Zamoklar</td>
-                                    <td style="font-weight:700;">1,200</td>
-                                    <td>dona</td>
-                                    <td><span class="stock-badge high">Yetarli</span></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Oyna Ruchkalari Premium</strong></td>
-                                    <td>Ruchkalar</td>
-                                    <td style="font-weight:700;">2,500</td>
-                                    <td>dona</td>
-                                    <td><span class="stock-badge high">Yetarli</span></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Rezina Qistirma 8mm</strong></td>
-                                    <td>Qistirmalar</td>
-                                    <td style="font-weight:700;">7,350</td>
-                                    <td>metr</td>
-                                    <td><span class="stock-badge high">Yetarli</span></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Burchak Biriktiruvchi PVX</strong></td>
-                                    <td>Biriktiruvchilar</td>
-                                    <td style="font-weight:700;">1,400</td>
-                                    <td>dona</td>
-                                    <td><span class="stock-badge high">Yetarli</span></td>
-                                </tr>
+                                <!-- Loaded dynamically via JS -->
                             </tbody>
                         </table>
                     </div>
@@ -203,28 +367,350 @@
         </main>
     </div>
 
+    <!-- 📥 MODAL: YANGI AKSESSUAR KIRIMI -->
+    <div id="accKirimModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>📥 Yangi Aksessuar Kirimi</span>
+                <span onclick="closeAccKirimModal()" style="cursor:pointer; font-size: 1.5rem; opacity: 0.7;">&times;</span>
+            </div>
+            <form id="accKirimForm" onsubmit="handleKirimSubmit(event)">
+                <div class="form-group">
+                    <label for="accName">Mahsulot Nomi</label>
+                    <select id="accName" class="form-input-premium premium-select" onchange="handleProductNameChange(this)" required>
+                        <option value="AKFA Eshik Qulflari">AKFA Eshik Qulflari</option>
+                        <option value="Oyna Ruchkalari Premium">Oyna Ruchkalari Premium</option>
+                        <option value="Rezina Qistirma 8mm">Rezina Qistirma 8mm</option>
+                        <option value="Burchak Biriktiruvchi PVX">Burchak Biriktiruvchi PVX</option>
+                        <option value="Boshqa...">Boshqa...</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="customNameGroup" style="display: none;">
+                    <label for="accCustomName">Yangi Mahsulot Nomi</label>
+                    <input type="text" id="accCustomName" class="form-input-premium" placeholder="Nomini yozing...">
+                </div>
+
+                <div class="form-group">
+                    <label for="accCategory">Kategoriya</label>
+                    <input type="text" id="accCategory" class="form-input-premium" placeholder="Kategoriyani yozing..." required value="Zamoklar">
+                </div>
+
+                <div class="form-group">
+                    <label for="accSpec">Mahsulot Xususiyati</label>
+                    <input type="text" id="accSpec" class="form-input-premium" placeholder="Rangi, o'lchami yoki boshqa xususiyati..." required>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label for="accUnit">O'lchov Birligi</label>
+                        <select id="accUnit" class="form-input-premium premium-select" required>
+                            <option value="dona">dona</option>
+                            <option value="kg">kg</option>
+                            <option value="litr">litr</option>
+                            <option value="metr">metr</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="accQty">Kirim Miqdori</label>
+                        <input type="number" id="accQty" class="form-input-premium" min="1" placeholder="Qancha..." required>
+                    </div>
+                </div>
+
+                <div class="btn-group" style="display:flex; gap:12px; margin-top:25px;">
+                    <button type="button" class="btn-premium secondary" onclick="closeAccKirimModal()" style="flex:1;">BEKOR QILISH</button>
+                    <button type="submit" class="btn-premium primary" style="flex:1.5;">KIRIM QILISH</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 📄 MODAL: KIRIM HUJJATI (RECEIPT) -->
+    <div id="accReceiptModal" class="modal-overlay">
+        <div class="modal-content" style="background: #0b111a; border: 1px solid rgba(0, 255, 136, 0.3); width: 600px; max-width: 95%;">
+            <div class="receipt-paper" style="padding: 10px; font-family: 'Outfit', sans-serif;">
+                <!-- Header -->
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px dashed rgba(255,255,255,0.1); padding-bottom:15px; margin-bottom:20px;">
+                    <div>
+                        <h2 style="color:#00ff88; font-weight:800; font-size:1.8rem; margin:0; letter-spacing:-1px;">AKFA ROMIX</h2>
+                        <span style="color:var(--adm-text-sec); font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:1px;">Aksessuarlar Ombori Kirimi</span>
+                    </div>
+                    <div style="text-align:right;">
+                        <div id="receiptDocNumber" style="font-weight:700; color:#fff; font-size:1rem;">HUJJAT #AC-94827</div>
+                        <div id="receiptDateTime" style="font-size:0.75rem; color:var(--adm-text-sec);">31.05.2026 19:35</div>
+                    </div>
+                </div>
+
+                <!-- Info Grid -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:25px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:15px; border-radius:16px;">
+                    <div>
+                        <div style="font-size:0.7rem; color:var(--adm-text-sec); font-weight:700; text-transform:uppercase; margin-bottom:4px;">Qabul Qildi (Mas'ul)</div>
+                        <div id="receiptOperator" style="font-weight:700; color:#fff; font-size:0.95rem;">RAHBAR</div>
+                    </div>
+                    <div>
+                        <div style="font-size:0.7rem; color:var(--adm-text-sec); font-weight:700; text-transform:uppercase; margin-bottom:4px;">Tizim Holati</div>
+                        <div style="font-weight:700; color:#00ff88; font-size:0.95rem;">OMBORGA KIRIM QILINDI ✓</div>
+                    </div>
+                </div>
+
+                <!-- Receipt Table -->
+                <table style="width:100%; border-collapse:collapse; margin-bottom:25px;">
+                    <thead>
+                        <tr style="border-bottom:1px solid rgba(255,255,255,0.1); text-align:left;">
+                            <th style="padding:10px 5px; color:var(--adm-text-sec); font-size:0.8rem; font-weight:600;">Mahsulot Nomi</th>
+                            <th style="padding:10px 5px; color:var(--adm-text-sec); font-size:0.8rem; font-weight:600;">Kategoriya</th>
+                            <th style="padding:10px 5px; color:var(--adm-text-sec); font-size:0.8rem; font-weight:600;">Xususiyati</th>
+                            <th style="padding:10px 5px; color:var(--adm-text-sec); font-size:0.8rem; font-weight:600; text-align:right;">Miqdori</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom:1px dashed rgba(255,255,255,0.05);">
+                            <td id="receiptItemName" style="padding:12px 5px; font-weight:700; color:#fff;">-</td>
+                            <td id="receiptItemCategory" style="padding:12px 5px; color:var(--adm-text-sec);">-</td>
+                            <td id="receiptItemSpec" style="padding:12px 5px; color:var(--adm-text-sec);">-</td>
+                            <td id="receiptItemQtyUnit" style="padding:12px 5px; font-weight:800; color:#00ff88; text-align:right; font-size:1.1rem;">-</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Bottom Signatures -->
+                <div style="display:flex; justify-content:space-between; margin-top:35px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:20px; font-size:0.85rem;">
+                    <div>
+                        <div style="color:var(--adm-text-sec); margin-bottom:20px;">Topshirdi (Yetkazib beruvchi):</div>
+                        <div style="border-bottom:1px solid rgba(255,255,255,0.3); width:150px; height:20px;"></div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="color:var(--adm-text-sec); margin-bottom:20px;">Qabul qildi (Omborchi):</div>
+                        <div style="border-bottom:1px solid rgba(255,255,255,0.3); width:150px; height:20px; margin-left:auto;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Receipt Actions -->
+            <div class="receipt-actions" style="display:flex; gap:12px; margin-top:30px;">
+                <button class="btn-premium secondary" onclick="closeAccReceiptModal()" style="flex:1;">YOPISH</button>
+                <button class="btn-premium primary" onclick="printAccReceipt()" style="flex:1.5; background:linear-gradient(135deg, #00ff88 0%, #00b359 100%); box-shadow: 0 5px 15px rgba(0, 255, 136, 0.2);">🖨️ CHOP ETISH</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // Real time search
-        document.getElementById('accSearch').oninput = function() {
+        // --- State Management ---
+        const DEFAULT_ACCESSORIES = [
+            { name: "AKFA Eshik Qulflari", category: "Zamoklar", qty: 1200, unit: "dona", spec: "Standart" },
+            { name: "Oyna Ruchkalari Premium", category: "Ruchkalar", qty: 2500, unit: "dona", spec: "Premium" },
+            { name: "Rezina Qistirma 8mm", category: "Qistirmalar", qty: 7350, unit: "metr", spec: "EPDM Qora" },
+            { name: "Burchak Biriktiruvchi PVX", category: "Biriktiruvchilar", qty: 1400, unit: "dona", spec: "PVX" }
+        ];
+
+        let inventory = JSON.parse(localStorage.getItem('romix_accessories_inventory'));
+        if (!inventory || inventory.length === 0) {
+            inventory = DEFAULT_ACCESSORIES;
+            localStorage.setItem('romix_accessories_inventory', JSON.stringify(inventory));
+        }
+
+        // --- Render Inventory ---
+        function renderTable() {
+            const tableBody = document.getElementById('accTableBody');
+            if (!tableBody) return;
+            
+            tableBody.innerHTML = '';
+            let totalQty = 0;
+
+            inventory.forEach(item => {
+                totalQty += item.qty;
+
+                const isLow = item.qty < 500;
+                const badgeClass = isLow ? 'stock-badge low' : 'stock-badge high';
+                const badgeText = isLow ? 'Kam zaxira' : 'Yetarli';
+                const badgeStyle = isLow ? 'background:rgba(255,77,79,0.1); color:#ff4d4f; border:1px solid rgba(255,77,79,0.3); padding:4px 8px; border-radius:12px; font-size:0.75rem; font-weight:700;' : '';
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${item.name}</strong><br><small style="color:var(--adm-text-sec); font-size:0.7rem;">${item.spec || 'Standart'}</small></td>
+                    <td>${item.category}</td>
+                    <td style="font-weight:700;">${item.qty.toLocaleString()}</td>
+                    <td>${item.unit}</td>
+                    <td><span class="${badgeClass}" style="${badgeStyle}">${badgeText}</span></td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            // Update Bento Statistics
+            document.getElementById('totalTypesCount').textContent = `${inventory.length} xil`;
+            document.getElementById('totalItemsCount').textContent = `${totalQty.toLocaleString()} dona`;
+
+            // Update State Metric
+            const totalStatusVal = document.getElementById('totalStatusVal');
+            const totalStatusText = document.getElementById('totalStatusText');
+            if (totalStatusVal && totalStatusText) {
+                if (totalQty < 5000) {
+                    totalStatusVal.textContent = "Kam Zaxira ⚠️";
+                    totalStatusVal.style.color = "#ff4d4f";
+                    totalStatusText.textContent = "Zaxiralarni to'ldirish tavsiya etiladi";
+                } else {
+                    totalStatusVal.textContent = "Norma ✓";
+                    totalStatusVal.style.color = "#00ff88";
+                    totalStatusText.textContent = "Zaxiralar barqaror";
+                }
+            }
+        }
+
+        // --- Search ---
+        document.getElementById('accSearch').oninput = function () {
             const query = this.value.toLowerCase().trim();
             const rows = document.querySelectorAll('#accTableBody tr');
             rows.forEach(row => {
-                if(row.textContent.toLowerCase().includes(query)) {
-                    row.style.display = "";
-                } else {
-                    row.style.display = "none";
-                }
+                row.style.display = row.textContent.toLowerCase().includes(query) ? "" : "none";
             });
         };
-        
-        // Theme init
-        if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
-        
-        // User init
-        const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-        if (user) {
-            document.getElementById('userName').textContent = (user.full_name || user.username || 'RAHBAR').toUpperCase();
+
+        // --- Modal Control ---
+        function openAccKirimModal() {
+            document.getElementById('accKirimModal').classList.add('active');
+            document.getElementById('accKirimForm').reset();
+            handleProductNameChange(document.getElementById('accName'));
         }
+
+        function closeAccKirimModal() {
+            document.getElementById('accKirimModal').classList.remove('active');
+        }
+
+        function closeAccReceiptModal() {
+            document.getElementById('accReceiptModal').classList.remove('active');
+        }
+
+        // Auto-change category and unit based on chosen product name
+        function handleProductNameChange(select) {
+            const val = select.value;
+            const customGroup = document.getElementById('customNameGroup');
+            const customInput = document.getElementById('accCustomName');
+            const categoryInput = document.getElementById('accCategory');
+            const unitSelect = document.getElementById('accUnit');
+
+            if (val === 'Boshqa...') {
+                customGroup.style.display = 'block';
+                customInput.required = true;
+                categoryInput.value = '';
+                categoryInput.readOnly = false;
+            } else {
+                customGroup.style.display = 'none';
+                customInput.required = false;
+                customInput.value = '';
+                categoryInput.readOnly = true;
+
+                // Autofill standard categories and units
+                if (val === 'AKFA Eshik Qulflari') {
+                    categoryInput.value = 'Zamoklar';
+                    unitSelect.value = 'dona';
+                } else if (val === 'Oyna Ruchkalari Premium') {
+                    categoryInput.value = 'Ruchkalar';
+                    unitSelect.value = 'dona';
+                } else if (val === 'Rezina Qistirma 8mm') {
+                    categoryInput.value = 'Qistirmalar';
+                    unitSelect.value = 'metr';
+                } else if (val === 'Burchak Biriktiruvchi PVX') {
+                    categoryInput.value = 'Biriktiruvchilar';
+                    unitSelect.value = 'dona';
+                }
+            }
+        }
+
+        // --- Form Submit Handler ---
+        function handleKirimSubmit(event) {
+            event.preventDefault();
+
+            const nameSelect = document.getElementById('accName').value;
+            const customName = document.getElementById('accCustomName').value.trim();
+            const category = document.getElementById('accCategory').value.trim();
+            const spec = document.getElementById('accSpec').value.trim();
+            const unit = document.getElementById('accUnit').value;
+            const qty = parseInt(document.getElementById('accQty').value);
+
+            const finalName = nameSelect === 'Boshqa...' ? customName : nameSelect;
+
+            if (!finalName || !category || isNaN(qty) || qty <= 0) {
+                alert("Iltimos, barcha maydonlarni to'g'ri to'ldiring!");
+                return;
+            }
+
+            // Find if item already exists with the same name (case-insensitive check)
+            const matchedIndex = inventory.findIndex(item => item.name.toLowerCase() === finalName.toLowerCase());
+
+            if (matchedIndex > -1) {
+                // Update existing quantity and specs
+                inventory[matchedIndex].qty += qty;
+                inventory[matchedIndex].spec = spec; // Update to latest spec
+            } else {
+                // Add new accessory type
+                inventory.push({
+                    name: finalName,
+                    category: category,
+                    qty: qty,
+                    unit: unit,
+                    spec: spec
+                });
+            }
+
+            // Save back to storage and re-render
+            localStorage.setItem('romix_accessories_inventory', JSON.stringify(inventory));
+            renderTable();
+
+            // Close Input Modal
+            closeAccKirimModal();
+
+            // Populate and Show Kirim Hujjati (Receipt)
+            const docNum = 'AC-' + Math.floor(10000 + Math.random() * 90000);
+            const now = new Date();
+            const dateTimeStr = now.toLocaleDateString('uz-UZ') + ' ' + now.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+            
+            document.getElementById('receiptDocNumber').textContent = `HUJJAT #${docNum}`;
+            document.getElementById('receiptDateTime').textContent = dateTimeStr;
+            
+            const curUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            document.getElementById('receiptOperator').textContent = (curUser.full_name || curUser.username || 'RAHBAR').toUpperCase();
+
+            document.getElementById('receiptItemName').textContent = finalName;
+            document.getElementById('receiptItemCategory').textContent = category;
+            document.getElementById('receiptItemSpec').textContent = spec;
+            document.getElementById('receiptItemQtyUnit').textContent = `${qty.toLocaleString()} ${unit}`;
+
+            // Open Receipt Modal
+            document.getElementById('accReceiptModal').classList.add('active');
+        }
+
+        // --- Print Receipt ---
+        function printAccReceipt() {
+            window.print();
+        }
+
+        // --- Initialize Page ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Theme init
+            if (localStorage.getItem('theme') === 'dark') {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+
+            // User Profile init
+            const curUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            if (curUser) {
+                const displayName = (curUser.full_name || curUser.username || 'RAHBAR').toUpperCase();
+                document.getElementById('userName').textContent = displayName;
+                
+                let displayRole = 'OPERATOR';
+                if (curUser.role === 'admin') displayRole = 'SUPER ADMIN';
+                else if (curUser.role === 'ac_manager') displayRole = 'PRODUCTION MANAGER';
+                else if (curUser.role === 'manager') displayRole = 'WAREHOUSE MANAGER';
+                
+                document.getElementById('userRole').textContent = displayRole;
+            }
+
+            // Render Table
+            renderTable();
+        });
     </script>
 </body>
 
