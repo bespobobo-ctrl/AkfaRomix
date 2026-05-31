@@ -812,6 +812,30 @@
             border: 1px solid rgba(0, 255, 136, 0.2);
         }
 
+        .timeline-action-badge.dona-kirim {
+            background: rgba(0, 255, 136, 0.08);
+            color: #00ff88;
+            border: 1px solid rgba(0, 255, 136, 0.2);
+        }
+
+        .timeline-action-badge.spiska-kirim {
+            background: rgba(0, 210, 255, 0.08);
+            color: #00d2ff;
+            border: 1px solid rgba(0, 210, 255, 0.2);
+        }
+
+        .timeline-action-badge.chiqim {
+            background: rgba(255, 77, 79, 0.08);
+            color: #ff4d4f;
+            border: 1px solid rgba(255, 77, 79, 0.2);
+        }
+
+        .timeline-action-badge.zakaz-chiqim {
+            background: rgba(168, 85, 247, 0.08);
+            color: #a855f7;
+            border: 1px solid rgba(168, 85, 247, 0.2);
+        }
+
         .timeline-action-badge.tahrir {
             background: rgba(255, 170, 0, 0.08);
             color: #ffaa00;
@@ -819,9 +843,9 @@
         }
 
         .timeline-action-badge.ochirish {
-            background: rgba(255, 77, 79, 0.08);
-            color: #ff4d4f;
-            border: 1px solid rgba(255, 77, 79, 0.2);
+            background: rgba(244, 63, 94, 0.08);
+            color: #f43f5e;
+            border: 1px solid rgba(244, 63, 94, 0.2);
         }
 
         .timeline-meta {
@@ -1140,7 +1164,32 @@
                         <h1 style="font-size: 2.2rem; font-weight: 600; color: #00d2ff;">📜 Amallar Tarixi (Kesh Loglari)</h1>
                         <p style="color: var(--adm-text-sec);">Omborda bajarilgan barcha kirim, tahrir va o'chirish amallarining batafsil jurnali</p>
                     </div>
-                    <div>
+                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        <!-- Capsule view filter pill for History -->
+                        <div class="view-switcher-pill" style="display: flex; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.05); padding: 4px; border-radius: 14px; gap: 4px; flex-wrap: wrap;">
+                            <button type="button" class="switcher-btn active" id="filter_all" onclick="setHistoryFilter('all')" style="background: transparent; border: none; color: #fff; padding: 6px 12px; border-radius: 10px; font-weight: 600; font-size: 0.8rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 4px;">
+                                Barchasi
+                            </button>
+                            <button type="button" class="switcher-btn" id="filter_dona" onclick="setHistoryFilter('dona')" style="background: transparent; border: none; color: rgba(255,255,255,0.6); padding: 6px 12px; border-radius: 10px; font-weight: 600; font-size: 0.8rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 4px;">
+                                📥 Dona Kirim
+                            </button>
+                            <button type="button" class="switcher-btn" id="filter_spiska" onclick="setHistoryFilter('spiska')" style="background: transparent; border: none; color: rgba(255,255,255,0.6); padding: 6px 12px; border-radius: 10px; font-weight: 600; font-size: 0.8rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 4px;">
+                                📜 Spiska Kirim
+                            </button>
+                            <button type="button" class="switcher-btn" id="filter_chiqim" onclick="setHistoryFilter('chiqim')" style="background: transparent; border: none; color: rgba(255,255,255,0.6); padding: 6px 12px; border-radius: 10px; font-weight: 600; font-size: 0.8rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 4px;">
+                                📤 Chiqim
+                            </button>
+                            <button type="button" class="switcher-btn" id="filter_zakaz" onclick="setHistoryFilter('zakaz')" style="background: transparent; border: none; color: rgba(255,255,255,0.6); padding: 6px 12px; border-radius: 10px; font-weight: 600; font-size: 0.8rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 4px;">
+                                📋 Zakaz Chiqim
+                            </button>
+                            <button type="button" class="switcher-btn" id="filter_tahrir" onclick="setHistoryFilter('tahrir')" style="background: transparent; border: none; color: rgba(255,255,255,0.6); padding: 6px 12px; border-radius: 10px; font-weight: 600; font-size: 0.8rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 4px;">
+                                ✏️ Tahrir
+                            </button>
+                            <button type="button" class="switcher-btn" id="filter_ochirish" onclick="setHistoryFilter('ochirish')" style="background: transparent; border: none; color: rgba(255,255,255,0.6); padding: 6px 12px; border-radius: 10px; font-weight: 600; font-size: 0.8rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 4px;">
+                                🗑️ O'chirish
+                            </button>
+                        </div>
+                        
                         <button class="btn-glass" onclick="clearHistoryLog()" style="border-color: rgba(255, 77, 79, 0.3); color: #ff4d4f;">
                             🗑️ Tarixni Tozalash
                         </button>
@@ -1647,6 +1696,7 @@
         }
 
         let currentReceiptItems = [];
+        let currentHistoryFilter = 'all';
 
         // --- Dynamic Categories State Management ---
         const DEFAULT_CATEGORIES = [
@@ -2031,17 +2081,60 @@
             localStorage.setItem('romix_accessories_history_log', JSON.stringify(logs));
         }
 
+        function setHistoryFilter(filter) {
+            currentHistoryFilter = filter;
+            // Update visual active classes on capsule buttons inside History Tab
+            document.querySelectorAll('#sectionHistory .view-switcher-pill button').forEach(btn => {
+                if (btn.id === `filter_${filter}`) {
+                    btn.classList.add('active');
+                    btn.style.color = '#fff';
+                } else {
+                    btn.classList.remove('active');
+                    btn.style.color = 'rgba(255,255,255,0.6)';
+                }
+            });
+            renderHistory();
+        }
+
         function renderHistory() {
             const container = document.getElementById('historyLogTimeline');
             if (!container) return;
 
             const logs = JSON.parse(localStorage.getItem('romix_accessories_history_log')) || [];
             
-            if (logs.length === 0) {
+            // Filter logs according to selected tab filter
+            const filteredLogs = logs.filter(log => {
+                if (currentHistoryFilter === 'all') return true;
+                
+                const actionText = (log.action || '').toLowerCase();
+                const detailsText = (log.details || '').toLowerCase();
+                
+                if (currentHistoryFilter === 'dona') {
+                    return actionText.includes('dona') || (actionText.includes('kirim') && detailsText.includes('dona'));
+                }
+                if (currentHistoryFilter === 'spiska') {
+                    return actionText.includes('spiska') || (actionText.includes('kirim') && detailsText.includes('spiska'));
+                }
+                if (currentHistoryFilter === 'chiqim') {
+                    return actionText.includes('chiqim') && !actionText.includes('zakaz') && !detailsText.includes('zakaz');
+                }
+                if (currentHistoryFilter === 'zakaz') {
+                    return actionText.includes('zakaz') || detailsText.includes('zakaz');
+                }
+                if (currentHistoryFilter === 'tahrir') {
+                    return actionText.includes('tahrir') || actionText.includes('tahrirlash');
+                }
+                if (currentHistoryFilter === 'ochirish') {
+                    return actionText.includes('ochirish') || actionText.includes('o\'chirish');
+                }
+                return true;
+            });
+
+            if (filteredLogs.length === 0) {
                 container.innerHTML = `
                     <div style="text-align: center; padding: 40px; color: var(--adm-text-sec); font-size: 0.95rem;">
                         <span style="font-size: 2.5rem; display: block; margin-bottom: 15px;">📜</span>
-                        Tarix kesh loglari hozircha bo'sh.
+                        Ushbu toifadagi tarix loglari hozircha bo'sh.
                     </div>
                 `;
                 return;
@@ -2049,11 +2142,26 @@
 
             let html = `<div class="timeline-wrapper">`;
 
-            logs.forEach(log => {
+            filteredLogs.forEach(log => {
                 let badgeClass = 'timeline-action-badge';
-                if (log.action.includes('Kirim')) badgeClass += ' kirim';
-                else if (log.action.includes('Tahrir')) badgeClass += ' tahrir';
-                else if (log.action.includes('O\'chirish')) badgeClass += ' ochirish';
+                const actionText = log.action || '';
+                const detailsText = log.details || '';
+                
+                if (actionText.includes('Dona Kirim') || (actionText.includes('Kirim') && detailsText.includes('Dona Kirim'))) {
+                    badgeClass += ' dona-kirim';
+                } else if (actionText.includes('Spiska Kirim') || (actionText.includes('Kirim') && detailsText.includes('Spiska'))) {
+                    badgeClass += ' spiska-kirim';
+                } else if (actionText.includes('Chiqim') && (actionText.includes('Zakaz') || detailsText.includes('zakaz'))) {
+                    badgeClass += ' zakaz-chiqim';
+                } else if (actionText.includes('Chiqim')) {
+                    badgeClass += ' chiqim';
+                } else if (actionText.includes('Tahrir') || actionText.includes('Tahrirlash')) {
+                    badgeClass += ' tahrir';
+                } else if (actionText.includes('O\'chirish') || actionText.includes('Ochirish')) {
+                    badgeClass += ' ochirish';
+                } else if (actionText.includes('Kirim')) {
+                    badgeClass += ' kirim';
+                }
 
                 html += `
                     <div class="timeline-item">
@@ -2075,9 +2183,18 @@
         }
 
         function clearHistoryLog() {
+            const pwd = prompt("Tarixni tozalash uchun parolni kiriting:");
+            if (pwd === null) return; // cancelled
+            
+            if (pwd !== "0777") {
+                alert("Noto'g'ri parol! Tarixni tozalash taqiqlanadi. ❌");
+                return;
+            }
+
             if (confirm("Haqiqatdan ham barcha kesh tarixini tozalashni xohlaysizmi?")) {
                 localStorage.removeItem('romix_accessories_history_log');
                 renderHistory();
+                alert("Tarix kesh loglari muvaffaqiyatli tozalandi! 🧹");
             }
         }
 
@@ -2426,7 +2543,7 @@
             renderInventory();
 
             // Add history log
-            addHistoryLog("Kirim 📥", `"${finalName}" mahsulotidan ${qty.toLocaleString()} ${unit} Dona Kirim qilindi. Kategoriya: ${finalCategory}. Xususiyati: ${spec}.`);
+            addHistoryLog("Dona Kirim 📥", `"${finalName}" mahsulotidan ${qty.toLocaleString()} ${unit} Dona Kirim qilindi. Kategoriya: ${finalCategory}. Xususiyati: ${spec}.`);
 
             // Direct Receipt creation for Dona Kirim
             currentReceiptItems = [{
@@ -2607,7 +2724,7 @@
                 }
 
                 // Add history log for each item
-                addHistoryLog("Kirim 📥", `"${item.name}" mahsulotidan ${item.qty.toLocaleString()} ${item.unit} Spiska orqali guruhli kirim qilindi. Kategoriya: ${item.category}.`);
+                addHistoryLog("Spiska Kirim 📜", `"${item.name}" mahsulotidan ${item.qty.toLocaleString()} ${item.unit} Spiska orqali guruhli kirim qilindi. Kategoriya: ${item.category}.`);
             });
 
             // Save to storage & Refresh inventory view
