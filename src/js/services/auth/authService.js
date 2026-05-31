@@ -113,7 +113,7 @@ export const authService = {
         }
 
         switch (role) {
-            case 'admin': return base + 'src/projects/autoclapak/pages/admin_dashboard.html';
+            case 'admin': return base + 'src/projects/romix/romix_dashboard.html';
             case 'hr': return base + 'src/projects/romix/hr/hr_dashboard.html';
             case 'employee': return base + 'src/projects/romix/hr/akfa_hr_mini.html';
             case 'manager': return base + 'src/projects/romix/warehouse/warehouse_dashboard.html';
