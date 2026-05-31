@@ -114,17 +114,17 @@ export const authService = {
 
         switch (role) {
             case 'admin': return base + 'src/projects/autoclapak/pages/admin_dashboard.html';
-            case 'hr': return base + 'src/projects/romix/pages/hr_dashboard.html';
-            case 'employee': return base + 'src/projects/romix/pages/akfa_hr_mini.html';
-            case 'manager': return base + 'src/projects/romix/pages/warehouse_dashboard.html';
-            case 'sotuv': return base + 'src/projects/romix/pages/sales_dashboard.html';
-            case 'showroom': return base + 'src/projects/romix/pages/showroom_dashboard.html';
-            case 'ishlab_chiqarish': return base + 'src/projects/romix/pages/production_dashboard.html';
+            case 'hr': return base + 'src/projects/romix/hr/hr_dashboard.html';
+            case 'employee': return base + 'src/projects/romix/hr/akfa_hr_mini.html';
+            case 'manager': return base + 'src/projects/romix/warehouse/warehouse_dashboard.html';
+            case 'sotuv': return base + 'src/projects/romix/sales/sales_dashboard.html';
+            case 'showroom': return base + 'src/projects/romix/showroom/showroom_dashboard.html';
+            case 'ishlab_chiqarish': return base + 'src/projects/romix/production/production_dashboard.html';
             case 'ac_manager': return base + 'src/projects/autoclapak/pages/admin_dashboard.html';
             case 'stanok': return base + 'src/projects/autoclapak/mini-app/stanok-app/index.html';
             case 'kraska': return base + 'src/projects/autoclapak/mini-app/kraska-app/index.html';
             case 'qadoqlash': return base + 'src/projects/autoclapak/mini-app/qadoqlash-app/index.html';
-            default: return base + 'src/projects/romix/pages/generic_dashboard.html';
+            default: return base + 'src/projects/romix/generic_dashboard.html';
         }
     }
 };

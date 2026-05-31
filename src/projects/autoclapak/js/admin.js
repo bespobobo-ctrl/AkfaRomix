@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 window.location.href = '../../autoclapak/pages/admin_dashboard.html';
             } else {
                 localStorage.setItem('activeRomixSection', sectionId);
-                window.location.href = '../../romix/pages/romix_dashboard.html';
+                window.location.href = '../../romix/romix_dashboard.html';
             }
             return;
         }
@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } else {
                     // For Romix sections (dashboard, rassrochka, oynak)
                     localStorage.setItem('activeRomixSection', `section-${target}`);
-                    window.location.href = '../../romix/pages/romix_dashboard.html';
+                    window.location.href = '../../romix/romix_dashboard.html';
                 }
                 return;
             }
