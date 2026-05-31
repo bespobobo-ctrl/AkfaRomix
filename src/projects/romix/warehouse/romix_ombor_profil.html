@@ -1616,26 +1616,46 @@
 
             <!-- Body -->
             <div style="display: flex; flex-direction: column; gap: 20px;">
-                <!-- Uzunligi & Soni -->
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                <!-- Profil o'lchamlari: Uzunligi, Dona, Pachka -->
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px;">
+                    <!-- 1 Dona Uzunligi -->
                     <div>
-                        <label class="form-label" style="margin-bottom:8px; display:block; font-weight:600;">Uzunligi (mm)</label>
-                        <input type="text" id="pkUzunligi" placeholder="Masalan: 6000" class="form-input-v2" style="background:rgba(255,255,255,0.02); font-weight:600; padding:15px; border-radius:12px; margin:0;">
+                        <label class="form-label" style="margin-bottom:8px; display:block; font-weight:600; font-size:0.85rem;">📏 1 Dona uzunligi (mm)</label>
+                        <input type="number" id="pkUzunligi" placeholder="6000" min="1" class="form-input-v2" style="background:rgba(255,255,255,0.02); font-weight:600; padding:15px; border-radius:12px; margin:0;" oninput="updateMetrCalc()">
                     </div>
+                    <!-- 1 Pachkada nechi dona -->
                     <div>
-                        <label class="form-label" style="margin-bottom:8px; display:block; font-weight:600;">Pachka soni</label>
+                        <label class="form-label" style="margin-bottom:8px; display:block; font-weight:600; font-size:0.85rem;">📦 1 Pachkada (dona)</label>
+                        <input type="number" id="pkDonaSoni" placeholder="Masalan: 6" min="1" class="form-input-v2" style="background:rgba(255,255,255,0.02); font-weight:600; padding:15px; border-radius:12px; margin:0;" oninput="updateMetrCalc()">
+                    </div>
+                    <!-- Pachka soni -->
+                    <div>
+                        <label class="form-label" style="margin-bottom:8px; display:block; font-weight:600; font-size:0.85rem;">🗃️ Pachka soni</label>
                         <input type="number" id="pkSoni" placeholder="Masalan: 5" min="1" class="form-input-v2" style="background:rgba(255,255,255,0.02); font-weight:600; padding:15px; border-radius:12px; margin:0;" oninput="updateMetrCalc()">
-                        <div id="metrCalcPreview" style="margin-top:8px; padding:12px 14px; border-radius:12px; background:linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.08); font-size:0.9rem; font-weight:700; transition: all 0.3s ease;">
-                            <div style="display:flex; align-items:center; justify-content:space-between;">
-                                <span>
-                                    <span style="font-size:1.3rem; margin-right:4px;" id="metrCalcIcon">📦</span>
-                                    <span id="metrCalcValue" style="font-size:1.2rem; color:#555;">0</span>
-                                    <span style="color:#888; font-weight:600;"> metr</span>
-                                </span>
-                                <span style="opacity:0.4; font-weight:400; font-size:0.72rem;">1 pachka = 48 metr</span>
-                            </div>
+                    </div>
+                </div>
+
+                <!-- Hisob-kitob natijasi -->
+                <div id="metrCalcPreview" style="padding:16px 18px; border-radius:14px; background:linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.08); font-weight:700; transition: all 0.4s ease;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+                        <span style="font-size:0.8rem; color:#888; text-transform:uppercase; letter-spacing:1px;">Hisob-kitob</span>
+                        <span id="metrCalcIcon" style="font-size:1.3rem;">📦</span>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; text-align:center;">
+                        <div style="background:rgba(255,255,255,0.03); border-radius:10px; padding:10px 6px;">
+                            <div style="font-size:0.65rem; color:#888; margin-bottom:4px;">Jami dona</div>
+                            <div id="calcTotalDona" style="font-size:1.15rem; color:#555;">0</div>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.03); border-radius:10px; padding:10px 6px;">
+                            <div style="font-size:0.65rem; color:#888; margin-bottom:4px;">Jami metr</div>
+                            <div id="metrCalcValue" style="font-size:1.15rem; color:#555;">0</div>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.03); border-radius:10px; padding:10px 6px;">
+                            <div style="font-size:0.65rem; color:#888; margin-bottom:4px;">Pachka</div>
+                            <div id="calcPachka" style="font-size:1.15rem; color:#555;">0</div>
                         </div>
                     </div>
+                    <div style="margin-top:8px; text-align:center; opacity:0.35; font-weight:400; font-size:0.7rem;" id="calcFormula">uzunlik × dona × pachka ÷ 1000 = metr</div>
                 </div>
 
                 <!-- Grid 2x3 -->
@@ -2001,9 +2021,17 @@
 
         window.resetProfilKirimForm = function() {
             const pkUzunligi = document.getElementById('pkUzunligi');
+            const pkDonaSoni = document.getElementById('pkDonaSoni');
             const pkSoni = document.getElementById('pkSoni');
             if (pkUzunligi) pkUzunligi.value = '';
+            if (pkDonaSoni) pkDonaSoni.value = '';
             if (pkSoni) pkSoni.value = '';
+            
+            // Reset calc displays
+            const calcTotalDona = document.getElementById('calcTotalDona');
+            const calcPachka = document.getElementById('calcPachka');
+            if (calcTotalDona) { calcTotalDona.textContent = '0'; calcTotalDona.style.color = '#555'; }
+            if (calcPachka) { calcPachka.textContent = '0'; calcPachka.style.color = '#555'; }
             
             // Hide metr calc preview
             const metrPreview = document.getElementById('metrCalcPreview');
@@ -2023,22 +2051,42 @@
             });
         };
 
-        // Live pachka → metr calculation
+        // Live hisob-kitob: uzunlik × dona × pachka ÷ 1000 = metr
         window.updateMetrCalc = function() {
-            const METR_PER_PACHKA = 48;
+            const uzunligi = parseInt(document.getElementById('pkUzunligi').value) || 0;
+            const donaSoni = parseInt(document.getElementById('pkDonaSoni').value) || 0;
             const pachka = parseInt(document.getElementById('pkSoni').value) || 0;
+            
             const preview = document.getElementById('metrCalcPreview');
             const valueEl = document.getElementById('metrCalcValue');
             const iconEl = document.getElementById('metrCalcIcon');
+            const totalDonaEl = document.getElementById('calcTotalDona');
+            const calcPachkaEl = document.getElementById('calcPachka');
+            const formulaEl = document.getElementById('calcFormula');
             
-            if (pachka > 0) {
-                const totalMetr = pachka * METR_PER_PACHKA;
-                valueEl.textContent = totalMetr.toLocaleString();
+            const totalDona = donaSoni * pachka;
+            const totalMetr = (uzunligi * donaSoni * pachka) / 1000;
+            
+            // Update pachka display
+            if (calcPachkaEl) {
+                calcPachkaEl.textContent = pachka > 0 ? pachka.toLocaleString() : '0';
+                calcPachkaEl.style.color = pachka > 0 ? '#00d2ff' : '#555';
+            }
+            
+            // Update total dona display
+            if (totalDonaEl) {
+                totalDonaEl.textContent = totalDona > 0 ? totalDona.toLocaleString() : '0';
+                totalDonaEl.style.color = totalDona > 0 ? '#ffaa00' : '#555';
+            }
+            
+            if (totalMetr > 0) {
+                valueEl.textContent = totalMetr.toLocaleString('uz-UZ', {maximumFractionDigits: 1});
                 valueEl.style.color = '#00ff88';
                 valueEl.style.textShadow = '0 0 10px rgba(0,255,136,0.4)';
-                preview.style.background = 'linear-gradient(135deg, rgba(0,255,136,0.1), rgba(0,200,255,0.06))';
+                preview.style.background = 'linear-gradient(135deg, rgba(0,255,136,0.08), rgba(0,200,255,0.04))';
                 preview.style.borderColor = 'rgba(0,255,136,0.25)';
                 if (iconEl) iconEl.textContent = '✅';
+                if (formulaEl) formulaEl.textContent = `${uzunligi} × ${donaSoni} × ${pachka} ÷ 1000 = ${totalMetr.toLocaleString('uz-UZ', {maximumFractionDigits: 1})} metr`;
             } else {
                 valueEl.textContent = '0';
                 valueEl.style.color = '#555';
@@ -2046,6 +2094,7 @@
                 preview.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))';
                 preview.style.borderColor = 'rgba(255,255,255,0.08)';
                 if (iconEl) iconEl.textContent = '📦';
+                if (formulaEl) formulaEl.textContent = 'uzunlik × dona × pachka ÷ 1000 = metr';
             }
         };
 
