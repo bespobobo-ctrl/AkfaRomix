@@ -55,13 +55,42 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // --- Inventory Logic ---
+    // Global filter states
+    window.activeBrand = 'AKFA';
+    window.activeCategory = 'Barchasi';
+    window.seriesColorFilters = {};
+    window.expandedSeries = {};
+    window.cachedInventoryData = [];
+
+    // Helper: Map brand logos
+    function getBrandLogoSvg(brandName, isActive) {
+        if (brandName.toUpperCase() === 'AKFA') {
+            return `<svg viewBox="0 0 120 40" class="brand-logo-svg" style="height: 18px; width: 60px;"><text x="0" y="30" font-family="'Outfit', sans-serif" font-weight="900" font-size="30" fill="${isActive ? '#ffffff' : '#FF3333'}">akfa</text></svg>`;
+        } else if (brandName.toUpperCase() === 'RETPEN') {
+            return `<svg viewBox="0 0 120 40" class="brand-logo-svg" style="height: 18px; width: 65px;"><text x="0" y="30" font-family="'Outfit', sans-serif" font-weight="800" font-size="24" fill="${isActive ? '#ffffff' : '#00D2FF'}">RETPEN</text></svg>`;
+        } else if (brandName.toUpperCase() === 'EKOPEN') {
+            return `<svg viewBox="0 0 120 40" class="brand-logo-svg" style="height: 18px; width: 65px;"><text x="0" y="30" font-family="'Outfit', sans-serif" font-weight="800" font-size="24" fill="${isActive ? '#ffffff' : '#FF8800'}">Ekopen</text></svg>`;
+        } else if (brandName.toUpperCase() === 'ALTA PLAST') {
+            return `<span style="color:${isActive ? '#ffffff' : '#e2e8f0'}; font-weight:700; font-size:0.85rem; letter-spacing:0.5px;">ALTA PLAST</span>`;
+        } else if (brandName.toUpperCase() === 'ALUBEST') {
+            return `<span style="color:${isActive ? '#ffffff' : '#007AFF'}; font-weight:800; font-size:0.9rem; letter-spacing:0.5px;">ALUBEST</span>`;
+        } else if (brandName.toUpperCase() === 'ALUTEX') {
+            return `<span style="color:${isActive ? '#ffffff' : '#00E5FF'}; font-weight:800; font-size:0.9rem; letter-spacing:0.5px;">ALUTEX</span>`;
+        } else if (brandName.toUpperCase() === 'CRA') {
+            return `<span style="color:${isActive ? '#ffffff' : '#FF4D4F'}; font-weight:900; font-size:0.95rem; letter-spacing:0.5px;">CRA</span>`;
+        }
+        return `<span style="color:#ffffff; font-weight:700; font-size:0.85rem;">${brandName}</span>`;
+    }
+
     async function loadInventory() {
         const { data, error } = await supabase.from('romix_inventory').select('*').order('created_at', { ascending: false });
         if (error) {
             console.error("Inventory error:", error);
-            inventoryTable.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:red; padding:40px; font-weight:700;">Hujjatlar yuklanishida xatolik yuz berdi!</div>';
+            inventoryTable.innerHTML = '<div style="text-align:center; color:red; padding:40px; font-weight:700;">Hujjatlar yuklanishida xatolik yuz berdi!</div>';
             return;
         }
+
+        window.cachedInventoryData = data;
 
         // Calculate Stats
         const totalItems = data.length;
@@ -72,151 +101,246 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('statLowStock').textContent = lowStock;
         document.getElementById('statTodayIn').textContent = `$${totalValue.toLocaleString()}`;
 
-        inventoryTable.innerHTML = '';
-        if (data.length === 0) {
-            inventoryTable.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:50px; color:#888; font-weight:600; font-size:1.1rem;">Hozircha omborda mahsulotlar mavjud emas.</div>';
-            return;
+        renderBrandSelector();
+        renderCategoryTabs();
+        renderCatalogGrid();
+    }
+
+    function renderBrandSelector() {
+        const row = document.getElementById('brandSelectorRow');
+        if (!row) return;
+        
+        const brands = ['AKFA', 'RETPEN', 'Ekopen', 'ALTA PLAST', 'ALUBEST', 'ALUTEX', 'CRA'];
+        row.innerHTML = '';
+        
+        brands.forEach(b => {
+            const card = document.createElement('div');
+            const isActive = window.activeBrand.toUpperCase() === b.toUpperCase();
+            card.className = `brand-card ${isActive ? 'active' : ''}`;
+            card.innerHTML = getBrandLogoSvg(b, isActive);
+            card.onclick = () => {
+                window.activeBrand = b;
+                renderBrandSelector();
+                renderCatalogGrid();
+            };
+            row.appendChild(card);
+        });
+    }
+
+    function renderCategoryTabs() {
+        const row = document.getElementById('categoryTabsRow');
+        if (!row) return;
+        
+        const categories = ['Barchasi', 'Plastik', 'Alyuminiy', 'Tokcha', 'Shtapik', 'Lambri'];
+        row.innerHTML = '';
+        
+        categories.forEach(c => {
+            const tab = document.createElement('div');
+            const isActive = window.activeCategory === c;
+            tab.className = `category-tab ${isActive ? 'active' : ''}`;
+            tab.textContent = c === 'Plastik' ? 'Plast (PVC)' : c === 'Alyuminiy' ? 'Alumin' : c;
+            tab.onclick = () => {
+                window.activeCategory = c;
+                renderCategoryTabs();
+                renderCatalogGrid();
+            };
+            row.appendChild(tab);
+        });
+    }
+
+    window.renderCatalogGrid = function(searchQuery = '') {
+        const container = document.getElementById('inventoryTable');
+        if (!container) return;
+
+        let filtered = window.cachedInventoryData;
+
+        // 1. Filter by Search Query
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase().trim();
+            filtered = filtered.filter(p => {
+                const name = (p.product_name || '').toLowerCase();
+                const desc = (p.description || '').toLowerCase();
+                const cat = (p.category || '').toLowerCase();
+                return name.includes(q) || desc.includes(q) || cat.includes(q);
+            });
         }
 
-        data.forEach(p => {
+        // 2. Filter by Active Brand
+        filtered = filtered.filter(p => {
             const metadata = p.metadata || {};
-            
-            // Defensive parsing of specs
-            const uzunligi = metadata.uzunligi || p.description?.match(/(\d+)mm/)?.[1] || '---';
-            const shakli = metadata.shakli || p.description?.split('|')?.[1]?.trim() || '---';
-            const rangi = metadata.rangi || p.description?.split('|')?.[2]?.split('(')?.[0]?.trim() || '---';
-            const rangTuri = metadata.rangTuri || p.description?.match(/\(([^)]+)\)/)?.[1] || '---';
-
-            // Brand Logo Visual
-            let brandName = metadata.brend || '';
-            if (!brandName) {
-                const brandsList = ['AKFA', 'RETPEN', 'Ekopen', 'ALTA PLAST', 'ALUBEST', 'ALUTEX', 'CRA'];
-                for (let b of brandsList) {
-                    if (p.product_name.toUpperCase().includes(b.toUpperCase())) {
-                        brandName = b;
+            let brand = metadata.brend || '';
+            if (!brand) {
+                const brands = ['AKFA', 'RETPEN', 'Ekopen', 'ALTA PLAST', 'ALUBEST', 'ALUTEX', 'CRA'];
+                for (let b of brands) {
+                    if ((p.product_name || '').toUpperCase().includes(b.toUpperCase())) {
+                        brand = b;
                         break;
                     }
                 }
             }
-
-            let brandBadgeHtml = '';
-            if (brandName) {
-                let logoSvg = '';
-                if (brandName.toUpperCase().includes('AKFA')) {
-                    logoSvg = `<svg viewBox="0 0 120 40" class="brand-logo-svg" style="height: 12px; width: 40px; margin-top:2px;"><text x="0" y="28" font-family="'Outfit', sans-serif" font-weight="900" font-size="28" fill="#FF3333">akfa</text></svg>`;
-                } else if (brandName.toUpperCase().includes('RETPEN')) {
-                    logoSvg = `<svg viewBox="0 0 120 40" class="brand-logo-svg" style="height: 12px; width: 45px; margin-top:2px;"><text x="0" y="28" font-family="'Outfit', sans-serif" font-weight="800" font-size="22" fill="#00D2FF">RETPEN</text></svg>`;
-                } else if (brandName.toUpperCase().includes('EKOPEN')) {
-                    logoSvg = `<svg viewBox="0 0 120 40" class="brand-logo-svg" style="height: 12px; width: 45px; margin-top:2px;"><text x="0" y="28" font-family="'Outfit', sans-serif" font-weight="800" font-size="22" fill="#FF8800">Ekopen</text></svg>`;
-                } else {
-                    logoSvg = `<span style="color:#ffffff; font-weight:700; font-size:0.65rem;">${brandName}</span>`;
-                }
-                brandBadgeHtml = `<span class="badge-pill brand-badge-pill" style="display:flex; align-items:center;">${logoSvg}</span>`;
-            }
-
-            // Color Swatch Matching
-            let swatchColor = '';
-            if (rangi) {
-                const rUpper = rangi.toUpperCase();
-                if (rUpper.includes('OQ')) swatchColor = '#FFFFFF';
-                else if (rUpper.includes('QORA')) swatchColor = '#111111';
-                else if (rUpper.includes('DUB') || rUpper.includes('TILLA')) swatchColor = '#CD7F32';
-                else if (rUpper.includes('MOCHA')) swatchColor = '#4B3621';
-            }
-            
-            let colorSwatchHtml = '';
-            if (swatchColor) {
-                colorSwatchHtml = `<div class="color-swatch" style="background:${swatchColor}; width:12px; height:12px; display:inline-block; border-radius:50%; border:1px solid rgba(255,255,255,0.3); margin-right:4px;"></div>`;
-            }
-
-            // Category visual image or SVG placeholder
-            let mediaHtml = '';
-            if (p.image_url) {
-                mediaHtml = `<img src="${p.image_url}" class="card-visual-img">`;
-            } else {
-                let svgIcon = '';
-                const catLower = (p.category || '').toLowerCase();
-                const nameLower = (p.product_name || '').toLowerCase();
-                
-                if (catLower.includes('shtapik') || nameLower.includes('shtapik')) {
-                    svgIcon = `<svg viewBox="0 0 100 100" class="card-visual-svg" style="stroke:rgba(255,255,255,0.3);"><path d="M 35,30 L 65,30 L 65,70 L 45,70 L 35,55 Z" fill="none" stroke="currentColor" stroke-width="3"/><path d="M 43,40 L 57,40 L 57,60" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="2,2"/></svg>`;
-                } else if (catLower.includes('tokcha') || nameLower.includes('tokcha')) {
-                    svgIcon = `<svg viewBox="0 0 100 100" class="card-visual-svg" style="stroke:rgba(255,255,255,0.3);"><path d="M 20,42 L 80,42 L 80,48 L 70,58 L 20,58 Z" fill="none" stroke="currentColor" stroke-width="3"/><line x1="35" y1="42" x2="35" y2="58" stroke="currentColor" stroke-width="2"/><line x1="50" y1="42" x2="50" y2="58" stroke="currentColor" stroke-width="2"/><line x1="65" y1="42" x2="65" y2="58" stroke="currentColor" stroke-width="2"/></svg>`;
-                } else if (catLower.includes('lambri') || nameLower.includes('lambri')) {
-                    svgIcon = `<svg viewBox="0 0 100 100" class="card-visual-svg" style="stroke:rgba(255,255,255,0.3);"><path d="M 15,35 L 70,35 L 75,45 L 85,45 L 85,55 L 75,55 L 70,65 L 15,65 Z" fill="none" stroke="currentColor" stroke-width="3"/><line x1="30" y1="35" x2="30" y2="65" stroke="currentColor" stroke-width="2" stroke-dasharray="2,2"/><line x1="50" y1="35" x2="50" y2="65" stroke="currentColor" stroke-width="2" stroke-dasharray="2,2"/></svg>`;
-                } else {
-                    svgIcon = `<svg viewBox="0 0 100 100" class="card-visual-svg" style="stroke:rgba(255,255,255,0.3);"><rect x="25" y="25" width="50" height="50" rx="4" fill="none" stroke="currentColor" stroke-width="3"/><rect x="35" y="35" width="30" height="30" rx="2" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3,1"/><line x1="25" y1="50" x2="75" y2="50" stroke="currentColor" stroke-width="2"/><line x1="50" y1="25" x2="50" y2="75" stroke="currentColor" stroke-width="2"/></svg>`;
-                }
-                mediaHtml = svgIcon;
-            }
-
-            const card = document.createElement('div');
-            card.className = `premium-product-card ${p.stock_quantity < 10 ? 'low-stock' : ''}`;
-            card.innerHTML = `
-                <div class="card-visual-container">
-                    ${mediaHtml}
-                    <span class="stock-badge-floating ${p.stock_quantity < 10 ? 'low' : 'high'}">
-                        ${p.stock_quantity < 10 ? '⚠️ Kam zaxira' : '✅ Yetarli'}
-                    </span>
-                </div>
-                <div class="card-content">
-                    <div class="card-badge-row">
-                        <span class="badge-pill category-badge">${p.category || 'Profil'}</span>
-                        ${brandBadgeHtml}
-                    </div>
-                    <h4 class="product-title">${p.product_name}</h4>
-                    
-                    <div class="specs-grid">
-                        <div class="spec-chip">
-                            <span class="spec-label">Uzunligi</span>
-                            <span class="spec-val">${uzunligi === '---' ? '---' : uzunligi + ' mm'}</span>
-                        </div>
-                        <div class="spec-chip">
-                            <span class="spec-label">Shakli</span>
-                            <span class="spec-val">${shakli}</span>
-                        </div>
-                        <div class="spec-chip">
-                            <span class="spec-label">Rangi</span>
-                            <span class="spec-val" style="display:flex; align-items:center;">
-                                ${colorSwatchHtml} ${rangi}
-                            </span>
-                        </div>
-                        <div class="spec-chip">
-                            <span class="spec-label">Yuzasi</span>
-                            <span class="spec-val">${rangTuri}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="card-footer-metrics">
-                        <div class="metric-block">
-                            <span class="metric-label">Mavjud</span>
-                            <div class="metric-val-wrapper">
-                                <span class="metric-number">${p.stock_quantity}</span>
-                                <span class="metric-unit">${p.unit || 'dona'}</span>
-                            </div>
-                        </div>
-                        <div class="metric-block" style="text-align:right;">
-                            <span class="metric-label">Narxi</span>
-                            <span class="metric-price">${p.price ? '$' + p.price.toLocaleString() : '---'}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="card-actions-row">
-                        <button class="action-btn-glass edit-btn" data-id="${p.id}">
-                            ✏️ <span>Tahrirlash</span>
-                        </button>
-                        <button class="action-btn-glass delete-btn delete-accent" data-id="${p.id}">
-                            🗑️ <span>O'chirish</span>
-                        </button>
-                    </div>
-                </div>
-            `;
-            inventoryTable.appendChild(card);
+            return brand.toUpperCase().includes(window.activeBrand.toUpperCase());
         });
 
-        // Rebind Edit/Delete listeners
+        // 3. Filter by Active Category
+        if (window.activeCategory !== 'Barchasi') {
+            filtered = filtered.filter(p => {
+                const cat = (p.category || '').toLowerCase();
+                const name = (p.product_name || '').toLowerCase();
+                const activeLower = window.activeCategory.toLowerCase();
+                
+                if (activeLower === 'plastik') {
+                    // PVC matches Plastik or name contains Plastik
+                    return cat.includes('plastik') || name.includes('plastik') || cat.includes('pvc') || (p.metadata?.brend || '').toLowerCase().includes('plastik');
+                } else if (activeLower === 'alyuminiy') {
+                    // Aluminum matches Alyuminiy or Termo
+                    return cat.includes('alyuminiy') || name.includes('alyuminiy') || cat.includes('termo') || (p.metadata?.brend || '').toLowerCase().includes('alyuminiy');
+                }
+                return cat.includes(activeLower) || name.includes(activeLower);
+            });
+        }
+
+        container.innerHTML = '';
+        if (filtered.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:50px; color:#888; font-weight:600; font-size:1.1rem; width:100%;">Filtrlangan mahsulotlar topilmadi.</div>';
+            return;
+        }
+
+        // 4. Group remaining products by Series
+        const groups = {};
+        filtered.forEach(p => {
+            const metadata = p.metadata || {};
+            let seriesName = metadata.seriya || '';
+            if (!seriesName) {
+                // Try parsing series from name e.g. "6000 QVT"
+                const match = p.product_name.match(/(\d+\s*[A-Z]+)/i);
+                seriesName = match ? match[1] : 'Boshqalar';
+            }
+            if (!groups[seriesName]) groups[seriesName] = [];
+            groups[seriesName].push(p);
+        });
+
+        // Render Series accordion cards
+        Object.keys(groups).forEach(series => {
+            const items = groups[series];
+            const activeColor = window.seriesColorFilters[series] || 'Barchasi';
+            const isOpen = window.expandedSeries[series] !== false; // Expand by default
+
+            // Filter items within this series by Color
+            let seriesFilteredItems = items;
+            if (activeColor !== 'Barchasi') {
+                seriesFilteredItems = items.filter(p => {
+                    const rangi = p.metadata?.rangi || p.description?.split('|')?.[2]?.split('(')?.[0]?.trim() || '';
+                    return rangi.toUpperCase() === activeColor.toUpperCase();
+                });
+            }
+
+            // Get unique colors in this series for swatch chips
+            const colorsSet = new Set(['Barchasi']);
+            items.forEach(p => {
+                const rangi = p.metadata?.rangi || p.description?.split('|')?.[2]?.split('(')?.[0]?.trim() || '';
+                if (rangi) colorsSet.add(rangi);
+            });
+            const uniqueColors = Array.from(colorsSet);
+
+            const accordion = document.createElement('div');
+            accordion.className = `series-accordion-card ${isOpen ? 'open' : ''}`;
+            
+            // Header HTML
+            accordion.innerHTML = `
+                <div class="series-card-header">
+                    <div class="series-header-left">
+                        <span class="series-title">${series}</span>
+                        <span class="series-items-count">${seriesFilteredItems.length} mahsulot</span>
+                    </div>
+                    <span class="series-chevron">▼</span>
+                </div>
+                <div class="series-card-body">
+                    <!-- Color Swatches Chips row -->
+                    <div class="color-chips-container"></div>
+                    <!-- Catalog Products List -->
+                    <div class="catalog-products-list"></div>
+                </div>
+            `;
+
+            // Expand/Collapse binding
+            const header = accordion.querySelector('.series-card-header');
+            header.onclick = () => {
+                const isCurrentlyOpen = accordion.classList.toggle('open');
+                window.expandedSeries[series] = isCurrentlyOpen;
+            };
+
+            // Render Color chips
+            const chipsContainer = accordion.querySelector('.color-chips-container');
+            uniqueColors.forEach(col => {
+                const chip = document.createElement('div');
+                const isChipActive = activeColor.toUpperCase() === col.toUpperCase();
+                chip.className = `color-chip ${isChipActive ? 'active' : ''}`;
+                
+                // Draw small swatch circle for visual premium styling
+                let swatchCircle = '';
+                if (col !== 'Barchasi') {
+                    let cHex = '#FFFFFF';
+                    const cUpper = col.toUpperCase();
+                    if (cUpper.includes('QORA')) cHex = '#111111';
+                    else if (cUpper.includes('DUB') || cUpper.includes('TILLA')) cHex = '#CD7F32';
+                    else if (cUpper.includes('MOCHA')) cHex = '#4B3621';
+                    swatchCircle = `<div style="width:10px; height:10px; border-radius:50%; background:${cHex}; border:1px solid rgba(255,255,255,0.3);"></div>`;
+                }
+                
+                chip.innerHTML = `${swatchCircle} <span>${col}</span>`;
+                chip.onclick = (e) => {
+                    e.stopPropagation(); // prevent collapsing accordion
+                    window.seriesColorFilters[series] = col;
+                    window.renderCatalogGrid(searchQuery);
+                };
+                chipsContainer.appendChild(chip);
+            });
+
+            // Render List Items
+            const listContainer = accordion.querySelector('.catalog-products-list');
+            if (seriesFilteredItems.length === 0) {
+                listContainer.innerHTML = '<div style="padding:15px; color:#888; font-size:0.85rem; text-align:center;">Ushbu rangda mahsulot topilmadi.</div>';
+            } else {
+                seriesFilteredItems.forEach(p => {
+                    const row = document.createElement('div');
+                    row.className = 'catalog-item-row';
+                    
+                    // Clean product name to match mockup beautifully
+                    let displayName = p.product_name;
+                    displayName = displayName.replace(window.activeBrand, '').replace(series, '').trim();
+                    if (displayName.startsWith('Profil')) displayName = displayName.substring(6).trim();
+                    if (!displayName) displayName = p.product_name; // fallback
+
+                    const metadata = p.metadata || {};
+                    const uzunligi = metadata.uzunligi || p.description?.match(/(\d+)mm/)?.[1] || '---';
+                    const shakli = metadata.shakli || p.description?.split('|')?.[1]?.trim() || '---';
+                    const rangi = metadata.rangi || p.description?.split('|')?.[2]?.split('(')?.[0]?.trim() || '---';
+                    const rangTuri = metadata.rangTuri || p.description?.match(/\(([^)]+)\)/)?.[1] || '---';
+
+                    row.innerHTML = `
+                        <div class="catalog-item-left">
+                            <span class="catalog-item-name">${displayName}</span>
+                            <span class="catalog-item-specs">${uzunligi === '---' ? '' : uzunligi + 'mm | '}${shakli} | ${rangi} (${rangTuri})</span>
+                        </div>
+                        <div class="catalog-item-right">
+                            <span class="catalog-item-qty">${p.stock_quantity} ${p.unit || 'dona'}</span>
+                            <div class="catalog-item-actions">
+                                <button class="catalog-action-btn edit-btn" data-id="${p.id}" title="Tahrirlash">✏️</button>
+                                <button class="catalog-action-btn delete-btn delete-accent" data-id="${p.id}" title="O'chirish" style="color:#ff4d4f;">🗑️</button>
+                            </div>
+                        </div>
+                    `;
+                    listContainer.appendChild(row);
+                });
+            }
+
+            container.appendChild(accordion);
+        });
+
+        // Rebind Edit/Delete listeners to dynamically generated lists
         document.querySelectorAll('.delete-btn').forEach(b => {
-            b.onclick = async () => {
+            b.onclick = async (e) => {
+                e.stopPropagation();
                 if (confirm('Ushbu mahsulotni o\'chirmoqchimisiz?')) {
                     await supabase.from('romix_inventory').delete().eq('id', b.dataset.id);
                     loadInventory();
@@ -225,8 +349,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         document.querySelectorAll('.edit-btn').forEach(b => {
-            b.onclick = () => {
-                const p = data.find(x => x.id === b.dataset.id);
+            b.onclick = (e) => {
+                e.stopPropagation();
+                const p = window.cachedInventoryData.find(x => x.id === b.dataset.id);
                 if (p) {
                     window.editingProdId = p.id;
                     document.getElementById('eName').value = p.product_name;
@@ -236,22 +361,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             };
         });
-    }
+    };
 
     // --- Search Feature ---
     const inventorySearch = document.getElementById('inventorySearch');
     if (inventorySearch) {
         inventorySearch.oninput = () => {
             const query = inventorySearch.value.toLowerCase().trim();
-            const rows = inventoryTable.querySelectorAll('.premium-product-card');
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                if (text.includes(query)) {
-                    row.style.display = "";
-                } else {
-                    row.style.display = "none";
-                }
-            });
+            window.renderCatalogGrid(query);
         };
     }
 

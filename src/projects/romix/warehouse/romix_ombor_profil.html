@@ -646,6 +646,314 @@
             color: #ff4d4f;
             box-shadow: 0 4px 12px rgba(255, 77, 79, 0.15);
         }
+
+        /* --- Brand Selector Row --- */
+        .brand-selector-row {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding: 5px 0 15px 0;
+            margin-bottom: 15px;
+            scroll-behavior: smooth;
+        }
+
+        .brand-selector-row::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .brand-selector-row::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 2px;
+        }
+
+        .brand-card {
+            background: rgba(20, 30, 45, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 10px 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+            backdrop-filter: blur(10px);
+            min-width: 110px;
+            height: 48px;
+        }
+
+        .brand-card:hover {
+            background: rgba(255, 255, 255, 0.02);
+            border-color: rgba(0, 210, 255, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .brand-card.active {
+            background: rgba(0, 210, 255, 0.08);
+            border-color: #00d2ff;
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
+        }
+
+        /* --- Category Tabs Row --- */
+        .category-tabs-row {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 5px 0 15px 0;
+            margin-bottom: 20px;
+        }
+
+        .category-tabs-row::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .category-tabs-row::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 2px;
+        }
+
+        .category-tab {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 8px 18px;
+            cursor: pointer;
+            color: var(--adm-text-sec);
+            font-weight: 600;
+            font-size: 0.88rem;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .category-tab:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+        }
+
+        .category-tab.active {
+            background: #007aff;
+            color: #ffffff;
+            border-color: #007aff;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+        }
+
+        /* --- Series Accordion Cards --- */
+        .series-accordion-card {
+            background: rgba(18, 25, 41, 0.45);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+            width: 100%;
+        }
+
+        .series-accordion-card.open {
+            border-color: rgba(0, 210, 255, 0.2);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .series-card-header {
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.01);
+            user-select: none;
+            transition: background 0.3s;
+        }
+
+        .series-card-header:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .series-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .series-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .series-items-count {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--adm-text-sec);
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .series-chevron {
+            font-size: 0.78rem;
+            color: var(--adm-text-sec);
+            transition: transform 0.3s ease;
+        }
+
+        .series-accordion-card.open .series-chevron {
+            transform: rotate(180deg);
+            color: #00d2ff;
+        }
+
+        .series-card-body {
+            padding: 0 20px 20px 20px;
+            display: none;
+            border-top: 1px solid rgba(255,255,255,0.02);
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .series-accordion-card.open .series-card-body {
+            display: block;
+        }
+
+        /* --- Color Swatch Chips --- */
+        .color-chips-container {
+            display: flex;
+            gap: 12px;
+            margin: 15px 0 20px 0;
+            overflow-x: auto;
+            padding: 5px 0;
+        }
+
+        .color-chips-container::-webkit-scrollbar {
+            height: 3px;
+        }
+
+        .color-chips-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 1.5px;
+        }
+
+        .color-chip {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 6px 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--adm-text-sec);
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .color-chip:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+        }
+
+        .color-chip.active {
+            border-color: #00ff88;
+            background: rgba(0, 255, 136, 0.06);
+            color: #ffffff;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.1);
+        }
+
+        /* --- Product Catalog Item Row --- */
+        .catalog-products-list {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .catalog-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            transition: all 0.2s ease;
+            border-radius: 10px;
+        }
+
+        .catalog-item-row:last-child {
+            border-bottom: none;
+        }
+
+        .catalog-item-row:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .catalog-item-left {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .catalog-item-name {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+
+        .catalog-item-row:hover .catalog-item-name {
+            color: #ffffff;
+        }
+
+        .catalog-item-specs {
+            font-size: 0.76rem;
+            color: var(--adm-text-sec);
+        }
+
+        .catalog-item-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .catalog-item-qty {
+            font-size: 1.1rem;
+            font-weight: 750;
+            color: #00ff88;
+            text-shadow: 0 0 8px rgba(0, 255, 136, 0.15);
+            white-space: nowrap;
+        }
+
+        .catalog-item-actions {
+            display: flex;
+            gap: 6px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .catalog-item-row:hover .catalog-item-actions {
+            opacity: 1;
+        }
+
+        .catalog-action-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+        }
+
+        .catalog-action-btn:hover {
+            background: rgba(0, 210, 255, 0.15);
+            border-color: rgba(0, 210, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .catalog-action-btn.delete-accent:hover {
+            background: rgba(255, 77, 79, 0.15);
+            border-color: rgba(255, 77, 79, 0.3);
+        }
     </style>
 </head>
 
@@ -761,7 +1069,7 @@
 
                     <!-- Main Inventory Table -->
                     <div class="bento-item" style="grid-column: span 12;">
-                        <div class="bento-header">
+                        <div class="bento-header" style="margin-bottom:20px;">
                             <h3 style="font-weight: 700;">Profil Inventarizatsiya Ro'yxati</h3>
                             <div class="auto-layout-row">
                                 <input type="text" id="inventorySearch" placeholder="Qidiruv..." class="form-input-v2"
@@ -769,7 +1077,15 @@
                                 <button class="icon-btn">🔃</button>
                             </div>
                         </div>
-                        <div class="product-cards-grid" id="inventoryTable"></div>
+
+                        <!-- Horizontal Brand Selector Bar -->
+                        <div class="brand-selector-row" id="brandSelectorRow"></div>
+
+                        <!-- Horizontal Category Scroll Tabs -->
+                        <div class="category-tabs-row" id="categoryTabsRow"></div>
+
+                        <!-- Inventory expandable catalog accordion body -->
+                        <div id="inventoryTable" style="width: 100%;"></div>
                     </div>
                 </div>
             </section>
