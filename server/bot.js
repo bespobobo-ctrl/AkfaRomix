@@ -30,9 +30,9 @@ bot.start((ctx) => {
         `<b>Assalomu alaykum, ${ctx.from.first_name}!</b>\n\n` +
         `AKFA Romix Korporativ Tizimiga xush kelibsiz.\n` +
         `Pastdagi tugma orqali boshqaruv paneliga kirishingiz mumkin.`,
-        Markup.keyboard([
+        Markup.inlineKeyboard([
             [Markup.button.webApp('🚀 Tizimga Kirish', WEB_APP_URL)]
-        ]).resize()
+        ])
     );
 });
 
