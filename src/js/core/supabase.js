@@ -12,7 +12,7 @@ export function checkAuth(roles = []) {
         return null;
     }
     if (roles.length > 0 && !roles.includes(user.role)) {
-        window.location.href = '/src/pages/generic_dashboard.html';
+        window.location.href = '/index.html';
         return null;
     }
     return user;

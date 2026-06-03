@@ -124,7 +124,7 @@ export const authService = {
             case 'stanok': return base + 'src/projects/autoclapak/mini-app/stanok-app/index.html';
             case 'kraska': return base + 'src/projects/autoclapak/mini-app/kraska-app/index.html';
             case 'qadoqlash': return base + 'src/projects/autoclapak/mini-app/qadoqlash-app/index.html';
-            default: return base + 'src/projects/romix/generic_dashboard.html';
+            default: return base + 'index.html';
         }
     }
 };
