@@ -1056,6 +1056,17 @@
             transform: translateY(-1px);
             box-shadow: 0 4px 10px rgba(255, 77, 79, 0.3);
         }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
     </style>
 </head>
 
@@ -1680,6 +1691,28 @@
         </div>
     </div>
 
+    <!-- 🔒 MODAL: TARIXNI TOZALASH UCHUN PAROL KIRITISH -->
+    <div id="accPasswordModal" class="modal-overlay">
+        <div class="modal-content" style="background: #111827; border: 1px solid rgba(255, 170, 0, 0.25); border-radius: 28px; width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5); padding: 30px; position: relative; overflow: hidden; font-family: inherit;">
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: linear-gradient(90deg, #ffaa00, #ff5500);"></div>
+            <div style="font-size: 3.5rem; margin-bottom: 15px; filter: drop-shadow(0 0 10px rgba(255, 170, 0, 0.4)); animation: float 3s ease-in-out infinite;">🔒</div>
+            <h2 style="color: #ffaa00; font-weight: 800; font-size: 1.5rem; margin-bottom: 8px; letter-spacing: -0.5px;">Xavfsizlik Tizimi</h2>
+            <p style="font-size: 0.85rem; color: var(--adm-text-sec); margin-bottom: 20px; line-height: 1.4;">Tarix keshini butunlay o'chirib tashlash uchun maxfiy parolni kiriting:</p>
+            
+            <form id="passwordForm" onsubmit="handlePasswordSubmit(event)">
+                <div class="form-group" style="position: relative;">
+                    <input type="password" id="historyPasswordInput" class="form-input-premium" placeholder="••••" required 
+                           style="letter-spacing: 8px; text-align: center; font-size: 1.5rem; font-weight: 700; border-color: rgba(255, 170, 0, 0.2); background: rgba(0, 0, 0, 0.35); padding: 12px; font-family: inherit;" maxlength="8" autocomplete="off">
+                    <div style="font-size: 0.72rem; color: #ff4d4f; margin-top: 8px; display: none;" id="passwordError">Noto'g'ri maxfiy parol! Taqiqlangan kirish. ❌</div>
+                </div>
+                <div class="btn-group" style="display:flex; gap:12px; margin-top:25px;">
+                    <button type="button" class="btn-premium secondary" onclick="closePasswordModal()" style="flex:1;">BEKOR QILISH</button>
+                    <button type="submit" class="btn-premium primary" style="flex:1.2; background: linear-gradient(135deg, #ffaa00 0%, #d47a00 100%); color:#fff; box-shadow: 0 5px 15px rgba(255, 170, 0, 0.2);">TASDIQLASH</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         // --- State Management ---
         const DEFAULT_ACCESSORIES = [
@@ -2183,18 +2216,43 @@
         }
 
         function clearHistoryLog() {
-            const pwd = prompt("Tarixni tozalash uchun parolni kiriting:");
-            if (pwd === null) return; // cancelled
-            
-            if (pwd !== "0777") {
-                alert("Noto'g'ri parol! Tarixni tozalash taqiqlanadi. ❌");
-                return;
-            }
+            document.getElementById('accPasswordModal').classList.add('active');
+            document.getElementById('historyPasswordInput').value = '';
+            document.getElementById('passwordError').style.display = 'none';
+            setTimeout(() => {
+                document.getElementById('historyPasswordInput').focus();
+            }, 150);
+        }
 
-            if (confirm("Haqiqatdan ham barcha kesh tarixini tozalashni xohlaysizmi?")) {
-                localStorage.removeItem('romix_accessories_history_log');
-                renderHistory();
-                alert("Tarix kesh loglari muvaffaqiyatli tozalandi! 🧹");
+        function closePasswordModal() {
+            document.getElementById('accPasswordModal').classList.remove('active');
+        }
+
+        function handlePasswordSubmit(event) {
+            event.preventDefault();
+            const input = document.getElementById('historyPasswordInput');
+            const errorDiv = document.getElementById('passwordError');
+            
+            if (input.value === '0777') {
+                closePasswordModal();
+                // We use our existing custom styling modal to ask confirmation or beautiful dialog
+                setTimeout(() => {
+                    if (confirm("Haqiqatdan ham barcha kesh tarixini tozalashni xohlaysizmi?")) {
+                        localStorage.removeItem('romix_accessories_history_log');
+                        renderHistory();
+                        alert("Tarix kesh loglari muvaffaqiyatli tozalandi! 🧹");
+                    }
+                }, 100);
+            } else {
+                errorDiv.style.display = 'block';
+                input.value = '';
+                input.focus();
+                
+                // Shake effect on modal
+                const modalContent = document.querySelector('#accPasswordModal .modal-content');
+                modalContent.style.animation = 'none';
+                modalContent.offsetHeight; // trigger reflow
+                modalContent.style.animation = 'shake 0.4s ease-in-out';
             }
         }
 
