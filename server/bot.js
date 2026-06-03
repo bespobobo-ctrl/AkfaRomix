@@ -17,9 +17,15 @@ if (!token) {
 
 const bot = new Telegraf(token);
 
-const WEB_APP_URL = 'https://akfa-romix.vercel.app/akfa_hr_mini.html';
+const WEB_APP_URL = 'https://akfa-romix.vercel.app/akfa_hr_mini.html?v=3';
+
+bot.use((ctx, next) => {
+    console.log(`[BOT UPDATE] Message from ${ctx.from?.username || ctx.from?.first_name}: ${ctx.message?.text || '[non-text]'}`);
+    return next();
+});
 
 bot.start((ctx) => {
+    console.log(`[BOT START] User ${ctx.from?.username || ctx.from?.id} started bot. Sending WebApp URL: ${WEB_APP_URL}`);
     ctx.replyWithHTML(
         `<b>Assalomu alaykum, ${ctx.from.first_name}!</b>\n\n` +
         `AKFA Romix Korporativ Tizimiga xush kelibsiz.\n` +
@@ -31,6 +37,7 @@ bot.start((ctx) => {
 });
 
 bot.on('web_app_data', (ctx) => {
+    console.log('[BOT WEB APP DATA] Received data from web app');
     ctx.reply('Ma\'lumot qabul qilindi!');
 });
 
