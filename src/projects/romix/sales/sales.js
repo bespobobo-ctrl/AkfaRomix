@@ -1,5 +1,6 @@
 import { supabase } from '@/core/supabase.js';
 import { createViewer } from './window3d.js';
+import { generateCuttingPdf } from './cuttingPdf.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const user = JSON.parse(localStorage.getItem('currentUser'));
@@ -1014,6 +1015,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 3D preview modal ochilгач o'lchamни oladi
         setTimeout(() => { try { window.update3DPreview(); } catch (e) {} }, 60);
     };
+
+    // Kesim optimizatsiya PDF — joriy savatdan
+    const cuttingBtn = document.getElementById('cuttingPdfBtn');
+    if (cuttingBtn) {
+        cuttingBtn.onclick = () => {
+            const romlar = orderItems.filter(it => ['rom', 'rom_fortochka', 'eshik'].includes(it.type));
+            if (romlar.length === 0) { alert("Kesim PDF uchun savatga rom yoki eshik qo'shing."); return; }
+            generateCuttingPdf({
+                customer: document.getElementById('oCustomer')?.value || '',
+                phone: document.getElementById('oPhone')?.value || '',
+                items: orderItems
+            });
+        };
+    }
 
     document.getElementById('closePrintBtn').onclick = () => {
         location.reload();
