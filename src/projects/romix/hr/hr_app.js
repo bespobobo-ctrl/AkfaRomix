@@ -30,20 +30,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- 📥 LOAD HR DATA ---
     async function loadHRData() {
         showLoading(true);
+        try {
+            const { data: staff, error: e1 } = await supabase.from('employees').select('*');
+            const todayStr = new Date().toISOString().split('T')[0];
+            const { data: att, error: e2 } = await supabase.from('attendance')
+                .select('*')
+                .eq('date', todayStr);
 
-        const { data: staff, error: e1 } = await supabase.from('employees').select('*');
-        const todayStr = new Date().toISOString().split('T')[0];
-        const { data: att, error: e2 } = await supabase.from('attendance')
-            .select('*')
-            .eq('date', todayStr);
-
-        if (!e1 && !e2) {
-            allStaff = staff || [];
-            todayAtt = att || [];
-            updateStats();
-            renderStaffFeed(allStaff);
+            if (!e1 && !e2) {
+                allStaff = staff || [];
+                todayAtt = att || [];
+                updateStats();
+                renderStaffFeed(allStaff);
+            }
+        } catch (err) {
+            console.warn('HR Mini: Supabase offline, using cached data.', err);
         }
-
         showLoading(false);
     }
 
@@ -204,7 +206,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 });
             } else {
-                alert("Xatolik: " + error.message);
+                console.warn('HR Mini: Add staff failed (Supabase offline):', error.message);
                 submitBtn.disabled = false;
             }
         };

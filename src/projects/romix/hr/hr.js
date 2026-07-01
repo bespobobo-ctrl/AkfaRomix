@@ -16,6 +16,22 @@ let workInterval = null;
 let lunchInterval = null;
 let currentTab = 'dashboard';
 
+// ── Toast helper (replaces all alert() calls for non-critical messages) ──
+function showToastHR(msg, type = 'info') {
+    const colors = { info: '#00d2ff', warn: '#ffb800', error: '#ff4d4f', success: '#00ff88' };
+    const t = document.createElement('div');
+    t.textContent = msg;
+    Object.assign(t.style, {
+        position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)',
+        background: colors[type] || colors.info, color: '#000',
+        padding: '12px 24px', borderRadius: '12px', fontWeight: '700',
+        fontSize: '0.9rem', zIndex: '9999', boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+        transition: 'opacity 0.4s', whiteSpace: 'nowrap'
+    });
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 3500);
+}
+
 const defaultEmployees = [
     { id: "emp-1", full_name: "Sharifi Miad", first_name: "Sharifi", last_name: "Miad", role: "Ofis", salary_info: "7000000", salary: 7000000, department: "Ofis", dept: "Ofis", phone: "", avatar_url: "", photo_url: "" },
     { id: "emp-2", full_name: "Mullajonov Xurshid", first_name: "Mullajonov", last_name: "Xurshid", role: "Brigadir", salary_info: "12000000", salary: 12000000, department: "Ustalar", dept: "Ustalar", phone: "", avatar_url: "", photo_url: "" },
@@ -2350,11 +2366,16 @@ async function processAttendance(emp, type) {
     const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
     const nowIso = new Date().toISOString();
 
-    const { data: existing } = await supabase.from('attendance')
-        .select('id')
-        .eq('employee_id', emp.id)
-        .eq('date', todayStr)
-        .maybeSingle();
+    // Try to get existing record — silently skip if offline
+    let existing = null;
+    try {
+        const res = await supabase.from('attendance')
+            .select('id')
+            .eq('employee_id', emp.id)
+            .eq('date', todayStr)
+            .maybeSingle();
+        if (!res.error) existing = res.data;
+    } catch (_) {}
 
     let payload = {
         employee_id: emp.id,
@@ -2371,35 +2392,40 @@ async function processAttendance(emp, type) {
         payload.status = 'KETGAN';
     }
 
-    const { error } = await supabase.from('attendance').upsert(payload);
+    // --- Try Supabase, fall back to localStorage if offline ---
+    let saved = false;
+    try {
+        const { error } = await supabase.from('attendance').upsert(payload);
+        if (!error) saved = true;
+    } catch (_) {}
 
-    if (!error) {
-        // 🚀 LIVE UPDATE: Update local status immediately
-        if (existing) {
-            const idx = todayAtt.findIndex(a => a.id === existing.id);
-            if (idx !== -1) todayAtt[idx] = { ...todayAtt[idx], ...payload };
-            else todayAtt.push(payload);
-        } else {
-            todayAtt.push(payload);
-        }
-
-        closeActionModal();
-
-        // Trigger Re-render and Switch Tab immediately
-        filterAndRender();
-        switchTab('dashboard');
-
-        // Non-blocking notification (optional: could use toast here)
-        console.log(`✅ ${emp.full_name} status updated to ${payload.status}`);
-
-        // Log to history too
-        logActivity('attendance', type === 'in' ? 'Ishga keldi' : 'Ishdan ketti', emp.full_name);
-
-        // Refetch everything in background just to be safe
-        loadInitialData();
-    } else {
-        alert("Xatolik: " + error.message);
+    if (!saved) {
+        // Offline fallback: save locally
+        const key = 'romix_att_local_' + todayStr;
+        const local = JSON.parse(localStorage.getItem(key) || '[]');
+        const idx = local.findIndex(a => a.employee_id === emp.id);
+        if (idx !== -1) local[idx] = { ...local[idx], ...payload };
+        else local.push({ ...payload, id: 'loc-' + Date.now() });
+        localStorage.setItem(key, JSON.stringify(local));
+        showToastHR(`⚠️ Offline: ${emp.full_name} davomati qurilmada saqlandi`, 'warn');
     }
+
+    // ✅ Always update local cache and re-render
+    if (existing) {
+        const idx = todayAtt.findIndex(a => a.id === existing.id);
+        if (idx !== -1) todayAtt[idx] = { ...todayAtt[idx], ...payload };
+        else todayAtt.push(payload);
+    } else {
+        todayAtt.push(payload);
+    }
+
+    closeActionModal();
+    filterAndRender();
+    switchTab('dashboard');
+    console.log(`✅ ${emp.full_name} → ${payload.status} (saved: ${saved ? 'Supabase' : 'LocalStorage'}`);
+    logActivity('attendance', type === 'in' ? 'Ishga keldi' : 'Ishdan ketti', emp.full_name);
+
+    if (saved) loadInitialData(); // Only background-refresh when online
 }
 
 window.downloadBadge = async function () {
