@@ -31,6 +31,7 @@ export default defineConfig({
                 warehouse_ombor: resolve(__dirname, 'src/projects/romix/warehouse/romix_ombor.html'),
                 warehouse_ombor_aksesuvar: resolve(__dirname, 'src/projects/romix/warehouse/romix_ombor_aksesuvar.html'),
                 warehouse_profil: resolve(__dirname, 'src/projects/romix/warehouse/romix_ombor_profil.html'),
+                warehouse_ombor_qoldiq: resolve(__dirname, 'src/projects/romix/warehouse/romix_ombor_qoldiq.html'),
                 production: resolve(__dirname, 'src/projects/romix/production/production_dashboard.html'),
                 showroom: resolve(__dirname, 'src/projects/romix/showroom/showroom_dashboard.html'),
                 scanner: resolve(__dirname, 'src/projects/romix/scanner/scanner.html'),
