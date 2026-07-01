@@ -296,6 +296,16 @@
                         <label class="form-label">Stvorka (ochiladigan) soni</label>
                         <input type="number" min="0" max="4" step="1" id="itemStvorka" value="0" class="form-input-v2" style="height:45px; text-align:center;" placeholder="0" title="Ochiladigan stvorkalar soni (0 = kar/deaf)">
                     </div>
+                    <!-- Ochilish turi (stvorka bo'lsa) -->
+                    <div id="openTypeWrapper">
+                        <label class="form-label">Ochilish turi</label>
+                        <select id="itemOpenType" class="form-input-v2" style="height:45px;">
+                            <option value="kasement_chap">Kasement (chapga)</option>
+                            <option value="kasement_ong">Kasement (o'ngga)</option>
+                            <option value="tilt">Tilt (tepaga qiya)</option>
+                            <option value="tilt_turn">Tilt-turn (2 rejim)</option>
+                        </select>
+                    </div>
                     <div>
                         <label class="form-label">Miqdori (Dona)</label>
                         <div style="display:flex; gap:5px;">

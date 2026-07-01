@@ -182,9 +182,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const empty3d = document.getElementById('preview3dEmpty');
     const impostWrap = document.getElementById('impostWrapper');
     const stvorkaWrap = document.getElementById('stvorkaWrapper');
+    const openTypeWrap = document.getElementById('openTypeWrapper');
     const vDivInp = document.getElementById('itemVDiv');
     const hDivInp = document.getElementById('itemHDiv');
     const stvInp = document.getElementById('itemStvorka');
+    const openTypeInp = document.getElementById('itemOpenType');
 
     function ensureViewer() {
         if (!_viewer && canvas3d) {
@@ -196,8 +198,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.update3DPreview = function update3D() {
         const type = itemTypeSel ? itemTypeSel.value : 'rom';
         const is3d = ['rom', 'rom_fortochka', 'eshik'].includes(type);
+        const stv = parseInt(stvInp && stvInp.value) || 0;
         if (impostWrap) impostWrap.style.display = is3d ? '' : 'none';
         if (stvorkaWrap) stvorkaWrap.style.display = is3d ? '' : 'none';
+        if (openTypeWrap) openTypeWrap.style.display = (is3d && stv > 0) ? '' : 'none';
         if (canvas3d) canvas3d.style.display = is3d ? 'block' : 'none';
         if (empty3d) empty3d.style.display = is3d ? 'none' : 'flex';
         if (!is3d) return;
@@ -210,7 +214,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             height: parseFloat(itemHeightInput.value) || 2.0,
             vDiv: parseInt(vDivInp && vDivInp.value) || 0,
             hDiv: parseInt(hDivInp && hDivInp.value) || 0,
-            stvorka: parseInt(stvInp && stvInp.value) || 0
+            stvorka: stv,
+            openType: openTypeInp ? openTypeInp.value : 'kasement_chap'
         });
     };
 
@@ -218,6 +223,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     [itemHeightInput, itemWidthInput, vDivInp, hDivInp, stvInp].forEach(el => {
         if (el) el.addEventListener('input', window.update3DPreview);
     });
+    if (openTypeInp) openTypeInp.addEventListener('change', window.update3DPreview);
 
     // Add Item to Basket
     const addItemBtn = document.getElementById('addItemBtn');
@@ -265,6 +271,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 vDiv: parseInt(document.getElementById('itemVDiv')?.value) || 0,
                 hDiv: parseInt(document.getElementById('itemHDiv')?.value) || 0,
                 stvorka: parseInt(document.getElementById('itemStvorka')?.value) || 0,
+                openType: document.getElementById('itemOpenType')?.value || 'kasement_chap',
                 calcVal: calcVal,
                 subtotal: subtotal,
                 unit: matOpt.dataset.unit

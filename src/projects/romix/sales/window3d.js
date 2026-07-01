@@ -42,8 +42,17 @@ export function createViewer(canvas) {
     const panelMat = new THREE.MeshStandardMaterial({ color: PANEL_COLOR, roughness: 0.7, metalness: 0.05 });
     const handleMat = new THREE.MeshStandardMaterial({ color: HANDLE_COLOR, roughness: 0.3, metalness: 0.8 });
 
+    const symMat = new THREE.LineBasicMaterial({ color: 0x1e40af }); // ochilish belgisi (ko'k)
+
     let modelGroup = new THREE.Group();
     scene.add(modelGroup);
+
+    function line(x1, y1, x2, y2, z) {
+        const g = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(x1, y1, z), new THREE.Vector3(x2, y2, z)
+        ]);
+        modelGroup.add(new THREE.Line(g, symMat));
+    }
 
     function clearGroup() {
         modelGroup.traverse(o => { if (o.geometry) o.geometry.dispose(); });
@@ -134,6 +143,17 @@ export function createViewer(canvas) {
                 box(sf, sh, d * 0.8, frameMat, cx + sw / 2 - sf / 2, cy, zf);
                 box(sw, sf, d * 0.8, frameMat, cx, cy + sh / 2 - sf / 2, zf);
                 box(sw, sf, d * 0.8, frameMat, cx, cy - sh / 2 + sf / 2, zf);
+
+                // Ochilish belgisi (kasement diagonal / tilt uchburchak)
+                const ot = params.openType || 'kasement_chap';
+                const L = cx - sw / 2, R = cx + sw / 2, T = cy + sh / 2, B = cy - sh / 2, zs = zf + d * 0.6;
+                const casL = () => { line(L, T, R, cy, zs); line(L, B, R, cy, zs); }; // hinge chapda
+                const casR = () => { line(R, T, L, cy, zs); line(R, B, L, cy, zs); }; // hinge o'ngda
+                const tilt = () => { line(L, B, cx, T, zs); line(R, B, cx, T, zs); }; // tepaga qiya
+                if (ot === 'kasement_chap') casL();
+                else if (ot === 'kasement_ong') casR();
+                else if (ot === 'tilt') tilt();
+                else if (ot === 'tilt_turn') { casL(); tilt(); }
             }
         }
 
