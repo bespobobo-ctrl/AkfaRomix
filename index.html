@@ -242,9 +242,14 @@
                     <input type="text" id="username" class="auth-input" placeholder="..." required />
                 </div>
 
-                <div id="passwordGroup" class="input-group">
+                <div id="passwordGroup" class="input-group" style="position: relative;">
                     <label>Parol</label>
-                    <input type="password" id="password" class="auth-input" placeholder="••••••••" required />
+                    <div style="position: relative; display: flex; align-items: center; width: 100%;">
+                        <input type="password" id="password" class="auth-input" placeholder="••••••••" required style="width: 100%; padding-right: 50px;" />
+                        <button type="button" id="togglePasswordBtn" style="position: absolute; right: 15px; background: none; border: none; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;">
+                            <i data-lucide="eye" style="width: 20px; height: 20px;"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="error-msg" id="errorMsg"></div>
@@ -338,6 +343,24 @@
                 document.getElementById('loginForm').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
             }
         }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const togglePasswordBtn = document.getElementById('togglePasswordBtn');
+            if (togglePasswordBtn) {
+                togglePasswordBtn.onclick = () => {
+                    const passwordInput = document.getElementById('password');
+                    const icon = togglePasswordBtn.querySelector('i');
+                    if (passwordInput.type === 'password') {
+                        passwordInput.type = 'text';
+                        icon.setAttribute('data-lucide', 'eye-off');
+                    } else {
+                        passwordInput.type = 'password';
+                        icon.setAttribute('data-lucide', 'eye');
+                    }
+                    lucide.createIcons();
+                };
+            }
+        });
 
         window.goBackToRole = function () {
             stopScanner();

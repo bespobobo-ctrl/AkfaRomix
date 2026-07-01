@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
         errorMsg.textContent = '';
 
         const username = document.getElementById('username').value.trim();
-        const password = document.getElementById('password').value;
+        const password = document.getElementById('password').value.trim();
 
         const btn = document.querySelector('.auth-btn');
         btn.textContent = 'Tekshirilmoqda...';
