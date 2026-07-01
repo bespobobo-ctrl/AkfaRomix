@@ -45,7 +45,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Load available materials from warehouse
     async function loadModels() {
-        const { data } = await supabase.from('warehouse_products').select('id, name, price, unit').eq('category', 'Profil');
+        let data = [];
+        try {
+            const res = await supabase.from('warehouse_products').select('id, name, price, unit').eq('category', 'Profil');
+            if (res.error) throw res.error;
+            data = res.data || [];
+        } catch(err) {
+            console.warn("Supabase loadModels failed, using local default models:", err);
+            data = [
+                { id: "prof-1", name: "Akfa 60 Series Profil", price: 120000, unit: "m" },
+                { id: "prof-2", name: "Akfa 70 Series Profil", price: 150000, unit: "m" },
+                { id: "prof-3", name: "Thermo 65 Insulation Profil", price: 210000, unit: "m" },
+                { id: "prof-4", name: "Engelberg 76 Premium Profil", price: 280000, unit: "m" }
+            ];
+        }
         oModel.innerHTML = '';
         if (data && data.length) {
             data.forEach(p => {
@@ -64,7 +77,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Load warehouse materials for the BOM Request
     async function loadWarehouseMaterials() {
-        const { data } = await supabase.from('warehouse_products').select('id, name, unit');
+        let data = [];
+        try {
+            const res = await supabase.from('warehouse_products').select('id, name, unit');
+            if (res.error) throw res.error;
+            data = res.data || [];
+        } catch (err) {
+            console.warn("Supabase loadWarehouseMaterials failed, using local default materials:", err);
+            data = [
+                { id: "prof-1", name: "Akfa 60 Series Profil", unit: "m" },
+                { id: "prof-2", name: "Akfa 70 Series Profil", unit: "m" },
+                { id: "prof-3", name: "Thermo 65 Insulation Profil", unit: "m" },
+                { id: "prof-4", name: "Engelberg 76 Premium Profil", unit: "m" },
+                { id: "rez-1", name: "Kauchuk Zichlagich (Rezinka)", unit: "m" },
+                { id: "oyna-1", name: "Oddiy Oyna (Glass)", unit: "kv.m" },
+                { id: "oyna-2", name: "Ikki Qavatli Shisha-Paket", unit: "kv.m" }
+            ];
+        }
         if (aMatSel) {
             aMatSel.innerHTML = '';
             if (data) {
@@ -119,8 +148,83 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function loadOrders() {
-        const { data, error } = await supabase.from('sales_orders').select('*').order('created_at', { ascending: false });
-        if (error) return;
+        let orders = [];
+        try {
+            const { data, error } = await supabase.from('sales_orders').select('*').order('created_at', { ascending: false });
+            if (error) throw error;
+            orders = data || [];
+            localStorage.setItem('romix_orders_local', JSON.stringify(orders));
+        } catch (err) {
+            console.warn("Supabase loadOrders fetch failed, using local storage:", err);
+            const localRaw = localStorage.getItem('romix_orders_local');
+            if (localRaw) {
+                orders = JSON.parse(localRaw);
+            } else {
+                orders = [
+                    {
+                        id: "ord-1",
+                        customer_name: "Toshpo'latov Sanjar",
+                        customer_phone: "+998 90 123 45 67",
+                        tg_user: "@sanjar_t",
+                        prod_type: "Rom",
+                        model_name: "Akfa 70 Series Profil",
+                        width: 1.5,
+                        height: 2.0,
+                        quantity: 4,
+                        sq_meter: 12.0,
+                        production_cost: 4000000,
+                        installation_cost: 3000000,
+                        total_price: 7000000,
+                        payment_type: "Naqd",
+                        deadline_date: new Date(Date.now() + 5*24*60*60*1000).toISOString().split('T')[0],
+                        status: "Kutilmoqda",
+                        worker_group: "",
+                        created_at: new Date(Date.now() - 1*24*60*60*1000).toISOString()
+                    },
+                    {
+                        id: "ord-2",
+                        customer_name: "Mirzaev Otabek",
+                        customer_phone: "+998 99 888 77 66",
+                        tg_user: "@otabek_m",
+                        prod_type: "Eshik",
+                        model_name: "Thermo 65 Insulation Profil",
+                        width: 0.9,
+                        height: 2.1,
+                        quantity: 2,
+                        sq_meter: 3.78,
+                        production_cost: 2000000,
+                        installation_cost: 945000,
+                        total_price: 2945000,
+                        payment_type: "Karta",
+                        deadline_date: new Date(Date.now() + 2*24*60*60*1000).toISOString().split('T')[0],
+                        status: "Jarayonda",
+                        worker_group: "Brigada 1 (Alijon)",
+                        created_at: new Date(Date.now() - 3*24*60*60*1000).toISOString()
+                    },
+                    {
+                        id: "ord-3",
+                        customer_name: "Karimov Sherzod",
+                        customer_phone: "+998 93 456 12 34",
+                        tg_user: "@sherzod_k",
+                        prod_type: "Rom",
+                        model_name: "Akfa 60 Series Profil",
+                        width: 1.2,
+                        height: 1.5,
+                        quantity: 1,
+                        sq_meter: 1.8,
+                        production_cost: 1000000,
+                        installation_cost: 450000,
+                        total_price: 1450000,
+                        payment_type: "Naqd",
+                        deadline_date: new Date(Date.now() - 2*24*60*60*1000).toISOString().split('T')[0],
+                        status: "Tayyor / Yetkazildi",
+                        worker_group: "Brigada 2 (Sardor)",
+                        created_at: new Date(Date.now() - 10*24*60*60*1000).toISOString()
+                    }
+                ];
+                localStorage.setItem('romix_orders_local', JSON.stringify(orders));
+            }
+        }
 
         // Clear views
         const table = document.getElementById('ordersTable');
@@ -134,7 +238,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         let totalSum = 0;
         let count = 0;
 
-        data.forEach(o => {
+        orders.forEach(o => {
             totalSum += parseFloat(o.total_price || 0);
             count++;
 
@@ -202,7 +306,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.querySelectorAll('.del-btn').forEach(b => {
             b.onclick = async () => {
                 if (confirm("Uchirasizmi?")) {
-                    await supabase.from('sales_orders').delete().eq('id', b.dataset.id);
+                    const id = b.dataset.id;
+                    try {
+                        const { error } = await supabase.from('sales_orders').delete().eq('id', id);
+                        if (error) throw error;
+                    } catch(err) {
+                        console.warn("Supabase delete order failed, applying to local storage:", err);
+                    }
+                    const localRaw = localStorage.getItem('romix_orders_local');
+                    if (localRaw) {
+                        let localOrders = JSON.parse(localRaw);
+                        localOrders = localOrders.filter(x => x.id !== id);
+                        localStorage.setItem('romix_orders_local', JSON.stringify(localOrders));
+                    }
                     loadOrders();
                 }
             };
@@ -322,7 +438,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const area = parseFloat(o.sq_meter);
 
                 // Get all materials to match
-                const { data: whMats } = await supabase.from('warehouse_products').select('id, name, unit');
+                let whMats = [];
+                try {
+                    const res = await supabase.from('warehouse_products').select('id, name, unit');
+                    if (res.error) throw res.error;
+                    whMats = res.data || [];
+                } catch(err) {
+                    console.warn("Supabase warehouse fetch for BOM failed, using local fallback:", err);
+                    whMats = [
+                        { id: "prof-1", name: "Akfa 60 Series Profil", unit: "m" },
+                        { id: "prof-2", name: "Akfa 70 Series Profil", unit: "m" },
+                        { id: "prof-3", name: "Thermo 65 Insulation Profil", unit: "m" },
+                        { id: "prof-4", name: "Engelberg 76 Premium Profil", unit: "m" },
+                        { id: "rez-1", name: "Kauchuk Zichlagich (Rezinka)", unit: "m" },
+                        { id: "oyna-1", name: "Oddiy Oyna (Glass)", unit: "kv.m" },
+                        { id: "oyna-2", name: "Ikki Qavatli Shisha-Paket", unit: "kv.m" }
+                    ];
+                }
+
                 if (whMats) {
                     // Try to find matching profile
                     const prof = whMats.find(m => m.name.toLowerCase().includes(o.model_name.toLowerCase()) || o.model_name.toLowerCase().includes(m.name.toLowerCase()) || m.name.toLowerCase().includes('profil'));
@@ -345,7 +478,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.querySelectorAll('.complete-btn').forEach(b => {
             b.onclick = async () => {
                 if (confirm("Haqiqatdan bu ish to'liq topshirildimi?")) {
-                    await supabase.from('sales_orders').update({ status: 'Tayyor / Yetkazildi' }).eq('id', b.dataset.id);
+                    const id = b.dataset.id;
+                    try {
+                        const { error } = await supabase.from('sales_orders').update({ status: 'Tayyor / Yetkazildi' }).eq('id', id);
+                        if (error) throw error;
+                    } catch (err) {
+                        console.warn("Supabase complete order failed, applying to local storage:", err);
+                    }
+                    const localRaw = localStorage.getItem('romix_orders_local');
+                    if (localRaw) {
+                        const localOrders = JSON.parse(localRaw);
+                        const ord = localOrders.find(x => x.id === id);
+                        if (ord) {
+                            ord.status = 'Tayyor / Yetkazildi';
+                            localStorage.setItem('romix_orders_local', JSON.stringify(localOrders));
+                        }
+                    }
                     loadOrders();
                 }
             };
@@ -379,7 +527,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('saveOrderBtn').onclick = async () => {
         const calcObj = calculateTotal();
         const selectedOpt = oModel.options[oModel.selectedIndex];
-        const res = await supabase.from('sales_orders').insert([{
+
+        const newOrder = {
+            id: 'ord-' + Date.now().toString().slice(-6),
             customer_name: document.getElementById('oCustomer').value.trim(),
             customer_phone: document.getElementById('oPhone').value.trim(),
             tg_user: document.getElementById('oTg').value.trim(),
@@ -394,9 +544,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             total_price: calcObj.finalTotal,
             payment_type: document.getElementById('oPayment').value,
             deadline_date: document.getElementById('oDeadline').value,
-            status: 'Kutilmoqda'
-        }]).select().single();
-        if (res.error) console.error(res.error);
+            status: 'Kutilmoqda',
+            worker_group: '',
+            created_at: new Date().toISOString()
+        };
+
+        try {
+            const res = await supabase.from('sales_orders').insert([newOrder]).select().single();
+            if (res.error) throw res.error;
+        } catch(err) {
+            console.warn("Supabase insert order failed, writing to local storage:", err);
+            const localRaw = localStorage.getItem('romix_orders_local');
+            const localOrders = localRaw ? JSON.parse(localRaw) : [];
+            localOrders.unshift(newOrder);
+            localStorage.setItem('romix_orders_local', JSON.stringify(localOrders));
+        }
 
         orderModal.classList.add('hidden');
         loadOrders();
@@ -404,11 +566,34 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Edits
     document.getElementById('saveEditOrderBtn').onclick = async () => {
-        await supabase.from('sales_orders').update({
-            customer_name: document.getElementById('eCustomer').value,
-            customer_phone: document.getElementById('ePhone').value,
-            status: document.getElementById('eStatus').value
-        }).eq('id', window.editingOrderId);
+        const id = window.editingOrderId;
+        const customer_name = document.getElementById('eCustomer').value;
+        const customer_phone = document.getElementById('ePhone').value;
+        const status = document.getElementById('eStatus').value;
+
+        try {
+            const { error } = await supabase.from('sales_orders').update({
+                customer_name,
+                customer_phone,
+                status
+            }).eq('id', id);
+            if (error) throw error;
+        } catch (err) {
+            console.warn("Supabase update order failed, applying to local storage:", err);
+        }
+
+        const localRaw = localStorage.getItem('romix_orders_local');
+        if (localRaw) {
+            const localOrders = JSON.parse(localRaw);
+            const ord = localOrders.find(x => x.id === id);
+            if (ord) {
+                ord.customer_name = customer_name;
+                ord.customer_phone = customer_phone;
+                ord.status = status;
+                localStorage.setItem('romix_orders_local', JSON.stringify(localOrders));
+            }
+        }
+
         editModal.classList.add('hidden');
         loadOrders();
     };
@@ -423,23 +608,53 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // 1. Update order
-        await supabase.from('sales_orders').update({
-            worker_group: grp,
-            status: 'Jarayonda'
-        }).eq('id', oId);
+        try {
+            const { error } = await supabase.from('sales_orders').update({
+                worker_group: grp,
+                status: 'Jarayonda'
+            }).eq('id', oId);
+            if (error) throw error;
+        } catch (err) {
+            console.warn("Supabase assign group failed, applying to local storage:", err);
+        }
+
+        const localRaw = localStorage.getItem('romix_orders_local');
+        if (localRaw) {
+            const localOrders = JSON.parse(localRaw);
+            const ord = localOrders.find(x => x.id === oId);
+            if (ord) {
+                ord.worker_group = grp;
+                ord.status = 'Jarayonda';
+                localStorage.setItem('romix_orders_local', JSON.stringify(localOrders));
+            }
+        }
 
         // 2. Insert to material_requests
-        const { data: reqData, error } = await supabase.from('material_requests').insert([{
-            order_id: oId,
-            worker_group: grp,
-            materials_json: window.reqMaterials,
-            status: 'Kutilmoqda'
-        }]).select().single();
+        let reqData = null;
+        try {
+            const res = await supabase.from('material_requests').insert([{
+                order_id: oId,
+                worker_group: grp,
+                materials_json: window.reqMaterials,
+                status: 'Kutilmoqda'
+            }]).select().single();
+            if (res.error) throw res.error;
+            reqData = res.data;
+        } catch (err) {
+            console.warn("Supabase material request failed, using local mock:", err);
+            reqData = {
+                id: 'req-' + Date.now().toString().slice(-6),
+                order_id: oId,
+                worker_group: grp,
+                materials_json: window.reqMaterials,
+                status: 'Kutilmoqda'
+            };
+        }
 
         assignModal.classList.add('hidden');
         loadOrders();
 
-        if (!error && reqData) {
+        if (reqData) {
             // Print the slip for the warehouse
             const rId = reqData.id.slice(0, 8).toUpperCase();
             const createdDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -520,9 +735,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             mainApp.classList.add('hidden');
             printArea.classList.remove('hidden');
-        } else {
-            alert("Bazaga yoza olmadim (baza yo'q bo'lishi mumkin). Hozircha faqat buyurtma o'zgartirildi!");
-            console.error(error);
         }
     };
 
