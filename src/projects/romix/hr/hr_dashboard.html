@@ -1077,8 +1077,8 @@
             <div style="display:flex; gap:15px; align-items:center; flex:1; max-width:600px; margin-left: 20px;">
                 <div class="search-container" style="flex:1;">
                     <!-- Chrome/Edge auto-fill decoy -->
-                    <input type="text" name="prevent_autofill" style="display:none" tabindex="-1">
-                    <input type="password" name="password_autofill" style="display:none" tabindex="-1">
+                    <input type="text" name="prevent_autofill" style="position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; z-index: -999;" tabindex="-1">
+                    <input type="password" name="password_autofill" style="position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; z-index: -999;" tabindex="-1">
 
                     <i data-lucide="search" size="18" style="color:var(--text-s)"></i>
                     <input type="text" id="hrSearchPrimary" placeholder="Xodimlarni qidirish..." autocomplete="off"
