@@ -1364,17 +1364,17 @@
                     </div>
                 </div>
                 <div class="scada-metrics">
-                    <div class="scada-metric-row">
+                    <div class="scada-metric-row" style="cursor: pointer;" onclick="window.showCoolingDetails()">
                         <span class="scada-metric-label">Kraskadagi Arava</span>
                         <span id="dash-kraska-arava" class="scada-metric-val" style="color: #ba00ff;">0 ta</span>
                     </div>
-                    <div class="scada-metric-row">
+                    <div class="scada-metric-row" style="cursor: pointer;" onclick="document.getElementById('sushilkaDetailsModal').style.display='flex'">
                         <span class="scada-metric-label">Sushilka (Quritish)</span>
-                        <span id="dash-kraska-sushilka" class="scada-metric-val" style="color: #fabb18;">0 ta (0%)</span>
+                        <span id="dash-kraska-sushilka" class="scada-metric-val" style="color: #fabb18;">0 ta</span>
                     </div>
-                    <div class="scada-metric-row">
-                        <span class="scada-metric-label">Sovutish Treki</span>
-                        <span id="dash-kraska-sovutish" class="scada-metric-val" style="color: #00f2ff;">0 ta (0%)</span>
+                    <div class="scada-metric-row" style="cursor: pointer;" onclick="window.showXomOmborDetails()">
+                        <span class="scada-metric-label">Xom Mahsulot Ombori</span>
+                        <span id="dash-kraska-sovutish" class="scada-metric-val" style="color: #00f2ff;">0 ta (0 set)</span>
                     </div>
                 </div>
             </div>
@@ -1708,15 +1708,19 @@
                 let totalProds = 0;
                 
                 if (prods && prods.length > 0) {
-                    totalProds = prods.length;
-                    inStanok = prods.filter(p => p.status === 'stanok' || p.status === 'stanok_tugadi').length;
-                    inKraska = prods.filter(p => p.status === 'kraska' || p.status === 'kraska_tugadi').length;
-                    inSushilka = prods.filter(p => p.status === 'sushilka' || p.status === 'sushilka_tugadi').length;
-                    inSovutish = prods.filter(p => p.status === 'sovutish' || p.status === 'sovutish_tugadi').length;
+                    inStanok = prods.filter(p => (p.stage && p.stage.startsWith('stanok')) || p.status === 'stanok' || p.status === 'stanok_tugadi').length;
+                    inKraska = prods.filter(p => (p.stage && p.stage.startsWith('kraska')) || p.status === 'kraska' || p.status === 'kraska_tugadi').length;
+                    inSushilka = prods.filter(p => (p.stage && p.stage.startsWith('sushilka')) || p.status === 'sushilka' || p.status === 'sushilka_tugadi').length;
+                    
+                    // Xom mahsulot ombori (sovutish or xom_ombor) sum up actual piece quantities
+                    const sovutishItems = prods.filter(p => (p.stage && (p.stage.startsWith('sovutish') || p.stage.startsWith('xom_ombor'))) || p.status === 'sovutish' || p.status === 'sovutish_tugadi');
+                    inSovutish = sovutishItems.reduce((sum, p) => sum + (p.quantity || 0), 0);
+                    
+                    totalProds = inStanok + inKraska + inSushilka;
                     
                     document.getElementById('dash-kraska-arava').innerText = `${inKraska} ta`;
                     document.getElementById('dash-kraska-sushilka').innerText = `${inSushilka} ta`;
-                    document.getElementById('dash-kraska-sovutish').innerText = `${inSovutish} ta`;
+                    document.getElementById('dash-kraska-sovutish').innerText = `${inSovutish} ta (${Math.floor(inSovutish / 4)} set)`;
 
                     // Calculate speed
                     const speed = Math.round(totalProds * 3.5); // fake metric based on carts
@@ -1731,9 +1735,9 @@
                 const faolStanok = inStanok > 0 ? (inStanok > 1 ? 2 : 1) : 0;
                 document.getElementById('dash-stanok-faol').innerHTML = `${faolStanok} / 2 ta`;
                 
-                // Jami 20 ta aravacha, shundan inStanok tasi band, qolgani bo'sh
+                // Jami 20 ta aravacha, shundan inKraska + inSushilka tasi band, qolgani bo'sh
                 const jamiArava = 20;
-                const bandArava = totalProds; // Hamma jarayondagi aravalar band hisoblanadi
+                const bandArava = inKraska + inSushilka; 
                 const boshArava = Math.max(0, jamiArava - bandArava);
                 document.getElementById('dash-stanok-arava').innerHTML = `${bandArava} ta band <span style="font-size:0.75rem; color:#00ff88; margin-left:5px;">(${boshArava} bo'sh)</span>`;
 
@@ -1802,7 +1806,7 @@
                     <div>
                         <h2 id="md-title"
                              style="font-size:2.2rem; font-weight:900; color:#fff; letter-spacing:-1.5px; margin-bottom:6px;">
-                            STANOK №1</h2>
+                            ST-1 (BS400-III)</h2>
                         <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                             <div
                                 style="display:flex; align-items:center; gap:6px; background:rgba(0,255,136,0.08); border:1px solid rgba(0,255,136,0.2); padding:5px 12px; border-radius:10px;">
@@ -2014,6 +2018,42 @@
                         </div>
                     </div>
 
+                    <!-- ⛽ ZAPRAVKA MA'LUMOTLARI BLOKI -->
+                    <div style="background:linear-gradient(135deg, rgba(186,0,255,0.06), rgba(0,186,255,0.03)); border:1px solid rgba(186,0,255,0.18); border-radius:24px; padding:22px; margin-bottom:10px; font-family:'Inter', sans-serif;">
+                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px; width: 100%;">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span style="font-size:1.3rem;">⛽</span>
+                                <div style="font-size:0.62rem; font-weight:800; color:rgba(186,0,255,0.8); text-transform:uppercase; letter-spacing:1.5px;">OXIRGI ZAPRAVKA MA'LUMOTLARI</div>
+                            </div>
+                            <button id="md-refuel-btn" style="background:#ba00ff; color:#fff; border:none; padding:6px 14px; border-radius:12px; font-size:0.65rem; font-weight:800; cursor:pointer; display:flex; align-items:center; gap:5px; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(186,0,255,0.3);">
+                                <span>⚡</span> ZAPRAVKA QILISH
+                            </button>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+                            <div style="background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.04); padding:12px; border-radius:16px;">
+                                <div style="font-size:0.55rem; color:rgba(255,255,255,0.4); margin-bottom:4px;">YUKLANGAN XOM-ASHYO</div>
+                                <div id="md-refuel-qty" style="font-size:1.15rem; font-weight:900; color:#fff;">-- kg</div>
+                                <div id="md-refuel-time" style="font-size:0.6rem; color:rgba(255,255,255,0.3); margin-top:2px;">--:--</div>
+                            </div>
+                            <div style="background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.04); padding:12px; border-radius:16px;">
+                                <div style="font-size:0.55rem; color:rgba(255,255,255,0.4); margin-bottom:4px;">ISHLAB CHIQARILDI</div>
+                                <div id="md-refuel-prod-qty" style="font-size:1.15rem; font-weight:900; color:#00ff88;">-- dona</div>
+                                <div id="md-refuel-prod-raw" style="font-size:0.6rem; color:rgba(255,255,255,0.3); margin-top:2px;">-- kg sarflandi</div>
+                            </div>
+                            <div style="background:rgba(186,0,255,0.08); border:1px solid rgba(186,0,255,0.15); padding:12px; border-radius:16px;">
+                                <div style="font-size:0.55rem; color:#ba00ff; font-weight:800; margin-bottom:4px;">ZAPRAVKA QOLDIG'I</div>
+                                <div id="md-refuel-rem" style="font-size:1.15rem; font-weight:900; color:#ba00ff;">-- kg</div>
+                                <div style="font-size:0.6rem; color:rgba(255,255,255,0.3); margin-top:2px;">stanok ichida</div>
+                            </div>
+                        </div>
+                        <div style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.05); padding-top:15px;">
+                            <div style="font-size:0.6rem; color:rgba(255,255,255,0.5); text-transform:uppercase; margin-bottom:10px; font-weight:700;">ZAPRAVKA TARIXI</div>
+                            <div id="md-refuel-history" style="max-height:120px; overflow-y:auto; padding-right:5px; scrollbar-width:thin; scrollbar-color:rgba(186,0,255,0.5) transparent;">
+                                <!-- History items will be rendered here -->
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- === QATOR 3: SOATLIK ENERGIYA GRAFIGI === -->
                     <div
                         style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:24px; padding:20px 22px;">
@@ -2213,7 +2253,7 @@
                     <div>
                         <h2 style="font-size:1.6rem; font-weight:900; color:#fff; letter-spacing:-1px; margin:0 0 4px 0;">Kunlik Hisobot</h2>
                         <div style="font-size:0.75rem; color:rgba(255,255,255,0.4); font-weight:600;">
-                            <span id="mdReportStanokName">STANOK №1</span> • <span id="mdReportDate">23.05.2026</span>
+                            <span id="mdReportStanokName">ST-1 (BS400-III)</span> • <span id="mdReportDate">23.05.2026</span>
                         </div>
                     </div>
                 </div>
@@ -2351,11 +2391,15 @@
                 <div style="display:flex; flex-direction:column; gap:10px;">
                     <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
                         <span style="color:rgba(255,255,255,0.4);">Uskuna (Stanok):</span>
-                        <strong id="pd-machine" style="color:#fff;">STANOK №1</strong>
+                        <strong id="pd-machine" style="color:#fff;">ST-1 (BS400-III)</strong>
                     </div>
                     <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
                         <span style="color:rgba(255,255,255,0.4);">Mas'ul Operator:</span>
                         <strong id="pd-operator" style="color:#fff;">Jaloliddin R.</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
+                        <span style="color:rgba(255,255,255,0.4);">Ochilgan (tushgan) vaqti:</span>
+                        <strong id="pd-created-at" style="color:#fff;">--:--</strong>
                     </div>
                     <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
                         <span style="color:rgba(255,255,255,0.4);">Boshlanish vaqti:</span>
@@ -2894,7 +2938,7 @@
         const pdfBtn = document.getElementById('mdExportPdf');
 
         function getReportData() {
-            const stanokName = (document.getElementById('md-title') || {}).textContent?.trim() || 'STANOK №1';
+            const stanokName = (document.getElementById('md-title') || {}).textContent?.trim() || 'ST-1 (BS400-III)';
             const operator = (document.getElementById('md-operator-name') || {}).textContent?.trim() || 'Noma\'lum';
             const today = new Date();
             const dateStr = today.toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -3127,6 +3171,73 @@
     })();
     </script>
 
+    <!-- 📦 PREMIUM XOM MAHSULOT OMBORI TAFSILOTLARI MODALI -->
+    <div id="xomOmborDetailsModal"
+        style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.94); backdrop-filter:blur(40px); z-index:1000004; align-items:center; justify-content:center; padding:20px; overflow-y:auto;">
+        <div
+            style="width:100%; max-width:1160px; background:linear-gradient(165deg, rgba(8,16,28,0.99), rgba(15,26,42,0.96)); border:1px solid rgba(0,242,255,0.3); padding:30px; border-radius:30px; box-shadow:0 60px 120px rgba(0,0,0,0.95); position:relative; overflow:hidden;">
+
+            <!-- Nur effekti -->
+            <div
+                style="position:absolute; top:-80px; right:-80px; width:300px; height:300px; background:radial-gradient(circle, rgba(0,242,255,0.08), transparent); filter:blur(50px); pointer-events:none;">
+            </div>
+
+            <!-- === HEADER === -->
+            <div
+                style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.05);">
+                <div style="display:flex; align-items:center; gap:20px;">
+                    <div
+                        style="width:72px; height:72px; background:linear-gradient(135deg, rgba(0,242,255,0.15), rgba(0,242,255,0.05)); border-radius:22px; display:flex; align-items:center; justify-content:center; font-size:2.5rem; border:1px solid rgba(0,242,255,0.3); box-shadow:0 0 30px rgba(0,242,255,0.15);">
+                        📦</div>
+                    <div>
+                        <h2 style="font-size:2.2rem; font-weight:900; color:#fff; letter-spacing:-1.5px; margin-bottom:6px; font-family:'Inter', sans-serif;">
+                            XOM MAHSULOT OMBORI</h2>
+                        <p style="color:rgba(255,255,255,0.4); font-size:0.85rem; font-weight:600; letter-spacing:0.5px; font-family:'Inter', sans-serif;">Omborda mavjud bo'lgan barcha modellar va karkaslar miqdori</p>
+                    </div>
+                </div>
+                <button onclick="document.getElementById('xomOmborDetailsModal').style.display='none'"
+                    style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); width:44px; height:44px; border-radius:14px; color:#fff; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s;"
+                    onmouseenter="this.style.background='rgba(255,77,79,0.2)'; this.style.borderColor='rgba(255,77,79,0.4)'"
+                    onmouseleave="this.style.background='rgba(255,255,255,0.04)'; this.style.borderColor='rgba(255,255,255,0.08)'">
+                    ✕</button>
+            </div>
+
+            <!-- === STATS SUMMARY PANEL === -->
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:20px; margin-bottom:30px; font-family:'Inter', sans-serif;">
+                <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:20px; border-radius:20px; display:flex; align-items:center; gap:16px;">
+                    <div style="font-size:2rem; background:rgba(0,242,255,0.1); width:50px; height:50px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#00f2ff;">🔢</div>
+                    <div>
+                        <div style="font-size:0.65rem; color:rgba(255,255,255,0.4); font-weight:800; letter-spacing:1px;">JAMI KARKASLAR</div>
+                        <div style="font-size:1.8rem; font-weight:900; color:#fff;" id="xom-cd-total-qty">0 dona</div>
+                    </div>
+                </div>
+                <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:20px; border-radius:20px; display:flex; align-items:center; gap:16px;">
+                    <div style="font-size:2rem; background:rgba(0,242,255,0.15); width:50px; height:50px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#00f2ff; box-shadow:0 0 15px rgba(0,242,255,0.15);">📦</div>
+                    <div>
+                        <div style="font-size:0.65rem; color:rgba(255,255,255,0.4); font-weight:800; letter-spacing:1px;">JAMI KOMPLEKTLAR (BOX)</div>
+                        <div style="font-size:1.8rem; font-weight:900; color:#00f2ff;" id="xom-cd-total-sets">0 komplekt</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- === GRID === -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px; font-family:'Inter', sans-serif;">
+                <h3 style="font-size:1.1rem; color:#fff; font-weight:800; letter-spacing:-0.5px; margin:0; display:flex; align-items:center; gap:8px;">
+                    <span style="width:8px; height:8px; background:#ba00ff; border-radius:50%; box-shadow:0 0 8px #ba00ff;"></span>
+                    OMBOR STATISTIKASI (MODELLAR BO'YICHA)
+                </h3>
+                <div id="raw-warehouse-tabs-container" style="display:flex; gap:6px; background:rgba(0,0,0,0.25); padding:4px; border-radius:12px; border:1px solid rgba(255,255,255,0.05); flex-wrap:wrap; justify-content:center;">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+            
+            <div id="xom-ombor-grid" 
+                style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:16px; margin-bottom:20px; max-height:480px; overflow-y:auto; padding-right:5px; font-family:'Inter', sans-serif;">
+                <!-- Warehouse inventory will be dynamically rendered here -->
+            </div>
+        </div>
+    </div>
+
     <!-- ❄️ PREMIUM SOVUTISH DETALLARI MODALI (20 TA ARAVA NAZORATI) -->
     <div id="coolingDetailsModal"
         style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.94); backdrop-filter:blur(40px); z-index:1000004; align-items:center; justify-content:center; padding:20px; overflow-y:auto;">
@@ -3320,7 +3431,7 @@
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
                     <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:16px; border-radius:18px;">
                         <div style="font-size:0.6rem; color:rgba(255,255,255,0.4); font-weight:800; letter-spacing:0.5px; margin-bottom:8px;">STANOK OPERATORI</div>
-                        <div id="pass-show-machine" style="font-size:0.75rem; font-weight:800; color:rgba(255,255,255,0.7); margin-bottom:4px; display:inline-block; padding:2px 6px; background:rgba(255,255,255,0.1); border-radius:6px;">STANOK №1</div>
+                        <div id="pass-show-machine" style="font-size:0.75rem; font-weight:800; color:rgba(255,255,255,0.7); margin-bottom:4px; display:inline-block; padding:2px 6px; background:rgba(255,255,255,0.1); border-radius:6px;">ST-1 (BS400-III)</div>
                         <div id="pass-show-operator" style="font-size:0.95rem; font-weight:800; color:#fff;">Jaloliddin R.</div>
                     </div>
                     <div style="background:rgba(186,0,255,0.03); border:1px solid rgba(186,0,255,0.15); padding:16px; border-radius:18px;">
@@ -3508,6 +3619,30 @@
                     }
                 };
             </script>
+        </div>
+    </div>
+    <!-- ⛽ Admin Refuel Modal -->
+    <div id="adminRefuelModal"
+        style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(15px); z-index:10000000; align-items:center; justify-content:center;">
+        <div class="user-form-modal" style="width: 420px; padding: 32px; text-align: center; position: relative; background: #0c101b; border: 1px solid rgba(186,0,255,0.25); border-radius: 28px; box-shadow: 0 10px 40px rgba(186,0,255,0.15); font-family: 'Inter', sans-serif;">
+            <div style="font-size: 3.8rem; margin-bottom: 15px; filter: drop-shadow(0 0 15px rgba(186,0,255,0.4));">⛽</div>
+            <h2 id="adminRefuelModalTitle" style="margin-bottom:10px; color:#fff; font-weight: 800; font-size: 1.6rem; letter-spacing: -0.5px;">Stanokni Zapravka Qilish</h2>
+            <p id="adminRefuelModalDesc" style="color:rgba(255,255,255,0.5); font-size: 0.88rem; margin-bottom: 25px;">Stanok uchun yuklanayotgan alyuminiy xom-ashyosi miqdorini (kg) kiriting:</p>
+
+            <div style="display:flex; flex-direction:column; gap:15px; text-align: left;">
+                <input type="number" id="adminRefuelQtyInput" value="100" placeholder="Masalan: 100"
+                    style="width: 100%; padding: 18px; border-radius: 16px; border: 1.5px solid rgba(186,0,255,0.2); background: rgba(0,0,0,0.4); color: #fff; font-size: 1.6rem; text-align: center; outline: none; font-weight: 800; font-family: inherit; transition: 0.3s; box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);"
+                    onfocus="this.style.borderColor='#ba00ff'; this.style.boxShadow='0 0 10px rgba(186,0,255,0.3), inset 0 2px 8px rgba(0,0,0,0.5)'"
+                    onblur="this.style.borderColor='rgba(186,0,255,0.2)'; this.style.boxShadow='inset 0 2px 8px rgba(0,0,0,0.5)'">
+            </div>
+
+            <div style="display:flex; gap:14px; margin-top:30px;">
+                <button id="adminRefuelConfirmBtn"
+                    style="flex:1.3; background:linear-gradient(135deg, #ba00ff, #7f00ff); color:#fff; border:none; padding:16px; border-radius:16px; font-weight:800; cursor:pointer; font-size: 0.95rem; transition: 0.3s; box-shadow: 0 4px 18px rgba(186,0,255,0.4); font-family: inherit; letter-spacing: 0.5px;">YUKLASH ⚡</button>
+                <button id="adminRefuelCloseBtn"
+                    style="flex:1; background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.7); border:1px solid rgba(255,255,255,0.1); padding:16px; border-radius:16px; cursor:pointer; font-weight: 700; font-size: 0.95rem; transition: 0.3s; font-family: inherit;"
+                    onclick="document.getElementById('adminRefuelModal').style.display='none'">BEKOR QILISH</button>
+            </div>
         </div>
     </div>
 </body>

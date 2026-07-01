@@ -979,6 +979,7 @@
             if (!confirm('⚠️ Ishlab chiqarish jarayonidagi BARCHA mahsulotlar tozalansinmi?')) return;
             toast('Ishlab chiqarish tozalanmoqda...', '⏳');
             await clearTable('clapak_production');
+            await clearTable('clapak_kraska_logs');
             localStorage.removeItem('clapak_kraska_logs_local');
             logH('settings', 'Ishlab chiqarish tozalandi', 'Ishlab chiqarishdagi barcha jarayonlar tozalandi');
             toast('Ishlab chiqarish tozalandi', '🗑️');
@@ -989,6 +990,7 @@
             toast('Barcha baza tozalanmoqda. Kuting...', '⏳');
             
             await clearTable('clapak_production');
+            await clearTable('clapak_kraska_logs');
             await clearTable('clapak_inventory');
             await clearTable('warehouse_products');
             await clearTable('warehouse_transactions');

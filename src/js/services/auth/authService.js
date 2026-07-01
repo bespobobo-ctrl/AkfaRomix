@@ -23,12 +23,12 @@ export const authService = {
         }
 
         // 0.2 Check Kraska Operators
-        if ((username.toLowerCase() === 'kraska1' && password === '123') || (username.toLowerCase() === 'kraska2' && password === '123')) {
+        if ((username.toLowerCase() === 'kraska1' && password === '123') || (username.toLowerCase() === 'kraska2' && password === '123') || (username.toLowerCase() === 'kraska3' && password === '123')) {
             const userData = {
-                id: username.toLowerCase() === 'kraska1' ? 'K1' : 'K2',
+                id: username.toLowerCase() === 'kraska1' ? 'K1' : username.toLowerCase() === 'kraska2' ? 'K2' : 'K3',
                 username: username,
                 role: 'kraska',
-                full_name: username.toLowerCase() === 'kraska1' ? 'Rassom 1' : 'Rassom 2'
+                full_name: username.toLowerCase() === 'kraska1' ? 'Rassom 1' : username.toLowerCase() === 'kraska2' ? 'Rassom 2' : 'Rassom 3'
             };
             localStorage.setItem('currentUser', JSON.stringify(userData));
             localStorage.setItem('kraska_session', JSON.stringify({ id: userData.id, username: username, role: 'kraska', name: userData.full_name }));
@@ -50,12 +50,34 @@ export const authService = {
 
         // 1. Try System Users First (Admin, HR, etc)
         // SECURITY NOTE: Passwords should be stored as hashes (e.g. Bcrypt) and checked via Supabase Auth
-        const { data: user } = await supabase
-            .from('system_users')
-            .select('id, username, role, full_name')
-            .eq('username', username)
-            .eq('password', password)
-            .maybeSingle();
+        let user = null;
+        try {
+            const { data } = await supabase
+                .from('system_users')
+                .select('id, username, role, full_name')
+                .eq('username', username)
+                .eq('password', password)
+                .maybeSingle();
+            user = data;
+        } catch (dbError) {
+            console.warn("Database system_users query failed, checking local credentials", dbError);
+            const localUsers = [
+                { id: "c019b7cb-1b30-48b0-a526-d87c3535cc89", username: "admin", password: "123", full_name: "Super Admin", role: "admin" },
+                { id: "41842320-5831-4556-aaf9-a00b6c82133d", username: "hr", password: "123", full_name: "Kadirlar Bo'limi", role: "hr" },
+                { id: "550b6df7-52fa-4b43-9285-383d55b6cb86", username: "ombor", password: "123", full_name: "Ali", role: "manager" },
+                { id: "26bce1d4-3e98-4703-abf8-754cd686ed86", username: "sotuv", password: "123", full_name: "Jasur", role: "sotuv" },
+                { id: "401046f5-7668-47c5-8099-cb9c81d0d6ca", username: "123", password: "123", full_name: "botir", role: "ishlab_chiqarish" }
+            ];
+            const foundUser = localUsers.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
+            if (foundUser) {
+                user = {
+                    id: foundUser.id,
+                    username: foundUser.username,
+                    role: foundUser.role,
+                    full_name: foundUser.full_name
+                };
+            }
+        }
 
         if (user) {
             const userData = {
@@ -69,11 +91,24 @@ export const authService = {
         }
 
         // 2. Try Employees Table (Username = ID or Full Name, Password = ID)
-        const { data: emp } = await supabase
-            .from('employees')
-            .select('id, full_name, avatar_url')
-            .or(`id.eq.${username},full_name.eq.${username}`)
-            .maybeSingle();
+        let emp = null;
+        try {
+            const { data } = await supabase
+                .from('employees')
+                .select('id, full_name, avatar_url')
+                .or(`id.eq.${username},full_name.eq.${username}`)
+                .maybeSingle();
+            emp = data;
+        } catch (dbError) {
+            console.warn("Database employees query failed, checking local credentials", dbError);
+            const localEmployees = [
+                { id: "80bb0fbd-3216-4cfb-a1ea-fad946736347", full_name: "Farhod Manopov", avatar_url: "" }
+            ];
+            const foundEmp = localEmployees.find(e => e.id === username || e.full_name.toLowerCase() === username.toLowerCase());
+            if (foundEmp) {
+                emp = foundEmp;
+            }
+        }
 
         // For employees, we can use their ID as the password for simplicity
         // If password is not provided (manual ID entry), we assume password matches ID

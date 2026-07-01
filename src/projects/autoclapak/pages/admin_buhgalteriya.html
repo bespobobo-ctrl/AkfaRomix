@@ -495,6 +495,7 @@
                             <button class="buh-tab-btn" data-buh-tab="buh-ombor">📦 Ombor</button>
                             <button class="buh-tab-btn" data-buh-tab="buh-harajatlar">⚡ Harajatlar</button>
                             <button class="buh-tab-btn" data-buh-tab="buh-sotuv">📈 Sotuv & Foyda</button>
+                            <button class="buh-tab-btn" data-buh-tab="buh-ishlab-chiqarish">⚙️ Ishlab Chiqarish</button>
                         </div>
 
 
@@ -977,6 +978,46 @@
                                 <div style="font-size: 0.8rem; color: rgba(255,255,255,0.35); margin-top: 10px;">
                                     Jami sotuv: <span id="buh-sales-total-revenue" style="color: #00ff88; font-weight: 800;">0 UZS</span> |
                                     Jami tan narxi: <span id="buh-sales-total-cost" style="color: #ff4d4f; font-weight: 800;">0 UZS</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ============ TAB 5: ISHLAB CHIQARISH RECEPT SOZLAMALARI ============ -->
+                        <div id="buh-ishlab-chiqarish" class="buh-tab-content">
+                            <div class="buh-section-card">
+                                <div class="buh-section-title">
+                                    <div class="title-icon" style="background: rgba(0,210,255,0.1); color: #00d2ff;">⚙️</div>
+                                    Xomashyo Sarfi Sozlamalari (1 dona karkas uchun grammda)
+                                </div>
+                                <p style="font-size: 0.78rem; color: rgba(255,255,255,0.35); margin-bottom: 15px;">
+                                    Barcha razmer va modellarga 1 dona karkas quyish uchun ketadigan xom-ashyo (granula) og'irligini grammda belgilang.
+                                </p>
+                                <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 20px; background: rgba(255,255,255,0.02); padding: 12px 18px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.04); width: fit-content;">
+                                    <label style="font-size: 0.75rem; color: rgba(255,255,255,0.5); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">🔍 Razmer bo'yicha filter:</label>
+                                    <select id="buh-ishlab-chiqarish-size-filter" onchange="window.filterBuhIshlabChiqarish()" style="width: 140px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 8px 12px; border-radius: 10px; font-size: 0.85rem; outline: none; appearance: none; font-family: inherit; font-weight: 700; cursor: pointer;">
+                                        <option value="all" style="background:#070f19; color:#fff;">Barchasi</option>
+                                    </select>
+                                </div>
+                                <div class="buh-table-wrap">
+                                    <table class="buh-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Mahsulot Nomi / Modeli</th>
+                                                <th>Dizayn (Kategoriya)</th>
+                                                <th>Hozirgi Sarf (Gramm)</th>
+                                                <th>Yangi Sarf (Gramm)</th>
+                                                <th>Amal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="buh-ishlab-chiqarish-table">
+                                            <tr><td colspan="5" style="text-align:center; color:rgba(255,255,255,0.2); padding:30px;">Yuklanmoqda...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div style="display: flex; justify-content: flex-end; margin-top: 15px;">
+                                    <button class="buh-btn-primary" onclick="window.saveAllProductRawWeights()" style="background: linear-gradient(135deg, #00d2ff 0%, #0072ff 100%); color: #fff; box-shadow: 0 8px 24px rgba(0,114,255,0.3);">
+                                        💾 Barcha O'zgarishlarni Saqlash
+                                    </button>
                                 </div>
                             </div>
                         </div>

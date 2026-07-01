@@ -247,11 +247,14 @@
 
                         <!-- PREMIUM PRODUCT SHOWROOM GRID -->
                         <div class="clapak-card" style="background: rgba(13,22,34,0.6); border: 1px solid rgba(255,255,255,0.05); padding: 25px; border-radius: 24px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-                                <h3 style="font-size: 1.15rem; font-weight: 800; color: #fff; margin: 0; display: flex; align-items: center; gap: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; gap: 15px; flex-wrap: wrap; width: 100%;">
+                                <h3 style="font-size: 1.15rem; font-weight: 800; color: #fff; margin: 0; display: flex; align-items: center; gap: 10px; white-space: nowrap;">
                                     <span style="font-size: 1.3rem;">🏪</span> Ombor Tayyor Mahsulotlar Showroomi
                                 </h3>
-                                <button onclick="window.sendToSalesDepartment()" class="clapak-btn-primary" style="padding: 10px 20px; border-radius: 12px; background: linear-gradient(135deg, #00d2ff, #0072ff); color: #fff; font-size: 0.75rem; font-weight: 800; border: none; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(0,114,255,0.2); display: flex; align-items: center; gap: 6px;">
+                                <div id="showroom-tabs-container" style="display: flex; gap: 6px; background: rgba(0,0,0,0.25); padding: 4px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin: 0 auto; flex-wrap: wrap; justify-content: center;">
+                                    <!-- Populated dynamically -->
+                                </div>
+                                <button onclick="window.sendToSalesDepartment()" class="clapak-btn-primary" style="padding: 10px 20px; border-radius: 12px; background: linear-gradient(135deg, #00d2ff, #0072ff); color: #fff; font-size: 0.75rem; font-weight: 800; border: none; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(0,114,255,0.2); display: flex; align-items: center; gap: 6px; white-space: nowrap;">
                                     <span>🚀</span> Sotuv Bo'limiga Sinxronlash
                                 </button>
                             </div>
@@ -288,7 +291,7 @@
             <div style="display: flex; flex-direction: column; gap: 15px;">
                 
                 <!-- Model & Design choice in grid -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div style="display: none;">
                     <div style="display: flex; flex-direction: column; gap: 6px;">
                         <label style="font-size: 0.65rem; color: rgba(255,255,255,0.4); font-weight: 700;">MODEL TURI</label>
                         <select id="modal-prod-model" class="auth-input" style="width: 100%; padding: 10px 15px; font-size: 0.85rem; font-weight: 700; color: #fff; border-radius: 12px; background: rgba(0,0,0,0.3); border: 1.5px solid rgba(255,255,255,0.08); cursor: pointer; color-scheme: dark; box-sizing: border-box;">
@@ -318,16 +321,21 @@
             </div>
 
             <!-- Actions -->
-            <div style="display: flex; gap: 12px; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 20px;">
+            <div style="display: flex; gap: 10px; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 20px;">
                 <button onclick="window.closeEditProductModal()" style="flex: 1; padding: 12px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); color: #fff; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: 0.2s;"
                         onmouseenter="this.style.background='rgba(255,255,255,0.06)';"
                         onmouseleave="this.style.background='rgba(255,255,255,0.03)';">
                     Bekor Qilish
                 </button>
-                <button onclick="window.saveModalProduct()" style="flex: 1.2; padding: 12px; border-radius: 12px; border: none; background: #00d2ff; color: #000; font-weight: 800; font-size: 0.85rem; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 6px 15px rgba(0,210,255,0.25);"
+                <button onclick="window.saveModalProduct()" style="flex: 1.2; padding: 12px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: #fff; font-weight: 800; font-size: 0.85rem; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 6px;"
+                        onmouseenter="this.style.background='rgba(255,255,255,0.1)';"
+                        onmouseleave="this.style.background='rgba(255,255,255,0.05)';">
+                    <span>💾</span> Saqlash
+                </button>
+                <button onclick="window.sendModalProductToSales()" style="flex: 1.5; padding: 12px; border-radius: 12px; border: none; background: linear-gradient(135deg, #00ff88, #00b359); color: #000; font-weight: 800; font-size: 0.85rem; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 6px 15px rgba(0,255,136,0.25);"
                         onmouseenter="this.style.transform='translateY(-2px)';"
                         onmouseleave="this.style.transform='translateY(0)';">
-                    <span>💾</span> Saqlash
+                    <span>🚀</span> Sotuvga Yuborish
                 </button>
             </div>
         </div>

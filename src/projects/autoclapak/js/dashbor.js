@@ -68,13 +68,11 @@ async function fetchPipelineData() {
     try {
         const today = new Date().toISOString().split('T')[0];
         const startOfDay = `${today}T00:00:00.000Z`;
-        const endOfDay = `${today}T23:59:59.999Z`;
 
         const { data, error } = await supabase
             .from('clapak_production')
-            .select('id, stage, model, quantity, start_time')
-            .gte('start_time', startOfDay)
-            .lte('start_time', endOfDay);
+            .select('id, stage, model, quantity, start_time, last_update, status')
+            .or(`status.eq.zakaz,stage.neq.finished,last_update.gte.${startOfDay},start_time.gte.${startOfDay}`);
 
         if (error) throw error;
 
@@ -82,7 +80,7 @@ async function fetchPipelineData() {
 
         data.forEach(item => {
             if (item.stage.startsWith('stanok')) pipelineData.stanok.push(item);
-            else if (item.stage.startsWith('sovutish')) pipelineData.sovutish.push(item);
+            else if (item.stage.startsWith('sovutish') || item.stage.startsWith('xom_ombor')) pipelineData.sovutish.push(item);
             else if (item.stage.startsWith('kraska')) pipelineData.kraska.push(item);
             else if (item.stage.startsWith('sushilka')) pipelineData.sushilka.push(item);
             else if (item.stage.startsWith('packaging')) {
@@ -117,14 +115,15 @@ function renderPipeline() {
         </div>`
     ).join('') || '<div style="color:#666; text-align:center;">Bo\'sh</div>';
 
-    // 2. Sovutish
-    document.getElementById('pipe-sovutish').innerHTML = pipelineData.sovutish.map(c => 
-        `<div class="machine-card">
-            <div style="font-size:0.8rem; color:#888;">Arava #${c.stage.split('-')[1] || '?'}</div>
+    // 2. Xom Mahsulot Ombori
+    document.getElementById('pipe-sovutish').innerHTML = pipelineData.sovutish.map(c => {
+        const cartNum = (c.stage && c.stage.includes('-')) ? `Arava #${c.stage.split('-')[1]}` : 'Ombor partiyasi';
+        return `<div class="machine-card">
+            <div style="font-size:0.8rem; color:#888;">${cartNum}</div>
             <div style="font-weight:bold; margin-top:5px;">${c.model}</div>
-            <div style="font-size:0.9rem; color:#00f2ff; margin-top:5px;">${c.quantity} dona</div>
-        </div>`
-    ).join('') || '<div style="color:#666; text-align:center;">Bo\'sh</div>';
+            <div style="font-size:0.9rem; color:#00f2ff; margin-top:5px;">${c.quantity || c.qty || 0} dona</div>
+        </div>`;
+    }).join('') || '<div style="color:#666; text-align:center;">Bo\'sh</div>';
 
     // 3. Kraska
     document.getElementById('pipe-kraska').innerHTML = pipelineData.kraska.map(c => 
@@ -164,12 +163,10 @@ function renderPipeline() {
             btnReceive.disabled = true;
             btnReceive.textContent = "QABUL QILINMOQDA...";
             try {
-                const today = new Date().toISOString().split('T')[0];
                 await supabase
                     .from('clapak_production')
-                    .update({ stage: 'finished', status: 'DONE_WAREHOUSE' })
-                    .eq('stage', 'warehouse_pending')
-                    .gte('start_time', `${today}T00:00:00.000Z`);
+                    .update({ stage: 'finished', status: 'DONE_WAREHOUSE', last_update: new Date().toISOString() })
+                    .eq('stage', 'warehouse_pending');
                 
                 alert(`${pendingBoxes} komplekt omborga muvaffaqiyatli qabul qilindi!`);
                 fetchPipelineData();
@@ -184,7 +181,7 @@ function renderPipeline() {
     }
 
     // Top Metrics
-    const activeCarts = pipelineData.stanok.length + pipelineData.sovutish.length + pipelineData.kraska.length + pipelineData.sushilka.length;
+    const activeCarts = pipelineData.kraska.length + pipelineData.sushilka.length;
     document.getElementById('metric-carts').textContent = activeCarts;
 
     document.getElementById('metric-today').textContent = finishedQty;

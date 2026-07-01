@@ -45,9 +45,31 @@
                 <button onclick="window.logout()" class="btn-logout-mini">CHIQISH 🚪</button>
             </header>
 
-            <div class="dashboard-banner">
-                <h2>SOVUTISH XONASIDAGI ARAVALAR</h2>
-                <p>Bo'yashni boshlash uchun aravachani tanlang</p>
+            <!-- 🔔 DRYING ALERTS NOTIFICATION PANEL -->
+            <div id="drying-alerts-container" style="display: none; flex-direction: column; gap: 10px; margin-bottom: 15px; padding: 15px; background: rgba(250, 187, 24, 0.1); border: 1px solid rgba(250, 187, 24, 0.3); border-radius: 14px; font-family: 'Inter', sans-serif;">
+                <h4 style="color: #fabb18; margin: 0 0 5px 0; font-size: 0.85rem; font-weight: 900; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
+                    <span style="width: 8px; height: 8px; background: #fabb18; border-radius: 50%; box-shadow: 0 0 8px #fabb18; animation: clapak-pulse 1s infinite;"></span>
+                    QURIGAN ARAVALAR (TASDIQLASH KUTILYAPTI)
+                </h4>
+                <div id="drying-alerts-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+            </div>
+
+            <!-- Dashboard Tab Switcher -->
+            <div style="display: flex; gap: 8px; margin-bottom: 15px; background: rgba(255,255,255,0.03); padding: 4px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.05);">
+                <button onclick="window.switchDashboardTab('raw-warehouse')" id="tab-raw-warehouse" class="showroom-tab-btn active" style="flex: 1; padding: 10px; border: none; font-size: 0.75rem; letter-spacing: 0.5px; text-transform: uppercase;">
+                    📦 Bo'yash Navbati
+                </button>
+                <button onclick="window.switchDashboardTab('room-stock')" id="tab-room-stock" class="showroom-tab-btn" style="flex: 1; padding: 10px; border: none; font-size: 0.75rem; letter-spacing: 0.5px; text-transform: uppercase;">
+                    🎨 Bizning Xona
+                </button>
+                <button onclick="window.switchDashboardTab('my-sushilka')" id="tab-my-sushilka" class="showroom-tab-btn" style="flex: 1; padding: 10px; border: none; font-size: 0.75rem; letter-spacing: 0.5px; text-transform: uppercase;">
+                    ☀️ Aravalarim
+                </button>
+            </div>
+
+            <div class="dashboard-banner" id="dashboard-banner-title">
+                <h2>BO'YASH NAVBATIDAGI MODELLAR</h2>
+                <p>Bo'yash xonasiga olib o'tish uchun navbatdagi modelni tanlang</p>
             </div>
 
             <!-- Active Carts Grid -->
@@ -95,6 +117,37 @@
             </div>
         </div>
 
+        <!-- 📦 MODAL: BRING FROM RAW WAREHOUSE TO ROOM STOCK -->
+        <div id="allocate-modal" class="report-overlay" style="display: none;">
+            <div class="report-panel" style="border: 1px solid rgba(0,242,255,0.4); box-shadow: 0 15px 40px rgba(0,242,255,0.15); background: rgba(10,12,18,0.95); width:100%; max-width:420px; box-sizing: border-box; padding: 25px;">
+                <div class="passport-header-visual">
+                    <div class="passport-shield" style="background: linear-gradient(135deg, #00f2ff, #ba00ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">XONAGA OLISH</div>
+                    <p style="font-size: 0.65rem; color: #00f2ff; font-weight: 800; letter-spacing: 2px; margin-top: 5px;">BO'YASH NAVBATIDAN XONAGA OLISH</p>
+                </div>
+
+                <div style="display:flex; flex-direction:column; gap:15px; margin-top:20px; text-align:left;">
+                    <div class="elite-input-group" style="display:flex; flex-direction:column; gap:6px; margin-bottom: 0;">
+                        <label class="elite-label" style="font-size: 0.65rem; color: rgba(255,255,255,0.4); font-weight: 800; letter-spacing: 1px;">TANLANGAN MODEL</label>
+                        <div id="allocate-model-display" style="font-size: 1.25rem; font-weight: 900; color: #fff; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); text-align: center;">MODEL TURI</div>
+                    </div>
+
+                    <div class="elite-input-group" style="display:flex; flex-direction:column; gap:6px; margin-bottom: 0;">
+                        <label class="elite-label" style="font-size: 0.65rem; color: rgba(255,255,255,0.4); font-weight: 800; letter-spacing: 1px;">OLIB KELINADIGAN MIQDOR (DONA)</label>
+                        <div style="display:flex; align-items:center; gap:10px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); padding:6px 12px; border-radius:12px;">
+                            <input type="number" id="allocate-qty-input" value="100" style="width:100%; background:transparent; border:none; color:#fff; font-size:1.4rem; font-weight:900; outline:none; text-align:center; font-family: inherit;">
+                            <span style="color:rgba(255,255,255,0.4); font-size:0.85rem; font-weight:700;">dona</span>
+                        </div>
+                        <p style="font-size:0.6rem; color:rgba(255,255,255,0.3); margin:0; line-height: 1.3;">Xonaga olib kelinadigan mahsulotlar miqdorini kiriting (Masalan: 100, 300, 500, 1000 dona).</p>
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1.8fr; gap:10px; margin-top:30px;">
+                    <button class="finish-btn" style="background:rgba(255,255,255,0.05); color:#fff; border:1px solid rgba(255,255,255,0.1); margin:0; font-size: 0.85rem; padding: 12px; border-radius: 12px;" onclick="document.getElementById('allocate-modal').style.display='none'">BEKOR QILISH</button>
+                    <button class="finish-btn" id="allocate-confirm-btn" style="background: linear-gradient(135deg, #00f2ff, #ba00ff); color: #000; font-weight: 900; margin:0; font-size: 0.85rem; padding: 12px; border-radius: 12px;">🚚 XONAGA OLISH</button>
+                </div>
+            </div>
+        </div>
+
         <!-- 🎨 MODAL: START PAINTING PREPARATION -->
         <div id="start-paint-modal" class="report-overlay" style="display: none;">
             <div class="report-panel" style="border: 1px solid rgba(186,0,255,0.4); box-shadow: 0 15px 40px rgba(186,0,255,0.15); background: rgba(10,12,18,0.95); width:100%; max-width:420px; box-sizing: border-box; padding: 25px;">
@@ -107,10 +160,10 @@
                     <div class="elite-input-group" style="display:flex; flex-direction:column; gap:6px;">
                         <label class="elite-label" style="font-size: 0.65rem; color: rgba(255,255,255,0.4); font-weight: 800; letter-spacing: 1px;">1. MAHSULOTLAR SONI (KARKASLAR)</label>
                         <div style="display:flex; align-items:center; gap:10px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); padding:6px 12px; border-radius:12px;">
-                            <input type="number" id="start-qty-input" value="36" style="width:100%; background:transparent; border:none; color:#fff; font-size:1.4rem; font-weight:900; outline:none; text-align:center; font-family: inherit;">
+                            <input type="number" id="start-qty-input" value="80" style="width:100%; background:transparent; border:none; color:#fff; font-size:1.4rem; font-weight:900; outline:none; text-align:center; font-family: inherit;">
                             <span style="color:rgba(255,255,255,0.4); font-size:0.85rem; font-weight:700;">dona</span>
                         </div>
-                        <p style="font-size:0.6rem; color:rgba(255,255,255,0.3); margin:0; line-height: 1.3;">Karkaslar soni odatda 36 donani tashkil qiladi. Iltimos, aravadagi to'liqlikni tasdiqlang!</p>
+                        <p style="font-size:0.6rem; color:rgba(255,255,255,0.3); margin:0; line-height: 1.3;">Karkaslar soni odatda 80 donani tashkil qiladi. Iltimos, aravadagi to'liqlikni tasdiqlang!</p>
                     </div>
 
                     <div class="elite-input-group" style="display:flex; flex-direction:column; gap:6px;">
@@ -119,6 +172,13 @@
                             <option value="Serisi">SERISI (25,600 so'm / arava)</option>
                             <option value="Redlayn">REDLAYN (33,000 so'm / arava)</option>
                             <option value="Kombo">KOMBO (50,000 so'm / arava)</option>
+                        </select>
+                    </div>
+
+                    <div class="elite-input-group" style="display:flex; flex-direction:column; gap:6px;">
+                        <label class="elite-label" style="font-size: 0.65rem; color: rgba(255,255,255,0.4); font-weight: 800; letter-spacing: 1px;">3. ARAVA TANLANG (1 - 20)</label>
+                        <select id="start-cart-selector" style="width: 100%; padding: 12px; background: #0d121a; color: #fff; border: 1px solid #ba00ff; border-radius: 12px; font-size: 1rem; font-weight: 700; outline: none; cursor: pointer; font-family: inherit;">
+                            <!-- Populated dynamically -->
                         </select>
                     </div>
                 </div>

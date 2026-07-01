@@ -116,25 +116,55 @@ async function loadSushilkaCarts() {
         const startOfDay = today + 'T00:00:00.000Z';
         const endOfDay = today + 'T23:59:59.999Z';
 
-        // Get carts in sushilka/sovutish stage (ready for packaging) or currently being packaged
+        // Get carts in all intermediate stages (ready for packaging) or currently being packaged
         const { data: carts, error } = await supabaseClient
             .from('clapak_production')
-            .select('id, stage, model, quantity, start_time, end_time, status')
-            .or('stage.like.sovutish-%,stage.like.sushilka-%,stage.like.packaging-%')
+            .select('id, stage, model, quantity, start_time, end_time, status, last_update, operator, brak')
+            .or('stage.like.sovutish-%,stage.like.sushilka-%,stage.like.packaging-%,stage.like.cooling-%,stage.like.halqa-%,stage.like.ready_timer-%')
             .not('status', 'eq', 'DONE_WAREHOUSE')
-            .gte('start_time', startOfDay)
-            .lte('start_time', endOfDay)
             .order('end_time', { ascending: true });
 
         if (error) throw error;
+
+        // Perform auto-transitions on load/poll for expired timers
+        let hasChanges = false;
+        if (carts) {
+            for (const c of carts) {
+                const stageParts = c.stage ? c.stage.split('-') : [];
+                const cartNum = stageParts[1];
+                if (c.stage.startsWith('cooling-') && cartNum) {
+                    const elapsedMin = c.last_update ? Math.floor((Date.now() - new Date(c.last_update).getTime()) / 60000) : 0;
+                    if (elapsedMin >= 60) {
+                        await supabaseClient.from('clapak_production')
+                            .update({ stage: 'halqa-' + cartNum, last_update: new Date().toISOString() })
+                            .eq('id', c.id);
+                        hasChanges = true;
+                    }
+                } else if (c.stage.startsWith('ready_timer-') && cartNum) {
+                    const elapsedMin = c.last_update ? Math.floor((Date.now() - new Date(c.last_update).getTime()) / 60000) : 0;
+                    if (elapsedMin >= 60) {
+                        await supabaseClient.from('clapak_production')
+                            .update({ stage: 'packaging-' + cartNum + '-0', status: 'PACKAGING', last_update: new Date().toISOString() })
+                            .eq('id', c.id);
+                        hasChanges = true;
+                    }
+                }
+            }
+        }
+
+        if (hasChanges) {
+            isFetchingCarts = false;
+            loadSushilkaCarts();
+            return;
+        }
 
         // Get packaged items for today stats
         const { data: packed } = await supabaseClient
             .from('clapak_production')
             .select('stage, quantity')
             .or('stage.eq.finished,stage.eq.warehouse_pending,stage.like.packaging-%,stage.like.warehouse_pending-%')
-            .gte('start_time', startOfDay)
-            .lte('start_time', endOfDay);
+            .gte('last_update', startOfDay)
+            .lte('last_update', endOfDay);
 
         let totalPackedBoxes = 0;
         (packed || []).forEach(item => {
@@ -193,15 +223,57 @@ function renderCarts(carts) {
             duration = h > 0 ? h + ' soat ' + m + ' daq' : m + ' daqiqa';
         }
 
-        // Is it being packaged right now?
+        // Determine rendering and actions based on stages
+        var elapsedMin = c.last_update ? Math.floor((Date.now() - new Date(c.last_update).getTime()) / 60000) : 0;
         var isPackaging = c.stage && c.stage.startsWith('packaging');
 
-        // Cart is "ready" if it's been in sushilka for >30 min (only if not already packaging)
-        var diffMin = c.last_update ? Math.floor((Date.now() - new Date(c.last_update).getTime()) / 60000) : 0;
-        var isReady = isPackaging ? true : diffMin >= 30;
-        
-        var statusClass = isPackaging ? 'ready' : (isReady ? 'ready' : 'waiting');
-        var statusText = isPackaging ? 'FAOL QADOQLANMOQDA' : (isReady ? 'TAYYOR' : 'KUTILMOQDA');
+        var statusClass = 'waiting';
+        var statusText = 'KUTILMOQDA';
+        var timeDetailLabel = 'Sushilkada:';
+        var timeDetailVal = duration;
+        var buttonHtml = '';
+
+        if (c.stage.startsWith('sushilka-')) {
+            const leftMin = Math.max(0, 240 - elapsedMin);
+            statusClass = 'waiting';
+            statusText = 'QURITILMOQDA ☀️';
+            timeDetailLabel = 'Quritilmoqda:';
+            timeDetailVal = leftMin + ' daqiqa qoldi';
+            buttonHtml = '<button class="btn-pack" disabled>⏳ QURITILMOQDA (' + leftMin + ' min qoldi)...</button>';
+        } else if (c.stage.startsWith('cooling-')) {
+            const leftMin = Math.max(0, 60 - elapsedMin);
+            statusClass = 'waiting';
+            statusText = 'SOVUTILMOQDA ❄️';
+            timeDetailLabel = 'Sovutilmoqda:';
+            timeDetailVal = leftMin + ' daqiqa qoldi';
+            buttonHtml = '<button class="btn-pack" disabled>⏳ SOVUTILMOQDA (' + leftMin + ' min qoldi)...</button>';
+        } else if (c.stage.startsWith('halqa-')) {
+            statusClass = 'ready';
+            statusText = 'HALQA QO\'YISH ⚙️';
+            timeDetailLabel = 'Holati:';
+            timeDetailVal = 'Halqa qo\'yish kutilmoqda';
+            buttonHtml = '<button class="btn-pack" style="background: linear-gradient(135deg, #ba00ff, #7f00ff); color: #fff; font-weight:900;" onclick="window.confirmHalqa(\'' + c.id + '\', ' + cartNum + ', \'' + model.replace(/'/g, "\\'") + '\')">⚙️ TEMIR HALQALAR QO\'YILDI</button>';
+        } else if (c.stage.startsWith('ready_timer-')) {
+            const leftMin = Math.max(0, 60 - elapsedMin);
+            statusClass = 'waiting';
+            statusText = 'TAYYORLANMOQDA ⏳';
+            timeDetailLabel = 'Tayyorlanmoqda:';
+            timeDetailVal = leftMin + ' daqiqa qoldi';
+            buttonHtml = '<button class="btn-pack" disabled>⏳ TAYYORLANMOQDA (' + leftMin + ' min qoldi)...</button>';
+        } else if (isPackaging) {
+            statusClass = 'ready';
+            statusText = 'FAOL QADOQLANMOQDA';
+            timeDetailLabel = 'Qadoqlandi:';
+            timeDetailVal = packedBoxes + ' quti';
+            buttonHtml = '<button class="btn-pack" style="background: linear-gradient(135deg, #00e676, #00b359);" ' +
+                'onclick="window.addKomplekt(\'' + c.id + '\', ' + cartNum + ', \'' + model.replace(/'/g, "\\'") + '\', ' + remainingQty + ', ' + packedBoxes + ', \'' + (c.last_update || '') + '\')">' +
+                '📦 +1 KOMPLEKT QADOQLANDI (4 dona)' +
+                '</button>';
+        } else {
+            statusClass = 'waiting';
+            statusText = 'KUTILMOQDA';
+            buttonHtml = '<button class="btn-pack" disabled>⏳ KUTILMOQDA...</button>';
+        }
 
         html += '<div class="cart-item ' + statusClass + '" ' + (isPackaging ? 'style="border: 2px solid var(--accent);"' : '') + '>' +
             '<div class="cart-header">' +
@@ -212,27 +284,45 @@ function renderCarts(carts) {
                 '<div class="cart-detail">Miqdor qoldi: <span>' + remainingQty + ' ta</span></div>' +
                 '<div class="cart-detail">Brak: <span style="color:var(--danger);">' + brak + ' ta</span></div>' +
                 '<div class="cart-detail">Operator: <span>' + operator + '</span></div>' +
-                (isPackaging ? '<div class="cart-detail">Qadoqlandi: <span style="color:var(--accent);">' + packedBoxes + ' quti</span></div>' 
-                             : '<div class="cart-detail">Sushilkada: <span style="color:var(--warning);">' + duration + '</span></div>') +
+                '<div class="cart-detail">' + timeDetailLabel + ' <span style="color:var(--warning);">' + timeDetailVal + '</span></div>' +
+            '</div>' +
+            buttonHtml +
             '</div>';
-
-        if (isPackaging) {
-            html += '<button class="btn-pack" style="background: linear-gradient(135deg, #00e676, #00b359);" ' +
-                'onclick="window.addKomplekt(\'' + c.id + '\', ' + cartNum + ', \'' + model + '\', ' + remainingQty + ', ' + packedBoxes + ', \'' + (c.last_update || '') + '\')">' +
-                '📦 +1 KOMPLEKT QADOQLANDI (4 dona)' +
-                '</button>';
-        } else {
-            html += '<button class="btn-pack" onclick="window.packCart(\'' + c.id + '\', ' + cartNum + ', \'' + model + '\', ' + qty + ')" ' +
-                (isReady ? '' : 'disabled') + '>' +
-                (isReady ? '📦 QADOQLASHGA OLISH' : '⏳ QURITILMOQDA...') +
-                '</button>';
-        }
-
-        html += '</div>';
     });
 
     container.innerHTML = html;
 }
+
+window.confirmHalqa = async function(id, cartNum, model) {
+    if (!confirm('Arava #' + cartNum + ' uchun temir halqalar qo\'yilganini tasdiqlaysizmi?\n\nKeyin 60 daqiqalik tayyor bo\'lish taymeri boshlanadi.')) return;
+
+    try {
+        const { error } = await supabaseClient
+            .from('clapak_production')
+            .update({
+                stage: 'ready_timer-' + cartNum,
+                last_update: new Date().toISOString()
+            })
+            .eq('id', id);
+
+        if (error) throw error;
+
+        showToast('Arava #' + cartNum + ' halqalari tasdiqlandi. 60 daqiqalik tayyor bo\'lish bosqichi boshlandi! ⏳');
+        
+        notifyBot(
+            `⚙️ <b>TEMIR HALQALAR QO'YILDI</b>\n\n` +
+            `🛒 Arava: #${cartNum}\n` +
+            `📦 Model: ${model}\n` +
+            `👤 Operator: ${currentUser.name}\n` +
+            `⏱ <b>Tayyor bo'lish jarayoni boshlandi.</b> (60 daqiqa)`
+        ).then();
+
+        loadSushilkaCarts();
+
+    } catch (e) {
+        alert('Xatolik: ' + e.message);
+    }
+};
 
 function updateStats(carts) {
     document.getElementById('stat-waiting').textContent = carts.length;
@@ -241,28 +331,7 @@ function updateStats(carts) {
     document.getElementById('stat-komplekt').textContent = komplekt;
 }
 
-// --- Pack Cart ---
-window.packCart = async function(id, cartNum, model, qty) {
-    if (!confirm('Arava #' + cartNum + ' ni qadoqlashni boshlaysizmi?\n\nModel: ' + model + '\nMiqdor: ' + qty + ' ta')) return;
 
-    try {
-        var { error } = await supabaseClient
-            .from('clapak_production')
-            .update({
-                stage: 'packaging-' + cartNum + '-0',
-                status: 'PACKAGING'
-            })
-            .eq('id', id);
-
-        if (error) throw error;
-
-        showToast('Arava #' + cartNum + ' qadoqlashga olindi ✅');
-        loadSushilkaCarts();
-
-    } catch (e) {
-        alert('Xatolik: ' + e.message);
-    }
-};
 
 window.addKomplekt = async function(id, cartNum, model, remainingQty, packedBoxes, startTimeStr) {
     // Prevent packing more than available

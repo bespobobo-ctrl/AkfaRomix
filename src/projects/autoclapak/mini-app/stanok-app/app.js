@@ -141,6 +141,14 @@ function initSetup() {
     });
     document.getElementById('start-shift-btn').onclick = startShift;
 
+    const setupZapravkaBtn = document.getElementById('setup-zapravka-btn');
+    if (setupZapravkaBtn) {
+        setupZapravkaBtn.onclick = () => {
+            document.getElementById('zapravka-qty-input').value = 100; // Reset default
+            document.getElementById('zapravka-modal').style.display = 'flex';
+        };
+    }
+
     // Load active orders for operator
     loadActiveOrders();
 }
@@ -235,17 +243,66 @@ window.selectStanokOrder = (element, orderId, model, qty, clientName) => {
     }
 };
 
+async function getRemainingRefuel(machineId) {
+    try {
+        const { data: allData, error: rErr } = await supabaseClient
+            .from('clapak_production')
+            .select('status, raw_material')
+            .eq('machine', machineId);
+
+        if (rErr) throw rErr;
+        if (!allData || allData.length === 0) return 0;
+
+        let totalRefuel = 0;
+        let totalUsed = 0;
+
+        allData.forEach(r => {
+            if (r.status === 'REFUEL') {
+                totalRefuel += (r.raw_material || 0);
+            } else {
+                totalUsed += (r.raw_material || 0);
+            }
+        });
+
+        return Math.max(0, parseFloat((totalRefuel - totalUsed).toFixed(1)));
+    } catch (e) {
+        console.error("Error fetching remaining refuel:", e);
+        return 0;
+    }
+}
+
 // --- Shift Logic ---
-function startShift() {
+async function startShift() {
     if (!selectedOrderId) {
         alert("Iltimos, ishlab chiqarishni boshlash uchun navbatdagi buyurtmalardan (zakazlardan) birini tanlang!");
         return;
     }
+
+    const machine = document.querySelector('#machine-selector .active').dataset.val;
+
+    // Check remaining refuel
+    const startBtn = document.getElementById('start-shift-btn');
+    const originalText = startBtn.textContent;
+    startBtn.textContent = 'TEKSHIRILMOQDA...';
+    startBtn.disabled = true;
+
+    try {
+        const remaining = await getRemainingRefuel(machine);
+        if (remaining <= 0) {
+            alert(`Diqqat! ${machine} stanogida xom-ashyo (zapravka) qolmagan yoki yuklanmagan! Iltimos, ishga tushirishdan oldin xom-ashyo yuklang (zapravka qiling).`);
+            return;
+        }
+    } catch (err) {
+        console.error("Zapravkani tekshirishda xatolik:", err);
+    } finally {
+        startBtn.textContent = originalText;
+        startBtn.disabled = false;
+    }
+
     isShiftActive = true;
     shiftStartTime = new Date();
     goalAmount = parseInt(document.getElementById('goal-input').value) || 500;
 
-    const machine = document.querySelector('#machine-selector .active').dataset.val;
     const model = selectedOrderModel || document.querySelector('#model-selector .active').dataset.val;
 
     document.getElementById('active-machine').textContent = machine;
@@ -303,6 +360,58 @@ async function saveShiftToSupabase(data) {
     } catch (e) { console.error("Sync Error", e); }
 }
 
+function getModelWeight(modelName) {
+    if (!modelName) return 0.38;
+    const name = modelName.toUpperCase();
+    let size = null;
+    if (name.includes('15')) size = 15;
+    else if (name.includes('12')) size = 12;
+    else if (name.includes('14')) size = 14;
+    else if (name.includes('13')) size = 13;
+    
+    if (!size) size = 14; // Default to size 14 if size not specified
+    
+    if (size === 15) {
+        if (name.includes('LASETTI')) return 0.491;
+        if (name.includes('MAYBACH')) return 0.500;
+        if (name.includes('RAVON')) return 0.375;
+        if (name.includes('COBALT')) return 0.476;
+        if (name.includes('TOSCA') || name.includes('TOSKA')) return 0.389;
+        return 0.491;
+    }
+    if (size === 12) {
+        if (name.includes('MERS') || name.includes('MERCEDES')) return 0.254;
+        if (name.includes('MAYBACH')) return 0.254;
+        return 0.254;
+    }
+    if (size === 14) {
+        if (name.includes('LASETTI')) return 0.391;
+        if (name.includes('MAYBACH')) return 0.420;
+        if (name.includes('RAVON')) return 0.409;
+        if (name.includes('COBALT')) return 0.468;
+        if (name.includes('TOSCA') || name.includes('TOSKA')) return 0.352;
+        if (name.includes('ESPERO')) return 0.510;
+        if (name.includes('MALIBU')) return 0.416;
+        if (name.includes('INFINITY')) return 0.345;
+        if (name.includes('MERS') || name.includes('MERCEDES')) return 0.427;
+        return 0.416;
+    }
+    if (size === 13) {
+        if (name.includes('LASETTI')) return 0.300;
+        if (name.includes('MAYBACH')) return 0.356;
+        if (name.includes('RAVON')) return 0.333;
+        if (name.includes('TOSCA') || name.includes('TOSKA')) return 0.310;
+        if (name.includes('ESPERO')) return 0.417;
+        if (name.includes('MALIBU')) return 0.323;
+        if (name.includes('INFINITY')) return 0.249;
+        if (name.includes('MERS') || name.includes('MERCEDES')) return 0.319;
+        if (name.includes('MATIZ')) return 0.314;
+        if (name.includes('SPYDER') || name.includes('SPAYDER')) return 0.306;
+        return 0.300;
+    }
+    return 0.38;
+}
+
 function stopShift() {
     if (!confirm('Tizimni to\'xtatish va hisobotni yakunlashni tasdiqlaysizmi?')) return;
 
@@ -317,7 +426,7 @@ function stopShift() {
     // Industrial Stats
     const energyRate = machine === 'ST-1' ? 14.5 : 12.8;
     const energyUsed = ((energyRate * durationMin) / 60).toFixed(2);
-    const rawUsed = (countReady * 0.38 + countBrak * 0.40).toFixed(1);
+    const rawUsed = (countReady * getModelWeight(model) + countBrak * 0.40).toFixed(1);
 
     document.getElementById('rep-op').textContent = currentUser.name;
     document.getElementById('rep-time').textContent = `${durationMin} minut`;
@@ -358,7 +467,7 @@ document.getElementById('add-brak').onclick = () => {
 };
 
 function updateDashboardUI() {
-    document.getElementById('count-val').innerHTML = `${countReady} <small style="font-size: 0.9rem; opacity: 0.5; display: block; margin-top: 5px; line-height: 1.3;">Aravadagi miqdor (Maks. 36)<br>Smena jami: ${totalProducedSoFar} / ${goalAmount}</small>`;
+    document.getElementById('count-val').innerHTML = `${countReady} <small style="font-size: 0.9rem; opacity: 0.5; display: block; margin-top: 5px; line-height: 1.3;">Joriy miqdor<br>Smena jami: ${totalProducedSoFar} / ${goalAmount}</small>`;
     
     const remaining = goalAmount - totalProducedSoFar;
     const remEl = document.getElementById('remaining-val');
@@ -379,12 +488,7 @@ function updateDashboardUI() {
     ring.style.strokeDashoffset = offset;
     ring.style.stroke = remaining <= 0 ? 'var(--emerald)' : 'var(--cyan)';
 
-    // Automated trigger when current cart reaches/exceeds 36 calpaks
-    if (countReady >= 36 && isShiftActive) {
-        showCartFullModal();
-    } else {
-        debouncedSync();
-    }
+    debouncedSync();
 }
 
 let syncTimeout = null;
@@ -450,14 +554,13 @@ document.getElementById('final-transmit-btn').onclick = async () => {
     btn.disabled = true;
 
     try {
-        const cartNumber = document.getElementById('cart-selector').value || '1';
         const endTime = new Date();
         const durationMin = Math.floor((endTime - shiftStartTime) / 60000);
         const machine = document.getElementById('active-machine').textContent;
         const energyRate = machine === 'ST-1' ? 14.5 : 12.8;
         const energyUsed = parseFloat(((energyRate * durationMin) / 60).toFixed(2));
-        const rawUsed = parseFloat((countReady * 0.38 + countBrak * 0.40).toFixed(1));
         const model = document.getElementById('active-model').textContent;
+        const rawUsed = parseFloat((countReady * getModelWeight(model) + countBrak * 0.40).toFixed(1));
 
         const reportData = {
             id: currentShiftId,
@@ -470,7 +573,7 @@ document.getElementById('final-transmit-btn').onclick = async () => {
             energy: energyUsed,
             end_time: endTime.toISOString(),
             status: 'DONE',
-            stage: 'sovutish-' + cartNumber
+            stage: 'xom_ombor'
         };
 
         const { error } = await supabaseClient
@@ -479,10 +582,10 @@ document.getElementById('final-transmit-btn').onclick = async () => {
 
         if (error) throw error;
 
-        // Send Telegram notification with cart details
-        await notifyBot(`📊 <b>ISHLAB CHIQARISH HISOBOTI</b>\n\n👤 Operator: ${currentUser.name}\n⚙️ Stanok: ${machine}\n📦 Model: ${model}\n✅ Tayyor: ${countReady}\n❌ Brak (Nuqson): ${countBrak}\n⚡ Elektr sarfi: ${energyUsed} kWh\n🏗 Xom-ashyo: ${rawUsed} kg\n📟 Arava raqami: ${cartNumber}-arava`);
+        // Send Telegram notification
+        await notifyBot(`📊 <b>ISHLAB CHIQARISH HISOBOTI</b>\n\n👤 Operator: ${currentUser.name}\n⚙️ Stanok: ${machine}\n📦 Model: ${model}\n✅ Tayyor: ${countReady}\n❌ Brak (Nuqson): ${countBrak}\n⚡ Elektr sarfi: ${energyUsed} kWh\n🏗 Xom-ashyo: ${rawUsed} kg\n📦 Bo'lim: Xom Mahsulot Ombori`);
 
-        showToast(`Partiya #${cartNumber}-aravada sovutish bo'limiga o'tkazildi! ✅`);
+        showToast(`Partiya Xom mahsulot omboriga o'tkazildi! ✅`);
         setTimeout(() => location.reload(), 2000);
     } catch (e) {
         alert('Xatolik yuz berdi: ' + e.message);
@@ -491,128 +594,60 @@ document.getElementById('final-transmit-btn').onclick = async () => {
     }
 };
 
-function showCartFullModal() {
-    if (isModalOpen) return;
-    isModalOpen = true;
-    
-    const modal = document.getElementById('cart-full-modal');
-    if (!modal) {
-        createCartFullModalElement();
-    } else {
-        modal.style.display = 'flex';
-    }
+// --- Refueling (Zapravka) Logic ---
+const btnZapravka = document.getElementById('btn-zapravka');
+if (btnZapravka) {
+    btnZapravka.onclick = () => {
+        document.getElementById('zapravka-qty-input').value = 100; // Reset default
+        document.getElementById('zapravka-modal').style.display = 'flex';
+    };
 }
 
-function createCartFullModalElement() {
-    const overlay = document.createElement('div');
-    overlay.id = 'cart-full-modal';
-    overlay.className = 'report-overlay';
-    overlay.style.cssText = 'display: flex; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(10, 15, 24, 0.96); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); z-index: 9999; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;';
-    
-    overlay.innerHTML = `
-        <div class="report-panel" style="max-width: 420px; text-align: center; background: rgba(13,22,34,0.85); border: 1.5px solid rgba(250,187,24,0.4); border-radius: 24px; padding: 30px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); width: 100%; box-sizing: border-box;">
-            <div style="font-size: 3rem; margin-bottom: 15px; animation: bounce 2s infinite;">🛒</div>
-            <h2 style="color: #fabb18; margin: 0 0 10px 0; font-size: 1.8rem; font-weight: 900; letter-spacing: 0.5px; font-family: 'Inter', sans-serif;">ARAVA TO'LDI!</h2>
-            <p style="font-size: 0.9rem; color: rgba(255,255,255,0.7); margin-bottom: 25px; line-height: 1.4; font-family: 'Inter', sans-serif;">
-                Joriy aravaga <strong>36 ta</strong> mahsulot to'ldi. Uni <strong>Sovutish bo'limiga</strong> yuborish uchun arava raqamini tanlang:
-            </p>
-
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 25px;" id="cart-grid-selector">
-                ${Array.from({ length: 20 }, (_, i) => i + 1).map(n => `
-                    <button onclick="window.submitCompletedCart(${n})" style="padding: 12px 6px; font-size: 0.85rem; font-weight: 800; background: rgba(255,255,255,0.03); color: #fff; border: 1.5px solid rgba(255,255,255,0.08); border-radius: 12px; cursor: pointer; transition: 0.2s; font-family: inherit;"
-                        onmouseenter="this.style.background='var(--cyan)'; this.style.color='#000'; this.style.borderColor='var(--cyan)';"
-                        onmouseleave="this.style.background='rgba(255,255,255,0.03)'; this.style.color='#fff'; this.style.borderColor='rgba(255,255,255,0.08)';">
-                        ${n}-arava
-                    </button>
-                `).join('')}
-            </div>
-
-            <button class="finish-btn" style="background: rgba(255,255,255,0.05); color: #fff; border: 1px solid rgba(255,255,255,0.1); width: 100%; margin: 0; padding: 12px; font-weight: 700; border-radius: 12px; font-size: 0.85rem; cursor: pointer;" onclick="window.closeCartFullModal()">ORQAGA QAYTISH</button>
-        </div>
-    `;
-    
-    document.body.appendChild(overlay);
-}
-
-window.closeCartFullModal = () => {
-    const modal = document.getElementById('cart-full-modal');
-    if (modal) modal.style.display = 'none';
-    isModalOpen = false;
-};
-
-window.submitCompletedCart = async (cartNum) => {
-    const modal = document.getElementById('cart-full-modal');
-    if (modal) modal.style.display = 'none';
-    isModalOpen = false;
-    
-    const excessQty = countReady - 36;
-    const now = new Date();
-    
-    const machine = document.getElementById('active-machine').textContent;
-    const model = document.getElementById('active-model').textContent;
-    
-    const durationMin = Math.max(1, Math.floor((now - shiftStartTime) / 60000));
-    const energyRate = machine === 'ST-1' ? 14.5 : 12.8;
-    const energyUsed = parseFloat(((energyRate * durationMin) / 60).toFixed(2));
-    const rawUsed = parseFloat((36 * 0.38 + countBrak * 0.40).toFixed(1));
-    
-    showToast("Aravacha saqlanmoqda...");
-    
-    try {
-        // 1. Update existing active record to DONE and set its stage to cooling
-        const { error: updateError } = await supabaseClient
-            .from('clapak_production')
-            .update({
-                quantity: 36, // strictly 36 calpaks
-                brak: countBrak,
-                raw_material: rawUsed,
-                energy: energyUsed,
-                end_time: now.toISOString(),
-                status: 'DONE',
-                stage: 'sovutish-' + cartNum,
-                last_update: now.toISOString()
-            })
-            .eq('id', currentShiftId);
-            
-        if (updateError) throw updateError;
-        
-        // Notify Bot
-        await notifyBot(`❄️ <b>ARAVA TO'LDI (SOVUTISHGA YUBORILDI)</b>\n\n👤 Operator: ${currentUser.name}\n📟 Arava: ARAVA #${cartNum}\n📦 Model: ${model}\n✅ Miqdor: 36 dona\n❌ Brak: ${countBrak} dona`);
-        
-        showToast(`Arava #${cartNum} sovutish bo'limiga o'tkazildi! ✅`);
-        
-        // 2. Start a NEW active shift record for the remaining products
-        countReady = excessQty >= 0 ? excessQty : 0;
-        countBrak = 0;
-        shiftStartTime = new Date(); // Reset start time for the next session
-        
-        const newShiftData = {
-            operator: currentUser.name,
-            machine: machine,
-            model: model,
-            quantity: countReady,
-            brak: 0,
-            start_time: shiftStartTime.toISOString(),
-            status: 'ACTIVE',
-            stage: 'STANOK'
-        };
-        
-        const { data: res, error: insertError } = await supabaseClient
-            .from('clapak_production')
-            .insert([newShiftData])
-            .select();
-            
-        if (insertError) throw insertError;
-        
-        if (res && res[0]) {
-            currentShiftId = res[0].id;
+const confirmZapravkaBtn = document.getElementById('confirm-zapravka-btn');
+if (confirmZapravkaBtn) {
+    confirmZapravkaBtn.onclick = async () => {
+        const qtyInput = document.getElementById('zapravka-qty-input');
+        const qtyVal = parseFloat(qtyInput.value);
+        if (isNaN(qtyVal) || qtyVal <= 0) {
+            alert('Iltimos, to\'g\'ri miqdor kiriting!');
+            return;
         }
-        
-        updateDashboardUI();
-        
-    } catch (e) {
-        alert("Aravani saqlashda xatolik yuz berdi: " + e.message);
-        isModalOpen = false;
-        showCartFullModal();
-    }
-};
+
+        confirmZapravkaBtn.textContent = 'SAQLANMOQDA...';
+        confirmZapravkaBtn.disabled = true;
+
+        try {
+            const machine = isShiftActive ? document.getElementById('active-machine').textContent : (document.querySelector('#machine-selector .active')?.dataset?.val || 'ST-1');
+            const opName = currentUser ? currentUser.name : 'Noma\'lum';
+            const refuelData = {
+                operator: opName,
+                machine: machine,
+                model: 'REFUEL',
+                quantity: 0,
+                brak: 0,
+                raw_material: qtyVal,
+                energy: 0,
+                start_time: new Date().toISOString(),
+                status: 'REFUEL',
+                stage: 'STANOK'
+            };
+
+            const { error } = await supabaseClient
+                .from('clapak_production')
+                .insert([refuelData]);
+
+            if (error) throw error;
+
+            // Send Telegram Notification
+            await notifyBot(`⛽ <b>STANOK ZAPRAVKA QILINDI</b>\n\n👤 Operator: ${opName}\n⚙️ Stanok: ${machine}\n🏗 Miqdor: ${qtyVal} kg\n⏰ Vaqt: ${new Date().toLocaleTimeString()}`);
+
+            document.getElementById('zapravka-modal').style.display = 'none';
+            showToast('Zapravka muvaffaqiyatli saqlandi! ⛽');
+        } catch (e) {
+            alert('Zapravka saqlashda xatolik: ' + e.message);
+        } finally {
+            confirmZapravkaBtn.textContent = 'YUKLASH ⚡';
+            confirmZapravkaBtn.disabled = false;
+        }
+    };
+}
