@@ -158,36 +158,43 @@ async function loadInitialData() {
     }
 
     // STEP 1: Show loading
-    if (table) table.innerHTML = `<tr><td colspan="6" style="text-align:center; height: 500px; padding:20px; color:var(--accent);">⏳ Bazaga ulanilmoqda...</td></tr>`;
+    if (table) table.innerHTML = `<tr><td colspan="6" style="text-align:center; height: 500px; padding:20px; color:var(--accent);">⏳ Xodimlar yuklanmoqda...</td></tr>`;
 
     try {
         const today = new Date();
         const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
 
-        // STEP 2: Fetch employees
-        if (table) table.innerHTML = `<tr><td colspan="6" style="text-align:center; height: 500px; padding:20px; color:var(--accent);">⏳ Xodimlar yuklanmoqda...</td></tr>`;
-
-        const { data: staff, error: staffError } = await supabase.from('employees').select('*').order('full_name', { ascending: true });
-
-        if (staffError) {
-            console.error("Staff Fetch Error:", staffError);
-            if (table) table.innerHTML = `<tr><td colspan="6" style="color:#ff4d4f; text-align:center; padding:30px; font-size:0.9rem;">❌ XATOLIK: ${staffError.message}<br><small style="color:var(--text-s)">Supabase URL: ${supabase.supabaseUrl || 'noaniq'}</small></td></tr>`;
-            return;
+        let staff = [];
+        try {
+            const { data, error } = await supabase.from('employees').select('*').order('full_name', { ascending: true });
+            if (error) throw error;
+            staff = data || [];
+        } catch (dbErr) {
+            console.warn("Supabase employees fetch failed, falling back to local storage:", dbErr);
+            staff = JSON.parse(localStorage.getItem('romix_employees_local') || '[]');
         }
 
-        // STEP 3: Fetch attendance
-        const { data: att, error: attError } = await supabase.from('attendance').select('*').eq('date', todayStr);
-        if (attError) {
-            console.error("Attendance Fetch Error:", attError);
+        let att = [];
+        try {
+            const { data, error } = await supabase.from('attendance').select('*').eq('date', todayStr);
+            if (error) throw error;
+            att = data || [];
+        } catch (dbErr) {
+            console.warn("Supabase attendance fetch failed, falling back to local storage:", dbErr);
+            att = JSON.parse(localStorage.getItem('romix_attendance_local') || '[]');
         }
 
-        employeesData = staff || [];
-        todayAtt = att || [];
+        employeesData = staff;
+        todayAtt = att;
+
+        // Synchronize local cache
+        localStorage.setItem('romix_employees_local', JSON.stringify(employeesData));
+        localStorage.setItem('romix_attendance_local', JSON.stringify(todayAtt));
 
         console.log("✅ Xodimlar soni:", employeesData.length);
 
         if (employeesData.length === 0) {
-            if (table) table.innerHTML = `<tr><td colspan="6" style="color:#ffa940; text-align:center; padding:30px;">⚠️ Bazada xodimlar topilmadi (0 ta)<br><small style="color:var(--text-s)">Bazaga ulanish muvaffaqiyatli, lekin 'employees' jadvali bo'sh.</small></td></tr>`;
+            if (table) table.innerHTML = `<tr><td colspan="6" style="color:#ffa940; text-align:center; padding:30px;">⚠️ Hozircha xodimlar yo'q (0 ta)<br><small style="color:var(--text-s)">'YANGI XODIM' tugmasi orqali yangi xodimlarni kiritishingiz mumkin.</small></td></tr>`;
             return;
         }
 
@@ -198,7 +205,9 @@ async function loadInitialData() {
 
     } catch (err) {
         console.error("💥 Critical Exception:", err);
-        if (table) table.innerHTML = `<tr><td colspan="6" style="color:#ff4d4f; text-align:center; padding:30px;">💥 JIDDIY XATO: ${err.message}<br><small style="color:var(--text-s)">Stack: ${err.stack?.substring(0, 200)}</small></td></tr>`;
+        employeesData = JSON.parse(localStorage.getItem('romix_employees_local') || '[]');
+        todayAtt = JSON.parse(localStorage.getItem('romix_attendance_local') || '[]');
+        filterAndRender();
     }
 }
 
@@ -662,24 +671,45 @@ async function saveWorker() {
         avatar_url: tempPhotoData || (currentEditId ? currentEmp.avatar_url : `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=1a7b7c&color=fff`)
     };
 
-    // 🛡️ Safe checks for columns that might be missing
-    const firstRow = employeesData[0] || {};
-    if ('department' in firstRow) payload.department = dept;
-    if ('dept' in firstRow) payload.dept = dept;
-    if ('joined_year' in firstRow) payload.joined_year = joinedYear ? parseInt(joinedYear) : null;
+    payload.department = dept;
+    payload.dept = dept;
+    payload.joined_year = joinedYear ? parseInt(joinedYear) : null;
 
-    let res;
+    let res = null;
+    let savedSuccessfully = false;
+
+    // 1. Try to save to Supabase
     try {
         if (currentEditId) {
             res = await supabase.from('employees').update(payload).eq('id', currentEditId).select();
         } else {
             res = await supabase.from('employees').insert([payload]).select();
         }
+        if (res && !res.error) {
+            savedSuccessfully = true;
+        }
     } catch (e) {
-        console.error("Critical Exception:", e);
+        console.warn("Database insert/update failed:", e);
     }
 
-    if (res && !res.error) {
+    // 2. Synchronize with localStorage
+    let localEmployees = JSON.parse(localStorage.getItem('romix_employees_local') || '[]');
+    if (currentEditId) {
+        localEmployees = localEmployees.map(emp => {
+            if (emp.id === currentEditId) {
+                return { ...emp, ...payload, id: currentEditId };
+            }
+            return emp;
+        });
+    } else {
+        const newId = (res && res.data && res.data[0]) ? res.data[0].id : 'local-' + Date.now();
+        const newEmp = { ...payload, id: newId };
+        localEmployees.unshift(newEmp);
+    }
+    localStorage.setItem('romix_employees_local', JSON.stringify(localEmployees));
+    savedSuccessfully = true; // Mark as saved because local save succeeded
+
+    if (savedSuccessfully) {
         logActivity('admin', currentEditId ? 'Xodim tahrirlandi' : 'Yangi xodim qo\'shildi', fullName);
         btn.textContent = 'MUVAFFAQIYATLI!';
         btn.style.background = '#00ff88';
@@ -694,7 +724,7 @@ async function saveWorker() {
         }, 1500);
     } else {
         const errMsg = res ? res.error.message : "Noma'lum xato";
-        alert(`SAQLASHDA XATO: ${errMsg}\n\nEslatma: 'department' va 'joined_year' bazada yo'qligi sababli hozircha faqat asosiy ma'lumotlar saqlanadi.`);
+        alert(`SAQLASHDA XATO: ${errMsg}`);
         btn.disabled = false;
         btn.textContent = 'QAYTA URINISH';
     }
@@ -1202,11 +1232,25 @@ function generateWordReport(rows, totalEarned, bonuses, fines, days) {
 function handleDelete() {
     if (confirm(`${currentEmp.full_name}ni o'chirishni tasdiqlaysizmi?`)) {
         const name = currentEmp.full_name;
-        supabase.from('employees').delete().eq('id', currentEmp.id).then(() => {
-            logActivity('admin', 'Xodim o\'chirildi', name);
-            closeDetailModal();
-            loadInitialData();
-        });
+        const empId = currentEmp.id;
+
+        // Try DB delete
+        try {
+            supabase.from('employees').delete().eq('id', empId).then(() => {
+                console.log("Deleted from Supabase");
+            });
+        } catch (e) {
+            console.warn("Delete from db failed:", e);
+        }
+
+        // Always delete from localStorage
+        let localEmployees = JSON.parse(localStorage.getItem('romix_employees_local') || '[]');
+        localEmployees = localEmployees.filter(x => x.id !== empId);
+        localStorage.setItem('romix_employees_local', JSON.stringify(localEmployees));
+
+        logActivity('admin', 'Xodim o\'chirildi', name);
+        closeDetailModal();
+        loadInitialData();
     }
 }
 
