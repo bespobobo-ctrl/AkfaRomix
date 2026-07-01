@@ -89,14 +89,38 @@ export function createViewer(canvas) {
         const d = Math.max(0.06, 0.05 * scale);  // profil chuqurligi
         const impF = f * 0.75;                   // impost eni
 
-        // Tashqi ramka (4 profil)
-        box(f, H, d, frameMat, -W / 2 + f / 2, 0, 0);      // chap
-        box(f, H, d, frameMat, W / 2 - f / 2, 0, 0);       // o'ng
-        box(W - 2 * f, f, d, frameMat, 0, H / 2 - f / 2, 0); // tepa
-        box(W - 2 * f, f, d, frameMat, 0, -H / 2 + f / 2, 0);// past
+        // Arka (yarim doira tepa) — faqat deraza uchun
+        const arch = !!params.arch && type !== 'eshik';
+        const archRise = arch ? Math.min(W * 0.5, H * 0.42) : 0;
+        const rectH = H - archRise;            // to'g'ri burchakli qism balandligi
+        const cyRect = -H / 2 + rectH / 2;
+        const springY = -H / 2 + rectH;        // arka boshlanishi
+
+        // Tashqi ramka
+        box(f, rectH, d, frameMat, -W / 2 + f / 2, cyRect, 0); // chap
+        box(f, rectH, d, frameMat, W / 2 - f / 2, cyRect, 0);  // o'ng
+        box(W - 2 * f, f, d, frameMat, 0, -H / 2 + f / 2, 0);  // past
+        if (!arch) {
+            box(W - 2 * f, f, d, frameMat, 0, H / 2 - f / 2, 0); // to'g'ri tepa
+        } else {
+            // Arka ramkasi — yarim doira segmentlar
+            const R = W / 2;
+            const segs = 28;
+            for (let i = 0; i < segs; i++) {
+                const a = Math.PI * (i + 0.5) / segs;
+                const seg = new THREE.Mesh(new THREE.BoxGeometry(Math.PI * R / segs * 1.2, f, d), frameMat);
+                seg.position.set(R * Math.cos(a), springY + archRise * Math.sin(a), 0);
+                seg.rotation.z = a - Math.PI / 2;
+                modelGroup.add(seg);
+            }
+            // Arka shishasi — yarim disk
+            const gd = new THREE.Mesh(new THREE.CircleGeometry(R - f, 40, 0, Math.PI), glassMat);
+            gd.position.set(0, springY, -d * 0.1);
+            modelGroup.add(gd);
+        }
 
         const innerW = W - 2 * f;
-        const innerH = H - 2 * f;
+        const innerH = rectH - 2 * f;
         const innerLeft = -W / 2 + f;
         const innerBottom = -H / 2 + f;
 
@@ -112,7 +136,7 @@ export function createViewer(canvas) {
             box(f * 0.35, H * 0.14, d * 1.6, handleMat, W / 2 - f - f * 0.4, 0, 0);
         }
 
-        // Shisha (bitta panel, orqaroqda)
+        // Shisha (rect qism paneli)
         box(innerW * 0.99, glassH * 0.99, d * 0.25, glassMat, 0, glassBottom + glassH / 2, 0);
 
         // Impostlar (bo'linmalar)

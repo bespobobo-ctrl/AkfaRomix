@@ -29,7 +29,10 @@ export function derivePieces(items) {
         const vDiv = Math.max(0, it.vDiv || 0);
         const hDiv = Math.max(0, it.hDiv || 0);
         const stv = Math.max(0, it.stvorka || 0);
-        const innerW = W - 2 * FRAME_W, innerH = H - 2 * FRAME_W;
+        const arch = !!it.arch && it.type !== 'eshik';
+        const archRise = arch ? Math.round(Math.min(W / 2, H * 0.42)) : 0;
+        const rectH = H - archRise;
+        const innerW = W - 2 * FRAME_W, innerH = rectH - 2 * FRAME_W;
 
         // Har komponent o'z profilidan kesiladi — alohida guruh
         const add = (mat, len, angle, count) => {
@@ -40,9 +43,15 @@ export function derivePieces(items) {
             groups[mat].push({ ref: `${P} / ${posMap[k]}`, len: Math.round(len), angle, qty: count });
         };
 
-        // 1) Rama (frame) — 45°
-        add(baseMat, H, '45° ; 45°', 2 * qty);
-        add(baseMat, W, '45° ; 45°', 2 * qty);
+        // 1) Rama (frame) — 45° (arka bo'lsa: to'g'ri tepa o'rniga yoy profili)
+        if (arch) {
+            add(baseMat, rectH, '45° ; 45°', 2 * qty);                  // vertikal (rect balandlik)
+            add(baseMat, W, '45° ; 45°', qty);                          // past
+            add(baseMat, Math.round(Math.PI * W / 2), 'ARKA (egilgan)', qty); // yarim doira yoy profili
+        } else {
+            add(baseMat, H, '45° ; 45°', 2 * qty);
+            add(baseMat, W, '45° ; 45°', 2 * qty);
+        }
         // 2) Impostlar — 90°
         add(baseMat, innerH, '90° ; 90°', vDiv * qty);
         add(baseMat, innerW, '90° ; 90°', hDiv * qty);

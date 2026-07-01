@@ -187,6 +187,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const hDivInp = document.getElementById('itemHDiv');
     const stvInp = document.getElementById('itemStvorka');
     const openTypeInp = document.getElementById('itemOpenType');
+    const archInp = document.getElementById('itemArch');
+    const archWrap = document.getElementById('archWrapper');
 
     function ensureViewer() {
         if (!_viewer && canvas3d) {
@@ -202,6 +204,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (impostWrap) impostWrap.style.display = is3d ? '' : 'none';
         if (stvorkaWrap) stvorkaWrap.style.display = is3d ? '' : 'none';
         if (openTypeWrap) openTypeWrap.style.display = (is3d && stv > 0) ? '' : 'none';
+        if (archWrap) archWrap.style.display = (type === 'rom' || type === 'rom_fortochka') ? '' : 'none';
         if (canvas3d) canvas3d.style.display = is3d ? 'block' : 'none';
         if (empty3d) empty3d.style.display = is3d ? 'none' : 'flex';
         if (!is3d) return;
@@ -215,7 +218,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             vDiv: parseInt(vDivInp && vDivInp.value) || 0,
             hDiv: parseInt(hDivInp && hDivInp.value) || 0,
             stvorka: stv,
-            openType: openTypeInp ? openTypeInp.value : 'kasement_chap'
+            openType: openTypeInp ? openTypeInp.value : 'kasement_chap',
+            arch: archInp ? archInp.checked : false
         });
     };
 
@@ -224,6 +228,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (el) el.addEventListener('input', window.update3DPreview);
     });
     if (openTypeInp) openTypeInp.addEventListener('change', window.update3DPreview);
+    if (archInp) archInp.addEventListener('change', window.update3DPreview);
 
     // Add Item to Basket
     const addItemBtn = document.getElementById('addItemBtn');
@@ -272,6 +277,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 hDiv: parseInt(document.getElementById('itemHDiv')?.value) || 0,
                 stvorka: parseInt(document.getElementById('itemStvorka')?.value) || 0,
                 openType: document.getElementById('itemOpenType')?.value || 'kasement_chap',
+                arch: document.getElementById('itemArch')?.checked || false,
                 calcVal: calcVal,
                 subtotal: subtotal,
                 unit: matOpt.dataset.unit
