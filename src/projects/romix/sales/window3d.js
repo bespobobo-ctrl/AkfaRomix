@@ -118,6 +118,25 @@ export function createViewer(canvas) {
             box(innerW, impF, d, frameMat, 0, y, 0);
         }
 
+        // Stvorka (ochiladigan ramkalar) — oyna oldida
+        const stv = Math.max(0, Math.min(4, parseInt(params.stvorka) || 0));
+        if (stv > 0) {
+            const gap = f * 0.18;
+            const sashW = innerW / stv;
+            const sf = impF;
+            const zf = d * 0.4;
+            for (let s = 0; s < stv; s++) {
+                const cx = innerLeft + sashW * s + sashW / 2;
+                const sw = sashW - gap * 2;
+                const sh = glassH - gap * 2;
+                const cy = glassBottom + glassH / 2;
+                box(sf, sh, d * 0.8, frameMat, cx - sw / 2 + sf / 2, cy, zf);
+                box(sf, sh, d * 0.8, frameMat, cx + sw / 2 - sf / 2, cy, zf);
+                box(sw, sf, d * 0.8, frameMat, cx, cy + sh / 2 - sf / 2, zf);
+                box(sw, sf, d * 0.8, frameMat, cx, cy - sh / 2 + sf / 2, zf);
+            }
+        }
+
         // Fortochka: tepa-chap katakda kichik forточка ramkasi
         if (type === 'rom_fortochka') {
             const fw = innerW * 0.4, fh = glassH * 0.32;

@@ -4,20 +4,23 @@
 //  profillarni eng kam chiqit bilan kesish rejasini PDF qiladi.
 // ═══════════════════════════════════════════════════════════
 
-const FRAME_W = 60;   // profil eni (mm) — ramka/impost hisobi uchun
+const FRAME_W = 60;   // rama profil eni (mm)
+const SASH_W = 60;    // stvorka (створка) profil eni (mm)
+const BEAD_W = 20;    // shtapik (штапик) eni (mm)
+const SASH_GAP = 4;   // rama–stvorka orasidagi zazor (mm)
 const BAR_LEN = 6000; // standart profil uzunligi (mm)
 const KERF = 10;      // arra kesuvi (mm)
 const TRIM = 10;      // chetdan qirqim (mm)
 
 // 1) Zakaz elementlarini profil bo'laklariga aylantirish
 export function derivePieces(items) {
-    const groups = {}; // materialName -> [{ref,len,angle,qty}]
+    const groups = {}; // material -> [{ref,len,angle,qty}]
+    const posMap = {}; // "P-xx|material" -> position counter
     let productIdx = 0;
 
     items.forEach(it => {
         if (!['rom', 'rom_fortochka', 'eshik'].includes(it.type)) return;
-        const mat = it.materialName || '40X60X2mm PROFIL';
-        if (!groups[mat]) groups[mat] = [];
+        const baseMat = it.materialName || '40X60X2mm PROFIL';
         productIdx++;
         const P = 'P-' + String(productIdx).padStart(2, '0');
         const qty = Math.max(1, it.quantity || 1);
@@ -25,22 +28,50 @@ export function derivePieces(items) {
         const W = Math.round((it.width || 0) * 1000);
         const vDiv = Math.max(0, it.vDiv || 0);
         const hDiv = Math.max(0, it.hDiv || 0);
-        let pos = 0;
-        const add = (len, angle, count) => {
+        const stv = Math.max(0, it.stvorka || 0);
+        const innerW = W - 2 * FRAME_W, innerH = H - 2 * FRAME_W;
+
+        // Har komponent o'z profilidan kesiladi — alohida guruh
+        const add = (mat, len, angle, count) => {
             if (len <= 0 || count <= 0) return;
-            groups[mat].push({ ref: `${P} / ${++pos}`, len: Math.round(len), angle, qty: count });
+            if (!groups[mat]) groups[mat] = [];
+            const k = P + '|' + mat;
+            posMap[k] = (posMap[k] || 0) + 1;
+            groups[mat].push({ ref: `${P} / ${posMap[k]}`, len: Math.round(len), angle, qty: count });
         };
-        // Ramka (mitred 45°)
-        add(H, '45° ; 45°', 2 * qty); // vertikal
-        add(W, '45° ; 45°', 2 * qty); // gorizontal
-        // Impostlar (90°)
-        add(H - 2 * FRAME_W, '90° ; 90°', vDiv * qty);
-        add(W - 2 * FRAME_W, '90° ; 90°', hDiv * qty);
-        // Fortochka — kichik ramka
+
+        // 1) Rama (frame) — 45°
+        add(baseMat, H, '45° ; 45°', 2 * qty);
+        add(baseMat, W, '45° ; 45°', 2 * qty);
+        // 2) Impostlar — 90°
+        add(baseMat, innerH, '90° ; 90°', vDiv * qty);
+        add(baseMat, innerW, '90° ; 90°', hDiv * qty);
+
+        // 3) Stvorka (створка) — alohida profil, 45°
+        if (stv > 0) {
+            const sashMat = baseMat + ' · Stvorka';
+            const sashW = Math.round(innerW / stv - 2 * SASH_GAP);
+            const sashH = Math.round(innerH - 2 * SASH_GAP);
+            add(sashMat, sashH, '45° ; 45°', 2 * stv * qty);
+            add(sashMat, sashW, '45° ; 45°', 2 * stv * qty);
+        }
+
+        // 4) Shtapik (штапик) — alohida profil, har oyna katagi atrofida, 45°
+        const cols = vDiv + 1, rows = hDiv + 1;
+        const impW = Math.round(FRAME_W * 0.75);
+        const cellW = Math.round((innerW - vDiv * impW) / cols);
+        const cellH = Math.round((innerH - hDiv * impW) / rows);
+        const gW = cellW - 2 * BEAD_W, gH = cellH - 2 * BEAD_W;
+        if (gW > 0 && gH > 0) {
+            const beadMat = baseMat + ' · Shtapik';
+            add(beadMat, gH, '45° ; 45°', 2 * cols * rows * qty);
+            add(beadMat, gW, '45° ; 45°', 2 * cols * rows * qty);
+        }
+
+        // 5) Fortochka — kichik ramka (rama profilidan)
         if (it.type === 'rom_fortochka') {
-            const innerW = W - 2 * FRAME_W, innerH = H - 2 * FRAME_W;
-            add(Math.round(innerH * 0.32), '45° ; 45°', 2 * qty);
-            add(Math.round(innerW * 0.40), '45° ; 45°', 2 * qty);
+            add(baseMat, Math.round(innerH * 0.32), '45° ; 45°', 2 * qty);
+            add(baseMat, Math.round(innerW * 0.40), '45° ; 45°', 2 * qty);
         }
     });
     return groups; // { material: [pieces] }

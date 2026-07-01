@@ -181,8 +181,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const canvas3d = document.getElementById('preview3dCanvas');
     const empty3d = document.getElementById('preview3dEmpty');
     const impostWrap = document.getElementById('impostWrapper');
+    const stvorkaWrap = document.getElementById('stvorkaWrapper');
     const vDivInp = document.getElementById('itemVDiv');
     const hDivInp = document.getElementById('itemHDiv');
+    const stvInp = document.getElementById('itemStvorka');
 
     function ensureViewer() {
         if (!_viewer && canvas3d) {
@@ -195,6 +197,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const type = itemTypeSel ? itemTypeSel.value : 'rom';
         const is3d = ['rom', 'rom_fortochka', 'eshik'].includes(type);
         if (impostWrap) impostWrap.style.display = is3d ? '' : 'none';
+        if (stvorkaWrap) stvorkaWrap.style.display = is3d ? '' : 'none';
         if (canvas3d) canvas3d.style.display = is3d ? 'block' : 'none';
         if (empty3d) empty3d.style.display = is3d ? 'none' : 'flex';
         if (!is3d) return;
@@ -206,12 +209,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             width: parseFloat(itemWidthInput.value) || 1.5,
             height: parseFloat(itemHeightInput.value) || 2.0,
             vDiv: parseInt(vDivInp && vDivInp.value) || 0,
-            hDiv: parseInt(hDivInp && hDivInp.value) || 0
+            hDiv: parseInt(hDivInp && hDivInp.value) || 0,
+            stvorka: parseInt(stvInp && stvInp.value) || 0
         });
     };
 
     if (itemTypeSel) itemTypeSel.addEventListener('change', window.update3DPreview);
-    [itemHeightInput, itemWidthInput, vDivInp, hDivInp].forEach(el => {
+    [itemHeightInput, itemWidthInput, vDivInp, hDivInp, stvInp].forEach(el => {
         if (el) el.addEventListener('input', window.update3DPreview);
     });
 
@@ -260,6 +264,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 quantity: qty,
                 vDiv: parseInt(document.getElementById('itemVDiv')?.value) || 0,
                 hDiv: parseInt(document.getElementById('itemHDiv')?.value) || 0,
+                stvorka: parseInt(document.getElementById('itemStvorka')?.value) || 0,
                 calcVal: calcVal,
                 subtotal: subtotal,
                 unit: matOpt.dataset.unit
