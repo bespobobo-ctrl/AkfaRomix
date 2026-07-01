@@ -172,6 +172,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     await loadInitialData();
+
+    // Fight aggressive browser autofill by clearing "hr" or "admin" from search bar programmatically if not focused
+    const cleanAutofill = () => {
+        const searchInput = document.getElementById('hrSearchPrimary');
+        if (searchInput && document.activeElement !== searchInput) {
+            const val = searchInput.value.toLowerCase().trim();
+            if (val === 'hr' || val === 'admin') {
+                searchInput.value = '';
+                filterAndRender();
+            }
+        }
+    };
+    for (let delay of [100, 300, 500, 1000, 2000]) {
+        setTimeout(cleanAutofill, delay);
+    }
 });
 
 async function loadInitialData() {
