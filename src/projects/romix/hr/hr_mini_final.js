@@ -497,7 +497,81 @@ window.miniProcessAttendance = async function (type) {
 
 window.miniShowProfile = function (id) {
     const emp = employees.find(e => e.id === id);
-    if (emp) alert(`${emp.full_name}\n${emp.role}\n${emp.phone}`);
+    if (!emp) return;
+
+    // Create the overlay sheet dynamically
+    const overlay = document.createElement('div');
+    overlay.className = 'mini-modal-overlay';
+    overlay.id = 'miniProfileSheet';
+    overlay.style.display = 'flex';
+
+    overlay.innerHTML = `
+        <div class="mini-modal" id="miniProfileContent" style="max-height:85vh; overflow-y:auto; border-radius:40px 40px 0 0; background:#0e121a; border-top:2px solid var(--border); padding-bottom:50px;">
+            <div style="width:45px; height:6px; background:rgba(255,255,255,0.1); border-radius:10px; margin:0 auto 30px auto;"></div>
+            
+            <div style="text-align:center; margin-bottom:25px;">
+                <div style="position:relative; display:inline-block; margin: 0 auto 15px auto;">
+                    <div style="width:100px; height:100px; border-radius:32px; padding:3px; background:linear-gradient(45deg, var(--accent), #00d2ff);">
+                        <img src="${emp.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(emp.full_name)}" style="width:100%; height:100%; border-radius:29px; object-fit:cover; border:3px solid #0e121a;">
+                    </div>
+                </div>
+                <h2 style="font-size:1.5rem; font-weight:900; letter-spacing:0.5px; color:#fff;">${emp.full_name}</h2>
+                <span style="display:inline-block; margin-top:8px; font-size:0.7rem; color:var(--accent); background:rgba(0, 255, 136, 0.1); border:1px solid rgba(0, 255, 136, 0.2); padding:5px 15px; border-radius:12px; font-weight:800; text-transform:uppercase; letter-spacing:1px;">${emp.role || 'Xodim'}</span>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:30px; padding: 0 10px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,0.03); padding:16px 20px; border-radius:20px; border:1px solid var(--border);">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <i data-lucide="phone" style="color:var(--text-s); width:16px;"></i>
+                        <span style="font-size:0.7rem; color:var(--text-s); font-weight:800; letter-spacing:1px;">TELEFON:</span>
+                    </div>
+                    <b style="font-size:0.95rem; color:#fff; font-weight:700;">${emp.phone || '---'}</b>
+                </div>
+
+                <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,0.03); padding:16px 20px; border-radius:20px; border:1px solid var(--border);">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <i data-lucide="building" style="color:var(--text-s); width:16px;"></i>
+                        <span style="font-size:0.7rem; color:var(--text-s); font-weight:800; letter-spacing:1px;">BO'LIM:</span>
+                    </div>
+                    <b style="font-size:0.95rem; color:#00d2ff; font-weight:800;">${(emp.department || 'Ofis').toUpperCase()}</b>
+                </div>
+
+                <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,0.03); padding:16px 20px; border-radius:20px; border:1px solid var(--border);">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <i data-lucide="calendar" style="color:var(--text-s); width:16px;"></i>
+                        <span style="font-size:0.7rem; color:var(--text-s); font-weight:800; letter-spacing:1px;">STAJ:</span>
+                    </div>
+                    <b style="font-size:0.95rem; color:#fff; font-weight:700;">${emp.staj || 'Yangi xodim'}</b>
+                </div>
+
+                <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,0.03); padding:16px 20px; border-radius:20px; border:1px solid var(--border);">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <i data-lucide="wallet" style="color:var(--text-s); width:16px;"></i>
+                        <span style="font-size:0.7rem; color:var(--text-s); font-weight:800; letter-spacing:1px;">MAOSH STAVKASI:</span>
+                    </div>
+                    <b style="font-size:0.95rem; color:var(--accent); font-weight:900;">${emp.salary_info || '---'} UZS</b>
+                </div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:10px; padding: 0 10px;">
+                <button onclick="window.miniCloseProfile()" style="height:65px; border-radius:20px; background:rgba(255,255,255,0.05); color:#fff; border:1px solid rgba(255,255,255,0.08); font-weight:800; font-size:0.95rem; display:flex; align-items:center; justify-content:center; gap:10px; cursor:pointer; width:100%;">
+                    YOPISH
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+    lucide.createIcons();
+    gsap.to("#miniProfileContent", { y: 0, duration: 0.5, ease: "power4.out" });
+};
+
+window.miniCloseProfile = function () {
+    gsap.to("#miniProfileContent", {
+        y: "100%", duration: 0.4, onComplete: () => {
+            document.getElementById('miniProfileSheet').remove();
+        }
+    });
 };
 
 // 📝 PREMIUM PROFILE EDIT ENGINE
