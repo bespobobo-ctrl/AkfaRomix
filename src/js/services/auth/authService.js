@@ -152,8 +152,8 @@ export const authService = {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         const base = '/';
 
-        // If mobile, steer towards Mini App versions for core HR/Staff roles
-        if (isMobile && (role === 'hr' || role === 'admin' || role === 'employee')) {
+        // If mobile, steer towards Mini App versions only for Employee role
+        if (isMobile && role === 'employee') {
             return base + 'akfa_hr_mini.html';
         }
 
