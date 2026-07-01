@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function updateConstructorFields() {
         const type = itemTypeSel.value;
         const materials = AVAILABLE_MATERIALS[type] || [];
-        
+
         // Populate Materials select
         itemMaterialSel.innerHTML = '';
         materials.forEach(m => {
@@ -140,27 +140,32 @@ document.addEventListener('DOMContentLoaded', async () => {
             itemMaterialSel.appendChild(opt);
         });
 
-        // Toggle dimensions view
+        const dimWrapper = document.getElementById('dimWrapper');
+        const dimX = document.getElementById('dimX');
+
         if (type === 'rom' || type === 'rom_fortochka' || type === 'eshik') {
-            dimLabel.textContent = "O'lcham (Balandlik x Eni) - m";
-            itemHeightInput.style.display = 'block';
-            itemWidthInput.style.display = 'block';
-            if (itemHeightInput.previousElementSibling) itemHeightInput.previousElementSibling.style.display = 'block';
+            // Full dimension: Height x Width
+            dimWrapper.style.display = 'block';
+            itemHeightInput.style.display = '';
+            if (dimX) dimX.style.display = '';
+            itemWidthInput.style.display = '';
+            dimLabel.textContent = "O'lcham (Balandlik x Eni) m";
             materialLabel.textContent = "Profil (Material)";
+
         } else if (type === 'padakonnik') {
-            dimLabel.textContent = "Uzunligi (Metr)";
+            // Width only (length)
+            dimWrapper.style.display = 'block';
             itemHeightInput.style.display = 'none';
-            itemWidthInput.style.display = 'block';
+            if (dimX) dimX.style.display = 'none';
+            itemWidthInput.style.display = '';
             itemWidthInput.value = "1.50";
-            if (itemHeightInput.previousElementSibling) itemHeightInput.previousElementSibling.style.display = 'none';
+            dimLabel.textContent = "Uzunligi (metr)";
             materialLabel.textContent = "Padakonnik turi";
+
         } else {
-            // Accessories
-            dimLabel.textContent = "O'lcham shartmas";
-            itemHeightInput.style.display = 'none';
-            itemWidthInput.style.display = 'none';
-            if (itemHeightInput.previousElementSibling) itemHeightInput.previousElementSibling.style.display = 'none';
-            materialLabel.textContent = "Aksesuar nomi";
+            // Accessories — no dimensions needed
+            dimWrapper.style.display = 'none';
+            materialLabel.textContent = type === 'aksesuar_rom' ? "Rom Aksesuari" : "Eshik Aksesuari";
         }
     }
 
