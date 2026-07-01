@@ -144,8 +144,130 @@ function localQueryBuilder(table) {
     return b;
 }
 
-// ── Hybrid client: Supabase first, localStorage fallback ─────
+// ══════════════════════════════════════════════════════════════
+//  SYNC-BACK QUEUE — offline yozuvlarni Supabase'ga qaytarish
+//  Kafolat: har bir yozuv (insert/update/upsert/delete) YO Supabase'ga
+//  tushadi, YO navbatda saqlanib, ulanish qaytganda avtomatik yuboriladi.
+//  Hech qachon jimgina yo'qolmaydi.
+// ══════════════════════════════════════════════════════════════
 let _isOnline = true; // optimistic
+const QUEUE_KEY = 'romix_sync_queue';
+const WRITE_METHODS = ['insert', 'update', 'upsert', 'delete'];
+
+function _readQueue() { try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch { return []; } }
+function _writeQueue(q) { try { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); } catch {} _updateSyncBadge(q.length); }
+
+export function pendingSyncCount() { return _readQueue().length; }
+
+function _enqueueChain(table, chain) {
+    try {
+        const q = _readQueue();
+        // Zanjirni JSON-xavfsiz nusxalaymiz
+        const safe = chain.map(c => ({ m: c.m, args: JSON.parse(JSON.stringify(c.args)) }));
+        q.push({ id: 'q-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7), table, chain: safe, ts: Date.now() });
+        _writeQueue(q);
+    } catch (e) { console.warn('[SYNC] enqueue xato:', e); }
+}
+
+// Offline o'qish uchun mahalliy nusxaga qo'llash (best-effort — murakkab filtrlar bo'lsa e'tiborsiz)
+function _mirrorApply(table, chain) {
+    try {
+        let b = localQueryBuilder(table);
+        for (const c of chain) { if (typeof b[c.m] === 'function') b = b[c.m](...c.args); }
+    } catch {}
+}
+
+let _flushing = false;
+async function flushSyncQueue() {
+    if (_flushing) return;
+    const q = _readQueue();
+    if (!q.length) return;
+    _flushing = true;
+    const remaining = [];
+    for (let i = 0; i < q.length; i++) {
+        const item = q[i];
+        try {
+            let qb = realClient.from(item.table);
+            for (const c of item.chain) {
+                let args = c.args;
+                // insert/upsert: loc- id larni olib tashlaymiz — Supabase o'zi uuid beradi
+                if ((c.m === 'insert' || c.m === 'upsert') && Array.isArray(args) && Array.isArray(args[0])) {
+                    args = [args[0].map(r => {
+                        const rr = { ...r };
+                        if (typeof rr.id === 'string' && rr.id.startsWith('loc-')) delete rr.id;
+                        return rr;
+                    })];
+                }
+                qb = qb[c.m](...args);
+            }
+            const res = await qb;
+            if (res && res.error) throw res.error;
+            // muvaffaqiyat — bu itemни navbatdan chiqaramiz
+        } catch (e) {
+            // Tarmoq/pauza — bu va qolgan HAMMASINI tartib bilan keyingi flushга qoldiramiz
+            _isOnline = false;
+            for (let j = i; j < q.length; j++) remaining.push(q[j]);
+            break;
+        }
+    }
+    _writeQueue(remaining);
+    _flushing = false;
+}
+
+// Kutilayotgan sinx indikatori (past chapda)
+function _updateSyncBadge(n) {
+    if (typeof document === 'undefined' || !document.body) return;
+    let el = document.getElementById('romix-sync-badge');
+    if (!n) { if (el) el.remove(); return; }
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'romix-sync-badge';
+        el.style.cssText = 'position:fixed;left:12px;bottom:12px;z-index:99999;background:rgba(255,184,0,0.95);color:#101828;font-family:sans-serif;font-weight:700;font-size:12px;padding:8px 12px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,0.35);';
+        document.body.appendChild(el);
+    }
+    el.textContent = "⏳ " + n + " ta o'zgarish sinxron kutilmoqda";
+}
+
+// Zanjirni yozib oluvchi Proxy — online yozuv xato bo'lsa yoki offline bo'lsa navbatga qo'yadi
+function _wrap(builder, ctx, table, isLocal) {
+    return new Proxy(builder, {
+        get(target, prop) {
+            if (prop === 'then') {
+                const isWrite = ctx.chain.some(c => WRITE_METHODS.includes(c.m));
+                const rawThen = (typeof target.then === 'function') ? target.then.bind(target) : null;
+                if (!isWrite || !rawThen) return rawThen;
+                return (resolve, reject) => rawThen(
+                    (result) => {
+                        if (isLocal) { _enqueueChain(table, ctx.chain); return resolve(result); }
+                        if (result && result.error) {
+                            _enqueueChain(table, ctx.chain); _mirrorApply(table, ctx.chain);
+                            return resolve({ data: null, error: null, _queued: true });
+                        }
+                        return resolve(result);
+                    },
+                    (err) => {
+                        if (isLocal) return reject(err);
+                        _enqueueChain(table, ctx.chain); _mirrorApply(table, ctx.chain);
+                        return resolve({ data: null, error: null, _queued: true });
+                    }
+                );
+            }
+            const v = target[prop];
+            if (typeof v === 'function') {
+                return (...args) => {
+                    ctx.chain.push({ m: prop, args });
+                    const res = v.apply(target, args);
+                    if (res && typeof res === 'object' &&
+                        (typeof res.then === 'function' || typeof res.eq === 'function' || typeof res.insert === 'function')) {
+                        return _wrap(res, ctx, table, isLocal);
+                    }
+                    return res;
+                };
+            }
+            return v;
+        }
+    });
+}
 
 async function checkSupabaseOnline() {
     try {
@@ -154,10 +276,16 @@ async function checkSupabaseOnline() {
     } catch {
         _isOnline = false;
     }
+    if (_isOnline) flushSyncQueue(); // ulanish bor — kutayotgan yozuvlarni yuboramiz
 }
 
-// Check once on load
+// Boshlanishда tekshir + qayta ulanishda/vaqti-vaqti bilan flush
 checkSupabaseOnline();
+if (typeof window !== 'undefined') {
+    window.addEventListener('online', checkSupabaseOnline);
+    setInterval(checkSupabaseOnline, 60000); // har daqiqada: online tekshir + navbatni yubor
+    setTimeout(() => _updateSyncBadge(pendingSyncCount()), 1500);
+}
 
 function hybridFrom(table) {
     if (_isOnline) {
@@ -192,10 +320,11 @@ function hybridFrom(table) {
 export const supabase = {
     from(table) {
         if (_isOnline) {
-            // Use real Supabase directly — errors caught per-call in each module
-            return realClient.from(table);
+            // Online: haqiqiy Supabase — lekin yozuv xato bo'lsa navbatga qo'yish uchun wrap
+            return _wrap(realClient.from(table), { chain: [] }, table, false);
         }
-        return localQueryBuilder(table);
+        // Offline: mahalliy nusxa + yozuvni navbatga qo'yish uchun wrap
+        return _wrap(localQueryBuilder(table), { chain: [] }, table, true);
     },
 
     auth: {
