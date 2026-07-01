@@ -305,6 +305,8 @@ function renderStaffList(data) {
     data.forEach(emp => {
         const att = todayAtt.find(a => a.employee_id === emp.id);
         const status = getSmartStatus(att);
+        const inT = att && att.check_in ? new Date(att.check_in).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+        const outT = att && att.check_out ? new Date(att.check_out).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
 
         const tr = document.createElement('tr');
         tr.style.cursor = 'pointer';
@@ -335,6 +337,7 @@ function renderStaffList(data) {
                     <span style="width:6px; height:6px; border-radius:50%; background:${status.color}; box-shadow:0 0 8px ${status.color}"></span>
                     ${status.text}
                 </div>
+                ${inT ? `<div style="font-size:0.68rem; color:var(--text-s); margin-top:6px; font-family:monospace; letter-spacing:0.5px;">🕐 ${inT}${outT ? ' → ' + outT : ''}</div>` : ''}
             </td>
             <td style="padding: 16px 20px; text-align:right;">
                 <button onclick="window.viewDetails('${emp.id}')" 
@@ -981,8 +984,10 @@ window.startExport = async function (format) {
     const now = new Date();
     const startDate = new Date();
     startDate.setDate(now.getDate() - daysLimit);
-    const startStr = startDate.toISOString().split('T')[0];
-    const endStr = now.toISOString().split('T')[0];
+    // Lokal sana (davomat yozuvlari lokal sana bilan saqlanadi — mos bo'lishi shart)
+    const _ld = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const startStr = _ld(startDate);
+    const endStr = _ld(now);
 
     // 1. Fetch Real Data from Supabase
     const { data: attendance, error } = await supabase.from('attendance')
@@ -1058,7 +1063,7 @@ window.startExport = async function (format) {
             hours = Math.max(0, diff / (1000 * 60 * 60));
         } else if (a.check_in && !a.check_out) {
             // Still working — calculate up to now if today, else assume 9h
-            const today = new Date().toISOString().split('T')[0];
+            const today = _ld(new Date());
             if (a.date === today) {
                 let diff = new Date() - new Date(a.check_in);
                 if (a.lunch_start && a.lunch_end) {
@@ -1537,7 +1542,7 @@ window.renderAnalyticsBoard = async function () {
 
     // 1. Joriy oyni aniqlash
     const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    const firstDay = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
     const { data: monthAtt } = await supabase.from('attendance')
         .select('*')
         .gte('date', firstDay);
@@ -2184,7 +2189,8 @@ async function loadHistoryData() {
         return true;
     });
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const _tn = new Date();
+    const todayStr = _tn.getFullYear() + '-' + String(_tn.getMonth() + 1).padStart(2, '0') + '-' + String(_tn.getDate()).padStart(2, '0');
     const absentEntries = [];
 
     // Auto-detect absentees for today if looking at current range
