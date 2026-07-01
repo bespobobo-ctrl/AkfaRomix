@@ -4,6 +4,31 @@ import { authService } from '@/services/auth/authService.js';
 import { ROLES } from '@/constants';
 import windowProfile from '../../../assets/images/window_profile.png';
 
+const defaultEmployees = [
+    { id: "emp-1", full_name: "Sharifi Miad", first_name: "Sharifi", last_name: "Miad", role: "Ofis", salary_info: "7000000", salary: 7000000, department: "Ofis", dept: "Ofis", phone: "", avatar_url: "", photo_url: "" },
+    { id: "emp-2", full_name: "Mullajonov Xurshid", first_name: "Mullajonov", last_name: "Xurshid", role: "Brigadir", salary_info: "12000000", salary: 12000000, department: "Ustalar", dept: "Ustalar", phone: "", avatar_url: "", photo_url: "" },
+    { id: "emp-3", full_name: "Atbaev Temirxon", first_name: "Atbaev", last_name: "Temirxon", role: "Zamershik", salary_info: "6000000", salary: 6000000, department: "Sotuv", dept: "Sotuv", phone: "", avatar_url: "", photo_url: "" },
+    { id: "emp-4", full_name: "Abdullaev Axror", first_name: "Abdullaev", last_name: "Axror", role: "Omborchi", salary_info: "8000000", salary: 8000000, department: "Ombor", dept: "Ombor", phone: "", avatar_url: "", photo_url: "" },
+    { id: "emp-5", full_name: "Nematov Ziyovuddin", first_name: "Nematov", last_name: "Ziyovuddin", role: "Ishchi", salary_info: "7000000", salary: 7000000, department: "Ustalar", dept: "Ustalar", phone: "", avatar_url: "", photo_url: "" },
+    { id: "emp-6", full_name: "Shorasul", first_name: "Shorasul", last_name: "", role: "Ustanovshik", salary_info: "8000000", salary: 8000000, department: "Ustalar", dept: "Ustalar", phone: "", avatar_url: "", photo_url: "" },
+    { id: "emp-7", full_name: "Ulugbek", first_name: "Ulugbek", last_name: "", role: "Sborshik", salary_info: "6000000", salary: 6000000, department: "Ustalar", dept: "Ustalar", phone: "", avatar_url: "", photo_url: "" },
+    { id: "emp-8", full_name: "Usanov Shuxrat", first_name: "Usanov", last_name: "Shuxrat", role: "Qorovul", salary_info: "2500000", salary: 2500000, department: "Xo'jalik", dept: "Xo'jalik", phone: "", avatar_url: "", photo_url: "" },
+    { id: "emp-9", full_name: "Akramov Zaynabiddin", first_name: "Akramov", last_name: "Zaynabiddin", role: "Qorovul", salary_info: "2500000", salary: 2500000, department: "Xo'jalik", dept: "Xo'jalik", phone: "", avatar_url: "", photo_url: "" },
+    { id: "emp-10", full_name: "Najmiddinov Azimxon", first_name: "Najmiddinov", last_name: "Azimxon", role: "Ishchi", salary_info: "0", salary: 0, department: "Ustalar", dept: "Ustalar", phone: "", avatar_url: "", photo_url: "" },
+    { id: "emp-11", full_name: "Najmiddinov Akobir", first_name: "Najmiddinov", last_name: "Akobir", role: "Ishchi", salary_info: "6000000", salary: 6000000, department: "Ustalar", dept: "Ustalar", phone: "", avatar_url: "", photo_url: "" },
+    { id: "emp-12", full_name: "Rasulov Lutfullo", first_name: "Rasulov", last_name: "Lutfullo", role: "Ishchi", salary_info: "0", salary: 0, department: "Ustalar", dept: "Ustalar", phone: "", avatar_url: "", photo_url: "" },
+    { id: "emp-13", full_name: "Kodirov Shoxrux", first_name: "Kodirov", last_name: "Shoxrux", role: "Menejer", salary_info: "11000000", salary: 11000000, department: "Sotuv", dept: "Sotuv", phone: "", avatar_url: "", photo_url: "" },
+    { id: "emp-14", full_name: "Ergashev Otabek", first_name: "Ergashev", last_name: "Otabek", role: "Hisobchi", salary_info: "9000000", salary: 9000000, department: "Ofis", dept: "Ofis", phone: "", avatar_url: "", photo_url: "" },
+    { id: "emp-15", full_name: "Aitbaev Nurlan", first_name: "Aitbaev", last_name: "Nurlan", role: "Zamershik", salary_info: "8500000", salary: 8500000, department: "Sotuv", dept: "Sotuv", phone: "", avatar_url: "", photo_url: "" },
+    { id: "emp-16", full_name: "Rajapov Xasan", first_name: "Rajapov", last_name: "Xasan", role: "Usta", salary_info: "12000000", salary: 12000000, department: "Ustalar", dept: "Ustalar", phone: "", avatar_url: "", photo_url: "" },
+    { id: "emp-17", full_name: "Xakimov Mels (Olloyor)", first_name: "Xakimov", last_name: "Mels", role: "Usta", salary_info: "8000000", salary: 8000000, department: "Ustalar", dept: "Ustalar", phone: "", avatar_url: "", photo_url: "" },
+    { id: "emp-18", full_name: "Eshtoev Jaxongir", first_name: "Eshtoev", last_name: "Jaxongir", role: "Usta", salary_info: "12000000", salary: 12000000, department: "Ustalar", dept: "Ustalar", phone: "", avatar_url: "", photo_url: "" },
+    { id: "emp-19", full_name: "Otabek Ustanovshik", first_name: "Otabek", last_name: "Ustanovshik", role: "Usta", salary_info: "8500000", salary: 8500000, department: "Ustalar", dept: "Ustalar", phone: "", avatar_url: "", photo_url: "" },
+    { id: "emp-20", full_name: "Mirazizov Sunnat", first_name: "Mirazizov", last_name: "Sunnat", role: "Brigadir", salary_info: "9000000", salary: 9000000, department: "Ustalar", dept: "Ustalar", phone: "", avatar_url: "", photo_url: "" },
+    { id: "emp-21", full_name: "Muminkulov Jasur", first_name: "Muminkulov", last_name: "Jasur", role: "Ishchi", salary_info: "10000000", salary: 10000000, department: "Ustalar", dept: "Ustalar", phone: "", avatar_url: "", photo_url: "" },
+    { id: "emp-22", full_name: "Shavkatov Jaxongir", first_name: "Shavkatov", last_name: "Jaxongir", role: "Ustanovshik brigadir", salary_info: "8000000", salary: 8000000, department: "Ustalar", dept: "Ustalar", phone: "", avatar_url: "", photo_url: "" }
+];
+
 document.addEventListener('DOMContentLoaded', async () => {
     const user = authService.getCurrentUser();
     if (!user || (user.role !== ROLES.MANAGER && user.role !== ROLES.ADMIN)) {
@@ -486,7 +511,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
             console.warn("Supabase staff query failed, falling back to local storage", error);
             dbError = error;
-            data = JSON.parse(localStorage.getItem('romix_staff_local') || '[]');
+            const localRaw = localStorage.getItem('romix_employees_local');
+            if (localRaw && JSON.parse(localRaw).length > 0) {
+                data = JSON.parse(localRaw);
+            } else {
+                data = defaultEmployees;
+                localStorage.setItem('romix_employees_local', JSON.stringify(data));
+            }
         }
 
         staffGrid.innerHTML = '';
@@ -497,10 +528,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         data.forEach(s => {
             const card = document.createElement('div');
             const displayId = s.id ? (s.id.startsWith('romix-') ? s.id.slice(6, 14).toUpperCase() : s.id.slice(0, 8).toUpperCase()) : 'TEMP';
+            const salaryVal = s.salary || s.salary_info || 0;
             card.className = 'bento-item staff-card';
             card.innerHTML = `
                 <div class="staff-avatar-wrapper">
-                    <img src="${s.photo_url || 'https://via.placeholder.com/150'}" class="staff-avatar">
+                    <img src="${s.photo_url || s.avatar_url || 'https://via.placeholder.com/150'}" class="staff-avatar">
                     <div class="qr-overlay">
                         <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=ROMIX-STAFF-${s.id}" style="width:80px; border-radius:8px;">
                     </div>
@@ -508,7 +540,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <h3 style="margin:0; font-weight:700;">${s.full_name}</h3>
                 <span class="premium-id">ID: ${displayId}</span>
                 <p style="color:var(--adm-text-sec); font-size:0.9rem; margin:8px 0 6px 0; font-weight:500;">${s.role}</p>
-                ${s.salary ? `<p style="color:#00ff88; font-weight:800; font-size:0.95rem; margin:0 0 15px 0;">Oylik: ${parseFloat(s.salary).toLocaleString()} so'm</p>` : ''}
+                ${salaryVal ? `<p style="color:#00ff88; font-weight:800; font-size:0.95rem; margin:0 0 15px 0;">Oylik: ${parseFloat(salaryVal).toLocaleString()} so'm</p>` : ''}
                 
                 <div class="auto-layout-row" style="justify-content:center;">
                     <button class="action-icon delete-staff-btn" data-id="${s.id}" 
@@ -529,9 +561,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     } catch (err) {
                         console.warn("Delete staff from db failed:", err);
                     }
-                    let localStaff = JSON.parse(localStorage.getItem('romix_staff_local') || '[]');
+                    let localStaff = JSON.parse(localStorage.getItem('romix_employees_local') || '[]');
                     localStaff = localStaff.filter(x => x.id !== id);
-                    localStorage.setItem('romix_staff_local', JSON.stringify(localStaff));
+                    localStorage.setItem('romix_employees_local', JSON.stringify(localStaff));
                     loadStaff();
                 }
             };
@@ -566,7 +598,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             full_name: name,
             role: role,
             salary: salary,
+            salary_info: salary.toString(),
             photo_url: photoUrl,
+            avatar_url: photoUrl,
+            department: "Ustalar",
+            dept: "Ustalar",
             created_at: new Date().toISOString()
         };
 
@@ -583,9 +619,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // Always save to local fallback for robust WMS offline use
-        const localStaff = JSON.parse(localStorage.getItem('romix_staff_local') || '[]');
+        const localStaff = JSON.parse(localStorage.getItem('romix_employees_local') || '[]');
         localStaff.unshift(newStaff);
-        localStorage.setItem('romix_staff_local', JSON.stringify(localStaff));
+        localStorage.setItem('romix_employees_local', JSON.stringify(localStaff));
 
         staffModal.classList.add('hidden');
         loadStaff();
