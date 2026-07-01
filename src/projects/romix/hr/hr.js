@@ -354,13 +354,23 @@ window.viewDetails = async function (id) {
 
     console.log("🔍 viewDetails calling for ID:", id);
     // 1. FRESH DATA FETCH
-    const { data: freshEmp, error: empErr } = await supabase.from('employees').select('*').eq('id', id).single();
+    let freshEmp = null;
+    try {
+        const { data, error } = await supabase.from('employees').select('*').eq('id', id).single();
+        if (error) throw error;
+        freshEmp = data;
+    } catch (err) {
+        console.warn("Supabase viewDetails fetch failed, using local storage:", err);
+        const localEmployees = JSON.parse(localStorage.getItem('romix_employees_local') || '[]');
+        freshEmp = localEmployees.find(x => x.id === id);
+    }
 
     isFetchingDetails = false;
 
-    if (empErr) console.error("❌ viewDetails fetch error:", empErr);
-    if (!freshEmp) console.warn("⚠️ No fresh employee found for ID:", id);
-    if (empErr || !freshEmp) return;
+    if (!freshEmp) {
+        console.warn("⚠️ No employee found for ID:", id);
+        return;
+    }
 
     console.log("✅ freshEmp found:", freshEmp.full_name);
 
@@ -388,13 +398,22 @@ window.viewDetails = async function (id) {
     const _now = new Date();
     const todayStr = _now.getFullYear() + '-' + String(_now.getMonth() + 1).padStart(2, '0') + '-' + String(_now.getDate()).padStart(2, '0');
 
-    const { data: att } = await supabase.from('attendance')
-        .select('*')
-        .eq('employee_id', emp.id)
-        .eq('date', todayStr)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+    let att = null;
+    try {
+        const res = await supabase.from('attendance')
+            .select('*')
+            .eq('employee_id', emp.id)
+            .eq('date', todayStr)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+        if (res.error) throw res.error;
+        att = res.data;
+    } catch (err) {
+        console.warn("Supabase viewDetails attendance fetch failed, using local storage:", err);
+        const localAtt = JSON.parse(localStorage.getItem('romix_attendance_local') || '[]');
+        att = localAtt.find(x => x.employee_id === emp.id);
+    }
 
     updateProfileAttendance(att);
 
