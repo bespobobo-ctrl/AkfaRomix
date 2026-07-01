@@ -1,0 +1,17 @@
+{
+  "name": "AKFA Romix Portal",
+  "short_name": "Romix",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#05080c",
+  "theme_color": "#00ff88",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/src/assets/images/window_profile.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
