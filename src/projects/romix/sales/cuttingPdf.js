@@ -7,7 +7,7 @@
 const FRAME_W = 60;   // rama profil eni (mm)
 const SASH_W = 60;    // stvorka (створка) profil eni (mm)
 const BEAD_W = 20;    // shtapik (штапик) eni (mm)
-const SASH_GAP = 4;   // rama–stvorka orasidagi zazor (mm)
+const SASH_GAP = 3;   // rama–stvorka orasidagi zazor (mm)
 const BAR_LEN = 6000; // standart profil uzunligi (mm)
 const KERF = 10;      // arra kesuvi (mm)
 const TRIM = 10;      // chetdan qirqim (mm)
