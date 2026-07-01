@@ -1,4 +1,5 @@
 import { supabase } from '@/core/supabase.js';
+import { createViewer } from './window3d.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const user = JSON.parse(localStorage.getItem('currentUser'));
@@ -174,6 +175,45 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateConstructorFields(); // initial setup
     }
 
+    // ── 3D Preview (Rom / Eshik) ──
+    let _viewer = null;
+    const canvas3d = document.getElementById('preview3dCanvas');
+    const empty3d = document.getElementById('preview3dEmpty');
+    const impostWrap = document.getElementById('impostWrapper');
+    const vDivInp = document.getElementById('itemVDiv');
+    const hDivInp = document.getElementById('itemHDiv');
+
+    function ensureViewer() {
+        if (!_viewer && canvas3d) {
+            try { _viewer = createViewer(canvas3d); } catch (e) { console.warn('3D init xato:', e); }
+        }
+        return _viewer;
+    }
+
+    window.update3DPreview = function update3D() {
+        const type = itemTypeSel ? itemTypeSel.value : 'rom';
+        const is3d = ['rom', 'rom_fortochka', 'eshik'].includes(type);
+        if (impostWrap) impostWrap.style.display = is3d ? '' : 'none';
+        if (canvas3d) canvas3d.style.display = is3d ? 'block' : 'none';
+        if (empty3d) empty3d.style.display = is3d ? 'none' : 'flex';
+        if (!is3d) return;
+        const v = ensureViewer();
+        if (!v) return;
+        v.resize();
+        v.update({
+            type,
+            width: parseFloat(itemWidthInput.value) || 1.5,
+            height: parseFloat(itemHeightInput.value) || 2.0,
+            vDiv: parseInt(vDivInp && vDivInp.value) || 0,
+            hDiv: parseInt(hDivInp && hDivInp.value) || 0
+        });
+    };
+
+    if (itemTypeSel) itemTypeSel.addEventListener('change', window.update3DPreview);
+    [itemHeightInput, itemWidthInput, vDivInp, hDivInp].forEach(el => {
+        if (el) el.addEventListener('input', window.update3DPreview);
+    });
+
     // Add Item to Basket
     const addItemBtn = document.getElementById('addItemBtn');
     if (addItemBtn) {
@@ -217,6 +257,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 height: h,
                 width: w,
                 quantity: qty,
+                vDiv: parseInt(document.getElementById('itemVDiv')?.value) || 0,
+                hDiv: parseInt(document.getElementById('itemHDiv')?.value) || 0,
                 calcVal: calcVal,
                 subtotal: subtotal,
                 unit: matOpt.dataset.unit
@@ -969,6 +1011,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         calculateTotal();
         document.getElementById('oDeadline').value = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         orderModal.classList.remove('hidden');
+        // 3D preview modal ochilгач o'lchamни oladi
+        setTimeout(() => { try { window.update3DPreview(); } catch (e) {} }, 60);
     };
 
     document.getElementById('closePrintBtn').onclick = () => {
