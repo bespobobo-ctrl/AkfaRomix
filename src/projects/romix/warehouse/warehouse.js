@@ -477,11 +477,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         const staffGrid = document.getElementById('staffGrid');
         staffGrid.innerHTML = '<div style="color:#888; padding:20px;">Yuklanmoqda...</div>';
 
-        const { data, error } = await supabase.from('romix_staff').select('*').order('created_at', { ascending: false });
-        if (error) {
-            console.error(error);
-            staffGrid.innerHTML = '<div style="color:red; padding:20px;">Xatolik yuz berdi. Supabase\'da romix_staff jadvali ochilganini tekshiring.</div>';
-            return;
+        let data = [];
+        let dbError = null;
+        try {
+            const res = await supabase.from('romix_staff').select('*').order('created_at', { ascending: false });
+            if (res.error) throw res.error;
+            data = res.data;
+        } catch (error) {
+            console.warn("Supabase staff query failed, falling back to local storage", error);
+            dbError = error;
+            data = JSON.parse(localStorage.getItem('romix_staff_local') || '[]');
         }
 
         staffGrid.innerHTML = '';
@@ -491,6 +496,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         data.forEach(s => {
             const card = document.createElement('div');
+            const displayId = s.id ? (s.id.startsWith('romix-') ? s.id.slice(6, 14).toUpperCase() : s.id.slice(0, 8).toUpperCase()) : 'TEMP';
             card.className = 'bento-item staff-card';
             card.innerHTML = `
                 <div class="staff-avatar-wrapper">
@@ -500,8 +506,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                 </div>
                 <h3 style="margin:0; font-weight:700;">${s.full_name}</h3>
-                <span class="premium-id">ID: ${s.id.slice(0, 8).toUpperCase()}</span>
-                <p style="color:var(--adm-text-sec); font-size:0.9rem; margin:10px 0 20px 0; font-weight:500;">${s.role}</p>
+                <span class="premium-id">ID: ${displayId}</span>
+                <p style="color:var(--adm-text-sec); font-size:0.9rem; margin:8px 0 6px 0; font-weight:500;">${s.role}</p>
+                ${s.salary ? `<p style="color:#00ff88; font-weight:800; font-size:0.95rem; margin:0 0 15px 0;">Oylik: ${parseFloat(s.salary).toLocaleString()} so'm</p>` : ''}
                 
                 <div class="auto-layout-row" style="justify-content:center;">
                     <button class="action-icon delete-staff-btn" data-id="${s.id}" 
@@ -516,7 +523,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.querySelectorAll('.delete-staff-btn').forEach(b => {
             b.onclick = async () => {
                 if (confirm('Ushbu xodimni o\'chirmoqchimisiz?')) {
-                    await supabase.from('romix_staff').delete().eq('id', b.dataset.id);
+                    const id = b.dataset.id;
+                    try {
+                        await supabase.from('romix_staff').delete().eq('id', id);
+                    } catch (err) {
+                        console.warn("Delete staff from db failed:", err);
+                    }
+                    let localStaff = JSON.parse(localStorage.getItem('romix_staff_local') || '[]');
+                    localStaff = localStaff.filter(x => x.id !== id);
+                    localStorage.setItem('romix_staff_local', JSON.stringify(localStaff));
                     loadStaff();
                 }
             };
@@ -526,33 +541,59 @@ document.addEventListener('DOMContentLoaded', async () => {
     saveStaffBtn.onclick = async () => {
         const name = document.getElementById('sName').value.trim();
         const role = document.getElementById('sRole').value;
+        const salary = parseFloat(document.getElementById('sSalary').value) || 0;
         const photoFile = document.getElementById('sPhoto').files[0];
 
         if (!name) return alert('Ismni kiriting!');
 
         let photoUrl = '';
         if (photoFile) {
-            const fileName = `romix_staff/${Date.now()}_${photoFile.name}`;
-            const { data, error } = await supabase.storage.from('avatars').upload(fileName, photoFile);
-            if (!error) {
-                const { data: publicData } = supabase.storage.from('avatars').getPublicUrl(fileName);
-                photoUrl = publicData.publicUrl;
-            } else {
-                console.error("Upload error:", error);
+            try {
+                const fileName = `romix_staff/${Date.now()}_${photoFile.name}`;
+                const { data, error } = await supabase.storage.from('avatars').upload(fileName, photoFile);
+                if (!error) {
+                    const { data: publicData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+                    photoUrl = publicData.publicUrl;
+                }
+            } catch (err) {
+                console.error("Storage upload failed, using placeholder", err);
             }
         }
 
-        const { error } = await supabase.from('romix_staff').insert([{
+        const newId = 'romix-' + Date.now();
+        const newStaff = {
+            id: newId,
             full_name: name,
             role: role,
-            photo_url: photoUrl
-        }]);
+            salary: salary,
+            photo_url: photoUrl,
+            created_at: new Date().toISOString()
+        };
 
-        if (error) alert('Xatolik: ' + error.message);
-        else {
-            staffModal.classList.add('hidden');
-            loadStaff();
+        // Attempt db save
+        try {
+            await supabase.from('romix_staff').insert([{
+                full_name: name,
+                role: role,
+                salary: salary,
+                photo_url: photoUrl
+            }]);
+        } catch (dbError) {
+            console.warn("Database insert failed, saved locally", dbError);
         }
+
+        // Always save to local fallback for robust WMS offline use
+        const localStaff = JSON.parse(localStorage.getItem('romix_staff_local') || '[]');
+        localStaff.unshift(newStaff);
+        localStorage.setItem('romix_staff_local', JSON.stringify(localStaff));
+
+        staffModal.classList.add('hidden');
+        loadStaff();
+
+        // Reset inputs
+        document.getElementById('sName').value = '';
+        document.getElementById('sSalary').value = '';
+        document.getElementById('sPhoto').value = '';
     };
 
     // --- History Logic ---
