@@ -194,50 +194,85 @@
     <div id="orderModal" class="hidden"
         style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:2000; display:flex; justify-content:center; padding:20px; align-items:center;">
         <div class="user-form-modal"
-            style="width: 800px; max-height:95vh; overflow-y:auto; background:var(--adm-surface);">
+            style="width: 900px; max-height:95vh; overflow-y:auto; background:var(--adm-surface); padding: 35px; border-radius: 24px;">
             <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
                 <span style="font-size: 2rem;">📝</span>
                 <h2 style="color:var(--adm-text);">Yangi Buyurtma Rasmiylashtirish</h2>
             </div>
-            <div class="grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-                <!-- Mijoz -->
-                <div><label class="form-label">Mijoz Ismi</label><input type="text" id="oCustomer"
-                        class="form-input-v2"></div>
-                <div><label class="form-label">Tel / Maxsus Telegram</label>
+            
+            <!-- Customer Info Group -->
+            <div class="grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom: 25px; background:rgba(255,255,255,0.02); padding:20px; border-radius:15px; border:1px solid rgba(255,255,255,0.05);">
+                <div><label class="form-label">Mijoz Ismi</label><input type="text" id="oCustomer" class="form-input-v2" placeholder="Ism Familiya"></div>
+                <div><label class="form-label">Tel / Telegram</label>
                     <div style="display:flex; gap:5px;">
-                        <input type="text" id="oPhone" placeholder="+998" class="form-input-v2" style="flex:1;">
+                        <input type="text" id="oPhone" placeholder="+998" class="form-input-v2" style="flex:1.2;">
                         <input type="text" id="oTg" placeholder="@user" class="form-input-v2" style="flex:1;">
                     </div>
                 </div>
+            </div>
 
-                <!-- Product -->
-                <div><label class="form-label">Turi</label>
-                    <select id="oType" class="form-input-v2 calc-trigger">
-                        <option value="Rom">Rom (Okon)</option>
-                        <option value="Eshik">Eshik (Dver)</option>
-                    </select>
-                </div>
-                <div><label class="form-label">Model (Kategoriya)</label><select id="oModel"
-                        class="form-input-v2 calc-trigger"></select></div>
-
-                <!-- Sizes & Qty -->
-                <div>
-                    <label class="form-label">O'lcham (Balandlik x Eni)</label>
-                    <div style="display:flex; align-items:center; gap:5px;">
-                        <input type="number" step="0.01" id="oHeight" value="2.0" class="form-input-v2 calc-trigger"
-                            placeholder="Bal. (m)">
-                        <span style="color:#aaa;">x</span>
-                        <input type="number" step="0.01" id="oWidth" value="1.5" class="form-input-v2 calc-trigger"
-                            placeholder="Uz. (m)">
+            <!-- Item Constructor Group -->
+            <div style="background:rgba(0, 210, 255, 0.03); border:1px solid rgba(0, 210, 255, 0.15); padding:20px; border-radius:18px; margin-bottom:25px;">
+                <h4 style="color:#00d2ff; font-weight:800; font-size:0.95rem; margin-bottom:15px; letter-spacing:1px; text-transform:uppercase;">Buyurtmaga element qo'shish</h4>
+                <div style="display:grid; grid-template-columns: 1fr 1.2fr 1fr 0.8fr; gap:12px; align-items:flex-end;">
+                    <div>
+                        <label class="form-label">Element turi</label>
+                        <select id="itemType" class="form-input-v2" style="height:45px;">
+                            <option value="rom">Rom (Okon)</option>
+                            <option value="rom_fortochka">Rom (Fortochkali)</option>
+                            <option value="eshik">Eshik (Dver)</option>
+                            <option value="padakonnik">Padakonnik (Sill)</option>
+                            <option value="aksesuar_rom">Aksesuar (Rom uchun)</option>
+                            <option value="aksesuar_eshik">Aksesuar (Eshik uchun)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label" id="materialLabel">Profil (Material)</label>
+                        <select id="itemMaterial" class="form-input-v2" style="height:45px;"></select>
+                    </div>
+                    <div>
+                        <label class="form-label" id="dimLabel">O'lcham (Balandlik x Eni)</label>
+                        <div style="display:flex; align-items:center; gap:5px;">
+                            <input type="number" step="0.01" id="itemHeight" value="2.00" class="form-input-v2" style="height:45px; text-align:center;" placeholder="Bal.">
+                            <span style="color:var(--adm-text-sec);">x</span>
+                            <input type="number" step="0.01" id="itemWidth" value="1.50" class="form-input-v2" style="height:45px; text-align:center;" placeholder="Eni">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Miqdori (Dona)</label>
+                        <div style="display:flex; gap:5px;">
+                            <input type="number" id="itemQty" value="1" class="form-input-v2" style="height:45px; text-align:center;">
+                            <button id="addItemBtn" type="button" style="background:#00d2ff; color:#000; border:none; border-radius:10px; width:45px; height:45px; font-weight:bold; font-size:1.2rem; cursor:pointer;">+</button>
+                        </div>
                     </div>
                 </div>
-                <div>
-                    <label class="form-label">Necha dona tayyorlansin?</label>
-                    <input type="number" id="oQty" value="1" class="form-input-v2 calc-trigger">
-                </div>
+            </div>
 
-                <!-- Payments & Terms -->
-                <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:10px;">
+            <!-- Basket Table -->
+            <div class="bento-card" style="padding:0; margin-bottom:25px; max-height:220px; overflow-y:auto; border:1px solid rgba(255,255,255,0.05);">
+                <table class="v2-table" style="margin:0;">
+                    <thead style="background:rgba(255,255,255,0.02); font-size:0.75rem;">
+                        <tr>
+                            <th>Turi</th>
+                            <th>Nomi / Profil</th>
+                            <th>O'lchami</th>
+                            <th>Soni</th>
+                            <th>Jami kv.m / m</th>
+                            <th>Jami Narx</th>
+                            <th>Amal</th>
+                        </tr>
+                    </thead>
+                    <tbody id="basketTableBody">
+                        <tr>
+                            <td colspan="7" style="text-align:center; padding:30px; color:var(--adm-text-sec); font-size:0.85rem;">Savat bo'sh. Element qo'shing.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Terms & Payments -->
+            <div class="grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom: 25px;">
+                <div style="background:rgba(255,255,255,0.03); padding:15px; border-radius:15px; border:1px solid rgba(255,255,255,0.05);">
                     <label class="form-label" style="color:#00ff88;">To'lov Turi</label>
                     <select id="oPayment" class="form-input-v2">
                         <option value="Naqd">Naqd Pul (Cash)</option>
@@ -245,39 +280,43 @@
                         <option value="Qarz">Nasiya / Qarz (Muddatli)</option>
                     </select>
                 </div>
-                <div><label class="form-label">O'rnatish & Qarz tugash sanasi</label>
-                    <input type="date" id="oDeadline" class="form-input-v2"
-                        title="Mijoz bilan kelishilgan oxirgi va muddat">
+                <div style="background:rgba(255,255,255,0.03); padding:15px; border-radius:15px; border:1px solid rgba(255,255,255,0.05);">
+                    <label class="form-label">O'rnatish & Qarz tugash sanasi</label>
+                    <input type="date" id="oDeadline" class="form-input-v2">
                 </div>
-
+                
                 <div style="grid-column: span 2;">
-                    <label
-                        style="display:flex; align-items:center; gap:10px; padding:10px; background:rgba(0,210,255,0.1); border-radius:10px; color:#00d2ff;"><input
-                            type="checkbox" id="oInstall" class="calc-trigger"> O'rnatib berish xizmatini hisoblash
-                        (Kvadratiga alohida to'lov tizimi asnosida)</label>
+                    <label style="display:flex; align-items:center; gap:10px; padding:15px; background:rgba(0,210,255,0.08); border-radius:12px; color:#00d2ff; cursor:pointer; font-weight:600; border:1px solid rgba(0,210,255,0.15);">
+                        <input type="checkbox" id="oInstall" style="width:18px; height:18px; cursor:pointer;"> 
+                        Mijoz xonadonida o'rnatib berish xizmati (Kvadrat metriga alohida hisoblanadi)
+                    </label>
                 </div>
             </div>
+
             <!-- Checkout Box -->
-            <div style="margin-top:20px; padding:20px; background:#0b111a; color:#fff; border-radius:15px;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><span>Kvadratura:</span>
-                    <strong id="cArea">0 kv.m</strong>
+            <div style="padding:25px; background:#0b111a; color:#fff; border-radius:18px; border:1px solid rgba(255,255,255,0.03);">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.9rem; color:var(--adm-text-sec);">
+                    <span>Umumiy Maydon:</span>
+                    <strong id="cArea" style="color:#fff;">0.00 kv.m</strong>
                 </div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><span>Material
-                        narxi:</span> <strong id="cMaterial">0 so'm</strong></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><span>O'rnatib
-                        berish:</span> <strong id="cInstall">0 so'm</strong></div>
-                <hr style="border-color:rgba(255,255,255,0.1);">
-                <div
-                    style="display:flex; justify-content:space-between; font-size:1.5rem; font-weight:700; color:#00ff88;">
-                    <span>JAMI SUMMA:</span> <span id="cTotal">0 so'm</span>
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.9rem; color:var(--adm-text-sec);">
+                    <span>Materiallar narxi:</span>
+                    <strong id="cMaterial" style="color:#fff;">0 so'm</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.9rem; color:var(--adm-text-sec);">
+                    <span>O'rnatib berish xizmati:</span>
+                    <strong id="cInstall" style="color:#fff;">0 so'm</strong>
+                </div>
+                <hr style="border-color:rgba(255,255,255,0.08); margin: 15px 0;">
+                <div style="display:flex; justify-content:space-between; font-size:1.6rem; font-weight:900; color:#00ff88;">
+                    <span>JAMI SUMMA:</span>
+                    <span id="cTotal">0 so'm</span>
                 </div>
             </div>
+            
             <div style="display:flex; gap:15px; margin-top:25px;">
-                <button id="saveOrderBtn"
-                    style="flex:1; background:#00d2ff; color:#000; border:none; padding:15px; border-radius:15px; font-weight:700; cursor:pointer;">Rasmiylashtirish</button>
-                <button id="closeOrderModal"
-                    style="flex:1; background:rgba(255,255,255,0.1); color:#fff; border:none; border-radius:15px;">Bekor
-                    qilish</button>
+                <button id="saveOrderBtn" style="flex:2; background:#00d2ff; color:#000; border:none; padding:18px; border-radius:16px; font-weight:900; font-size:1.1rem; cursor:pointer; box-shadow:0 15px 30px rgba(0,210,255,0.2);">RASMIYLASHTIRISH</button>
+                <button id="closeOrderModal" style="flex:1; background:rgba(255,255,255,0.05); color:#fff; border:1px solid rgba(255,255,255,0.1); border-radius:16px; font-weight:700; cursor:pointer;">BEKOR QILISH</button>
             </div>
         </div>
     </div>

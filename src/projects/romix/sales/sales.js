@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const orderModal = document.getElementById('orderModal');
     const assignModal = document.getElementById('assignModal');
     const editModal = document.getElementById('editOrderModal');
-    const oModel = document.getElementById('oModel');
     const aMatSel = document.getElementById('aMatSel');
     const reqMatList = document.getElementById('reqMatList');
 
@@ -20,7 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const printArea = document.getElementById('printArea');
 
     // Values
-    const PRODUCTION_COST = 1000000;
+    const PRODUCTION_COST = 1000000; // base production markup per window/door
     const INSTALLATION_PRICE_PER_SQM = 250000;
 
     // Tabs
@@ -43,37 +42,45 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     });
 
-    // Load available materials from warehouse
-    async function loadModels() {
-        let data = [];
-        try {
-            const res = await supabase.from('warehouse_products').select('id, name, price, unit').eq('category', 'Profil');
-            if (res.error) throw res.error;
-            data = res.data || [];
-        } catch(err) {
-            console.warn("Supabase loadModels failed, using local default models:", err);
-            data = [
-                { id: "prof-1", name: "Akfa 60 Series Profil", price: 120000, unit: "m" },
-                { id: "prof-2", name: "Akfa 70 Series Profil", price: 150000, unit: "m" },
-                { id: "prof-3", name: "Thermo 65 Insulation Profil", price: 210000, unit: "m" },
-                { id: "prof-4", name: "Engelberg 76 Premium Profil", price: 280000, unit: "m" }
-            ];
-        }
-        oModel.innerHTML = '';
-        if (data && data.length) {
-            data.forEach(p => {
-                const opt = document.createElement('option');
-                opt.value = p.id;
-                opt.textContent = `${p.name} (${p.price || 0} so'm / ${p.unit})`;
-                opt.dataset.price = p.price || 0;
-                opt.dataset.name = p.name;
-                oModel.appendChild(opt);
-            });
-            calculateTotal();
-        } else {
-            oModel.innerHTML = '<option value="">Maxsulot topilmadi</option>';
-        }
-    }
+    // Multi-item Order Constructor Settings
+    const AVAILABLE_MATERIALS = {
+        rom: [
+            { id: "prof-60", name: "Akfa 60 Series Profil", price: 120000, unit: "m" },
+            { id: "prof-70", name: "Akfa 70 Series Profil", price: 150000, unit: "m" },
+            { id: "prof-thermo", name: "Thermo 65 Insulation Profil", price: 210000, unit: "m" },
+            { id: "prof-eng", name: "Engelberg 76 Premium Profil", price: 280000, unit: "m" }
+        ],
+        rom_fortochka: [
+            { id: "prof-60-f", name: "Akfa 60 (Fortochka Bilan)", price: 135000, unit: "m" },
+            { id: "prof-70-f", name: "Akfa 70 (Fortochka Bilan)", price: 165000, unit: "m" },
+            { id: "prof-thermo-f", name: "Thermo 65 (Fortochka Bilan)", price: 230000, unit: "m" }
+        ],
+        eshik: [
+            { id: "prof-60-d", name: "Akfa 60 Door Profil", price: 130000, unit: "m" },
+            { id: "prof-70-d", name: "Akfa 70 Door Profil", price: 160000, unit: "m" },
+            { id: "prof-thermo-d", name: "Thermo 65 Door Profil", price: 220000, unit: "m" },
+            { id: "prof-wood", name: "MDF / Eko-Wood Profil", price: 180000, unit: "m" }
+        ],
+        padakonnik: [
+            { id: "pad-plast", name: "Plastik Oddiy Padakonnik", price: 45000, unit: "m" },
+            { id: "pad-akfa", name: "Akfa Premium Padakonnik", price: 80000, unit: "m" },
+            { id: "pad-marmar", name: "Marmar Sun'iy Padakonnik", price: 150000, unit: "m" }
+        ],
+        aksesuar_rom: [
+            { id: "acc-w-lock", name: "Rom Qulfi (Zamok)", price: 25000, unit: "dona" },
+            { id: "acc-w-handle", name: "Rom Ruchkasi", price: 15000, unit: "dona" },
+            { id: "acc-w-mesh", name: "Pashshaga qarshi setka", price: 40000, unit: "dona" },
+            { id: "acc-w-hinge", name: "Rom Petlyasi", price: 8000, unit: "dona" }
+        ],
+        aksesuar_eshik: [
+            { id: "acc-d-lock", name: "Eshik Qulfi (Zamok)", price: 65000, unit: "dona" },
+            { id: "acc-d-handle", name: "Eshik Ruchkasi (Premium)", price: 45000, unit: "dona" },
+            { id: "acc-d-closer", name: "Eshik Yopgichi (Dovodchik)", price: 120000, unit: "dona" },
+            { id: "acc-d-hinge", name: "Eshik Petlyasi (Kuchaytirilgan)", price: 15000, unit: "dona" }
+        ]
+    };
+
+    let orderItems = [];
 
     // Load warehouse materials for the BOM Request
     async function loadWarehouseMaterials() {
@@ -85,10 +92,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (err) {
             console.warn("Supabase loadWarehouseMaterials failed, using local default materials:", err);
             data = [
-                { id: "prof-1", name: "Akfa 60 Series Profil", unit: "m" },
-                { id: "prof-2", name: "Akfa 70 Series Profil", unit: "m" },
-                { id: "prof-3", name: "Thermo 65 Insulation Profil", unit: "m" },
-                { id: "prof-4", name: "Engelberg 76 Premium Profil", unit: "m" },
+                { id: "prof-60", name: "Akfa 60 Series Profil", unit: "m" },
+                { id: "prof-70", name: "Akfa 70 Series Profil", unit: "m" },
+                { id: "prof-thermo", name: "Thermo 65 Insulation Profil", unit: "m" },
+                { id: "prof-eng", name: "Engelberg 76 Premium Profil", unit: "m" },
                 { id: "rez-1", name: "Kauchuk Zichlagich (Rezinka)", unit: "m" },
                 { id: "oyna-1", name: "Oddiy Oyna (Glass)", unit: "kv.m" },
                 { id: "oyna-2", name: "Ikki Qavatli Shisha-Paket", unit: "kv.m" }
@@ -107,6 +114,179 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             }
         }
+    }
+
+    // Dynamic Constructor Input Fields Toggling
+    const itemTypeSel = document.getElementById('itemType');
+    const itemMaterialSel = document.getElementById('itemMaterial');
+    const itemHeightInput = document.getElementById('itemHeight');
+    const itemWidthInput = document.getElementById('itemWidth');
+    const dimLabel = document.getElementById('dimLabel');
+    const materialLabel = document.getElementById('materialLabel');
+
+    function updateConstructorFields() {
+        const type = itemTypeSel.value;
+        const materials = AVAILABLE_MATERIALS[type] || [];
+        
+        // Populate Materials select
+        itemMaterialSel.innerHTML = '';
+        materials.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.id;
+            opt.textContent = `${m.name} (${m.price.toLocaleString()} so'm / ${m.unit})`;
+            opt.dataset.name = m.name;
+            opt.dataset.price = m.price;
+            opt.dataset.unit = m.unit;
+            itemMaterialSel.appendChild(opt);
+        });
+
+        // Toggle dimensions view
+        if (type === 'rom' || type === 'rom_fortochka' || type === 'eshik') {
+            dimLabel.textContent = "O'lcham (Balandlik x Eni) - m";
+            itemHeightInput.style.display = 'block';
+            itemWidthInput.style.display = 'block';
+            if (itemHeightInput.previousElementSibling) itemHeightInput.previousElementSibling.style.display = 'block';
+            materialLabel.textContent = "Profil (Material)";
+        } else if (type === 'padakonnik') {
+            dimLabel.textContent = "Uzunligi (Metr)";
+            itemHeightInput.style.display = 'none';
+            itemWidthInput.style.display = 'block';
+            itemWidthInput.value = "1.50";
+            if (itemHeightInput.previousElementSibling) itemHeightInput.previousElementSibling.style.display = 'none';
+            materialLabel.textContent = "Padakonnik turi";
+        } else {
+            // Accessories
+            dimLabel.textContent = "O'lcham shartmas";
+            itemHeightInput.style.display = 'none';
+            itemWidthInput.style.display = 'none';
+            if (itemHeightInput.previousElementSibling) itemHeightInput.previousElementSibling.style.display = 'none';
+            materialLabel.textContent = "Aksesuar nomi";
+        }
+    }
+
+    if (itemTypeSel) {
+        itemTypeSel.addEventListener('change', updateConstructorFields);
+        updateConstructorFields(); // initial setup
+    }
+
+    // Add Item to Basket
+    const addItemBtn = document.getElementById('addItemBtn');
+    if (addItemBtn) {
+        addItemBtn.onclick = () => {
+            const type = itemTypeSel.value;
+            const matOpt = itemMaterialSel.options[itemMaterialSel.selectedIndex];
+            if (!matOpt) return alert('Material tanlang!');
+
+            const h = parseFloat(itemHeightInput.value) || 0;
+            const w = parseFloat(itemWidthInput.value) || 0;
+            const qty = parseInt(document.getElementById('itemQty').value) || 1;
+
+            if (qty <= 0) return alert('Miqdorni to\'g\'ri kiriting!');
+
+            let sizeText = '';
+            let calcVal = 0; // area or length
+            let itemPrice = parseFloat(matOpt.dataset.price) || 0;
+            let subtotal = 0;
+
+            if (type === 'rom' || type === 'rom_fortochka' || type === 'eshik') {
+                if (h <= 0 || w <= 0) return alert('Balandlik va enini kiriting!');
+                sizeText = `${h.toFixed(2)}m x ${w.toFixed(2)}m`;
+                calcVal = h * w * qty; // total area
+                subtotal = (calcVal * itemPrice) + (PRODUCTION_COST * qty); // material cost + base assembly fee
+            } else if (type === 'padakonnik') {
+                if (w <= 0) return alert('Uzunlikni kiriting!');
+                sizeText = `${w.toFixed(2)}m`;
+                calcVal = w * qty; // total length
+                subtotal = calcVal * itemPrice;
+            } else {
+                sizeText = '---';
+                calcVal = qty; // piece count
+                subtotal = qty * itemPrice;
+            }
+
+            const item = {
+                type: type,
+                typeName: type === 'rom' ? 'Rom' : type === 'rom_fortochka' ? 'Rom (Fortochkali)' : type === 'eshik' ? 'Eshik' : type === 'padakonnik' ? 'Padakonnik' : 'Aksesuar',
+                materialId: matOpt.value,
+                materialName: matOpt.dataset.name,
+                height: h,
+                width: w,
+                quantity: qty,
+                calcVal: calcVal,
+                subtotal: subtotal,
+                unit: matOpt.dataset.unit
+            };
+
+            orderItems.push(item);
+            renderBasket();
+            calculateTotal();
+
+            // Reset item qty
+            document.getElementById('itemQty').value = '1';
+        };
+    }
+
+    window.removeBasketItem = (index) => {
+        orderItems.splice(index, 1);
+        renderBasket();
+        calculateTotal();
+    };
+
+    function renderBasket() {
+        const body = document.getElementById('basketTableBody');
+        if (!body) return;
+        body.innerHTML = '';
+
+        if (orderItems.length === 0) {
+            body.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--adm-text-sec); font-size:0.85rem;">Savat bo'sh. Element qo'shing.</td></tr>`;
+            return;
+        }
+
+        orderItems.forEach((it, idx) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><span class="status-pill" style="background:rgba(255,255,255,0.05); color:#fff;">${it.typeName}</span></td>
+                <td><strong>${it.materialName}</strong></td>
+                <td>${it.sizeText || (it.height > 0 ? `${it.height}x${it.width}` : (it.width > 0 ? `${it.width}m` : '---'))}</td>
+                <td>${it.quantity} ta</td>
+                <td>${it.calcVal.toFixed(2)} ${it.unit}</td>
+                <td style="font-weight:600; color:#00ff88;">${it.subtotal.toLocaleString()} so'm</td>
+                <td><button onclick="removeBasketItem(${idx})" style="background:transparent; border:none; color:#ff4d4f; font-weight:bold; cursor:pointer;">✖</button></td>
+            `;
+            body.appendChild(tr);
+        });
+    }
+
+    function calculateTotal() {
+        let totalArea = 0;
+        let totalMaterials = 0;
+        let totalInstall = 0;
+        const wantsInstall = !!document.getElementById('oInstall')?.checked;
+
+        orderItems.forEach(it => {
+            totalMaterials += it.subtotal;
+            if (it.type === 'rom' || it.type === 'rom_fortochka' || it.type === 'eshik') {
+                totalArea += (it.height * it.width * it.quantity);
+            }
+        });
+
+        if (wantsInstall) {
+            totalInstall = totalArea * INSTALLATION_PRICE_PER_SQM;
+        }
+
+        const grandTotal = totalMaterials + totalInstall;
+
+        if (document.getElementById('cArea')) document.getElementById('cArea').textContent = totalArea.toFixed(2) + ' kv.m';
+        if (document.getElementById('cMaterial')) document.getElementById('cMaterial').textContent = totalMaterials.toLocaleString() + " so'm";
+        if (document.getElementById('cInstall')) document.getElementById('cInstall').textContent = totalInstall.toLocaleString() + " so'm";
+        if (document.getElementById('cTotal')) document.getElementById('cTotal').textContent = grandTotal.toLocaleString() + " so'm";
+
+        return { totalArea, totalMaterials, totalInstall, grandTotal };
+    }
+
+    const installCheck = document.getElementById('oInstall');
+    if (installCheck) {
+        installCheck.addEventListener('change', calculateTotal);
     }
 
     window.reqMaterials = [];
@@ -166,8 +346,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                         customer_name: "Toshpo'latov Sanjar",
                         customer_phone: "+998 90 123 45 67",
                         tg_user: "@sanjar_t",
-                        prod_type: "Rom",
-                        model_name: "Akfa 70 Series Profil",
+                        prod_type: "Rom, Aksesuar",
+                        model_name: "Akfa 70 Series Profil + Rom Ruchkasi",
                         width: 1.5,
                         height: 2.0,
                         quantity: 4,
@@ -253,7 +433,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><strong>${o.customer_name}</strong><br><small style="color:#888;">${o.customer_phone}</small></td>
-                    <td>${o.model_name}<br><small style="color:#888;">B: ${o.height}m / Uz: ${o.width}m</small></td>
+                    <td>${o.prod_type}<br><small style="color:#888;">${o.model_name.length > 50 ? o.model_name.slice(0, 48) + '...' : o.model_name}</small></td>
                     <td>${new Date(o.deadline_date).toLocaleDateString()}</td>
                     <td style="font-weight:600;">${Number(o.total_price).toLocaleString()} UZS</td>
                     <td>${statusHtml}</td>
@@ -342,6 +522,42 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const createdDate = new Date(o.created_at || Date.now()).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
                 const dDate = new Date(o.deadline_date).toLocaleDateString('en-GB');
 
+                // Compile visual descriptions from model_name
+                let itemsListHtml = '';
+                try {
+                    // Try to parse JSON array if we saved it as serialized JSON
+                    const parsedItems = JSON.parse(o.model_name);
+                    parsedItems.forEach((it, idx) => {
+                        const dimText = it.height > 0 ? `B: ${it.height}m x E: ${it.width}m` : (it.width > 0 ? `U: ${it.width}m` : '---');
+                        itemsListHtml += `
+                            <tr>
+                                <td>${(idx + 1).toString().padStart(2, '0')}.</td>
+                                <td>
+                                    <b style="color:#222;">${it.typeName} — ${it.materialName}</b><br>
+                                    <small style="color:#777;">O'lchami: ${dimText}</small>
+                                </td>
+                                <td>${(it.subtotal / it.quantity).toLocaleString()}</td>
+                                <td>${it.quantity} ta</td>
+                                <td style="color:#45c4b0;">${it.subtotal.toLocaleString()}</td>
+                            </tr>
+                        `;
+                    });
+                } catch(e) {
+                    // Legacy/Standard single string fallbacks
+                    itemsListHtml = `
+                        <tr>
+                            <td>01.</td>
+                            <td>
+                                <b style="color:#222;">${o.prod_type || 'Mahsulot'} — ${o.model_name}</b><br>
+                                <small style="color:#777;">O'lchamlari: Balandlik: ${o.height || '---'}m / Uzunlik: ${o.width || '---'}m</small>
+                            </td>
+                            <td>${Number((o.total_price || 0) / (o.quantity || 1)).toLocaleString()}</td>
+                            <td>${o.quantity || 1} ta</td>
+                            <td style="color:#45c4b0;">${Number(o.total_price).toLocaleString()}</td>
+                        </tr>
+                    `;
+                }
+
                 document.getElementById('invPaperContent').innerHTML = `
                     <div class="inv-header">
                         <div class="inv-top">
@@ -386,16 +602,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td>01.</td>
-                                    <td>
-                                        <b style="color:#222;">${o.prod_type || 'Mahsulot'} - ${o.model_name}</b><br>
-                                        <small style="color:#777;">O'lchamlari: Balandlik: ${o.height}m / Uzunlik: ${o.width}m</small>
-                                    </td>
-                                    <td>${Number((o.total_price || 0) / (o.quantity || 1)).toLocaleString()}</td>
-                                    <td>${o.quantity || 1} ta</td>
-                                    <td style="color:#45c4b0;">${Number(o.total_price).toLocaleString()}</td>
-                                </tr>
+                                ${itemsListHtml}
                             </tbody>
                         </table>
 
@@ -432,10 +639,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                 window.assignOrderId = o.id;
                 window.reqMaterials = []; // reset bom
 
-                // --- Auto Calculate BOM based on Formula ---
-                const qty = parseInt(o.quantity) || 1;
-                const perimeter = ((parseFloat(o.width) * 2) + (parseFloat(o.height) * 2)) * qty;
-                const area = parseFloat(o.sq_meter);
+                // --- Auto Calculate BOM based on Formula (Aggregate all basket items) ---
+                let totalPerimeter = 0;
+                let totalArea = 0;
+                let mainModel = '';
+
+                try {
+                    const parsedItems = JSON.parse(o.model_name);
+                    parsedItems.forEach(it => {
+                        if (it.type === 'rom' || it.type === 'rom_fortochka' || it.type === 'eshik') {
+                            const perimeter = ((it.width * 2) + (it.height * 2)) * it.quantity;
+                            totalPerimeter += perimeter;
+                            totalArea += (it.width * it.height * it.quantity);
+                            if (!mainModel) mainModel = it.materialName;
+                        }
+                    });
+                } catch(e) {
+                    const qty = parseInt(o.quantity) || 1;
+                    totalPerimeter = ((parseFloat(o.width) * 2) + (parseFloat(o.height) * 2)) * qty;
+                    totalArea = parseFloat(o.sq_meter);
+                    mainModel = o.model_name;
+                }
 
                 // Get all materials to match
                 let whMats = [];
@@ -446,28 +670,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } catch(err) {
                     console.warn("Supabase warehouse fetch for BOM failed, using local fallback:", err);
                     whMats = [
-                        { id: "prof-1", name: "Akfa 60 Series Profil", unit: "m" },
-                        { id: "prof-2", name: "Akfa 70 Series Profil", unit: "m" },
-                        { id: "prof-3", name: "Thermo 65 Insulation Profil", unit: "m" },
-                        { id: "prof-4", name: "Engelberg 76 Premium Profil", unit: "m" },
+                        { id: "prof-60", name: "Akfa 60 Series Profil", unit: "m" },
+                        { id: "prof-70", name: "Akfa 70 Series Profil", unit: "m" },
+                        { id: "prof-thermo", name: "Thermo 65 Insulation Profil", unit: "m" },
+                        { id: "prof-eng", name: "Engelberg 76 Premium Profil", unit: "m" },
                         { id: "rez-1", name: "Kauchuk Zichlagich (Rezinka)", unit: "m" },
                         { id: "oyna-1", name: "Oddiy Oyna (Glass)", unit: "kv.m" },
                         { id: "oyna-2", name: "Ikki Qavatli Shisha-Paket", unit: "kv.m" }
                     ];
                 }
 
-                if (whMats) {
+                if (whMats && whMats.length) {
                     // Try to find matching profile
-                    const prof = whMats.find(m => m.name.toLowerCase().includes(o.model_name.toLowerCase()) || o.model_name.toLowerCase().includes(m.name.toLowerCase()) || m.name.toLowerCase().includes('profil'));
-                    if (prof) window.reqMaterials.push({ product_id: prof.id, name: prof.name, qty: (perimeter * 1.1).toFixed(1), unit: prof.unit });
+                    const prof = whMats.find(m => m.name.toLowerCase().includes(mainModel.toLowerCase()) || mainModel.toLowerCase().includes(m.name.toLowerCase()) || m.name.toLowerCase().includes('profil'));
+                    if (prof && totalPerimeter > 0) window.reqMaterials.push({ product_id: prof.id, name: prof.name, qty: (totalPerimeter * 1.1).toFixed(1), unit: prof.unit });
 
                     // Try to find rezinka
                     const rez = whMats.find(m => m.name.toLowerCase().includes('rezin'));
-                    if (rez) window.reqMaterials.push({ product_id: rez.id, name: rez.name, qty: (perimeter * 2).toFixed(1), unit: rez.unit });
+                    if (rez && totalPerimeter > 0) window.reqMaterials.push({ product_id: rez.id, name: rez.name, qty: (totalPerimeter * 2).toFixed(1), unit: rez.unit });
 
                     // Try to find oyna
                     const oyna = whMats.find(m => m.name.toLowerCase().includes('oyna') || m.name.toLowerCase().includes('shisha'));
-                    if (oyna) window.reqMaterials.push({ product_id: oyna.id, name: oyna.name, qty: (area).toFixed(2), unit: oyna.unit });
+                    if (oyna && totalArea > 0) window.reqMaterials.push({ product_id: oyna.id, name: oyna.name, qty: (totalArea).toFixed(2), unit: oyna.unit });
                 }
 
                 renderReqMaterials();
@@ -500,50 +724,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    function calculateTotal() {
-        const h = parseFloat(document.getElementById('oHeight')?.value) || 0;
-        const w = parseFloat(document.getElementById('oWidth')?.value) || 0;
-        const q = parseInt(document.getElementById('oQty')?.value) || 1;
-        const wantsInstall = !!document.getElementById('oInstall')?.checked;
-        const so = oModel.options[oModel.selectedIndex];
-
-        let mP = so ? parseFloat(so.dataset.price) || 0 : 0;
-        const area = (h * w) * q;
-        const tM = area * mP;
-        const iC = wantsInstall ? (area * INSTALLATION_PRICE_PER_SQM) : 0;
-        const finalT = tM + (PRODUCTION_COST * q) + iC;
-
-        if (document.getElementById('cArea')) document.getElementById('cArea').textContent = area.toFixed(2) + ' kv.m';
-        if (document.getElementById('cMaterial')) document.getElementById('cMaterial').textContent = tM.toLocaleString() + " so'm";
-        if (document.getElementById('cInstall')) document.getElementById('cInstall').textContent = iC.toLocaleString() + " so'm";
-        if (document.getElementById('cTotal')) document.getElementById('cTotal').textContent = finalT.toLocaleString() + " so'm";
-        return { area, installCost: iC, finalTotal: finalT, quantity: q };
-    }
-
-    document.querySelectorAll('.calc-trigger').forEach(el => el.addEventListener('input', calculateTotal));
-    oModel.addEventListener('change', calculateTotal);
-
     // Save New
     document.getElementById('saveOrderBtn').onclick = async () => {
+        if (orderItems.length === 0) return alert("Savatga kamida bitta mahsulot qo'shing!");
+
         const calcObj = calculateTotal();
-        const selectedOpt = oModel.options[oModel.selectedIndex];
+        const typesSummary = Array.from(new Set(orderItems.map(it => it.typeName))).join(', ');
+        
+        // Compile all item names as string for list preview, and save JSON
+        const itemsSummary = orderItems.map(it => `${it.materialName} (${it.quantity} ta)`).join(' + ');
 
         const newOrder = {
             id: 'ord-' + Date.now().toString().slice(-6),
-            customer_name: document.getElementById('oCustomer').value.trim(),
-            customer_phone: document.getElementById('oPhone').value.trim(),
+            customer_name: document.getElementById('oCustomer').value.trim() || 'Noma\'lum Mijoz',
+            customer_phone: document.getElementById('oPhone').value.trim() || '---',
             tg_user: document.getElementById('oTg').value.trim(),
-            prod_type: document.getElementById('oType').value,
-            model_name: selectedOpt ? selectedOpt.dataset.name : 'Unknown',
-            width: document.getElementById('oWidth').value,
-            height: document.getElementById('oHeight').value,
-            quantity: calcObj.quantity,
-            sq_meter: calcObj.area,
-            production_cost: PRODUCTION_COST * calcObj.quantity,
-            installation_cost: calcObj.installCost,
-            total_price: calcObj.finalTotal,
+            prod_type: typesSummary,
+            model_name: JSON.stringify(orderItems), // store full JSON list in model_name for detail billing
+            width: orderItems[0]?.width || 0, // save first item as fallback legacy
+            height: orderItems[0]?.height || 0,
+            quantity: orderItems.reduce((acc, it) => acc + it.quantity, 0),
+            sq_meter: calcObj.totalArea,
+            production_cost: orderItems.reduce((acc, it) => acc + (it.type === 'rom' || it.type === 'rom_fortochka' || it.type === 'eshik' ? PRODUCTION_COST * it.quantity : 0), 0),
+            installation_cost: calcObj.totalInstall,
+            total_price: calcObj.grandTotal,
             payment_type: document.getElementById('oPayment').value,
-            deadline_date: document.getElementById('oDeadline').value,
+            deadline_date: document.getElementById('oDeadline').value || new Date(Date.now() + 7*24*60*60*1000).toISOString().split('T')[0],
             status: 'Kutilmoqda',
             worker_group: '',
             created_at: new Date().toISOString()
@@ -740,13 +946,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Close buttons
     const cOrder = document.getElementById('closeOrderModal');
-    if (cOrder) cOrder.onclick = () => orderModal.classList.add('hidden');
+    if (cOrder) cOrder.onclick = () => {
+        orderItems = [];
+        renderBasket();
+        calculateTotal();
+        orderModal.classList.add('hidden');
+    };
     const cEdit = document.getElementById('closeEditOrderModal');
     if (cEdit) cEdit.onclick = () => editModal.classList.add('hidden');
     const cAss = document.getElementById('closeAssignModal');
     if (cAss) cAss.onclick = () => assignModal.classList.add('hidden');
 
     document.getElementById('openOrderModal').onclick = () => {
+        // Reset basket on each new order
+        orderItems = [];
+        renderBasket();
+        calculateTotal();
         document.getElementById('oDeadline').value = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         orderModal.classList.remove('hidden');
     };
@@ -764,7 +979,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     document.getElementById('logoutBtn').onclick = () => { localStorage.removeItem('currentUser'); window.location.href = '/'; };
 
-    loadModels();
     loadWarehouseMaterials();
     loadOrders();
 });
