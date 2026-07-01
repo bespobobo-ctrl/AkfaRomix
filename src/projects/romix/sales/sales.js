@@ -1,6 +1,7 @@
 import { supabase } from '@/core/supabase.js';
 import { createViewer } from './window3d.js';
 import { generateCuttingPdf } from './cuttingPdf.js';
+import { createDesigner } from './designer2d.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const user = JSON.parse(localStorage.getItem('currentUser'));
@@ -180,6 +181,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     let _viewer = null;
     const canvas3d = document.getElementById('preview3dCanvas');
     const empty3d = document.getElementById('preview3dEmpty');
+    const preview3dWrap = document.getElementById('preview3dWrap');
+    const designerWrap = document.getElementById('designer2dWrap');
+    const designerHost = document.getElementById('designer2dHost');
+    let _designer = null;
+    function ensureDesigner() {
+        if (!_designer && designerHost) {
+            _designer = createDesigner(designerHost, {
+                W: (parseFloat(itemWidthInput.value) || 1.5) * 1000,
+                H: (parseFloat(itemHeightInput.value) || 2.0) * 1000
+            });
+        }
+        return _designer;
+    }
     const impostWrap = document.getElementById('impostWrapper');
     const stvorkaWrap = document.getElementById('stvorkaWrapper');
     const openTypeWrap = document.getElementById('openTypeWrapper');
@@ -199,28 +213,40 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     window.update3DPreview = function update3D() {
         const type = itemTypeSel ? itemTypeSel.value : 'rom';
-        const is3d = ['rom', 'rom_fortochka', 'eshik'].includes(type);
+        const isRom = ['rom', 'rom_fortochka'].includes(type);
+        const isEshik = type === 'eshik';
         const stv = parseInt(stvInp && stvInp.value) || 0;
-        if (impostWrap) impostWrap.style.display = is3d ? '' : 'none';
-        if (stvorkaWrap) stvorkaWrap.style.display = is3d ? '' : 'none';
-        if (openTypeWrap) openTypeWrap.style.display = (is3d && stv > 0) ? '' : 'none';
-        if (archWrap) archWrap.style.display = (type === 'rom' || type === 'rom_fortochka') ? '' : 'none';
-        if (canvas3d) canvas3d.style.display = is3d ? 'block' : 'none';
-        if (empty3d) empty3d.style.display = is3d ? 'none' : 'flex';
-        if (!is3d) return;
-        const v = ensureViewer();
-        if (!v) return;
-        v.resize();
-        v.update({
-            type,
-            width: parseFloat(itemWidthInput.value) || 1.5,
-            height: parseFloat(itemHeightInput.value) || 2.0,
-            vDiv: parseInt(vDivInp && vDivInp.value) || 0,
-            hDiv: parseInt(hDivInp && hDivInp.value) || 0,
-            stvorka: stv,
-            openType: openTypeInp ? openTypeInp.value : 'kasement_chap',
-            arch: archInp ? archInp.checked : false
-        });
+        // Sodda maydonlar (impost/stvorka/ochilish) — faqat eshik; romда dizayner boshqaradi
+        if (impostWrap) impostWrap.style.display = isEshik ? '' : 'none';
+        if (stvorkaWrap) stvorkaWrap.style.display = isEshik ? '' : 'none';
+        if (openTypeWrap) openTypeWrap.style.display = (isEshik && stv > 0) ? '' : 'none';
+        if (archWrap) archWrap.style.display = isRom ? '' : 'none';
+        // Ko'rinish: rom → 2D dizayner, eshik → 3D, boshqa → bo'sh
+        if (designerWrap) designerWrap.style.display = isRom ? 'block' : 'none';
+        if (preview3dWrap) preview3dWrap.style.display = isRom ? 'none' : 'block';
+        if (canvas3d) canvas3d.style.display = isEshik ? 'block' : 'none';
+        if (empty3d) empty3d.style.display = isEshik ? 'none' : 'flex';
+
+        if (isRom) {
+            const d = ensureDesigner();
+            if (d) d.setSize((parseFloat(itemWidthInput.value) || 1.5) * 1000, (parseFloat(itemHeightInput.value) || 2.0) * 1000);
+            return;
+        }
+        if (isEshik) {
+            const v = ensureViewer();
+            if (!v) return;
+            v.resize();
+            v.update({
+                type,
+                width: parseFloat(itemWidthInput.value) || 1.5,
+                height: parseFloat(itemHeightInput.value) || 2.0,
+                vDiv: parseInt(vDivInp && vDivInp.value) || 0,
+                hDiv: parseInt(hDivInp && hDivInp.value) || 0,
+                stvorka: stv,
+                openType: openTypeInp ? openTypeInp.value : 'kasement_chap',
+                arch: false
+            });
+        }
     };
 
     if (itemTypeSel) itemTypeSel.addEventListener('change', window.update3DPreview);
@@ -278,6 +304,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 stvorka: parseInt(document.getElementById('itemStvorka')?.value) || 0,
                 openType: document.getElementById('itemOpenType')?.value || 'kasement_chap',
                 arch: document.getElementById('itemArch')?.checked || false,
+                design: (['rom', 'rom_fortochka'].includes(type) && _designer) ? _designer.getModel() : null,
                 calcVal: calcVal,
                 subtotal: subtotal,
                 unit: matOpt.dataset.unit

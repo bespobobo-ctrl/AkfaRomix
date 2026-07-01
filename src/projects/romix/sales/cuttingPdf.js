@@ -8,7 +8,32 @@ const FRAME_W = 60;   // rama profil eni (mm)
 const SASH_W = 60;    // stvorka (створка) profil eni (mm)
 const BEAD_W = 20;    // shtapik (штапик) eni (mm)
 const SASH_GAP = 3;   // rama–stvorka orasidagi zazor (mm)
+const IMPOST_MM = 45; // impost eni (2D dizayner bilan bir xil)
 const BAR_LEN = 6000; // standart profil uzunligi (mm)
+
+// 2D dizayner daraxti layout (bo'lim kataklari + impostlar)
+function layoutTree(node, box, out) {
+    if (!node) return;
+    if (node.kind === 'leaf') { out.cells.push({ opening: node.opening, box }); return; }
+    const horiz = node.dir === 'v';
+    const total = horiz ? box.w : box.h;
+    const gaps = (node.children.length - 1) * IMPOST_MM;
+    const avail = total - gaps;
+    const fixed = node.children.reduce((s, c) => s + (c.size || 0), 0);
+    const flexN = node.children.filter(c => !c.size).length;
+    const flexSize = flexN > 0 ? Math.max(0, (avail - fixed) / flexN) : 0;
+    let pos = horiz ? box.x : box.y;
+    node.children.forEach((c, i) => {
+        const len = c.size || flexSize;
+        const sub = horiz ? { x: pos, y: box.y, w: len, h: box.h } : { x: box.x, y: pos, w: box.w, h: len };
+        layoutTree(c.node, sub, out);
+        pos += len;
+        if (i < node.children.length - 1) {
+            out.imposts.push(horiz ? { w: IMPOST_MM, h: box.h } : { w: box.w, h: IMPOST_MM });
+            pos += IMPOST_MM;
+        }
+    });
+}
 const KERF = 10;      // arra kesuvi (mm)
 const TRIM = 10;      // chetdan qirqim (mm)
 
@@ -42,6 +67,30 @@ export function derivePieces(items) {
             posMap[k] = (posMap[k] || 0) + 1;
             groups[mat].push({ ref: `${P} / ${posMap[k]}`, len: Math.round(len), angle, qty: count });
         };
+
+        // ── 2D DIZAYNER modeli bo'lsa — undan bo'laklar ──
+        if (it.design && it.design.tree) {
+            const dW = Math.round(it.design.W || W), dH = Math.round(it.design.H || H);
+            const out = { cells: [], imposts: [] };
+            layoutTree(it.design.tree, { x: FRAME_W, y: FRAME_W, w: dW - 2 * FRAME_W, h: dH - 2 * FRAME_W }, out);
+            add(baseMat, dH, '45° ; 45°', 2 * qty);            // rama vertikal
+            add(baseMat, dW, '45° ; 45°', 2 * qty);            // rama gorizontal
+            out.imposts.forEach(im => add(baseMat, Math.round(Math.max(im.w, im.h)), '90° ; 90°', qty));
+            const sashMat = baseMat + ' · Stvorka', beadMat = baseMat + ' · Shtapik';
+            out.cells.forEach(c => {
+                const cw = Math.round(c.box.w), ch = Math.round(c.box.h);
+                if (c.opening && c.opening !== 'kar') {
+                    add(sashMat, ch - 2 * SASH_GAP, '45° ; 45°', 2 * qty);
+                    add(sashMat, cw - 2 * SASH_GAP, '45° ; 45°', 2 * qty);
+                }
+                const gW = cw - 2 * BEAD_W, gH = ch - 2 * BEAD_W;
+                if (gW > 0 && gH > 0) {
+                    add(beadMat, gH, '45° ; 45°', 2 * qty);
+                    add(beadMat, gW, '45° ; 45°', 2 * qty);
+                }
+            });
+            return; // sodda hisobни o'tkazib yuboramiz
+        }
 
         // 1) Rama (frame) — 45° (arka bo'lsa: to'g'ri tepa o'rniga yoy profili)
         if (arch) {
