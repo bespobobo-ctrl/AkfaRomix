@@ -118,22 +118,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     });
 
-    const photoInput = document.getElementById('empPhotoFile');
-    if (photoInput) {
-        photoInput.onchange = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                tempPhotoData = event.target.result;
-                const preview = document.getElementById('modalPhotoPreview');
-                preview.src = tempPhotoData;
-                preview.style.display = 'block';
-                document.getElementById('plusIcon').style.display = 'none';
-            };
-            reader.readAsDataURL(file);
+    const handlePhotoSelect = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            tempPhotoData = event.target.result;
+            const preview = document.getElementById('modalPhotoPreview');
+            preview.src = tempPhotoData;
+            preview.style.display = 'block';
+            document.getElementById('plusIcon').style.display = 'none';
         };
-    }
+        reader.readAsDataURL(file);
+    };
+
+    const photoInput = document.getElementById('empPhotoFile');
+    if (photoInput) photoInput.onchange = handlePhotoSelect;
+
+    const cameraInput = document.getElementById('empPhotoCamera');
+    if (cameraInput) cameraInput.onchange = handlePhotoSelect;
 
     const saveBtn = document.getElementById('saveWorkerBtn');
     if (saveBtn) saveBtn.onclick = saveWorker;
