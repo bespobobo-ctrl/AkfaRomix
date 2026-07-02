@@ -1064,32 +1064,27 @@
                     </div>
 
                     <!-- Buyurtmalar Monitori Card -->
-                    <div class="bento-card" style="grid-column: span 4; background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%); display: flex; flex-direction: column;">
-                        <h3 style="color: #fff; font-weight: 700; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div class="bento-card" style="grid-column: span 2; background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%); display: flex; flex-direction: column;">
+                        <h3 style="color: #fff; font-weight: 700; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                             <span>📊 Buyurtmalar Monitori</span>
-                            <span style="font-size: 0.65rem; background: rgba(250, 187, 24, 0.1); color: #fabb18; padding: 3px 8px; border-radius: 8px; font-weight: 800; letter-spacing: 0.5px;">LIVE FEED</span>
+                            <div style="display: flex; gap: 5px;">
+                                <span id="badge-new-orders-count" style="font-size: 0.65rem; background: rgba(255,170,0,0.15); color: #ffaa00; padding: 2px 6px; border-radius: 6px; font-weight: 800;" title="Yangi buyurtmalar">0</span>
+                                <span id="badge-ready-orders-count" style="font-size: 0.65rem; background: rgba(0,255,136,0.15); color: #00ff88; padding: 2px 6px; border-radius: 6px; font-weight: 800;" title="Tayyor buyurtmalar">0</span>
+                            </div>
                         </h3>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; flex-grow: 1;">
-                            <!-- New Orders column -->
-                            <div style="background: rgba(0, 0, 0, 0.15); padding: 15px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.03); display: flex; flex-direction: column; min-height: 200px;">
-                                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid rgba(255,170,0,0.15); padding-bottom:8px; margin-bottom:12px;">
-                                    <span style="font-size: 0.72rem; color: #ffaa00; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">📥 YANGI BUYURTMALAR</span>
-                                    <span id="badge-new-orders-count" style="font-size: 0.65rem; background: rgba(255,170,0,0.1); color: #ffaa00; padding: 1px 6px; border-radius: 6px; font-weight: 800;">0</span>
-                                </div>
-                                <div id="dashboard-new-orders-list" style="display: flex; flex-direction: column; gap: 8px; flex-grow: 1; overflow-y: auto; max-height: 220px;">
-                                    <div style="text-align: center; color: rgba(255,255,255,0.25); font-size: 0.75rem; margin: auto;">Yangi buyurtmalar yo'q</div>
-                                </div>
-                            </div>
-                            <!-- Ready Orders column -->
-                            <div style="background: rgba(0, 0, 0, 0.15); padding: 15px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.03); display: flex; flex-direction: column; min-height: 200px;">
-                                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid rgba(0,255,136,0.15); padding-bottom:8px; margin-bottom:12px;">
-                                    <span style="font-size: 0.72rem; color: #00ff88; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">✅ TAYYOR BUYURTMALAR</span>
-                                    <span id="badge-ready-orders-count" style="font-size: 0.65rem; background: rgba(0,255,136,0.1); color: #00ff88; padding: 1px 6px; border-radius: 6px; font-weight: 800;">0</span>
-                                </div>
-                                <div id="dashboard-ready-orders-list" style="display: flex; flex-direction: column; gap: 8px; flex-grow: 1; overflow-y: auto; max-height: 220px;">
-                                    <div style="text-align: center; color: rgba(255,255,255,0.25); font-size: 0.75rem; margin: auto;">Tayyor buyurtmalar yo'q</div>
-                                </div>
-                            </div>
+                        <div id="dashboard-orders-list" style="display: flex; flex-direction: column; gap: 8px; flex-grow: 1; overflow-y: auto; max-height: 220px;">
+                            <div style="text-align: center; color: rgba(255,255,255,0.25); font-size: 0.75rem; margin: auto;">Buyurtmalar topilmadi</div>
+                        </div>
+                    </div>
+
+                    <!-- Oxirgi Ombor Amallari Card -->
+                    <div class="bento-card" style="grid-column: span 2; background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%); display: flex; flex-direction: column;">
+                        <h3 style="color: #fff; font-weight: 700; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <span>🔄 Oxirgi Ombor Amallari</span>
+                            <span style="font-size: 0.65rem; background: rgba(0, 210, 255, 0.15); color: #00d2ff; padding: 3px 8px; border-radius: 8px; font-weight: 800;">KIRIM-CHIQIM</span>
+                        </h3>
+                        <div id="dashboard-recent-trans-list" style="display: flex; flex-direction: column; gap: 8px; flex-grow: 1; overflow-y: auto; max-height: 220px;">
+                            <div style="text-align: center; color: rgba(255,255,255,0.25); font-size: 0.75rem; margin: auto;">Harakatlar topilmadi</div>
                         </div>
                     </div>
                 </div>

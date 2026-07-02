@@ -3710,6 +3710,48 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function loadRomixDashboardStats() {
         const todayStr = new Date().toISOString().split('T')[0];
 
+        // 0. Seed database tables locally if they are empty
+        if (!localStorage.getItem('romix_accessories_inventory')) {
+            const defaultAcc = [
+                { name: "AKFA Eshik Qulflari", category: "Zamoklar", qty: 1200, unit: "dona", spec: "Standart" },
+                { name: "Oyna Ruchkalari Premium", category: "Ruchkalar", qty: 2500, unit: "dona", spec: "Premium" },
+                { name: "Rezina Qistirma 8mm", category: "Qistirmalar", qty: 7350, unit: "metr", spec: "EPDM Qora" },
+                { name: "Burchak Biriktiruvchi PVX", category: "Biriktiruvchilar", qty: 1400, unit: "dona", spec: "PVX" }
+            ];
+            localStorage.setItem('romix_accessories_inventory', JSON.stringify(defaultAcc));
+        }
+
+        if (!localStorage.getItem('romix_qoldiq_inventory')) {
+            const defaultQoldiq = [
+                { id: "q1", product_name: "AKFA Plastik 6000 QVT Oq", brand: "AKFA Plastik", series: "6000 QVT", color: "Oq", profile_type: "Profil Frame", length: 1500, stock_quantity: 8, created_at: "2026-07-01T10:00:00.000Z" },
+                { id: "q2", product_name: "AKFA Plastik 6000 TRIO Mocha", brand: "AKFA Plastik", series: "6000 TRIO", color: "Mocha", profile_type: "Profil Frame", length: 2200, stock_quantity: 4, created_at: "2026-07-01T11:30:00.000Z" },
+                { id: "q3", product_name: "Ekopen Plastik 5800 TRIO Oq", brand: "Ekopen Plastik", series: "5800 TRIO", color: "Oq", profile_type: "Shtapik", length: 950, stock_quantity: 15, created_at: "2026-06-30T14:15:00.000Z" },
+                { id: "q4", product_name: "AKFA Alyuminiy 5200 QVT Qora", brand: "AKFA Alyuminiy", series: "5200 QVT", color: "Qora", profile_type: "Tokcha", length: 3100, stock_quantity: 3, created_at: "2026-07-01T12:00:00.000Z" }
+            ];
+            localStorage.setItem('romix_qoldiq_inventory', JSON.stringify(defaultQoldiq));
+        }
+
+        const plastLocalKey = 'romix_db_romix_inventory';
+        if (!localStorage.getItem(plastLocalKey)) {
+            const defaultPlast = [
+                { id: "p1", product_name: "AKFA Plastik 6000 QVT Oq", brand: "AKFA", series: "6000 QVT", color: "Oq", price: 150000, stock_quantity: 450, unit: "kg", created_at: new Date().toISOString() },
+                { id: "p2", product_name: "AKFA Plastik 6000 TRIO Mocha", brand: "AKFA", series: "6000 TRIO", color: "Mocha", price: 180000, stock_quantity: 320, unit: "kg", created_at: new Date().toISOString() },
+                { id: "p3", product_name: "Ekopen Plastik 5800 TRIO Oq", brand: "Ekopen", series: "5800 TRIO", color: "Oq", price: 140000, stock_quantity: 600, unit: "kg", created_at: new Date().toISOString() },
+                { id: "p4", product_name: "AKFA Alyuminiy 5200 QVT Qora", brand: "AKFA", series: "5200 QVT", color: "Qora", price: 220000, stock_quantity: 210, unit: "kg", created_at: new Date().toISOString() }
+            ];
+            localStorage.setItem(plastLocalKey, JSON.stringify(defaultPlast));
+        }
+
+        const transLocalKey = 'romix_db_romix_transactions';
+        if (!localStorage.getItem(transLocalKey)) {
+            const defaultTrans = [
+                { id: "t1", product_id: "p1", type: "IN", quantity: 150, operator: "Admin", created_at: new Date(Date.now() - 2*3600*1000).toISOString() },
+                { id: "t2", product_id: "p3", type: "OUT", quantity: 80, operator: "Sotuv", created_at: new Date(Date.now() - 5*3600*1000).toISOString() },
+                { id: "t3", product_id: "p4", type: "IN", quantity: 45, operator: "Admin", created_at: new Date(Date.now() - 24*3600*1000).toISOString() }
+            ];
+            localStorage.setItem(transLocalKey, JSON.stringify(defaultTrans));
+        }
+
         // 1. Employee Stats
         let emps = [];
         let att = [];
@@ -3745,8 +3787,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         let plastVal = 0;
         try {
             const { data: plastData } = await supabase.from('romix_inventory').select('stock_quantity, price');
-            if (plastData) {
-                plastData.forEach(p => {
+            let finalPlastData = plastData;
+            if (!finalPlastData || finalPlastData.length === 0) {
+                const localPlast = localStorage.getItem('romix_db_romix_inventory');
+                if (localPlast) finalPlastData = JSON.parse(localPlast);
+            }
+            if (finalPlastData) {
+                finalPlastData.forEach(p => {
                     const qty = parseFloat(p.stock_quantity) || 0;
                     const pr = parseFloat(p.price) || 0;
                     plastStock += qty;
@@ -3839,11 +3886,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         let orders = [];
         try {
             const { data: oData } = await supabase.from('sales_orders').select('*').order('created_at', { ascending: false });
-            if (oData) {
+            if (oData && oData.length > 0) {
                 orders = oData;
                 localStorage.setItem('romix_orders_local', JSON.stringify(orders));
             } else {
-                throw new Error("Empty sales_orders response");
+                const localRaw = localStorage.getItem('romix_orders_local');
+                if (localRaw) orders = JSON.parse(localRaw);
             }
         } catch (err) {
             console.warn("Supabase dashboard orders load failed, using local storage fallback", err);
@@ -3851,56 +3899,95 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (localRaw) orders = JSON.parse(localRaw);
         }
 
-        // Filter: Yangi (Pending/Kutilmoqda)
         const pendingOrders = orders.filter(o => o.status === 'Kutilmoqda');
-        // Filter: Tayyor (Tayyor / Yetkazildi or Tayyor / O'rnatildi)
         const readyOrders = orders.filter(o => o.status === 'Tayyor / Yetkazildi' || o.status === 'Tayyor / O\'rnatildi' || o.status === 'Tayyor');
 
         const newCountEl = document.getElementById('badge-new-orders-count');
         const readyCountEl = document.getElementById('badge-ready-orders-count');
-        const newListEl = document.getElementById('dashboard-new-orders-list');
-        const readyListEl = document.getElementById('dashboard-ready-orders-list');
+        const ordersListEl = document.getElementById('dashboard-orders-list');
 
         if (newCountEl) newCountEl.textContent = pendingOrders.length;
         if (readyCountEl) readyCountEl.textContent = readyOrders.length;
 
-        // Render latest 3 new orders
-        if (newListEl) {
-            if (pendingOrders.length === 0) {
-                newListEl.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.25); font-size: 0.75rem; margin: auto;">Yangi buyurtmalar yo\'q</div>';
+        // Render latest 3 orders
+        if (ordersListEl) {
+            if (orders.length === 0) {
+                ordersListEl.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.25); font-size: 0.75rem; margin: auto;">Buyurtmalar topilmadi</div>';
             } else {
-                newListEl.innerHTML = pendingOrders.slice(0, 3).map(o => `
-                    <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); padding: 10px 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.05)'" onmouseleave="this.style.background='rgba(255,255,255,0.02)'">
-                        <div>
-                            <div style="font-weight: 700; color: #fff; font-size: 0.8rem;">${o.customer_name}</div>
-                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 3px;">${o.prod_type || 'Mahsulot'}</div>
+                ordersListEl.innerHTML = orders.slice(0, 3).map(o => {
+                    let statusColor = '#ffaa00'; // pending
+                    if (o.status === 'Jarayonda') statusColor = '#00d2ff';
+                    else if (o.status.includes('Tayyor') || o.status.includes('o\'rnatildi') || o.status.includes('Yetkazildi')) statusColor = '#00ff88';
+
+                    return `
+                        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); padding: 10px 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.05)'" onmouseleave="this.style.background='rgba(255,255,255,0.02)'">
+                            <div>
+                                <div style="font-weight: 700; color: #fff; font-size: 0.8rem;">${o.customer_name}</div>
+                                <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 3px;">${o.prod_type || 'Mahsulot'}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-weight: 700; color: #fff; font-size: 0.8rem;">${Number(o.total_price || 0).toLocaleString()} UZS</div>
+                                <div style="font-size: 0.68rem; color: ${statusColor}; margin-top: 3px; font-weight: 700;">${o.status}</div>
+                            </div>
                         </div>
-                        <div style="text-align: right;">
-                            <div style="font-weight: 700; color: #ffaa00; font-size: 0.8rem;">${Number(o.total_price || 0).toLocaleString()} UZS</div>
-                            <div style="font-size: 0.65rem; color: rgba(255,255,255,0.3); margin-top: 3px;">Muddati: ${o.deadline_date ? new Date(o.deadline_date).toLocaleDateString() : '---'}</div>
-                        </div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             }
         }
 
-        // Render latest 3 ready orders
-        if (readyListEl) {
-            if (readyOrders.length === 0) {
-                readyListEl.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.25); font-size: 0.75rem; margin: auto;">Tayyor buyurtmalar yo\'q</div>';
+        // 4. Warehouse Transactions Live Feed
+        let prodNameMap = {
+            "p1": "AKFA Plastik 6000 QVT Oq",
+            "p2": "AKFA Plastik 6000 TRIO Mocha",
+            "p3": "Ekopen Plastik 5800 TRIO Oq",
+            "p4": "AKFA Alyuminiy 5200 QVT Qora"
+        };
+        try {
+            const { data: plist } = await supabase.from('romix_inventory').select('id, product_name');
+            if (plist) {
+                plist.forEach(p => { prodNameMap[p.id] = p.product_name; });
+            }
+        } catch {}
+
+        let txs = [];
+        try {
+            const { data: txData } = await supabase.from('romix_transactions').select('*').order('created_at', { ascending: false }).limit(5);
+            if (txData && txData.length > 0) {
+                txs = txData;
             } else {
-                readyListEl.innerHTML = readyOrders.slice(0, 3).map(o => `
-                    <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); padding: 10px 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.05)'" onmouseleave="this.style.background='rgba(255,255,255,0.02)'">
-                        <div>
-                            <div style="font-weight: 700; color: #fff; font-size: 0.8rem;">${o.customer_name}</div>
-                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 3px;">${o.prod_type || 'Mahsulot'}</div>
+                const localTx = localStorage.getItem('romix_db_romix_transactions');
+                if (localTx) txs = JSON.parse(localTx);
+            }
+        } catch (err) {
+            const localTx = localStorage.getItem('romix_db_romix_transactions');
+            if (localTx) txs = JSON.parse(localTx);
+        }
+
+        const txListEl = document.getElementById('dashboard-recent-trans-list');
+        if (txListEl) {
+            if (txs.length === 0) {
+                txListEl.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.25); font-size: 0.75rem; margin: auto;">Harakatlar topilmadi</div>';
+            } else {
+                txListEl.innerHTML = txs.slice(0, 3).map(tx => {
+                    const prodName = prodNameMap[tx.product_id] || tx.product_name || "Mahsulot";
+                    const isKirim = tx.type === 'IN' || tx.type === 'Kirim' || (tx.action && tx.action.includes('Kirim'));
+                    const sign = isKirim ? '+' : '-';
+                    const color = isKirim ? '#00ff88' : '#ff4d4f';
+                    const timeText = tx.created_at ? new Date(tx.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '---';
+
+                    return `
+                        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); padding: 10px 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.05)'" onmouseleave="this.style.background='rgba(255,255,255,0.02)'">
+                            <div>
+                                <div style="font-weight: 700; color: #fff; font-size: 0.8rem;">${prodName}</div>
+                                <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 3px;">Operator: ${tx.operator || 'Admin'}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-weight: 800; color: ${color}; font-size: 0.82rem;">${sign}${tx.quantity}</div>
+                                <div style="font-size: 0.65rem; color: rgba(255,255,255,0.3); margin-top: 3px;">🕒 ${timeText}</div>
+                            </div>
                         </div>
-                        <div style="text-align: right;">
-                            <div style="font-weight: 700; color: #00ff88; font-size: 0.8rem;">${Number(o.total_price || 0).toLocaleString()} UZS</div>
-                            <div style="font-size: 0.65rem; color: rgba(0, 255, 136, 0.6); margin-top: 3px; font-weight: 600;">✓ Tayyor</div>
-                        </div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             }
         }
     }
