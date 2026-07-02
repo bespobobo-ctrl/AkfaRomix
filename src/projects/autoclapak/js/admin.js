@@ -37,6 +37,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (document.getElementById('finished-goods-list')) {
             loadAutoProduction();
         }
+        if (document.getElementById('section-dashboard') && document.getElementById('stat-total-emp')) {
+            loadRomixDashboardStats();
+        }
     }, 200);
     let editingUserId = null;
 
@@ -3703,45 +3706,214 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 1000);
 
     // --- ROMIX DASHBOARD STATS (PANEL) ---
+    // --- ROMIX DASHBOARD STATS (PANEL) ---
     async function loadRomixDashboardStats() {
         const todayStr = new Date().toISOString().split('T')[0];
 
         // 1. Employee Stats
-        const { data: emps } = await supabase.from('employees').select('id');
-        const { data: att } = await supabase.from('attendance').select('status').eq('date', todayStr);
+        let emps = [];
+        let att = [];
+        try {
+            const { data: eData } = await supabase.from('employees').select('id');
+            const { data: aData } = await supabase.from('attendance').select('status').eq('date', todayStr);
+            if (eData) emps = eData;
+            if (aData) att = aData;
+        } catch (err) {
+            console.error("Dashboard HR Load Error:", err);
+        }
 
-        const total = emps ? emps.length : 0;
+        const total = emps.length;
         let arrived = 0, late = 0;
         if (att) {
             arrived = att.length;
-            late = att.filter(a => a.status === 'Kech qoldi').length;
+            late = att.filter(a => a.status === 'Kech qoldi' || (a.status && a.status.toLowerCase().includes('kechik'))).length;
         }
 
-        document.getElementById('stat-total-emp').textContent = total;
-        document.getElementById('stat-arrived').textContent = arrived;
-        document.getElementById('stat-late').textContent = late;
-        document.getElementById('stat-absent').textContent = Math.max(0, total - arrived);
+        const totalEmpEl = document.getElementById('stat-total-emp');
+        const arrivedEl = document.getElementById('stat-arrived');
+        const lateEl = document.getElementById('stat-late');
+        const absentEl = document.getElementById('stat-absent');
 
-        // 2. Warehouse Stats
-        const { data: prods } = await supabase.from('warehouse_products').select('current_stock');
-        const totalStock = prods ? prods.reduce((sum, p) => sum + p.current_stock, 0) : 0;
-        document.querySelector('#section-dashboard .balance-lg').innerHTML = `${totalStock.toLocaleString()} <small style="font-size: 0.8rem;">kg / dona</small>`;
+        if (totalEmpEl) totalEmpEl.textContent = total;
+        if (arrivedEl) arrivedEl.textContent = arrived;
+        if (lateEl) lateEl.textContent = late;
+        if (absentEl) absentEl.textContent = Math.max(0, total - arrived);
 
-        // 3. Recent Inventory
-        const { data: txs } = await supabase.from('warehouse_transactions')
-            .select('*, warehouse_products(name, unit)')
-            .order('created_at', { ascending: false }).limit(3);
+        // 2. Warehouse Stats Aggregation (3 departments)
+        // Department A: Plast (romix_inventory)
+        let plastStock = 0;
+        let plastVal = 0;
+        try {
+            const { data: plastData } = await supabase.from('romix_inventory').select('stock_quantity, price');
+            if (plastData) {
+                plastData.forEach(p => {
+                    const qty = parseFloat(p.stock_quantity) || 0;
+                    const pr = parseFloat(p.price) || 0;
+                    plastStock += qty;
+                    plastVal += qty * pr;
+                });
+            }
+        } catch (err) {
+            console.error("Plast stock fetch issue:", err);
+        }
 
-        const recentList = document.getElementById('recent-inventory-list');
-        if (recentList && txs) {
-            recentList.innerHTML = txs.map(tx => `
-                <div style="display:flex; justify-content:space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 5px 0;">
-                    <span>${tx.warehouse_products?.name || 'Mahsulot'}</span>
-                    <b style="color:${tx.type === 'IN' ? '#00ff88' : '#ff4d4f'}">${tx.type === 'IN' ? '+' : '-'}${tx.quantity} ${tx.warehouse_products?.unit || ''}</b>
-                </div>
-            `).join('');
+        // Department B: Accessories (romix_accessories_inventory in LocalStorage)
+        let accStock = 0;
+        let accVal = 0;
+        try {
+            const accRaw = localStorage.getItem('romix_accessories_inventory');
+            if (accRaw) {
+                const accData = JSON.parse(accRaw);
+                accData.forEach(a => {
+                    const qty = parseInt(a.qty) || 0;
+                    accStock += qty;
+                    
+                    // Match and estimate valuation
+                    const nameLower = (a.name || '').toLowerCase();
+                    let estPrice = 30000; // default
+                    if (nameLower.includes('dovodchik')) estPrice = 120000;
+                    else if (nameLower.includes('qulf') || nameLower.includes('zamok')) estPrice = 65000;
+                    else if (nameLower.includes('ruchka')) estPrice = 45000;
+                    else if (nameLower.includes('petlya')) estPrice = 15000;
+                    else if (nameLower.includes('setka')) estPrice = 40000;
+                    else if (nameLower.includes('rezina') || nameLower.includes('zichlagich')) estPrice = 8000;
+                    
+                    accVal += qty * estPrice;
+                });
+            }
+        } catch (err) {
+            console.error("Accessories stock calculation issue:", err);
+        }
+
+        // Department C: Remnants (romix_qoldiq_inventory in LocalStorage)
+        let qoldiqStock = 0;
+        let qoldiqVal = 0;
+        let qoldiqLength = 0; // mm
+        try {
+            const qoldiqRaw = localStorage.getItem('romix_qoldiq_inventory');
+            if (qoldiqRaw) {
+                const qoldiqData = JSON.parse(qoldiqRaw);
+                qoldiqData.forEach(q => {
+                    const qty = parseInt(q.stock_quantity) || 0;
+                    const len = parseFloat(q.length) || 0;
+                    qoldiqStock += qty;
+                    qoldiqLength += len * qty;
+                    // Est valuation: 25 UZS per mm (25,000 UZS per meter)
+                    qoldiqVal += len * qty * 25;
+                });
+            }
+        } catch (err) {
+            console.error("Remnants stock calculation issue:", err);
+        }
+
+        const grandStock = plastStock + accStock + qoldiqStock;
+        const grandVal = plastVal + accVal + qoldiqVal;
+
+        // Render main warehouse card stats
+        const valEl = document.getElementById('stat-total-warehouse-val');
+        const stockEl = document.getElementById('stat-total-warehouse-stock');
+
+        if (valEl) valEl.textContent = grandVal.toLocaleString() + ' UZS';
+        if (stockEl) stockEl.textContent = grandStock.toLocaleString() + ' dona / kg / m';
+
+        // Set breakdown modal elements
+        const mPlastVal = document.getElementById('modal-plast-val');
+        const mPlastStock = document.getElementById('modal-plast-stock');
+        const mAccVal = document.getElementById('modal-acc-val');
+        const mAccStock = document.getElementById('modal-acc-stock');
+        const mQoldiqVal = document.getElementById('modal-qoldiq-val');
+        const mQoldiqStock = document.getElementById('modal-qoldiq-stock');
+        const mGrandVal = document.getElementById('modal-grand-val');
+        const mGrandStock = document.getElementById('modal-grand-stock');
+
+        if (mPlastVal) mPlastVal.textContent = plastVal.toLocaleString() + ' UZS';
+        if (mPlastStock) mPlastStock.textContent = plastStock.toLocaleString() + ' dona / kg';
+        if (mAccVal) mAccVal.textContent = accVal.toLocaleString() + ' UZS';
+        if (mAccStock) mAccStock.textContent = accStock.toLocaleString() + ' dona';
+        if (mQoldiqVal) mQoldiqVal.textContent = qoldiqVal.toLocaleString() + ' UZS';
+        if (mQoldiqStock) mQoldiqStock.textContent = qoldiqStock.toLocaleString() + ` ta (${(qoldiqLength / 1000).toFixed(1)} metr)`;
+        if (mGrandVal) mGrandVal.textContent = grandVal.toLocaleString() + ' UZS';
+        if (mGrandStock) mGrandStock.textContent = grandStock.toLocaleString() + ' dona / kg / m';
+
+        // 3. Orders Live Feed Monitor
+        let orders = [];
+        try {
+            const { data: oData } = await supabase.from('sales_orders').select('*').order('created_at', { ascending: false });
+            if (oData) {
+                orders = oData;
+                localStorage.setItem('romix_orders_local', JSON.stringify(orders));
+            } else {
+                throw new Error("Empty sales_orders response");
+            }
+        } catch (err) {
+            console.warn("Supabase dashboard orders load failed, using local storage fallback", err);
+            const localRaw = localStorage.getItem('romix_orders_local');
+            if (localRaw) orders = JSON.parse(localRaw);
+        }
+
+        // Filter: Yangi (Pending/Kutilmoqda)
+        const pendingOrders = orders.filter(o => o.status === 'Kutilmoqda');
+        // Filter: Tayyor (Tayyor / Yetkazildi or Tayyor / O'rnatildi)
+        const readyOrders = orders.filter(o => o.status === 'Tayyor / Yetkazildi' || o.status === 'Tayyor / O\'rnatildi' || o.status === 'Tayyor');
+
+        const newCountEl = document.getElementById('badge-new-orders-count');
+        const readyCountEl = document.getElementById('badge-ready-orders-count');
+        const newListEl = document.getElementById('dashboard-new-orders-list');
+        const readyListEl = document.getElementById('dashboard-ready-orders-list');
+
+        if (newCountEl) newCountEl.textContent = pendingOrders.length;
+        if (readyCountEl) readyCountEl.textContent = readyOrders.length;
+
+        // Render latest 3 new orders
+        if (newListEl) {
+            if (pendingOrders.length === 0) {
+                newListEl.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.25); font-size: 0.75rem; margin: auto;">Yangi buyurtmalar yo\'q</div>';
+            } else {
+                newListEl.innerHTML = pendingOrders.slice(0, 3).map(o => `
+                    <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); padding: 10px 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.05)'" onmouseleave="this.style.background='rgba(255,255,255,0.02)'">
+                        <div>
+                            <div style="font-weight: 700; color: #fff; font-size: 0.8rem;">${o.customer_name}</div>
+                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 3px;">${o.prod_type || 'Mahsulot'}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 700; color: #ffaa00; font-size: 0.8rem;">${Number(o.total_price || 0).toLocaleString()} UZS</div>
+                            <div style="font-size: 0.65rem; color: rgba(255,255,255,0.3); margin-top: 3px;">Muddati: ${o.deadline_date ? new Date(o.deadline_date).toLocaleDateString() : '---'}</div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Render latest 3 ready orders
+        if (readyListEl) {
+            if (readyOrders.length === 0) {
+                readyListEl.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.25); font-size: 0.75rem; margin: auto;">Tayyor buyurtmalar yo\'q</div>';
+            } else {
+                readyListEl.innerHTML = readyOrders.slice(0, 3).map(o => `
+                    <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); padding: 10px 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.05)'" onmouseleave="this.style.background='rgba(255,255,255,0.02)'">
+                        <div>
+                            <div style="font-weight: 700; color: #fff; font-size: 0.8rem;">${o.customer_name}</div>
+                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 3px;">${o.prod_type || 'Mahsulot'}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 700; color: #00ff88; font-size: 0.8rem;">${Number(o.total_price || 0).toLocaleString()} UZS</div>
+                            <div style="font-size: 0.65rem; color: rgba(0, 255, 136, 0.6); margin-top: 3px; font-weight: 600;">✓ Tayyor</div>
+                        </div>
+                    </div>
+                `).join('');
+            }
         }
     }
+
+    // Modal helpers made globally available
+    window.openWarehouseBreakdownModal = function() {
+        const modal = document.getElementById('warehouseBreakdownModal');
+        if (modal) modal.style.display = 'flex';
+    };
+    window.closeWarehouseBreakdownModal = function() {
+        const modal = document.getElementById('warehouseBreakdownModal');
+        if (modal) modal.style.display = 'none';
+    };
 
     let currentCalMonth = new Date().getMonth();
     let currentCalYear = new Date().getFullYear();
