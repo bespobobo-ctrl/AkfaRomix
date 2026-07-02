@@ -3910,7 +3910,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (ordersListEl) {
             if (orders.length === 0) {
-                ordersListEl.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.25); font-size: 0.75rem; margin: auto;">Buyurtmalar topilmadi</div>';
+                ordersListEl.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.25); font-size: 0.75rem; margin: auto; grid-column: span 2;">Buyurtmalar topilmadi</div>';
             } else {
                 ordersListEl.innerHTML = orders.slice(0, 3).map(o => {
                     let statusColor = '#ffaa00';
@@ -3923,15 +3923,36 @@ document.addEventListener('DOMContentLoaded', async () => {
                         statusBg = 'rgba(0,255,136,0.1)';
                     }
 
+                    // Elegant SVG Profile window icon
+                    const productSvg = `
+                        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="${statusColor}" stroke-width="1.8" style="filter: drop-shadow(0 0 5px ${statusColor}30);">
+                            <rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2"/>
+                            <line x1="12" y1="3" x2="12" y2="21" stroke-dasharray="2 2"/>
+                            <line x1="3" y1="11" x2="21" y2="11"/>
+                        </svg>
+                    `;
+
                     return `
-                        <div class="premium-list-item" style="border-left: 3.5px solid ${statusColor};">
+                        <div class="premium-product-card glow-card" style="border-top: 3px solid ${statusColor}; border-radius: 16px; background: rgba(255, 255, 255, 0.015); border-left: 1px solid rgba(255,255,255,0.03); border-right: 1px solid rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.03); padding: 12px 14px; position: relative; transition: all 0.25s; display: flex; flex-direction: column; justify-content: space-between; min-height: 160px;" onmouseenter="this.style.transform='translateY(-3px)'; this.style.background='rgba(255,255,255,0.03)';" onmouseleave="this.style.transform='translateY(0)'; this.style.background='rgba(255,255,255,0.015)';">
                             <div>
-                                <div style="font-weight: 700; color: #fff; font-size: 0.8rem;">${o.customer_name}</div>
-                                <div style="font-size: 0.68rem; color: rgba(255,255,255,0.4); margin-top: 3px;">${o.prod_type || 'Mahsulot'}</div>
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                                    <span style="font-family: monospace; font-size: 0.65rem; color: rgba(255,255,255,0.4); font-weight: 700;">#${o.id.toUpperCase()}</span>
+                                    <span style="font-size: 0.6rem; color: ${statusColor}; background: ${statusBg}; padding: 2px 6px; border-radius: 12px; font-weight: 700;">${o.status}</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 10px; margin: 10px 0;">
+                                    ${productSvg}
+                                    <div style="flex-grow: 1; overflow: hidden;">
+                                        <div style="font-weight: 700; color: #fff; font-size: 0.76rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${o.prod_type}">${o.prod_type || 'Mahsulot'}</div>
+                                        <div style="font-size: 0.65rem; color: rgba(255,255,255,0.4); margin-top: 2px;">Soni: ${o.quantity || 1} ta</div>
+                                    </div>
+                                </div>
+                                <div style="font-size: 0.72rem; color: rgba(255,255,255,0.5); font-weight: 600; display: flex; align-items: center; gap: 4px; margin-top: 8px; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 8px;">
+                                    <span>👤</span> <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${o.customer_name}</span>
+                                </div>
                             </div>
-                            <div style="text-align: right;">
-                                <div style="font-weight: 800; color: #fff; font-size: 0.8rem;">${Number(o.total_price || 0).toLocaleString()} UZS</div>
-                                <span style="display: inline-block; font-size: 0.62rem; color: ${statusColor}; background: ${statusBg}; padding: 2px 8px; border-radius: 12px; margin-top: 4px; font-weight: 700;">${o.status}</span>
+                            <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 2px;">
+                                <div style="font-size: 0.58rem; color: rgba(255,255,255,0.3); font-weight: 700; text-transform: uppercase;">SUMMASI</div>
+                                <div style="font-weight: 900; color: #00ff88; font-size: 0.95rem; font-family: monospace;">${Number(o.total_price || 0).toLocaleString()} UZS</div>
                             </div>
                         </div>
                     `;
