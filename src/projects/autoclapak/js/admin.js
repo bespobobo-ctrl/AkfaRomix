@@ -3741,7 +3741,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             ];
             localStorage.setItem(plastLocalKey, JSON.stringify(defaultPlast));
         }
-
         const transLocalKey = 'romix_db_romix_transactions';
         if (!localStorage.getItem(transLocalKey)) {
             const defaultTrans = [
@@ -3780,6 +3779,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (arrivedEl) arrivedEl.textContent = arrived;
         if (lateEl) lateEl.textContent = late;
         if (absentEl) absentEl.textContent = Math.max(0, total - arrived);
+
+        // Circular progress ring calculation
+        const attendancePct = total > 0 ? Math.round((arrived / total) * 100) : 0;
+        const ringEl = document.getElementById('attendance-progress-ring');
+        const ringTextEl = document.getElementById('attendance-percent-text');
+        if (ringEl) {
+            // Stroke-dasharray is 251.2
+            const offset = 251.2 - (251.2 * attendancePct) / 100;
+            ringEl.style.strokeDashoffset = offset;
+        }
+        if (ringTextEl) {
+            ringTextEl.textContent = attendancePct + '%';
+        }
 
         // 2. Warehouse Stats Aggregation (3 departments)
         // Department A: Plast (romix_inventory)
@@ -3882,6 +3894,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (mGrandVal) mGrandVal.textContent = grandVal.toLocaleString() + ' UZS';
         if (mGrandStock) mGrandStock.textContent = grandStock.toLocaleString() + ' dona / kg / m';
 
+        // Set new dashboard card breakdown elements
+        const dbPlastVal = document.getElementById('dashboard-plast-val');
+        const dbPlastStock = document.getElementById('dashboard-plast-stock');
+        const dbAccVal = document.getElementById('dashboard-acc-val');
+        const dbAccStock = document.getElementById('dashboard-acc-stock');
+        const dbQoldiqVal = document.getElementById('dashboard-qoldiq-val');
+        const dbQoldiqStock = document.getElementById('dashboard-qoldiq-stock');
+
+        if (dbPlastVal) dbPlastVal.textContent = plastVal.toLocaleString() + ' UZS';
+        if (dbPlastStock) dbPlastStock.textContent = plastStock.toLocaleString() + ' kg / dona';
+        if (dbAccVal) dbAccVal.textContent = accVal.toLocaleString() + ' UZS';
+        if (dbAccStock) dbAccStock.textContent = accStock.toLocaleString() + ' dona';
+        if (dbQoldiqVal) dbQoldiqVal.textContent = qoldiqVal.toLocaleString() + ' UZS';
+        if (dbQoldiqStock) dbQoldiqStock.textContent = qoldiqStock.toLocaleString() + ` ta (${(qoldiqLength / 1000).toFixed(1)} metr)`;
+
+        // Animate comparative progress bars
+        const plastPct = grandVal > 0 ? (plastVal / grandVal) * 100 : 0;
+        const accPct = grandVal > 0 ? (accVal / grandVal) * 100 : 0;
+        const qoldiqPct = grandVal > 0 ? (qoldiqVal / grandVal) * 100 : 0;
+
+        const dbPlastProgress = document.getElementById('dashboard-plast-progress');
+        const dbAccProgress = document.getElementById('dashboard-acc-progress');
+        const dbQoldiqProgress = document.getElementById('dashboard-qoldiq-progress');
+
+        if (dbPlastProgress) dbPlastProgress.style.width = plastPct.toFixed(1) + '%';
+        if (dbAccProgress) dbAccProgress.style.width = accPct.toFixed(1) + '%';
+        if (dbQoldiqProgress) dbQoldiqProgress.style.width = qoldiqPct.toFixed(1) + '%';
+
         // 3. Orders Live Feed Monitor
         let orders = [];
         try {
@@ -3916,56 +3956,31 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 ordersListEl.innerHTML = orders.slice(0, 3).map(o => {
                     let statusColor = '#ffaa00'; // pending
-                    if (o.status === 'Jarayonda') statusColor = '#00d2ff';
-                    else if (o.status.includes('Tayyor') || o.status.includes('o\'rnatildi') || o.status.includes('Yetkazildi')) statusColor = '#00ff88';
+                    let statusBg = 'rgba(255,170,0,0.1)';
+                    if (o.status === 'Jarayonda') {
+                        statusColor = '#00d2ff';
+                        statusBg = 'rgba(0,210,255,0.1)';
+                    } else if (o.status.includes('Tayyor') || o.status.includes('o\'rnatildi') || o.status.includes('Yetkazildi')) {
+                        statusColor = '#00ff88';
+                        statusBg = 'rgba(0,255,136,0.1)';
+                    }
 
                     return `
-                        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); padding: 10px 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.05)'" onmouseleave="this.style.background='rgba(255,255,255,0.02)'">
+                        <div class="premium-list-item" style="border-left: 3.5px solid ${statusColor};">
                             <div>
                                 <div style="font-weight: 700; color: #fff; font-size: 0.8rem;">${o.customer_name}</div>
-                                <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 3px;">${o.prod_type || 'Mahsulot'}</div>
+                                <div style="font-size: 0.68rem; color: rgba(255,255,255,0.4); margin-top: 3px;">${o.prod_type || 'Mahsulot'}</div>
                             </div>
                             <div style="text-align: right;">
-                                <div style="font-weight: 700; color: #fff; font-size: 0.8rem;">${Number(o.total_price || 0).toLocaleString()} UZS</div>
-                                <div style="font-size: 0.68rem; color: ${statusColor}; margin-top: 3px; font-weight: 700;">${o.status}</div>
+                                <div style="font-weight: 800; color: #fff; font-size: 0.8rem;">${Number(o.total_price || 0).toLocaleString()} UZS</div>
+                                <span style="display: inline-block; font-size: 0.62rem; color: ${statusColor}; background: ${statusBg}; padding: 2px 8px; border-radius: 12px; margin-top: 4px; font-weight: 700;">${o.status}</span>
                             </div>
                         </div>
                     `;
                 }).join('');
             }
         }
-
-        // 4. Warehouse Transactions Live Feed
-        let prodNameMap = {
-            "p1": "AKFA Plastik 6000 QVT Oq",
-            "p2": "AKFA Plastik 6000 TRIO Mocha",
-            "p3": "Ekopen Plastik 5800 TRIO Oq",
-            "p4": "AKFA Alyuminiy 5200 QVT Qora"
-        };
-        try {
-            const { data: plist } = await supabase.from('romix_inventory').select('id, product_name');
-            if (plist) {
-                plist.forEach(p => { prodNameMap[p.id] = p.product_name; });
-            }
-        } catch {}
-
-        // Set new dashboard card breakdown elements
-        const dbPlastVal = document.getElementById('dashboard-plast-val');
-        const dbPlastStock = document.getElementById('dashboard-plast-stock');
-        const dbAccVal = document.getElementById('dashboard-acc-val');
-        const dbAccStock = document.getElementById('dashboard-acc-stock');
-        const dbQoldiqVal = document.getElementById('dashboard-qoldiq-val');
-        const dbQoldiqStock = document.getElementById('dashboard-qoldiq-stock');
-
-        if (dbPlastVal) dbPlastVal.textContent = plastVal.toLocaleString() + ' UZS';
-        if (dbPlastStock) dbPlastStock.textContent = plastStock.toLocaleString() + ' kg / dona';
-        if (dbAccVal) dbAccVal.textContent = accVal.toLocaleString() + ' UZS';
-        if (dbAccStock) dbAccStock.textContent = accStock.toLocaleString() + ' dona';
-        if (dbQoldiqVal) dbQoldiqVal.textContent = qoldiqVal.toLocaleString() + ' UZS';
-        if (dbQoldiqStock) dbQoldiqStock.textContent = qoldiqStock.toLocaleString() + ` ta (${(qoldiqLength / 1000).toFixed(1)} metr)`;
     }
-
-    // Modal helpers made globally available
     window.openWarehouseBreakdownModal = function() {
         const modal = document.getElementById('warehouseBreakdownModal');
         if (modal) modal.style.display = 'flex';
