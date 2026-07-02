@@ -3755,10 +3755,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         let emps = [];
         let att = [];
         try {
-            const { data: eData } = await supabase.from('employees').select('id');
-            const { data: aData } = await supabase.from('attendance').select('status').eq('date', todayStr);
-            if (eData) emps = eData;
-            if (aData) att = aData;
+            const { data: eData } = await supabase.from('employees').select('id, full_name, role, salary');
+            const { data: aData } = await supabase.from('attendance').select('status, check_in, check_out, employee_id').eq('date', todayStr);
+            
+            let finalEmps = eData;
+            if (!finalEmps || finalEmps.length === 0) {
+                const localEmps = localStorage.getItem('romix_db_employees');
+                if (localEmps) finalEmps = JSON.parse(localEmps);
+            }
+            if (finalEmps) emps = finalEmps;
+
+            let finalAtt = aData;
+            if (!finalAtt || finalAtt.length === 0) {
+                const dbAtt = localStorage.getItem('romix_db_attendance');
+                if (dbAtt) {
+                    const parsed = JSON.parse(dbAtt);
+                    finalAtt = parsed.filter(a => a.date === todayStr);
+                }
+            }
+            if (!finalAtt || finalAtt.length === 0) {
+                const localAtt = localStorage.getItem('romix_attendance_local');
+                if (localAtt) finalAtt = JSON.parse(localAtt);
+            }
+            if (finalAtt) att = finalAtt;
         } catch (err) {
             console.error("Dashboard HR Load Error:", err);
         }
@@ -3785,7 +3804,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const ringEl = document.getElementById('attendance-progress-ring');
         const ringTextEl = document.getElementById('attendance-percent-text');
         if (ringEl) {
-            // Stroke-dasharray is 251.2
             const offset = 251.2 - (251.2 * attendancePct) / 100;
             ringEl.style.strokeDashoffset = offset;
         }
@@ -3793,10 +3811,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             ringTextEl.textContent = attendancePct + '%';
         }
 
-        // 2. Warehouse Stats Aggregation (3 departments)
-        // Department A: Plast (romix_inventory)
-        let plastStock = 0;
-        let plastVal = 0;
+        // 2. Warehouse Stats Aggregation
+        let plastStock = 0, plastVal = 0, accStock = 0, accVal = 0, qoldiqStock = 0, qoldiqVal = 0, qoldiqLength = 0;
         try {
             const { data: plastData } = await supabase.from('romix_inventory').select('stock_quantity, price');
             let finalPlastData = plastData;
@@ -3812,13 +3828,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     plastVal += qty * pr;
                 });
             }
-        } catch (err) {
-            console.error("Plast stock fetch issue:", err);
-        }
+        } catch (err) { console.error("Plast stock fetch issue:", err); }
 
-        // Department B: Accessories (romix_accessories_inventory in LocalStorage)
-        let accStock = 0;
-        let accVal = 0;
         try {
             const accRaw = localStorage.getItem('romix_accessories_inventory');
             if (accRaw) {
@@ -3826,28 +3837,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 accData.forEach(a => {
                     const qty = parseInt(a.qty) || 0;
                     accStock += qty;
-                    
-                    // Match and estimate valuation
                     const nameLower = (a.name || '').toLowerCase();
-                    let estPrice = 30000; // default
+                    let estPrice = 30000;
                     if (nameLower.includes('dovodchik')) estPrice = 120000;
                     else if (nameLower.includes('qulf') || nameLower.includes('zamok')) estPrice = 65000;
                     else if (nameLower.includes('ruchka')) estPrice = 45000;
                     else if (nameLower.includes('petlya')) estPrice = 15000;
                     else if (nameLower.includes('setka')) estPrice = 40000;
                     else if (nameLower.includes('rezina') || nameLower.includes('zichlagich')) estPrice = 8000;
-                    
                     accVal += qty * estPrice;
                 });
             }
-        } catch (err) {
-            console.error("Accessories stock calculation issue:", err);
-        }
+        } catch (err) { console.error("Accessories stock calculation issue:", err); }
 
-        // Department C: Remnants (romix_qoldiq_inventory in LocalStorage)
-        let qoldiqStock = 0;
-        let qoldiqVal = 0;
-        let qoldiqLength = 0; // mm
         try {
             const qoldiqRaw = localStorage.getItem('romix_qoldiq_inventory');
             if (qoldiqRaw) {
@@ -3857,44 +3859,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const len = parseFloat(q.length) || 0;
                     qoldiqStock += qty;
                     qoldiqLength += len * qty;
-                    // Est valuation: 25 UZS per mm (25,000 UZS per meter)
                     qoldiqVal += len * qty * 25;
                 });
             }
-        } catch (err) {
-            console.error("Remnants stock calculation issue:", err);
-        }
+        } catch (err) { console.error("Remnants stock calculation issue:", err); }
 
         const grandStock = plastStock + accStock + qoldiqStock;
         const grandVal = plastVal + accVal + qoldiqVal;
 
-        // Render main warehouse card stats
         const valEl = document.getElementById('stat-total-warehouse-val');
         const stockEl = document.getElementById('stat-total-warehouse-stock');
-
         if (valEl) valEl.textContent = grandVal.toLocaleString() + ' UZS';
         if (stockEl) stockEl.textContent = grandStock.toLocaleString() + ' dona / kg / m';
 
-        // Set breakdown modal elements
-        const mPlastVal = document.getElementById('modal-plast-val');
-        const mPlastStock = document.getElementById('modal-plast-stock');
-        const mAccVal = document.getElementById('modal-acc-val');
-        const mAccStock = document.getElementById('modal-acc-stock');
-        const mQoldiqVal = document.getElementById('modal-qoldiq-val');
-        const mQoldiqStock = document.getElementById('modal-qoldiq-stock');
-        const mGrandVal = document.getElementById('modal-grand-val');
-        const mGrandStock = document.getElementById('modal-grand-stock');
-
-        if (mPlastVal) mPlastVal.textContent = plastVal.toLocaleString() + ' UZS';
-        if (mPlastStock) mPlastStock.textContent = plastStock.toLocaleString() + ' dona / kg';
-        if (mAccVal) mAccVal.textContent = accVal.toLocaleString() + ' UZS';
-        if (mAccStock) mAccStock.textContent = accStock.toLocaleString() + ' dona';
-        if (mQoldiqVal) mQoldiqVal.textContent = qoldiqVal.toLocaleString() + ' UZS';
-        if (mQoldiqStock) mQoldiqStock.textContent = qoldiqStock.toLocaleString() + ` ta (${(qoldiqLength / 1000).toFixed(1)} metr)`;
-        if (mGrandVal) mGrandVal.textContent = grandVal.toLocaleString() + ' UZS';
-        if (mGrandStock) mGrandStock.textContent = grandStock.toLocaleString() + ' dona / kg / m';
-
-        // Set new dashboard card breakdown elements
         const dbPlastVal = document.getElementById('dashboard-plast-val');
         const dbPlastStock = document.getElementById('dashboard-plast-stock');
         const dbAccVal = document.getElementById('dashboard-acc-val');
@@ -3909,20 +3886,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (dbQoldiqVal) dbQoldiqVal.textContent = qoldiqVal.toLocaleString() + ' UZS';
         if (dbQoldiqStock) dbQoldiqStock.textContent = qoldiqStock.toLocaleString() + ` ta (${(qoldiqLength / 1000).toFixed(1)} metr)`;
 
-        // Animate comparative progress bars
-        const plastPct = grandVal > 0 ? (plastVal / grandVal) * 100 : 0;
-        const accPct = grandVal > 0 ? (accVal / grandVal) * 100 : 0;
-        const qoldiqPct = grandVal > 0 ? (qoldiqVal / grandVal) * 100 : 0;
-
-        const dbPlastProgress = document.getElementById('dashboard-plast-progress');
-        const dbAccProgress = document.getElementById('dashboard-acc-progress');
-        const dbQoldiqProgress = document.getElementById('dashboard-qoldiq-progress');
-
-        if (dbPlastProgress) dbPlastProgress.style.width = plastPct.toFixed(1) + '%';
-        if (dbAccProgress) dbAccProgress.style.width = accPct.toFixed(1) + '%';
-        if (dbQoldiqProgress) dbQoldiqProgress.style.width = qoldiqPct.toFixed(1) + '%';
-
-        // 3. Orders Live Feed Monitor
+        // 3. Orders Live Feed
         let orders = [];
         try {
             const { data: oData } = await supabase.from('sales_orders').select('*').order('created_at', { ascending: false });
@@ -3933,15 +3897,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const localRaw = localStorage.getItem('romix_orders_local');
                 if (localRaw) orders = JSON.parse(localRaw);
             }
-        } catch (err) {
-            console.warn("Supabase dashboard orders load failed, using local storage fallback", err);
-            const localRaw = localStorage.getItem('romix_orders_local');
-            if (localRaw) orders = JSON.parse(localRaw);
-        }
+        } catch (err) { console.warn("Orders load failed", err); }
 
         const pendingOrders = orders.filter(o => o.status === 'Kutilmoqda');
         const readyOrders = orders.filter(o => o.status === 'Tayyor / Yetkazildi' || o.status === 'Tayyor / O\'rnatildi' || o.status === 'Tayyor');
-
         const newCountEl = document.getElementById('badge-new-orders-count');
         const readyCountEl = document.getElementById('badge-ready-orders-count');
         const ordersListEl = document.getElementById('dashboard-orders-list');
@@ -3949,13 +3908,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (newCountEl) newCountEl.textContent = pendingOrders.length;
         if (readyCountEl) readyCountEl.textContent = readyOrders.length;
 
-        // Render latest 3 orders
         if (ordersListEl) {
             if (orders.length === 0) {
                 ordersListEl.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.25); font-size: 0.75rem; margin: auto;">Buyurtmalar topilmadi</div>';
             } else {
                 ordersListEl.innerHTML = orders.slice(0, 3).map(o => {
-                    let statusColor = '#ffaa00'; // pending
+                    let statusColor = '#ffaa00';
                     let statusBg = 'rgba(255,170,0,0.1)';
                     if (o.status === 'Jarayonda') {
                         statusColor = '#00d2ff';
@@ -3980,6 +3938,104 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }).join('');
             }
         }
+
+        // 4. Live Payroll ticking logic
+        let activeWorkers = [];
+        let employeesMap = {};
+        emps.forEach(emp => {
+            employeesMap[emp.id] = emp;
+        });
+
+        // Parse checked-in employees
+        att.forEach(a => {
+            const emp = employeesMap[a.employee_id];
+            if (emp && a.check_in) {
+                const sal = parseFloat(emp.salary) || 0;
+                const dailyRate = sal / 26;
+                const hourlyRate = dailyRate / 8;
+                const perSecondRate = hourlyRate / 3600;
+
+                const checkInParts = a.check_in.split(':');
+                const checkInDate = new Date();
+                checkInDate.setHours(parseInt(checkInParts[0]) || 0, parseInt(checkInParts[1]) || 0, parseInt(checkInParts[2]) || 0, 0);
+
+                let checkOutDate = null;
+                if (a.check_out) {
+                    const checkOutParts = a.check_out.split(':');
+                    checkOutDate = new Date();
+                    checkOutDate.setHours(parseInt(checkOutParts[0]) || 0, parseInt(checkOutParts[1]) || 0, parseInt(checkOutParts[2]) || 0, 0);
+                }
+
+                activeWorkers.push({
+                    id: emp.id,
+                    name: emp.full_name,
+                    role: emp.role,
+                    checkIn: a.check_in,
+                    checkOut: a.check_out,
+                    checkInDate: checkInDate,
+                    checkOutDate: checkOutDate,
+                    perSecondRate: perSecondRate
+                });
+            }
+        });
+
+        if (window.romixPayrollInterval) {
+            clearInterval(window.romixPayrollInterval);
+        }
+
+        window.romixPayrollInterval = setInterval(() => {
+            let totalEarnedToday = 0;
+            const listEl = document.getElementById('dashboard-payroll-list');
+            const totalPayrollEl = document.getElementById('stat-total-payroll');
+
+            const now = new Date();
+            const rowsHTML = activeWorkers.map(w => {
+                let seconds = 0;
+                if (w.checkOutDate) {
+                    seconds = (w.checkOutDate - w.checkInDate) / 1000;
+                } else {
+                    seconds = (now - w.checkInDate) / 1000;
+                }
+                seconds = Math.max(0, seconds);
+                
+                const currentEarned = seconds * w.perSecondRate;
+                totalEarnedToday += currentEarned;
+
+                const hrs = Math.floor(seconds / 3600);
+                const mins = Math.floor((seconds % 3600) / 60);
+                const secs = Math.floor(seconds % 60);
+                const durationText = `${hrs.toString().padStart(2,'0')}:${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
+                
+                const statusBadge = w.checkOut 
+                    ? `<span style="background: rgba(255, 77, 79, 0.1); color: #ff4d4f; padding: 2px 8px; border-radius: 12px; font-size: 0.62rem; font-weight: 700;">Ketdi: ${w.checkOut}</span>`
+                    : `<span style="background: rgba(0, 255, 136, 0.1); color: #00ff88; padding: 2px 8px; border-radius: 12px; font-size: 0.62rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;"><span class="pulse-dot" style="color: #00ff88; width: 6px; height: 6px;"></span>Ishlamoqda</span>`;
+
+                return `
+                    <div class="premium-list-item" style="border-left: 3.5px solid ${w.checkOut ? '#ff4d4f' : '#00ff88'};">
+                        <div>
+                            <div style="font-weight: 700; color: #fff; font-size: 0.8rem;">${w.name}</div>
+                            <div style="font-size: 0.65rem; color: rgba(255,255,255,0.4); margin-top: 2px;">Keldi: ${w.checkIn} | ⏳ ${durationText}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 800; color: #ffaa00; font-size: 0.85rem; font-family: monospace;">${currentEarned.toFixed(2)} UZS</div>
+                            <div style="margin-top: 3px;">${statusBadge}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (listEl) {
+                if (activeWorkers.length === 0) {
+                    listEl.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.25); font-size: 0.75rem; margin: auto; grid-column: span 2; padding: 20px 0;">Bugun ishga kelgan xodimlar mavjud emas</div>';
+                } else {
+                    listEl.innerHTML = rowsHTML;
+                }
+            }
+
+            if (totalPayrollEl) {
+                totalPayrollEl.textContent = totalEarnedToday.toLocaleString('uz-UZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' UZS';
+            }
+        }, 1000);
     }
     window.openWarehouseBreakdownModal = function() {
         const modal = document.getElementById('warehouseBreakdownModal');

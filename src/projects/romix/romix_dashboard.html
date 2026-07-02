@@ -1281,6 +1281,29 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Jonli Ish Haqlar Card -->
+                <div class="premium-card glow-blue" style="grid-column: span 4; display: flex; flex-direction: column; margin-top: 20px;">
+                    <div style="position: absolute; top: -30px; right: -30px; width: 120px; height: 120px; background: radial-gradient(circle, rgba(0, 210, 255, 0.1), transparent); filter: blur(25px); pointer-events: none;"></div>
+                    <h3 style="color: #fff; font-weight: 700; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <span>💰 Bugungi Jonli Ish Haqlar Monitori</span>
+                        <span style="font-size: 0.65rem; background: rgba(0, 210, 255, 0.15); color: #00d2ff; padding: 4px 10px; border-radius: 20px; font-weight: 800; display: flex; align-items: center; gap: 4px;">
+                            <span class="pulse-dot" style="color: #00d2ff; width: 6px; height: 6px;"></span>REAL-TIME TIMERS
+                        </span>
+                    </h3>
+                    <div style="display: grid; grid-template-columns: 1fr 2.5fr; gap: 30px; align-items: center;">
+                        <!-- Live Grand Total -->
+                        <div style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.03); border-radius: 20px; padding: 25px 20px; text-align: center; display: flex; flex-direction: column; justify-content: center; min-height: 140px;">
+                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">BUGUNGI JAMI HISOB-KITOB</div>
+                            <div id="stat-total-payroll" style="font-size: 2.1rem; font-weight: 900; background: linear-gradient(135deg, #00d2ff 0%, #00ff88 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 10px 0; text-shadow: 0 0 15px rgba(0, 210, 255, 0.25); font-family: monospace;">0.00 UZS</div>
+                            <div style="font-size: 0.68rem; color: rgba(255,255,255,0.3); font-weight: 500;">Xodimlar ish vaqtiga mutanosib hisoblanmoqda</div>
+                        </div>
+                        <!-- Live Workers Scrolling Grid -->
+                        <div id="dashboard-payroll-list" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; max-height: 180px; overflow-y: auto; padding-right: 5px;">
+                            <div style="text-align: center; color: rgba(255,255,255,0.25); font-size: 0.75rem; margin: auto; grid-column: span 2;">Yuklanmoqda...</div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- Section: Ombor (Split into Plast & Aksesuvar) -->
