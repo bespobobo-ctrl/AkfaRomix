@@ -1202,25 +1202,50 @@
                             <span>📦 Umumiy Ombor Balansi</span>
                             <span style="font-size: 0.65rem; background: rgba(0, 255, 136, 0.1); color: #00ff88; padding: 4px 10px; border-radius: 20px; font-weight: 800;"><span class="pulse-dot" style="margin-right: 5px; color: #00ff88;"></span>3 TA BO'LIM</span>
                         </h3>
-                        <div style="margin-top: 15px;">
-                            <div style="font-size: 0.72rem; color: rgba(255,255,255,0.4); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">UMUMIY QIYMATI</div>
-                            <div id="stat-total-warehouse-val" style="font-size: 2.3rem; font-weight: 900; background: linear-gradient(135deg, #00FF88 0%, #00d2ff 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 3px 0; text-shadow: 0 0 20px rgba(0, 255, 136, 0.15);">-- UZS</div>
-                            
-                            <!-- Custom capacity meter -->
-                            <div style="margin-top: 10px;">
-                                <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: rgba(255,255,255,0.5); font-weight: 600;">
-                                    <span>Ombor To'lish Ko'rsatkichi</span>
-                                    <span id="warehouse-capacity-percent">78%</span>
+                        <div style="display: grid; grid-template-columns: 1fr 100px; gap: 15px; margin-top: 20px; align-items: center;">
+                            <!-- Balance Info Column -->
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <div style="font-size: 0.62rem; color: rgba(255,255,255,0.4); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">UMUMIY QIYMATI</div>
+                                <div id="stat-total-warehouse-val" style="font-size: 1.8rem; font-weight: 900; background: linear-gradient(135deg, #00FF88 0%, #00d2ff 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 15px rgba(0, 255, 136, 0.2); font-family: monospace;">-- UZS</div>
+                            </div>
+                            <!-- Radial Progress Ring for Capacity -->
+                            <div style="display: flex; align-items: center; justify-content: center; position: relative;" title="Ombor to'lish foizi">
+                                <svg width="90" height="90" viewBox="0 0 100 100">
+                                    <circle cx="50" cy="50" r="40" stroke="rgba(255,255,255,0.03)" stroke-width="8" fill="transparent" />
+                                    <circle id="warehouse-capacity-ring" class="progress-ring-circle" cx="50" cy="50" r="40" stroke="#00e5ff" stroke-width="8" fill="transparent" stroke-dasharray="251.2" stroke-dashoffset="251.2" stroke-linecap="round" />
+                                </svg>
+                                <div id="warehouse-capacity-percent" style="position: absolute; font-size: 1.1rem; font-weight: 800; color: #fff;">78%</div>
+                            </div>
+                        </div>
+
+                        <!-- Separator / Decorative border -->
+                        <div style="height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent); margin: 15px 0 10px 0;"></div>
+
+                        <!-- Warehouse Mini Breakdown Grid -->
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 0.72rem; color: rgba(255,255,255,0.5); font-weight: 700; letter-spacing: 0.5px;">🏢 BO'LIMLAR BO'YICHA QIYMATLAR</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                                <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.03); border-radius: 12px; padding: 10px 8px; text-align: center; display: flex; flex-direction: column; gap: 3px;">
+                                    <div style="font-size: 0.62rem; color: rgba(255,255,255,0.4); font-weight: 700;">PROFILLAR</div>
+                                    <div id="dashboard-mini-plast-val" style="font-weight: 800; color: #00ff88; font-size: 0.72rem; font-family: monospace;">-- UZS</div>
                                 </div>
-                                <div class="premium-progress-bg">
-                                    <div id="warehouse-capacity-fill" class="premium-progress-fill" style="width: 78%; background: linear-gradient(90deg, #00ff88, #00d2ff);"></div>
+                                <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.03); border-radius: 12px; padding: 10px 8px; text-align: center; display: flex; flex-direction: column; gap: 3px;">
+                                    <div style="font-size: 0.62rem; color: rgba(255,255,255,0.4); font-weight: 700;">AKSESUVAR</div>
+                                    <div id="dashboard-mini-acc-val" style="font-weight: 800; color: #9c27b0; font-size: 0.72rem; font-family: monospace;">-- UZS</div>
+                                </div>
+                                <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.03); border-radius: 12px; padding: 10px 8px; text-align: center; display: flex; flex-direction: column; gap: 3px;">
+                                    <div style="font-size: 0.62rem; color: rgba(255,255,255,0.4); font-weight: 700;">QOLDIQ</div>
+                                    <div id="dashboard-mini-qoldiq-val" style="font-weight: 800; color: #00bcd4; font-size: 0.72rem; font-family: monospace;">-- UZS</div>
                                 </div>
                             </div>
-                            
-                            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.06); padding-top: 8px; margin-top: 12px; font-size: 0.78rem;">
-                                <span style="color: rgba(255,255,255,0.4); font-weight: 600;">Jami tovar zaxirasi:</span>
-                                <strong id="stat-total-warehouse-stock" style="color: #fff; font-weight: 800;">-- dona / kg</strong>
-                            </div>
+                        </div>
+
+                        <!-- Total quantity bar -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.06); padding-top: 8px; margin-top: 10px; font-size: 0.76rem;">
+                            <span style="color: rgba(255,255,255,0.4); font-weight: 600;">Jami tovar zaxirasi:</span>
+                            <strong id="stat-total-warehouse-stock" style="color: #fff; font-weight: 800;">-- dona / kg</strong>
                         </div>
                     </div>
 

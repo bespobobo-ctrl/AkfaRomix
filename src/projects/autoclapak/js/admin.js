@@ -3872,6 +3872,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (valEl) valEl.textContent = grandVal.toLocaleString() + ' UZS';
         if (stockEl) stockEl.textContent = grandStock.toLocaleString() + ' dona / kg / m';
 
+        // Redesigned mini breakdown values
+        const miniPlast = document.getElementById('dashboard-mini-plast-val');
+        const miniAcc = document.getElementById('dashboard-mini-acc-val');
+        const miniQoldiq = document.getElementById('dashboard-mini-qoldiq-val');
+        if (miniPlast) miniPlast.textContent = plastVal.toLocaleString() + ' UZS';
+        if (miniAcc) miniAcc.textContent = accVal.toLocaleString() + ' UZS';
+        if (miniQoldiq) miniQoldiq.textContent = qoldiqVal.toLocaleString() + ' UZS';
+
+        // Capacity radial ring
+        const capacityPct = Math.min(100, Math.round((grandStock / 20000) * 100)) || 78;
+        const capacityPercentEl = document.getElementById('warehouse-capacity-percent');
+        const capacityRingEl = document.getElementById('warehouse-capacity-ring');
+        if (capacityPercentEl) capacityPercentEl.textContent = capacityPct + '%';
+        if (capacityRingEl) {
+            const offset = 251.2 - (251.2 * capacityPct) / 100;
+            capacityRingEl.style.strokeDashoffset = offset;
+        }
+
         const dbPlastVal = document.getElementById('dashboard-plast-val');
         const dbPlastStock = document.getElementById('dashboard-plast-stock');
         const dbAccVal = document.getElementById('dashboard-acc-val');
