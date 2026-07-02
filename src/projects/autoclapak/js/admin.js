@@ -3949,47 +3949,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } catch {}
 
-        let txs = [];
-        try {
-            const { data: txData } = await supabase.from('romix_transactions').select('*').order('created_at', { ascending: false }).limit(5);
-            if (txData && txData.length > 0) {
-                txs = txData;
-            } else {
-                const localTx = localStorage.getItem('romix_db_romix_transactions');
-                if (localTx) txs = JSON.parse(localTx);
-            }
-        } catch (err) {
-            const localTx = localStorage.getItem('romix_db_romix_transactions');
-            if (localTx) txs = JSON.parse(localTx);
-        }
+        // Set new dashboard card breakdown elements
+        const dbPlastVal = document.getElementById('dashboard-plast-val');
+        const dbPlastStock = document.getElementById('dashboard-plast-stock');
+        const dbAccVal = document.getElementById('dashboard-acc-val');
+        const dbAccStock = document.getElementById('dashboard-acc-stock');
+        const dbQoldiqVal = document.getElementById('dashboard-qoldiq-val');
+        const dbQoldiqStock = document.getElementById('dashboard-qoldiq-stock');
 
-        const txListEl = document.getElementById('dashboard-recent-trans-list');
-        if (txListEl) {
-            if (txs.length === 0) {
-                txListEl.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.25); font-size: 0.75rem; margin: auto;">Harakatlar topilmadi</div>';
-            } else {
-                txListEl.innerHTML = txs.slice(0, 3).map(tx => {
-                    const prodName = prodNameMap[tx.product_id] || tx.product_name || "Mahsulot";
-                    const isKirim = tx.type === 'IN' || tx.type === 'Kirim' || (tx.action && tx.action.includes('Kirim'));
-                    const sign = isKirim ? '+' : '-';
-                    const color = isKirim ? '#00ff88' : '#ff4d4f';
-                    const timeText = tx.created_at ? new Date(tx.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '---';
-
-                    return `
-                        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); padding: 10px 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.05)'" onmouseleave="this.style.background='rgba(255,255,255,0.02)'">
-                            <div>
-                                <div style="font-weight: 700; color: #fff; font-size: 0.8rem;">${prodName}</div>
-                                <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 3px;">Operator: ${tx.operator || 'Admin'}</div>
-                            </div>
-                            <div style="text-align: right;">
-                                <div style="font-weight: 800; color: ${color}; font-size: 0.82rem;">${sign}${tx.quantity}</div>
-                                <div style="font-size: 0.65rem; color: rgba(255,255,255,0.3); margin-top: 3px;">🕒 ${timeText}</div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-        }
+        if (dbPlastVal) dbPlastVal.textContent = plastVal.toLocaleString() + ' UZS';
+        if (dbPlastStock) dbPlastStock.textContent = plastStock.toLocaleString() + ' kg / dona';
+        if (dbAccVal) dbAccVal.textContent = accVal.toLocaleString() + ' UZS';
+        if (dbAccStock) dbAccStock.textContent = accStock.toLocaleString() + ' dona';
+        if (dbQoldiqVal) dbQoldiqVal.textContent = qoldiqVal.toLocaleString() + ' UZS';
+        if (dbQoldiqStock) dbQoldiqStock.textContent = qoldiqStock.toLocaleString() + ` ta (${(qoldiqLength / 1000).toFixed(1)} metr)`;
     }
 
     // Modal helpers made globally available
