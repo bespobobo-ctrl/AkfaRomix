@@ -49,6 +49,10 @@ const esc = s => String(s == null ? "" : s).replace(/[&<>]/g, c => ({ "&": "&amp
 async function send(chatId, text, extra = {}) { return tg("sendMessage", { chat_id: chatId, text, parse_mode: "HTML", disable_web_page_preview: true, ...extra }); }
 const YESNO = { inline_keyboard: [[{ text: "✅ Ha, bajar", callback_data: "romix:yes" }, { text: "❌ Bekor", callback_data: "romix:no" }]] };
 
+// ── Menyu tugmalari (doimiy klaviatura) ──
+const B = { hr: "👥 Xodimlar", ombor: "📦 Ombor", tayyor: "✅ Tayyor mahsulot", bux: "📊 Buxgalteriya", harajat: "💸 Harajatlar", tolov: "💰 To'lovlar", qarz: "🔴 Tashqi qarz" };
+const MENU_KB = { keyboard: [[B.hr, B.ombor], [B.tayyor, B.bux], [B.harajat, B.tolov], [B.qarz]], resize_keyboard: true, is_persistent: true };
+
 async function tgFilePath(fileId) {
     const d = await tg("getFile", { file_id: fileId });
     return d.ok ? d.result.file_path : null;
@@ -182,9 +186,59 @@ async function handleCallback(cb) {
 
 const HELP = `🤖 <b>AKFA Romix Yordamchi</b>\n\nMen loyiha haqida JONLI ma'lumot beraman va HARAJAT/TO'LOV kiritishга yordam beraman.\n\n<b>Misollar:</b>\n• <i>Umumiy holat qanday?</i>\n• <i>Zakazlar holati</i>\n• <i>Ombor qoldig'i</i>\n• <i>Kim menga qarzdor / kimga qarzim bor?</i>\n• <i>Xodimlar nechta?</i>\n• <i>Ijaraga 3 mln harajat yoz</i>\n• <i>Akmalga 5 mln to'lov qildim (qarz)</i>\n• 🎤 Ovozli xabar ham yuborsangiz bo'ladi\n\nBuyruqlar: /holat /help /id`;
 
+// Menyu tugmasini ishlash. Ishladi bo'lsa true.
+async function handleButton(chatId, t) {
+    if (t === B.hr) {
+        const h = await db.hrReport();
+        await send(chatId, `👥 <b>Xodimlar</b>\n• Jami: <b>${h.jami_xodim}</b> · Faol: <b>${h.faol_xodim}</b>\n• Bugun kelgan: <b>${h.bugun_kelgan}</b>\n• Oylik fond: <b>${h.oylik_fond}</b>\n\n` +
+            h.xodimlar.slice(0, 15).map((e, i) => `${i + 1}. ${esc(e.ism)}${e.lavozim ? " — " + esc(e.lavozim) : ""} · ${esc(e.oylik)}`).join("\n"));
+        return true;
+    }
+    if (t === B.ombor) {
+        const w = await db.warehouse();
+        await send(chatId, `📦 <b>Ombor</b>\n• Mahsulot turlari: <b>${w.mahsulot_turlari}</b>\n• Umumiy qiymat: <b>${w.ombor_qiymati}</b>\n\n` +
+            (w.kam_qolganlar.length ? "⚠️ <b>Kam qolganlar:</b>\n" + w.kam_qolganlar.map(p => `• ${esc(p.nomi)} — ${esc(p.qoldiq)}`).join("\n") : "✅ Kam qolgan mahsulot yo'q"));
+        return true;
+    }
+    if (t === B.tayyor) {
+        const o = await db.ordersReport("Tayyor");
+        await send(chatId, `✅ <b>Tayyor mahsulot (zakazlar)</b>\nSoni: <b>${o.soni}</b>\n\n` +
+            (o.zakazlar.length ? o.zakazlar.slice(0, 15).map((z, i) => `${i + 1}. ${esc(z.mijoz)} — ${esc(z.summa)} · ${esc(z.holat)}`).join("\n") : "Tayyor holatidagi zakaz yo'q."));
+        return true;
+    }
+    if (t === B.bux) {
+        const o = await db.overview();
+        await send(chatId, `📊 <b>Buxgalteriya</b>\n• Oylik savdo: <b>${esc(o.oylik_savdo)}</b>\n• Shu oy harajat: <b>${esc(o.shu_oy_harajat)}</b>\n• Mijoz qarzi (to'lanmagan): <b>${esc(o.tolanmagan_qarz_mijoz)}</b>\n• Tashqi qarz: <b>${esc(o.tashqi_qarz)}</b>\n• Ombor qiymati: <b>${esc(o.ombor_qiymati)}</b>\n• Zakazlar: <b>${o.jami_zakaz}</b> (faol ${o.faol_zakaz})`);
+        return true;
+    }
+    if (t === B.harajat) {
+        const e = await db.expensesReport("oy");
+        await send(chatId, `💸 <b>Harajatlar (shu oy)</b>\nJami: <b>${esc(e.jami)}</b> · ${e.soni} ta\n\n` +
+            (e.harajatlar.length ? e.harajatlar.slice(0, 15).map((x, i) => `${i + 1}. ${esc(x.sana)} · ${esc(x.kategoriya)} — <b>${esc(x.summa)}</b>${x.izoh ? " (" + esc(x.izoh) + ")" : ""}`).join("\n") : "Bu oy harajat yo'q.") +
+            `\n\n<i>Qo'shish: masalan «Ijaraga 3 mln harajat»</i>`);
+        return true;
+    }
+    if (t === B.tolov) {
+        const o = await db.ordersReport();
+        const qarzli = o.zakazlar.filter(z => z.qoldiq && z.qoldiq !== "0 so'm");
+        await send(chatId, `💰 <b>To'lovlar</b>\nTo'lanmagan zakazlar: <b>${qarzli.length}</b>\n\n` +
+            (qarzli.length ? qarzli.slice(0, 15).map((z, i) => `${i + 1}. ${esc(z.mijoz)} — qoldiq <b>${esc(z.qoldiq)}</b> (to'langan ${esc(z.tolangan)})`).join("\n") : "Barcha zakazlar to'langan ✅") +
+            `\n\n<i>To'lov kiritish: «Ali 2 mln to'lov» yoki «Akmalga 5 mln qarz to'lovi»</i>`);
+        return true;
+    }
+    if (t === B.qarz) {
+        const d = await db.debtsReport();
+        await send(chatId, `🔴 <b>Tashqi qarz</b>\nJami qoldiq: <b>${esc(d.jami_qarz)}</b> · ${d.soni} ta\n\n` +
+            (d.qarzlar.length ? d.qarzlar.slice(0, 15).map((x, i) => `${i + 1}. ${esc(x.kimga)} — qoldiq <b>${esc(x.qoldiq)}</b>${x.muddat && x.muddat !== "—" ? " · muddat " + esc(x.muddat) : ""}`).join("\n") : "Tashqi qarz yo'q ✅"));
+        return true;
+    }
+    return false;
+}
+
 async function handleText(chatId, text) {
     const t = (text || "").trim();
-    if (t === "/start") { await send(chatId, "👋 Assalomu alaykum! Botga kirish uchun <b>parolni</b> yuboring."); return; }
+    if (await handleButton(chatId, t)) return;
+    if (t === "/start" || t === "/menu") { await send(chatId, "📋 <b>Menyu</b> — tugmani tanlang, yoki savolingizni yozing/ayting:", { reply_markup: MENU_KB }); return; }
     if (t === "/help" || t === "/yordam") { await send(chatId, HELP); return; }
     if (t === "/id") { await send(chatId, "Chat ID: <code>" + chatId + "</code>"); return; }
     if (t === "/holat") { const o = await db.overview(); await send(chatId, "📊 <b>Umumiy holat</b>\n" + Object.entries(o).map(([k, v]) => `• ${esc(k.replace(/_/g, " "))}: <b>${esc(v)}</b>`).join("\n")); return; }
@@ -211,7 +265,7 @@ export async function handleUpdate(update) {
     if (!auth.includes(chatId)) {
         if (text.trim() === PASSWORD) {
             auth.push(chatId); await stSet("auth", auth);
-            await send(chatId, "✅ Kirish tasdiqlandi! Endi men bilan erkin gaplashishingiz mumkin.\n\n" + HELP);
+            await send(chatId, "✅ Kirish tasdiqlandi! Quyidagi tugmalardan foydalaning yoki savol yozing/ayting.\n\n" + HELP, { reply_markup: MENU_KB });
         } else if (text === "/start") {
             await send(chatId, "👋 Assalomu alaykum! Botga kirish uchun <b>parolni</b> yuboring.");
         } else {
