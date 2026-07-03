@@ -14,7 +14,8 @@ export const OPENINGS = {
 };
 
 export function createDesigner(host, opts = {}) {
-    const FRAME = 60, IMPOST = 45;
+    const FRAME = 0, IMPOST = 30;
+    const VIS_FRAME = 40; // faqat vizual rama chegarasi (layout ga ta'sir qilmaydi)
     let W = opts.W || 1500, H = opts.H || 1600;
     let root = { id: uid(), kind: 'leaf', opening: 'kar' };
     let selected = root.id;
@@ -116,7 +117,7 @@ export function createDesigner(host, opts = {}) {
                 <div style="font-size:0.6rem; color:rgba(255,255,255,0.4); font-weight:800; text-transform:uppercase; text-align:center; margin-bottom:5px; letter-spacing:0.5px;">Bo'limlar</div>
                 <button type="button" class="d2-btn" id="d2-split-v">｜<br>Vertikal</button>
                 <button type="button" class="d2-btn" id="d2-split-h">－<br>Gorizont</button>
-                <button type="button" class="d2-btn" id="d2-split-triple">｜｜｜<br>3 Tavaqa</button>
+                <button type="button" class="d2-btn" id="d2-split-double">｜｜<br>2 Tavaqa</button>
                 <div style="height:10px;"></div>
                 <button type="button" class="d2-btn d2-btn-danger" id="d2-delete-btn">🗑️<br>O'chirish</button>
             </div>
@@ -128,7 +129,7 @@ export function createDesigner(host, opts = {}) {
 
     host.querySelector('#d2-split-v').onclick = () => addImpost('v');
     host.querySelector('#d2-split-h').onclick = () => addImpost('h');
-    host.querySelector('#d2-split-triple').onclick = () => addTripleSplit('v');
+    host.querySelector('#d2-split-double').onclick = () => addDoubleSplit('v');
     host.querySelector('#d2-delete-btn').onclick = () => deleteSelected();
 
     leftSidebar.querySelectorAll('[data-op]').forEach(b => {
@@ -180,17 +181,17 @@ export function createDesigner(host, opts = {}) {
         render(); onChange();
     }
 
-    function addTripleSplit(dir) {
+    function addDoubleSplit(dir) {
         const f = findNode(root, selected);
         if (!f) return;
         const leaf = f.node;
         if (leaf.kind === 'leaf') {
+            const op = leaf.opening;
             leaf.kind = 'split';
             leaf.dir = dir;
             delete leaf.opening;
             leaf.children = [
-                { size: null, node: { id: uid(), kind: 'leaf', opening: 'kar' } },
-                { size: null, node: { id: uid(), kind: 'leaf', opening: 'kar' } },
+                { size: null, node: { id: uid(), kind: 'leaf', opening: op } },
                 { size: null, node: { id: uid(), kind: 'leaf', opening: 'kar' } }
             ];
             selected = leaf.children[0].node.id;
@@ -224,10 +225,10 @@ export function createDesigner(host, opts = {}) {
         if (cellId === 'root') {
             if (dim === 'w') {
                 W = val;
-                if (itemWidthInput) itemWidthInput.value = (W / 1000).toFixed(2);
+                if (itemWidthInput) itemWidthInput.value = W;
             } else {
                 H = val;
-                if (itemHeightInput) itemHeightInput.value = (H / 1000).toFixed(2);
+                if (itemHeightInput) itemHeightInput.value = H;
             }
         } else {
             const f = findNode(root, cellId);
@@ -307,9 +308,9 @@ export function createDesigner(host, opts = {}) {
         const vb = `${-pad} ${-padTop} ${W + pad + 80} ${H + pad + padTop}`;
         let s = `<svg viewBox="${vb}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:350px;display:block;">`;
         
-        // Frame/Rama
-        s += `<rect x="0" y="0" width="${W}" height="${H}" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.12)" stroke-width="8" rx="8"/>`;
-        s += `<rect x="${FRAME}" y="${FRAME}" width="${W - 2 * FRAME}" height="${H - 2 * FRAME}" fill="#0b1320" rx="4"/>`;
+        // Frame/Rama (faqat vizual, layout ga ta'sir qilmaydi)
+        s += `<rect x="${-VIS_FRAME}" y="${-VIS_FRAME}" width="${W + 2 * VIS_FRAME}" height="${H + 2 * VIS_FRAME}" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.12)" stroke-width="8" rx="12"/>`;
+        s += `<rect x="0" y="0" width="${W}" height="${H}" fill="#0b1320" rx="4"/>`;
         
         // Leaves/Kataklar
         out.cells.forEach(c => {
@@ -325,8 +326,8 @@ export function createDesigner(host, opts = {}) {
         });
 
         // Unique bottom-most and left-most cells for section dimensioning
-        const bottomCells = out.cells.filter(c => Math.abs((c.box.y + c.box.h) - (H - FRAME)) < 2);
-        const leftCells = out.cells.filter(c => Math.abs(c.box.x - FRAME) < 2);
+        const bottomCells = out.cells.filter(c => Math.abs((c.box.y + c.box.h) - H) < 2);
+        const leftCells = out.cells.filter(c => Math.abs(c.box.x) < 2);
 
         // Draw individual column widths at H + 65
         bottomCells.forEach(c => {
