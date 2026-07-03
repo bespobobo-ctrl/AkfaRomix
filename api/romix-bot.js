@@ -13,7 +13,9 @@ const WEBHOOK_SECRET = process.env.TG_WEBHOOK_SECRET || "";
 const TG = (m) => `https://api.telegram.org/bot${TOKEN}/${m}`;
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || "https://dzsswblbpnjuluyqvewt.supabase.co";
-const ANON = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
+// Anon kalit ochiq (frontend bundle'da ham bor) — hardcoded zaxira (_romixdb.js kabi)
+const ANON = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY ||
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6c3N3YmxicG5qdWx1eXF2ZXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4OTI2NzcsImV4cCI6MjA5MzQ2ODY3N30.Kwgh1DIzb_j7AH2iEfI5LMboObXBaIm3SGk1JWF3LIk";
 const SBH = { apikey: ANON, Authorization: `Bearer ${ANON}`, "Content-Type": "application/json" };
 
 // ── Holat (romix_bot_state key/value) ──
