@@ -276,6 +276,26 @@
         </div>
     </div>
 
+    <script>
+        if (window.self !== window.top) {
+            const sidebar = document.querySelector('.sidebar-slim');
+            if (sidebar) sidebar.style.display = 'none';
+            
+            const main = document.querySelector('.admin-layout');
+            if (main) {
+                main.style.padding = '0';
+                main.style.gap = '0';
+            }
+            
+            const topNav = document.querySelector('.top-nav-v2');
+            if (topNav) topNav.style.display = 'none';
+
+            const adminMain = document.querySelector('.admin-main');
+            if (adminMain) {
+                adminMain.style.gap = '15px';
+            }
+        }
+    </script>
     <script type="module" src="/src/projects/romix/production/production.js"></script>
 </body>
 
