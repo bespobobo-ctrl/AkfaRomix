@@ -42,9 +42,15 @@ function layoutTree(node, box, out) {
         layoutTree(c.node, sub, out);
         pos += len;
         if (i < node.children.length - 1) {
-            // Impost uzunligi = ota katakdagi teskari o'lcham
             const imLen = horiz ? box.h : box.w;
-            out.imposts.push({ len: imLen, dir: horiz ? 'v' : 'h' });
+            out.imposts.push({
+                len: imLen,
+                dir: horiz ? 'v' : 'h',
+                x1: horiz ? pos : box.x,
+                y1: horiz ? box.y : pos,
+                x2: horiz ? pos : (box.x + box.w),
+                y2: horiz ? (box.y + box.h) : pos
+            });
             pos += IMPOST_MM;
         }
     });
@@ -102,8 +108,18 @@ export function derivePieces(items) {
             // ② IMPOST profillar — ichki o'lcham, 90° kesim
             const impostMat = baseMat + ' · Impost';
             out.imposts.forEach(im => {
-                // Impost rama ichiga joylashadi → har ikki uchidan rama profil eni ayriladi
-                const cutLen = im.len - 2 * FRAME_PROFILE;
+                let cutLen = im.len;
+                if (im.dir === 'v') {
+                    // Vertical impost: hits top boundary?
+                    if (Math.abs(im.y1 - 0) < 1) cutLen -= FRAME_PROFILE;
+                    // Hits bottom boundary?
+                    if (Math.abs(im.y2 - dH) < 1) cutLen -= FRAME_PROFILE;
+                } else {
+                    // Horizontal impost: hits left boundary?
+                    if (Math.abs(im.x1 - 0) < 1) cutLen -= FRAME_PROFILE;
+                    // Hits right boundary?
+                    if (Math.abs(im.x2 - dW) < 1) cutLen -= FRAME_PROFILE;
+                }
                 if (cutLen > 0) {
                     add(impostMat, cutLen, '90°/90°', qty);
                 }
