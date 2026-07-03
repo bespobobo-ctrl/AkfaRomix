@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════
-//  AKFA Romix — To'liq 2D deraza dizayneri (SVG)
+//  AKFA Romix — To'liq 2D deraza va eshik dizayneri (SVG)
 //  Rekursiv split-daraxt: rama → impostlar → bo'limlar (sections).
 //  Har bo'limga ochilish turi (kar/kasement/tilt/tilt-turn) + o'lcham.
 //  Model → kesim PDF va hisob-kitob uchun.
@@ -20,26 +20,120 @@ export function createDesigner(host, opts = {}) {
     let selected = root.id;
     const onChange = opts.onChange || (() => { });
 
-    host.innerHTML =
-        '<div class="d2-toolbar" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>' +
-        '<div class="d2-canvas" style="background:radial-gradient(circle at 50% 40%,#16283d,#0a1420);border-radius:12px;padding:10px;"><svg class="d2-svg" style="width:100%;height:300px;display:block;"></svg></div>' +
-        '<div class="d2-sel" style="margin-top:10px;"></div>';
+    const itemWidthInput = document.getElementById('itemWidth');
+    const itemHeightInput = document.getElementById('itemHeight');
+
+    host.innerHTML = `
+        <style>
+            .d2-container {
+                display: grid;
+                grid-template-columns: 120px 1fr 120px;
+                gap: 15px;
+                background: rgba(255, 255, 255, 0.01);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                border-radius: 24px;
+                padding: 15px;
+                align-items: stretch;
+            }
+            @media (max-width: 768px) {
+                .d2-container {
+                    grid-template-columns: 1fr;
+                }
+            }
+            .d2-sidebar {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                justify-content: center;
+            }
+            .d2-btn {
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 14px;
+                padding: 10px 5px;
+                color: rgba(255, 255, 255, 0.7);
+                font-size: 0.7rem;
+                font-weight: 700;
+                cursor: pointer;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 6px;
+                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .d2-btn:hover {
+                background: rgba(0, 210, 255, 0.08);
+                border-color: rgba(0, 210, 255, 0.3);
+                color: #fff;
+                transform: translateY(-2px);
+            }
+            .d2-btn.active {
+                background: rgba(0, 210, 255, 0.15);
+                border-color: #00d2ff;
+                color: #00d2ff;
+                box-shadow: 0 0 15px rgba(0, 210, 255, 0.15);
+            }
+            .d2-btn-danger {
+                background: rgba(239, 68, 68, 0.05);
+                border-color: rgba(239, 68, 68, 0.15);
+                color: #ef4444;
+            }
+            .d2-btn-danger:hover {
+                background: rgba(239, 68, 68, 0.15);
+                border-color: #ef4444;
+                color: #fff;
+            }
+            .d2-canvas-wrapper {
+                background: radial-gradient(circle at 50% 40%, #16283d, #0a1420);
+                border-radius: 20px;
+                padding: 15px;
+                border: 1px solid rgba(255, 255, 255, 0.04);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        </style>
+        <div class="d2-container">
+            <!-- Left Sidebar: Opening Types -->
+            <div class="d2-sidebar d2-left-sidebar">
+                <div style="font-size:0.6rem; color:rgba(255,255,255,0.4); font-weight:800; text-transform:uppercase; text-align:center; margin-bottom:5px; letter-spacing:0.5px;">Ochilish</div>
+                <button type="button" class="d2-btn" data-op="kar">⏹️<br>Kar</button>
+                <button type="button" class="d2-btn" data-op="casement_l">⬅️<br>Chapga</button>
+                <button type="button" class="d2-btn" data-op="casement_r">➡️<br>O'ngga</button>
+                <button type="button" class="d2-btn" data-op="tilt">⬆️<br>Tepaga</button>
+                <button type="button" class="d2-btn" data-op="tilt_turn">🔄<br>2 Rejim</button>
+            </div>
+            
+            <!-- Center Canvas -->
+            <div class="d2-canvas-wrapper">
+                <div class="d2-canvas" style="width: 100%; max-width: 480px;">
+                    <!-- SVG will be injected here -->
+                </div>
+            </div>
+            
+            <!-- Right Sidebar: Splits & Actions -->
+            <div class="d2-sidebar d2-right-sidebar">
+                <div style="font-size:0.6rem; color:rgba(255,255,255,0.4); font-weight:800; text-transform:uppercase; text-align:center; margin-bottom:5px; letter-spacing:0.5px;">Bo'limlar</div>
+                <button type="button" class="d2-btn" id="d2-split-v">｜<br>Vertikal</button>
+                <button type="button" class="d2-btn" id="d2-split-h">－<br>Gorizont</button>
+                <button type="button" class="d2-btn" id="d2-split-triple">｜｜｜<br>3 Tavaqa</button>
+                <div style="height:10px;"></div>
+                <button type="button" class="d2-btn d2-btn-danger" id="d2-delete-btn">🗑️<br>O'chirish</button>
+            </div>
+        </div>
+    `;
 
     const canvasDiv = host.querySelector('.d2-canvas');
-    const toolbar = host.querySelector('.d2-toolbar');
-    const selPanel = host.querySelector('.d2-sel');
+    const leftSidebar = host.querySelector('.d2-left-sidebar');
 
-    const btn = (label, act, color) => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.textContent = label;
-        b.style.cssText = `padding:8px 12px;border-radius:9px;border:1px solid rgba(255,255,255,0.12);background:${color || 'rgba(255,255,255,0.05)'};color:#fff;font-size:0.8rem;font-weight:700;cursor:pointer;`;
-        b.onclick = act;
-        return b;
-    };
-    toolbar.appendChild(btn('➕ Vertikal impost', () => addImpost('v'), 'rgba(0,210,255,0.15)'));
-    toolbar.appendChild(btn('➕ Gorizontal impost', () => addImpost('h'), 'rgba(0,210,255,0.15)'));
-    toolbar.appendChild(btn('🗑 Bo\'limni o\'chirish', () => deleteSelected(), 'rgba(239,68,68,0.15)'));
+    host.querySelector('#d2-split-v').onclick = () => addImpost('v');
+    host.querySelector('#d2-split-h').onclick = () => addImpost('h');
+    host.querySelector('#d2-split-triple').onclick = () => addTripleSplit('v');
+    host.querySelector('#d2-delete-btn').onclick = () => deleteSelected();
+
+    leftSidebar.querySelectorAll('[data-op]').forEach(b => {
+        b.onclick = () => setOpening(b.getAttribute('data-op'));
+    });
 
     // ── Model yordamchilari ──
     function findNode(node, id, parent = null) {
@@ -50,8 +144,8 @@ export function createDesigner(host, opts = {}) {
         }
         return null;
     }
+
     function ancestorSplit(id, dir) {
-        // id'dan yuqoriga: shu yo'nalishdagi eng yaqin split va undagi child
         function walk(node, parent) {
             if (node.id === id) return null;
             if (node.kind === 'split') for (const ch of node.children) {
@@ -68,7 +162,6 @@ export function createDesigner(host, opts = {}) {
         const f = findNode(root, selected);
         if (!f) return;
         const leaf = f.node;
-        // Agar tanlangan bo'lim ota-splitи shu yo'nalishда bo'lsa — yon qo'shamiz (N ustun)
         if (f.parent && f.parent.kind === 'split' && f.parent.dir === dir) {
             f.parent.children.push({ size: null, node: { id: uid(), kind: 'leaf', opening: 'kar' } });
         } else if (leaf.kind === 'leaf') {
@@ -82,8 +175,25 @@ export function createDesigner(host, opts = {}) {
             ];
             selected = leaf.children[0].node.id;
         } else {
-            // tanlangan split — unga bola qo'shamiz
             leaf.children.push({ size: null, node: { id: uid(), kind: 'leaf', opening: 'kar' } });
+        }
+        render(); onChange();
+    }
+
+    function addTripleSplit(dir) {
+        const f = findNode(root, selected);
+        if (!f) return;
+        const leaf = f.node;
+        if (leaf.kind === 'leaf') {
+            leaf.kind = 'split';
+            leaf.dir = dir;
+            delete leaf.opening;
+            leaf.children = [
+                { size: null, node: { id: uid(), kind: 'leaf', opening: 'kar' } },
+                { size: null, node: { id: uid(), kind: 'leaf', opening: 'kar' } },
+                { size: null, node: { id: uid(), kind: 'leaf', opening: 'kar' } }
+            ];
+            selected = leaf.children[0].node.id;
         }
         render(); onChange();
     }
@@ -108,12 +218,24 @@ export function createDesigner(host, opts = {}) {
         if (f && f.node.kind === 'leaf') { f.node.opening = op; render(); onChange(); }
     }
 
-    function setCellSize(dim, val) {
-        val = Math.max(0, Math.round(val) || 0);
+    function setSpecificCellSize(cellId, dim, val) {
+        val = Math.max(100, Math.round(val) || 0);
         const dir = dim === 'w' ? 'v' : 'h';
-        const a = ancestorSplit(selected, dir);
-        if (a) { a.child.size = val || null; }
-        else { if (dim === 'w') W = val || W; else H = val || H; }
+        if (cellId === 'root') {
+            if (dim === 'w') {
+                W = val;
+                if (itemWidthInput) itemWidthInput.value = (W / 1000).toFixed(2);
+            } else {
+                H = val;
+                if (itemHeightInput) itemHeightInput.value = (H / 1000).toFixed(2);
+            }
+        } else {
+            const f = findNode(root, cellId);
+            if (f && f.parent && f.parent.kind === 'split' && f.parent.dir === dir) {
+                const child = f.parent.children.find(ch => ch.node.id === cellId);
+                if (child) child.size = val;
+            }
+        }
         render(); onChange();
     }
 
@@ -144,8 +266,8 @@ export function createDesigner(host, opts = {}) {
 
     function openingSvg(box, op, sel) {
         const { x, y, w, h } = box;
-        const col = sel ? '#00d2ff' : '#2563eb';
-        const L = (x1, y1, x2, y2) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="14"/>`;
+        const col = sel ? '#00d2ff' : 'rgba(255,255,255,0.2)';
+        const L = (x1, y1, x2, y2) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="10" stroke-dasharray="3 3"/>`;
         let s = '';
         if (op === 'casement_l') s = L(x, y, x + w, y + h / 2) + L(x, y + h, x + w, y + h / 2);
         else if (op === 'casement_r') s = L(x + w, y, x, y + h / 2) + L(x + w, y + h, x, y + h / 2);
@@ -154,36 +276,72 @@ export function createDesigner(host, opts = {}) {
         return s;
     }
 
+    function drawDim(x1, y1, x2, y2, val, cellId, dim) {
+        const isHoriz = y1 === y2;
+        const color = 'rgba(255,255,255,0.25)';
+        const textColor = '#00d2ff';
+        
+        let s = '';
+        s += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="4" stroke-dasharray="6 6"/>`;
+        
+        if (isHoriz) {
+            s += `<line x1="${x1}" y1="${y1 - 12}" x2="${x1}" y2="${y1 + 12}" stroke="${color}" stroke-width="6"/>`;
+            s += `<line x1="${x2}" y1="${y2 - 12}" x2="${x2}" y2="${y2 + 12}" stroke="${color}" stroke-width="6"/>`;
+            s += `<text x="${(x1 + x2) / 2}" y="${y1 - 15}" fill="${textColor}" font-size="70" font-weight="900" text-anchor="middle" style="cursor:pointer; fill:#00d2ff; filter:drop-shadow(0 0 5px rgba(0,210,255,0.4));" data-edit-dim="${dim}" data-cell-id="${cellId}">← ${Math.round(val)} →</text>`;
+        } else {
+            s += `<line x1="${x1 - 12}" y1="${y1}" x2="${x1 + 12}" y2="${y1}" stroke="${color}" stroke-width="6"/>`;
+            s += `<line x1="${x2 - 12}" y1="${y2}" x2="${x2 + 12}" y2="${y2}" stroke="${color}" stroke-width="6"/>`;
+            const cx = x1 - 20;
+            const cy = (y1 + y2) / 2;
+            s += `<text x="${cx}" y="${cy + 22}" fill="${textColor}" font-size="70" font-weight="900" text-anchor="middle" style="cursor:pointer; fill:#00d2ff; filter:drop-shadow(0 0 5px rgba(0,210,255,0.4));" transform="rotate(-90 ${cx} ${cy})" data-edit-dim="${dim}" data-cell-id="${cellId}">← ${Math.round(val)} →</text>`;
+        }
+        return s;
+    }
+
     function render() {
         const out = { cells: [], imposts: [] };
         const inner = { x: FRAME, y: FRAME, w: W - 2 * FRAME, h: H - 2 * FRAME };
         layout(root, inner, out);
 
-        const pad = 160, padTop = 40;
+        const pad = 240, padTop = 60;
         const vb = `${-pad} ${-padTop} ${W + pad + 80} ${H + pad + padTop}`;
-        let s = `<svg viewBox="${vb}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:300px;">`;
-        // Rama
-        s += `<rect x="0" y="0" width="${W}" height="${H}" fill="#e8eef2" stroke="#9aa4ad" stroke-width="4"/>`;
-        s += `<rect x="${FRAME}" y="${FRAME}" width="${W - 2 * FRAME}" height="${H - 2 * FRAME}" fill="#0e2036"/>`;
-        // Oyna kataklari
+        let s = `<svg viewBox="${vb}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:350px;display:block;">`;
+        
+        // Frame/Rama
+        s += `<rect x="0" y="0" width="${W}" height="${H}" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.12)" stroke-width="8" rx="8"/>`;
+        s += `<rect x="${FRAME}" y="${FRAME}" width="${W - 2 * FRAME}" height="${H - 2 * FRAME}" fill="#0b1320" rx="4"/>`;
+        
+        // Leaves/Kataklar
         out.cells.forEach(c => {
             const sel = c.id === selected;
-            s += `<rect data-id="${c.id}" x="${c.box.x}" y="${c.box.y}" width="${c.box.w}" height="${c.box.h}" fill="${sel ? 'rgba(0,210,255,0.28)' : '#9fd3e8'}" stroke="${sel ? '#00d2ff' : '#6aa6c4'}" stroke-width="${sel ? 10 : 4}" style="cursor:pointer"/>`;
+            s += `<rect data-id="${c.id}" x="${c.box.x}" y="${c.box.y}" width="${c.box.w}" height="${c.box.h}" fill="${sel ? 'rgba(0,210,255,0.18)' : 'rgba(0,186,255,0.04)'}" stroke="${sel ? '#00d2ff' : 'rgba(0,186,255,0.2)'}" stroke-width="${sel ? 12 : 5}" style="cursor:pointer; transition: all 0.2s;" rx="4"/>`;
             s += openingSvg(c.box, c.opening, sel);
-            // o'lcham matni (kataklar ichida)
-            s += `<text x="${c.box.x + c.box.w / 2}" y="${c.box.y + c.box.h / 2}" fill="#0b111a" font-size="70" font-weight="700" text-anchor="middle" pointer-events="none">${Math.round(c.box.w)}×${Math.round(c.box.h)}</text>`;
+            s += `<text x="${c.box.x + c.box.w / 2}" y="${c.box.y + c.box.h / 2 + 20}" fill="rgba(255,255,255,0.25)" font-size="65" font-weight="700" text-anchor="middle" pointer-events="none">${Math.round(c.box.w)}×${Math.round(c.box.h)}</text>`;
         });
-        // Impostlar
+        
+        // Imposts
         out.imposts.forEach(im => {
-            s += `<rect x="${im.x}" y="${im.y}" width="${im.w}" height="${im.h}" fill="#cfd8dc" stroke="#9aa4ad" stroke-width="2"/>`;
+            s += `<rect x="${im.x}" y="${im.y}" width="${im.w}" height="${im.h}" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.05)" stroke-width="2"/>`;
         });
-        // Umumiy o'lchamlar (pastda eni, chapda balandligi)
-        const ty = H + 90;
-        s += `<line x1="0" y1="${ty}" x2="${W}" y2="${ty}" stroke="#7f8c99" stroke-width="3"/>`;
-        s += `<text x="${W / 2}" y="${ty + 55}" fill="#cbd5e1" font-size="70" font-weight="800" text-anchor="middle">${W}</text>`;
-        const lx = -90;
-        s += `<line x1="${lx}" y1="0" x2="${lx}" y2="${H}" stroke="#7f8c99" stroke-width="3"/>`;
-        s += `<text x="${lx - 15}" y="${H / 2}" fill="#cbd5e1" font-size="70" font-weight="800" text-anchor="middle" transform="rotate(-90 ${lx - 15} ${H / 2})">${H}</text>`;
+
+        // Unique bottom-most and left-most cells for section dimensioning
+        const bottomCells = out.cells.filter(c => Math.abs((c.box.y + c.box.h) - (H - FRAME)) < 2);
+        const leftCells = out.cells.filter(c => Math.abs(c.box.x - FRAME) < 2);
+
+        // Draw individual column widths at H + 65
+        bottomCells.forEach(c => {
+            s += drawDim(c.box.x, H + 65, c.box.x + c.box.w, H + 65, c.box.w, c.id, 'w');
+        });
+
+        // Draw individual row heights at x = -65
+        leftCells.forEach(c => {
+            s += drawDim(-65, c.box.y, -65, c.box.y + c.box.h, c.box.h, c.id, 'h');
+        });
+
+        // Draw overall dimensions
+        s += drawDim(0, H + 180, W, H + 180, W, 'root', 'w');
+        s += drawDim(-180, 0, -180, H, H, 'root', 'h');
+
         s += `</svg>`;
         canvasDiv.innerHTML = s;
         bindSvg();
@@ -194,6 +352,29 @@ export function createDesigner(host, opts = {}) {
         const el = canvasDiv.querySelector('svg');
         if (!el) return;
         el.addEventListener('click', e => {
+            const editDim = e.target.getAttribute('data-edit-dim');
+            const cellId = e.target.getAttribute('data-cell-id');
+            if (editDim && cellId) {
+                const currentVal = editDim === 'w' 
+                    ? (cellId === 'root' ? W : Math.round(out.cells.find(c => c.id === cellId).box.w))
+                    : (cellId === 'root' ? H : Math.round(out.cells.find(c => c.id === cellId).box.h));
+                
+                const promptMsg = cellId === 'root' 
+                    ? (editDim === 'w' ? "Umumiy enini kiriting (mm):" : "Umumiy balandligini kiriting (mm):")
+                    : (editDim === 'w' ? "Tavaqa enini kiriting (mm):" : "Tavaqa balandligini kiriting (mm):");
+                
+                const res = prompt(promptMsg, currentVal);
+                if (res !== null) {
+                    const newVal = parseInt(res);
+                    if (newVal >= 100) {
+                        setSpecificCellSize(cellId, editDim, newVal);
+                    } else {
+                        alert("Noto'g'ri qiymat kiritildi (kamida 100mm bo'lishi shart)!");
+                    }
+                }
+                return;
+            }
+
             const t = e.target.closest('[data-id]');
             if (t) { selected = t.getAttribute('data-id'); render(); }
         });
@@ -203,26 +384,23 @@ export function createDesigner(host, opts = {}) {
         const f = findNode(root, selected);
         const isLeaf = f && f.node.kind === 'leaf';
         const cur = isLeaf ? f.node.opening : null;
-        const opBtns = Object.keys(OPENINGS).map(k =>
-            `<button type="button" data-op="${k}" style="padding:7px 10px;border-radius:8px;border:1px solid ${cur === k ? '#00d2ff' : 'rgba(255,255,255,0.12)'};background:${cur === k ? 'rgba(0,210,255,0.2)' : 'rgba(255,255,255,0.04)'};color:#fff;font-size:0.75rem;font-weight:700;cursor:pointer;">${esc(OPENINGS[k])}</button>`
-        ).join('');
-        selPanel.innerHTML =
-            '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px;">' +
-            '<div style="font-size:0.78rem;color:var(--adm-text-sec);font-weight:700;margin-bottom:8px;">Tanlangan bo\'lim — ochilish turi:</div>' +
-            `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">${isLeaf ? opBtns : '<span style="color:var(--adm-text-sec);font-size:0.8rem;">Bo\'lim tanlang</span>'}</div>` +
-            '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">' +
-            '<label style="font-size:0.75rem;color:var(--adm-text-sec);">Eni (mm)<input type="number" class="d2-w" style="width:90px;margin-left:6px;padding:6px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:var(--bg-dark-input,#1e293b);color:#fff;"></label>' +
-            '<label style="font-size:0.75rem;color:var(--adm-text-sec);">Balandligi (mm)<input type="number" class="d2-h" style="width:90px;margin-left:6px;padding:6px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:var(--bg-dark-input,#1e293b);color:#fff;"></label>' +
-            '</div></div>';
-        selPanel.querySelectorAll('[data-op]').forEach(b => b.onclick = () => setOpening(b.getAttribute('data-op')));
-        const wI = selPanel.querySelector('.d2-w'), hI = selPanel.querySelector('.d2-h');
-        // tanlangan katak o'lchamini ko'rsatamiz
-        const out = { cells: [], imposts: [] };
-        layout(root, { x: FRAME, y: FRAME, w: W - 2 * FRAME, h: H - 2 * FRAME }, out);
-        const cell = out.cells.find(c => c.id === selected);
-        if (cell && wI && hI) { wI.value = Math.round(cell.box.w); hI.value = Math.round(cell.box.h); }
-        if (wI) wI.onchange = () => setCellSize('w', parseInt(wI.value));
-        if (hI) hI.onchange = () => setCellSize('h', parseInt(hI.value));
+
+        leftSidebar.querySelectorAll('[data-op]').forEach(b => {
+            const op = b.getAttribute('data-op');
+            if (isLeaf) {
+                b.disabled = false;
+                b.style.opacity = '1';
+                if (cur === op) {
+                    b.classList.add('active');
+                } else {
+                    b.classList.remove('active');
+                }
+            } else {
+                b.disabled = true;
+                b.style.opacity = '0.4';
+                b.classList.remove('active');
+            }
+        });
     }
 
     render();
