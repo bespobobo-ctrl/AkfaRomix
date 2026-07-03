@@ -514,6 +514,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         });
 
+        const omborSearch = document.getElementById('buh-ombor-search');
+        if (omborSearch) omborSearch.addEventListener('input', () => {
+            const q = omborSearch.value.trim().toLowerCase();
+            document.querySelectorAll('#buh-ombor-grid .buh-ombor-card').forEach(card => {
+                card.style.display = (!q || (card.dataset.search || '').includes(q)) ? '' : 'none';
+            });
+        });
+
         const prodDateEl = document.getElementById('buh-prod-date');
         if (prodDateEl) prodDateEl.value = _buhToday();
         const expDateEl = document.getElementById('buh-exp-date');
@@ -678,8 +686,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function renderRomixBuhOmbor() {
         const statsEl = document.getElementById('buh-ombor-stats');
-        const tableEl = document.getElementById('buh-ombor-table');
-        if (!statsEl && !tableEl) return;
+        const gridEl = document.getElementById('buh-ombor-grid');
+        if (!statsEl && !gridEl) return;
 
         let items = [];
         try {
@@ -699,29 +707,39 @@ document.addEventListener('DOMContentLoaded', async () => {
             `;
         }
 
-        if (tableEl) {
+        if (gridEl) {
             if (items.length === 0) {
-                tableEl.innerHTML = '<tr><td colspan="5" style="text-align:center; color:rgba(255,255,255,0.3); padding:20px;">Ombor bo\'sh</td></tr>';
+                gridEl.innerHTML = '<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Ombor bo\'sh</div>';
             } else {
-                tableEl.innerHTML = items.map(p => {
-                    const val = (Number(p.price) || 0) * (Number(p.stock_quantity) || 0);
-                    const lowStyle = (Number(p.stock_quantity) || 0) < 10 ? 'color:#ff4d4f;font-weight:700;' : '';
+                gridEl.innerHTML = items.map(p => {
+                    const qty = Number(p.stock_quantity) || 0;
+                    const val = (Number(p.price) || 0) * qty;
+                    const isLow = qty < 10;
+                    const accentColor = isLow ? '#ff4d4f' : '#00baff';
                     const nameEsc = (p.product_name || '').replace(/'/g, "\\'");
                     const unitEsc = (p.unit || '').replace(/'/g, "\\'");
-                    return `<tr>
-                        <td>${p.product_name}</td>
-                        <td style="text-align:right; ${lowStyle}">${p.stock_quantity || 0} ${p.unit || ''}</td>
-                        <td style="text-align:right; font-weight:700; color:#00ff88;">${_buhFmt(p.price)}</td>
-                        <td style="text-align:right;">${_buhFmt(val)}</td>
-                        <td style="text-align:right;">
-                            <button onclick="window.openRomixPriceModal('${p.id}', '${nameEsc}', ${p.price || 0}, ${p.stock_quantity || 0}, '${unitEsc}')"
-                                style="display:inline-flex; align-items:center; gap:6px; background:rgba(0,186,255,0.1); border:1px solid rgba(0,186,255,0.25); color:#00baff; padding:7px 14px; border-radius:10px; font-size:0.74rem; font-weight:700; cursor:pointer; transition:all 0.2s;"
-                                onmouseenter="this.style.background='rgba(0,186,255,0.2)'; this.style.transform='translateY(-1px)';"
-                                onmouseleave="this.style.background='rgba(0,186,255,0.1)'; this.style.transform='translateY(0)';">
-                                💲 Narx belgilash
-                            </button>
-                        </td>
-                    </tr>`;
+                    const lowBadge = isLow ? `<span style="background:rgba(255,77,79,0.1); color:#ff4d4f; padding:2px 8px; border-radius:10px; font-size:0.62rem; font-weight:700; margin-left:6px;">⚠️ Kam qolgan</span>` : '';
+                    return `<div class="buh-ombor-card" data-search="${(p.product_name || '').toLowerCase().replace(/"/g, '')}" style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-top:3px solid ${accentColor}; border-radius:18px; padding:16px; display:flex; flex-direction:column; gap:10px; transition:all 0.25s;">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <div style="width:44px; height:44px; border-radius:14px; background:linear-gradient(135deg,#00baff,#0072ff); display:flex; align-items:center; justify-content:center; font-size:1.15rem; flex-shrink:0;">📦</div>
+                            <div style="min-width:0; flex:1;">
+                                <div style="font-weight:700; color:#fff; font-size:0.88rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${p.product_name || ''}">${p.product_name || 'Noma\'lum'}</div>
+                                <div style="font-size:0.7rem; color:${isLow ? '#ff4d4f' : 'rgba(255,255,255,0.4)'}; font-weight:${isLow ? '700' : '500'}; margin-top:2px;">${qty} ${p.unit || ''}${lowBadge}</div>
+                            </div>
+                        </div>
+                        <div style="border-top:1px dashed rgba(255,255,255,0.06); padding-top:10px; display:flex; justify-content:space-between; font-size:0.76rem; color:rgba(255,255,255,0.5);">
+                            <span>Narx (birlik)</span><strong style="color:#00ff88; font-family:monospace;">${_buhFmt(p.price)}</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.76rem; color:rgba(255,255,255,0.5);">
+                            <span>Jami qiymat</span><strong style="color:#00d2ff; font-family:monospace;">${_buhFmt(val)}</strong>
+                        </div>
+                        <button onclick="window.openRomixPriceModal('${p.id}', '${nameEsc}', ${p.price || 0}, ${qty}, '${unitEsc}')"
+                            style="display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(0,186,255,0.1); border:1px solid rgba(0,186,255,0.25); color:#00baff; padding:9px; border-radius:10px; font-size:0.76rem; font-weight:700; cursor:pointer; transition:all 0.2s; width:100%; margin-top:2px;"
+                            onmouseenter="this.style.background='rgba(0,186,255,0.2)'; this.style.transform='translateY(-1px)';"
+                            onmouseleave="this.style.background='rgba(0,186,255,0.1)'; this.style.transform='translateY(0)';">
+                            💲 Narx belgilash
+                        </button>
+                    </div>`;
                 }).join('');
             }
         }
