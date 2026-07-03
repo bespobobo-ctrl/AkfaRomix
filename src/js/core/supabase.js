@@ -202,9 +202,22 @@ async function flushSyncQueue() {
             }
             const res = await qb;
             if (res && res.error) throw res.error;
-            // muvaffaqiyat — bu itemни navbatdan chiqaramiz
+            // muvaffaqiyat — bu itemni navbatdan chiqaramiz
         } catch (e) {
-            // Tarmoq/pauza — bu va qolgan HAMMASINI tartib bilan keyingi flushга qoldiramiz
+            const isPermanent = e && (
+                (typeof e.code === 'string' && (
+                    e.code.startsWith('22') || // Data Exception (invalid uuid type)
+                    e.code.startsWith('23') || // Integrity Constraint (duplicate keys)
+                    e.code.startsWith('42') || // Syntax / Undefined columns
+                    e.code.startsWith('PGRST') // PostgREST schema errors
+                ))
+            );
+            if (isPermanent) {
+                console.error("[SYNC] Doimiy ma'lumotlar bazasi xatoligi tufayli navbatdan olib tashlandi:", e.message || e);
+                // Navbatdan o'chirish uchun keyingi elementga o'tamiz
+                continue;
+            }
+            // Haqiqiy tarmoq xatoligi — bu va qolgan HAMMASINI tartib bilan keyingi flushga qoldiramiz
             _isOnline = false;
             for (let j = i; j < q.length; j++) remaining.push(q[j]);
             break;
