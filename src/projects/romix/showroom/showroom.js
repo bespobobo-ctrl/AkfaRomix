@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const inModal = document.getElementById('inModal');
     const editModal = document.getElementById('editModal');
     const outModal = document.getElementById('outModal');
+    const installModal = document.getElementById('installModal');
     const inventoryTable = document.getElementById('inventoryTable');
 
     let allProducts = [];
@@ -166,7 +167,111 @@ document.addEventListener('DOMContentLoaded', async () => {
         loadInventory();
     };
 
-    // Edit 
+    // ============================================================
+    // ISHLAB CHIQARISHDAN KELGAN BUYURTMALAR — o'rnatishga brigada
+    // biriktirish, muddat belgilash va bajarilganini qayd etish
+    // ============================================================
+    let currentInstallOrderId = null;
+
+    async function loadIncomingProduction() {
+        const grid = document.getElementById('incomingProductionGrid');
+        if (!grid) return;
+
+        let orders = [];
+        try {
+            const { data, error } = await supabase.from('sales_orders').select('*').eq('production_stage', 'tayyor_omborda').order('created_at', { ascending: false });
+            if (error) throw error;
+            orders = data || [];
+        } catch (err) {
+            console.warn("loadIncomingProduction fetch failed:", err);
+        }
+
+        if (orders.length === 0) {
+            grid.innerHTML = '<div style="text-align:center; color:var(--adm-text-sec); padding:20px; grid-column:1/-1;">Hozircha ishlab chiqarishdan kelgan buyurtma yo\'q</div>';
+            return;
+        }
+
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+
+        grid.innerHTML = orders.map(o => {
+            const isInstalled = o.install_status === 'Bajarildi';
+            const isAssigned = !!o.install_group;
+            const isOverdue = isAssigned && !isInstalled && o.install_deadline && new Date(o.install_deadline) < today;
+            const accentColor = isInstalled ? '#00ff88' : (isOverdue ? '#ef4444' : (isAssigned ? '#00d2ff' : '#f97316'));
+
+            let bodyHtml = '';
+            if (!isAssigned) {
+                bodyHtml = `<button class="install-assign-btn" data-id="${o.id}" data-name="${(o.customer_name || '').replace(/"/g, '')}" style="width:100%; background:#00d2ff; color:#000; border:none; padding:9px; border-radius:10px; font-weight:700; font-size:0.78rem; cursor:pointer; margin-top:6px;">🚚 O'rnatishga Yuborish</button>`;
+            } else {
+                const deadlineStr = o.install_deadline ? new Date(o.install_deadline).toLocaleDateString('uz-UZ') : '—';
+                bodyHtml = `
+                    <div style="font-size:0.75rem; color:var(--adm-text-sec); border-top:1px dashed var(--adm-border); padding-top:8px; margin-top:6px;">Brigada: <strong style="color:#00d2ff;">${o.install_group}</strong></div>
+                    <div style="font-size:0.75rem; ${isOverdue ? 'color:#ef4444; font-weight:700;' : 'color:var(--adm-text-sec);'}">⏳ Muddat: <strong>${deadlineStr}</strong>${isOverdue ? ' ⚠️ Muddati o\'tgan!' : ''}</div>
+                    ${isInstalled
+                        ? `<span style="display:inline-block; margin-top:6px; background:rgba(0,255,136,0.1); color:#00ff88; padding:4px 10px; border-radius:12px; font-size:0.7rem; font-weight:700;">✓ O'rnatildi</span>`
+                        : `<button class="install-complete-btn" data-id="${o.id}" style="width:100%; background:#00ff88; color:#000; border:none; padding:9px; border-radius:10px; font-weight:700; font-size:0.78rem; cursor:pointer; margin-top:6px;">✓ O'rnatildi Deb Belgilash</button>`
+                    }
+                `;
+            }
+
+            return `<div style="background:var(--adm-surface); border:1px solid var(--adm-border); border-top:3px solid ${accentColor}; border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:4px; box-shadow:var(--adm-shadow);">
+                <div style="font-weight:700; color:var(--adm-text); font-size:0.9rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${o.customer_name || 'Noma\'lum'}</div>
+                <div style="font-size:0.72rem; color:var(--adm-text-sec);">${o.prod_type || ''} • ${o.quantity || 1} ta</div>
+                ${bodyHtml}
+            </div>`;
+        }).join('');
+
+        document.querySelectorAll('.install-assign-btn').forEach(btn => {
+            btn.onclick = () => {
+                currentInstallOrderId = btn.dataset.id;
+                document.getElementById('installOrderInfo').textContent = `Mijoz: ${btn.dataset.name}`;
+                document.getElementById('installGroup').value = 'Brigada 1 (Alijon)';
+                document.getElementById('installDeadline').value = '';
+                installModal.classList.remove('hidden');
+            };
+        });
+
+        document.querySelectorAll('.install-complete-btn').forEach(btn => {
+            btn.onclick = async () => {
+                if (!confirm("Ushbu buyurtma o'rnatilib bo'ldimi?")) return;
+                try {
+                    const { error } = await supabase.from('sales_orders').update({
+                        install_status: 'Bajarildi',
+                        status: 'Tayyor / Yetkazildi'
+                    }).eq('id', btn.dataset.id);
+                    if (error) throw error;
+                } catch (err) {
+                    alert("Xatolik: " + err.message);
+                    return;
+                }
+                loadIncomingProduction();
+            };
+        });
+    }
+
+    document.getElementById('closeInstallModal').onclick = () => installModal.classList.add('hidden');
+
+    document.getElementById('saveInstallBtn').onclick = async () => {
+        const grp = document.getElementById('installGroup').value;
+        const deadline = document.getElementById('installDeadline').value;
+        if (!deadline) return alert("O'rnatish muddatini tanlang!");
+        try {
+            const { error } = await supabase.from('sales_orders').update({
+                install_group: grp,
+                install_deadline: deadline,
+                install_status: 'Tayinlangan'
+            }).eq('id', currentInstallOrderId);
+            if (error) throw error;
+        } catch (err) {
+            alert("Biriktirishda xatolik: bazada 'install_group'/'install_deadline'/'install_status' ustunlari mavjudligini tekshiring.");
+            console.warn("install assign failed:", err);
+            return;
+        }
+        installModal.classList.add('hidden');
+        loadIncomingProduction();
+    };
+
+    // Edit
     document.getElementById('saveEditBtn').onclick = async () => {
         await supabase.from('showroom_products').update({
             current_stock: document.getElementById('eQty').value,
@@ -220,4 +325,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     loadInventory();
+    loadIncomingProduction();
 });

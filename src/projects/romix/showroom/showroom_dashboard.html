@@ -129,6 +129,13 @@
                     </div>
                 </div>
 
+                <div class="bento-grid" style="margin-bottom:20px;">
+                    <div class="bento-card" style="grid-column: span 4; border-top: 4px solid #00d2ff;">
+                        <h3 style="font-weight: 600; margin-bottom: 20px; color:#00d2ff;">📦 Ishlab Chiqarishdan Kelgan Buyurtmalar (O'rnatishga tayyor)</h3>
+                        <div id="incomingProductionGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:14px;"></div>
+                    </div>
+                </div>
+
                 <div class="bento-grid">
                     <div class="bento-card" style="grid-column: span 4; border-top: 4px solid #f97316;">
                         <h3 style="font-weight: 600; margin-bottom: 20px;">Mahsulotlar Katalogi</h3>
@@ -222,6 +229,32 @@
                     style="flex:1; background:#ef4444; color:#fff; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">Chiqim
                     Qilish</button>
                 <button id="closeOutModal"
+                    style="flex:1; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; border-radius:12px; cursor:pointer;">Yopish</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Brigada Biriktirish (O'rnatishga yuborish) -->
+    <div id="installModal" class="hidden"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px;">
+        <div class="user-form-modal" style="width: 500px; background:var(--adm-surface);">
+            <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+                <span style="font-size: 1.5rem;">🚚</span>
+                <h2 style="color:var(--adm-text);">O'rnatishga Yuborish</h2>
+            </div>
+            <p id="installOrderInfo" style="color:var(--adm-text-sec); font-size:0.85rem; margin-bottom:15px;"></p>
+            <label class="form-label">Brigada / Ishchi Guruh</label>
+            <select id="installGroup" class="form-input-v2">
+                <option value="Brigada 1 (Alijon)">Brigada 1 (Alijon)</option>
+                <option value="Brigada 2 (Sardor)">Brigada 2 (Sardor)</option>
+                <option value="Tezkor Guruh (Jasur)">Tezkor Guruh (Jasur)</option>
+            </select>
+            <label class="form-label" style="margin-top:10px;">O'rnatish Muddati</label>
+            <input type="date" id="installDeadline" class="form-input-v2">
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button id="saveInstallBtn"
+                    style="flex:1; background:#00d2ff; color:#000; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">Yuborish</button>
+                <button id="closeInstallModal"
                     style="flex:1; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; border-radius:12px; cursor:pointer;">Yopish</button>
             </div>
         </div>

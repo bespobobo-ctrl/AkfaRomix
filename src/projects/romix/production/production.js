@@ -18,6 +18,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             const tab = btn.dataset.tab;
             document.querySelectorAll(`.tab-btn[data-tab="${tab}"]`).forEach(b => b.classList.add('active'));
             document.querySelectorAll(`.nav-icon[data-tab="${tab}"]`).forEach(b => b.classList.add('active'));
+
+            document.querySelectorAll('.warehouse-section').forEach(s => s.classList.add('hidden'));
+            const view = document.getElementById(`${tab}-view`);
+            if (view) view.classList.remove('hidden');
+
+            if (tab === 'pipeline') loadProductionPipeline();
         });
     });
 
@@ -130,6 +136,85 @@ document.addEventListener('DOMContentLoaded', async () => {
                     await supabase.from('production_recipes').delete().eq('id', btn.dataset.id);
                     loadRecipes();
                 }
+            };
+        });
+    }
+
+    // ============================================================
+    // ZAKAZLAR JARAYONI — Sotuv guruhga tayinlagan buyurtmalar shu yerda
+    // 3 bosqichdan (Kesish -> Payvandlash -> Yig'ish/Qadoqlash) o'tadi,
+    // so'ng Tayyor Mahsulotga (showroom) o'tkaziladi.
+    // ============================================================
+    async function loadProductionPipeline() {
+        let orders = [];
+        try {
+            const { data, error } = await supabase.from('sales_orders').select('*').eq('status', 'Jarayonda').order('created_at', { ascending: false });
+            if (error) throw error;
+            orders = data || [];
+        } catch (err) {
+            console.warn("loadProductionPipeline fetch failed:", err);
+        }
+
+        const cols = {
+            new: document.getElementById('pipelineColNew'),
+            kesish: document.getElementById('pipelineColKesish'),
+            payvandlash: document.getElementById('pipelineColPayvand'),
+            yigish_qadoqlash: document.getElementById('pipelineColYigish')
+        };
+        Object.values(cols).forEach(c => { if (c) c.innerHTML = ''; });
+
+        const emptyMsg = '<div style="text-align:center; color:var(--adm-text-sec); font-size:0.78rem; padding:16px 0;">Bo\'sh</div>';
+        // tayyor_omborda bosqichidagilar bu boardda ko'rsatilmaydi (ular Tayyor Mahsulotga o'tgan)
+        const buckets = {
+            new: orders.filter(o => !o.production_stage),
+            kesish: orders.filter(o => o.production_stage === 'kesish'),
+            payvandlash: orders.filter(o => o.production_stage === 'payvandlash'),
+            yigish_qadoqlash: orders.filter(o => o.production_stage === 'yigish_qadoqlash')
+        };
+
+        function card(o, actionHtml) {
+            return `<div style="background:var(--adm-surface); border:1px solid var(--adm-border); border-radius:14px; padding:12px; display:flex; flex-direction:column; gap:8px; box-shadow:var(--adm-shadow);">
+                <div style="font-weight:700; color:var(--adm-text); font-size:0.82rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${o.customer_name || 'Noma\'lum'}</div>
+                <div style="font-size:0.72rem; color:var(--adm-text-sec);">${o.prod_type || ''}</div>
+                <div style="font-size:0.7rem; color:var(--adm-text-sec);">Guruh: <strong style="color:#00d2ff;">${o.worker_group || '—'}</strong></div>
+                ${actionHtml}
+            </div>`;
+        }
+
+        if (cols.new) {
+            cols.new.innerHTML = buckets.new.length === 0 ? emptyMsg : buckets.new.map(o => card(o,
+                `<button class="pipeline-advance-btn" data-id="${o.id}" data-next="kesish" style="background:#ffaa00; color:#000; border:none; padding:8px; border-radius:8px; font-weight:700; font-size:0.74rem; cursor:pointer;">✅ Qabul Qilish</button>`
+            )).join('');
+        }
+        if (cols.kesish) {
+            cols.kesish.innerHTML = buckets.kesish.length === 0 ? emptyMsg : buckets.kesish.map(o => card(o,
+                `<button class="pipeline-advance-btn" data-id="${o.id}" data-next="payvandlash" style="background:#ef4444; color:#fff; border:none; padding:8px; border-radius:8px; font-weight:700; font-size:0.74rem; cursor:pointer;">Keyingi bosqich →</button>`
+            )).join('');
+        }
+        if (cols.payvandlash) {
+            cols.payvandlash.innerHTML = buckets.payvandlash.length === 0 ? emptyMsg : buckets.payvandlash.map(o => card(o,
+                `<button class="pipeline-advance-btn" data-id="${o.id}" data-next="yigish_qadoqlash" style="background:#f97316; color:#fff; border:none; padding:8px; border-radius:8px; font-weight:700; font-size:0.74rem; cursor:pointer;">Keyingi bosqich →</button>`
+            )).join('');
+        }
+        if (cols.yigish_qadoqlash) {
+            cols.yigish_qadoqlash.innerHTML = buckets.yigish_qadoqlash.length === 0 ? emptyMsg : buckets.yigish_qadoqlash.map(o => card(o,
+                `<button class="pipeline-advance-btn" data-id="${o.id}" data-next="tayyor_omborda" style="background:#00d2ff; color:#000; border:none; padding:8px; border-radius:8px; font-weight:700; font-size:0.74rem; cursor:pointer;">✅ Tayyor, Omborga O'tkazish</button>`
+            )).join('');
+        }
+
+        document.querySelectorAll('.pipeline-advance-btn').forEach(btn => {
+            btn.onclick = async () => {
+                const id = btn.dataset.id;
+                const next = btn.dataset.next;
+                try {
+                    const { error } = await supabase.from('sales_orders').update({ production_stage: next }).eq('id', id);
+                    if (error) throw error;
+                } catch (err) {
+                    alert("Bosqichni yangilashda xatolik: bazada 'production_stage' ustuni mavjudligini tekshiring.");
+                    console.warn("pipeline-advance failed:", err);
+                    return;
+                }
+                loadProductionPipeline();
             };
         });
     }

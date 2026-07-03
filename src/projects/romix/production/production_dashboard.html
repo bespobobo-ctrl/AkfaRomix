@@ -77,6 +77,7 @@
             <div class="logo-icon-v2" style="font-size: 1.5rem; color: #8b5cf6; margin-bottom: 40px; font-weight: 900;">
                 P</div>
             <div class="nav-icon active" data-tab="recipes" title="Shablonlar">🏭</div>
+            <div class="nav-icon" data-tab="pipeline" title="Zakazlar Jarayoni">📋</div>
             <div class="nav-icon" data-tab="history" title="Tarix">📑</div>
             <div class="nav-icon" id="logoutBtn">🚪</div>
         </aside>
@@ -86,6 +87,7 @@
             <nav class="top-nav-v2">
                 <div class="nav-links-v2">
                     <button class="tab-btn active" data-tab="recipes">Mahsulot Kalkulyatsiyasi</button>
+                    <button class="tab-btn" data-tab="pipeline">Zakazlar Jarayoni</button>
                     <button class="tab-btn" data-tab="history">Saqlangan Shablonlar</button>
                 </div>
                 <div style="display: flex; gap: 20px; align-items: center;">
@@ -135,6 +137,32 @@
                 <div class="bento-grid">
                     <div class="bento-card" style="grid-column: span 4;">
                         <div id="recipeTable" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px;"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: Zakazlar Jarayoni (Production Pipeline) -->
+            <section id="pipeline-view" class="warehouse-section hidden">
+                <div style="margin-bottom: 25px;">
+                    <h1 style="font-size: 2.2rem; font-weight: 600;">Zakazlar Jarayoni</h1>
+                    <p style="color: var(--adm-text-sec);">Sotuv guruhga tayinlagan buyurtmalar shu yerda ishlab chiqarish bosqichlaridan o'tadi</p>
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:18px; align-items:flex-start;">
+                    <div class="bento-card" style="border-top:4px solid #ffaa00; padding:16px;">
+                        <h3 style="font-size:0.85rem; font-weight:700; color:#ffaa00; margin-bottom:14px;">🆕 Yangi (Qabul kutilmoqda)</h3>
+                        <div id="pipelineColNew" style="display:flex; flex-direction:column; gap:12px;"></div>
+                    </div>
+                    <div class="bento-card" style="border-top:4px solid #ef4444; padding:16px;">
+                        <h3 style="font-size:0.85rem; font-weight:700; color:#ef4444; margin-bottom:14px;">✂️ Kesilmoqda</h3>
+                        <div id="pipelineColKesish" style="display:flex; flex-direction:column; gap:12px;"></div>
+                    </div>
+                    <div class="bento-card" style="border-top:4px solid #f97316; padding:16px;">
+                        <h3 style="font-size:0.85rem; font-weight:700; color:#f97316; margin-bottom:14px;">🔥 Payvandlanmoqda</h3>
+                        <div id="pipelineColPayvand" style="display:flex; flex-direction:column; gap:12px;"></div>
+                    </div>
+                    <div class="bento-card" style="border-top:4px solid #00d2ff; padding:16px;">
+                        <h3 style="font-size:0.85rem; font-weight:700; color:#00d2ff; margin-bottom:14px;">📦 Yig'ish / Qadoqlash</h3>
+                        <div id="pipelineColYigish" style="display:flex; flex-direction:column; gap:12px;"></div>
                     </div>
                 </div>
             </section>
