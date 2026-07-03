@@ -677,14 +677,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 tableEl.innerHTML = items.map(p => {
                     const val = (Number(p.price) || 0) * (Number(p.stock_quantity) || 0);
                     const lowStyle = (Number(p.stock_quantity) || 0) < 10 ? 'color:#ff4d4f;font-weight:700;' : '';
+                    const nameEsc = (p.product_name || '').replace(/'/g, "\\'");
+                    const unitEsc = (p.unit || '').replace(/'/g, "\\'");
                     return `<tr>
                         <td>${p.product_name}</td>
                         <td style="text-align:right; ${lowStyle}">${p.stock_quantity || 0} ${p.unit || ''}</td>
                         <td style="text-align:right; font-weight:700; color:#00ff88;">${_buhFmt(p.price)}</td>
                         <td style="text-align:right;">${_buhFmt(val)}</td>
                         <td style="text-align:right;">
-                            <button class="buh-row-action-btn" style="background:rgba(0,186,255,0.15); color:#00baff;" onclick="window.updateRomixProductPrice('${p.id}', '${p.product_name.replace(/'/g, "\\'")}', ${p.price || 0})">
-                                ✏️ Narx belgilash
+                            <button onclick="window.openRomixPriceModal('${p.id}', '${nameEsc}', ${p.price || 0}, ${p.stock_quantity || 0}, '${unitEsc}')"
+                                style="display:inline-flex; align-items:center; gap:6px; background:rgba(0,186,255,0.1); border:1px solid rgba(0,186,255,0.25); color:#00baff; padding:7px 14px; border-radius:10px; font-size:0.74rem; font-weight:700; cursor:pointer; transition:all 0.2s;"
+                                onmouseenter="this.style.background='rgba(0,186,255,0.2)'; this.style.transform='translateY(-1px)';"
+                                onmouseleave="this.style.background='rgba(0,186,255,0.1)'; this.style.transform='translateY(0)';">
+                                💲 Narx belgilash
                             </button>
                         </td>
                     </tr>`;
@@ -694,13 +699,45 @@ document.addEventListener('DOMContentLoaded', async () => {
         return { totalValue };
     }
 
-    window.updateRomixProductPrice = async (id, name, currentPrice) => {
-        const val = parseFloat(prompt(`"${name}" uchun yangi tan narxni kiriting (UZS):`, currentPrice || 0));
-        if (isNaN(val) || val < 0) return;
+    window.openRomixPriceModal = (id, name, currentPrice, qty, unit) => {
+        window._romixPriceModalState = { id, qty: Number(qty) || 0, unit: unit || '' };
+        const modal = document.getElementById('romix-price-modal');
+        const nameEl = document.getElementById('romix-price-modal-product');
+        const input = document.getElementById('romix-price-modal-input');
+        if (nameEl) nameEl.textContent = name;
+        if (input) input.value = currentPrice || 0;
+        window.updateRomixPricePreview();
+        if (modal) modal.style.display = 'flex';
+        setTimeout(() => input && input.focus(), 50);
+    };
+
+    window.closeRomixPriceModal = () => {
+        const modal = document.getElementById('romix-price-modal');
+        if (modal) modal.style.display = 'none';
+        window._romixPriceModalState = null;
+    };
+
+    window.updateRomixPricePreview = () => {
+        const input = document.getElementById('romix-price-modal-input');
+        const preview = document.getElementById('romix-price-modal-preview');
+        const state = window._romixPriceModalState;
+        if (!input || !preview || !state) return;
+        const price = parseFloat(input.value) || 0;
+        const total = price * state.qty;
+        preview.textContent = `Jami qiymat: ${_buhFmt(total)} (${state.qty} ${state.unit} zaxira uchun)`;
+    };
+
+    window.saveRomixPriceModal = async () => {
+        const state = window._romixPriceModalState;
+        const input = document.getElementById('romix-price-modal-input');
+        if (!state || !input) return;
+        const val = parseFloat(input.value);
+        if (isNaN(val) || val < 0) { alert("Iltimos, to'g'ri narx kiriting."); return; }
         try {
-            const { error } = await supabase.from('romix_inventory').update({ price: val }).eq('id', id);
+            const { error } = await supabase.from('romix_inventory').update({ price: val }).eq('id', state.id);
             if (error) throw error;
             window.showPremiumToast('Muvaffaqiyatli', 'Tan narx yangilandi.', true);
+            window.closeRomixPriceModal();
             await renderRomixBuhOmbor();
         } catch (err) {
             alert('Xatolik: ' + err.message);
