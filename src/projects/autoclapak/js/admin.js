@@ -587,24 +587,63 @@ document.addEventListener('DOMContentLoaded', async () => {
             statsEl.innerHTML = `
                 <div class="buh-mini-stat"><span class="buh-mini-label">Jami Xodimlar</span><span class="buh-mini-value">${totalEmp}</span></div>
                 <div class="buh-mini-stat"><span class="buh-mini-label">Bugun Ishda</span><span class="buh-mini-value" style="color:#00ff88;">${presentToday}</span></div>
+                <div class="buh-mini-stat"><span class="buh-mini-label">Bugungi Jonli Ish Haqi</span><span class="buh-mini-value" style="color:#ffaa00;" id="buh-xodimlar-live-total">0 UZS</span></div>
                 <div class="buh-mini-stat"><span class="buh-mini-label">Oylik Maosh Fondi</span><span class="buh-mini-value" style="color:#ba00ff;">${_buhFmt(monthlyPayrollFund)}</span></div>
             `;
         }
 
+        // --- HR bilan bir xil formula: kunlik stavka = oylik/26, soatlik = kunlik/8, sekundlik = soatlik/3600 ---
+        // (admin.js dagi loadRomixDashboardStats'ning jonli ish haqi hisoblagichi bilan 100% bir xil)
+        const activeWorkers = [];
+        emps.forEach(e => {
+            const a = attByEmp[e.id];
+            if (!a || !a.check_in) return;
+            const sal = parseFloat((e.salary_info || '').toString().replace(/[^0-9]/g, '')) || 0;
+            const perSecondRate = (sal / 26) / 8 / 3600;
+            const checkInParts = a.check_in.split(':');
+            const checkInDate = new Date();
+            checkInDate.setHours(parseInt(checkInParts[0]) || 0, parseInt(checkInParts[1]) || 0, parseInt(checkInParts[2]) || 0, 0);
+            let checkOutDate = null;
+            if (a.check_out) {
+                const p = a.check_out.split(':');
+                checkOutDate = new Date();
+                checkOutDate.setHours(parseInt(p[0]) || 0, parseInt(p[1]) || 0, parseInt(p[2]) || 0, 0);
+            }
+            activeWorkers.push({ id: e.id, checkIn: a.check_in, checkOut: a.check_out, checkInDate, checkOutDate, perSecondRate });
+        });
+
         if (tableEl) {
             if (emps.length === 0) {
-                tableEl.innerHTML = '<tr><td colspan="4" style="text-align:center; color:rgba(255,255,255,0.3); padding:20px;">Xodimlar topilmadi</td></tr>';
+                tableEl.innerHTML = '<tr><td colspan="5" style="text-align:center; color:rgba(255,255,255,0.3); padding:20px;">Xodimlar topilmadi</td></tr>';
             } else {
                 tableEl.innerHTML = emps.map(e => {
                     const a = attByEmp[e.id];
                     const statusHtml = a && a.check_in
-                        ? (a.check_out ? `<span style="color:#ff4d4f;">Ketdi: ${a.check_out}</span>` : `<span style="color:#00ff88;">Ishda (${a.check_in})</span>`)
+                        ? (a.check_out
+                            ? `<span style="background:rgba(255,77,79,0.1); color:#ff4d4f; padding:2px 8px; border-radius:12px; font-size:0.7rem; font-weight:700;">Ketdi: ${a.check_out}</span>`
+                            : `<span style="background:rgba(0,255,136,0.1); color:#00ff88; padding:2px 8px; border-radius:12px; font-size:0.7rem; font-weight:700; display:inline-flex; align-items:center; gap:4px;"><span class="pulse-dot" style="width:6px; height:6px; color:#00ff88;"></span>Ishlamoqda (${a.check_in})</span>`)
                         : `<span style="color:rgba(255,255,255,0.3);">Kelmagan</span>`;
                     const salary = parseFloat((e.salary_info || '').toString().replace(/[^0-9]/g, '')) || 0;
-                    return `<tr><td>${e.full_name}</td><td>${e.role || '-'}</td><td>${statusHtml}</td><td style="text-align:right;">${_buhFmt(salary)}</td></tr>`;
+                    return `<tr><td>${e.full_name}</td><td>${e.role || '-'}</td><td>${statusHtml}</td><td style="text-align:right; color:#ffaa00; font-family:monospace;" id="buh-live-wage-${e.id}">${a && a.check_in ? '0 UZS' : '-'}</td><td style="text-align:right;">${_buhFmt(salary)}</td></tr>`;
                 }).join('');
             }
         }
+
+        if (window.romixBuhPayrollInterval) clearInterval(window.romixBuhPayrollInterval);
+        window.romixBuhPayrollInterval = setInterval(() => {
+            let totalEarnedToday = 0;
+            const now = new Date();
+            activeWorkers.forEach(w => {
+                const seconds = Math.max(0, ((w.checkOutDate || now) - w.checkInDate) / 1000);
+                const earned = seconds * w.perSecondRate;
+                totalEarnedToday += earned;
+                const cell = document.getElementById(`buh-live-wage-${w.id}`);
+                if (cell) cell.textContent = earned.toLocaleString('uz-UZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' UZS';
+            });
+            const totalEl = document.getElementById('buh-xodimlar-live-total');
+            if (totalEl) totalEl.textContent = totalEarnedToday.toLocaleString('uz-UZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' UZS';
+        }, 1000);
+
         return { totalEmp, monthlyPayrollFund };
     }
 
