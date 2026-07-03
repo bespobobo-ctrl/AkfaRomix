@@ -875,7 +875,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const itemsSummary = orderItems.map(it => `${it.materialName} (${it.quantity} ta)`).join(' + ');
 
         const newOrder = {
-            id: 'ord-' + Date.now().toString().slice(-6),
             customer_name: document.getElementById('oCustomer').value.trim() || 'Noma\'lum Mijoz',
             customer_phone: document.getElementById('oPhone').value.trim() || '---',
             tg_user: document.getElementById('oTg').value.trim(),
@@ -891,7 +890,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             payment_type: document.getElementById('oPayment').value,
             deadline_date: document.getElementById('oDeadline').value || new Date(Date.now() + 7*24*60*60*1000).toISOString().split('T')[0],
             status: 'Kutilmoqda',
-            worker_group: '',
             created_at: new Date().toISOString()
         };
 
@@ -902,7 +900,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.warn("Supabase insert order failed, writing to local storage:", err);
             const localRaw = localStorage.getItem('romix_orders_local');
             const localOrders = localRaw ? JSON.parse(localRaw) : [];
-            localOrders.unshift(newOrder);
+            const offlineOrder = { ...newOrder, id: 'loc-' + Date.now() };
+            localOrders.unshift(offlineOrder);
             localStorage.setItem('romix_orders_local', JSON.stringify(localOrders));
         }
 
