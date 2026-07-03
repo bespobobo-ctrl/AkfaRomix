@@ -354,7 +354,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function calculateTotal() {
         let totalArea = 0;
-        let totalMaterials = 0;
+        let totalMaterials = 0; // Tan narxi (materiallar narxi)
         let totalInstall = 0;
         const wantsInstall = !!document.getElementById('oInstall')?.checked;
 
@@ -365,23 +365,36 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
+        // 10% avto harajatlar
+        const expenses = totalMaterials * 0.10;
+
+        // Foyda foizi
+        const profitPercent = parseFloat(document.getElementById('oProfitPercent')?.value) || 0;
+        const profit = totalMaterials * (profitPercent / 100);
+
         if (wantsInstall) {
             totalInstall = totalArea * INSTALLATION_PRICE_PER_SQM;
         }
 
-        const grandTotal = totalMaterials + totalInstall;
+        const grandTotal = totalMaterials + expenses + profit + totalInstall;
 
         if (document.getElementById('cArea')) document.getElementById('cArea').textContent = totalArea.toFixed(2) + ' kv.m';
         if (document.getElementById('cMaterial')) document.getElementById('cMaterial').textContent = totalMaterials.toLocaleString() + " so'm";
+        if (document.getElementById('cExpenses')) document.getElementById('cExpenses').textContent = expenses.toLocaleString() + " so'm";
+        if (document.getElementById('cProfit')) document.getElementById('cProfit').textContent = profit.toLocaleString() + " so'm";
         if (document.getElementById('cInstall')) document.getElementById('cInstall').textContent = totalInstall.toLocaleString() + " so'm";
         if (document.getElementById('cTotal')) document.getElementById('cTotal').textContent = grandTotal.toLocaleString() + " so'm";
 
-        return { totalArea, totalMaterials, totalInstall, grandTotal };
+        return { totalArea, totalMaterials, totalInstall, grandTotal, expenses, profit };
     }
 
     const installCheck = document.getElementById('oInstall');
     if (installCheck) {
         installCheck.addEventListener('change', calculateTotal);
+    }
+    const profitInput = document.getElementById('oProfitPercent');
+    if (profitInput) {
+        profitInput.addEventListener('input', calculateTotal);
     }
 
     window.reqMaterials = [];
@@ -617,12 +630,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const createdDate = new Date(o.created_at || Date.now()).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
                 const dDate = new Date(o.deadline_date).toLocaleDateString('en-GB');
 
-                // Compile visual descriptions from model_name
+                // Cost breakdowns for invoice summary
+                let baseCost = 0;
                 let itemsListHtml = '';
                 try {
-                    // Try to parse JSON array if we saved it as serialized JSON
                     const parsedItems = JSON.parse(o.model_name);
                     parsedItems.forEach((it, idx) => {
+                        baseCost += (it.subtotal || 0);
                         const dimText = it.height > 0 ? `B: ${it.height}m x E: ${it.width}m` : (it.width > 0 ? `U: ${it.width}m` : '---');
                         itemsListHtml += `
                             <tr>
@@ -638,7 +652,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         `;
                     });
                 } catch(e) {
-                    // Legacy/Standard single string fallbacks
+                    baseCost = Number(o.production_cost || 0);
                     itemsListHtml = `
                         <tr>
                             <td>01.</td>
@@ -652,6 +666,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </tr>
                     `;
                 }
+
+                const autoExpenses = Math.round(baseCost * 0.10);
+                const installCost = Number(o.installation_cost || 0);
+                const profitCost = Math.max(0, Number(o.total_price) - baseCost - autoExpenses - installCost);
 
                 document.getElementById('invPaperContent').innerHTML = `
                     <div class="inv-header">
@@ -701,7 +719,34 @@ document.addEventListener('DOMContentLoaded', async () => {
                             </tbody>
                         </table>
 
-                        <div class="inv-footer-row">
+                        <!-- Cost Summary Breakdown -->
+                        <div style="display:flex; justify-content:flex-end; margin-top:20px; font-size:0.85rem; line-height:1.6; color:#333;">
+                            <div style="width:280px; background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                    <span>Tan Narxi (Tan Narx):</span>
+                                    <strong>${baseCost.toLocaleString()} UZS</strong>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                    <span>Avto Harajatlar (10%):</span>
+                                    <strong>${autoExpenses.toLocaleString()} UZS</strong>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; margin-bottom:4px; color:#10b981;">
+                                    <span>Menejer Ustamasi (Foyda):</span>
+                                    <strong>${profitCost.toLocaleString()} UZS</strong>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                                    <span>O'rnatib Berish Xizmati:</span>
+                                    <strong>${installCost.toLocaleString()} UZS</strong>
+                                </div>
+                                <hr style="border:none; border-top:1px solid #cbd5e1; margin:8px 0;">
+                                <div style="display:flex; justify-content:space-between; font-size:1.1rem; font-weight:800; color:#0f172a;">
+                                    <span>Jami Summa:</span>
+                                    <span>${Number(o.total_price).toLocaleString()} UZS</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="inv-footer-row" style="margin-top:25px;">
                             <div class="terms-box ${isDebt ? 'debt-terms' : ''}">
                                 <h4>Terms & Conditions:</h4>
                                 <p>${isDebt ?
