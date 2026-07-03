@@ -83,15 +83,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         ]
     };
 
+    // Sync material prices from romix_inventory to AVAILABLE_MATERIALS
+    async function syncMaterialPrices() {
+        try {
+            const { data, error } = await supabase.from('romix_inventory').select('product_name, price');
+            if (error) throw error;
+            if (data && data.length > 0) {
+                for (const cat in AVAILABLE_MATERIALS) {
+                    AVAILABLE_MATERIALS[cat].forEach(mat => {
+                        const dbMatch = data.find(dbMat => 
+                            dbMat.product_name.toLowerCase().trim() === mat.name.toLowerCase().trim() ||
+                            dbMat.product_name.toLowerCase().includes(mat.name.toLowerCase()) ||
+                            mat.name.toLowerCase().includes(dbMat.product_name.toLowerCase())
+                        );
+                        if (dbMatch && dbMatch.price !== undefined) {
+                            mat.price = parseFloat(dbMatch.price) || 0;
+                        }
+                    });
+                }
+                if (typeof updateConstructorFields === 'function') {
+                    updateConstructorFields();
+                }
+            }
+        } catch (err) {
+            console.warn("Failed to sync material prices from romix_inventory:", err);
+        }
+    }
+
     let orderItems = [];
 
     // Load warehouse materials for the BOM Request
     async function loadWarehouseMaterials() {
         let data = [];
         try {
-            const res = await supabase.from('warehouse_products').select('id, name, unit');
+            const res = await supabase.from('romix_inventory').select('id, product_name, unit');
             if (res.error) throw res.error;
-            data = res.data || [];
+            data = (res.data || []).map(p => ({ id: p.id, name: p.product_name, unit: p.unit }));
         } catch (err) {
             console.warn("Supabase loadWarehouseMaterials failed, using local default materials:", err);
             data = [
@@ -804,9 +831,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Get all materials to match
                 let whMats = [];
                 try {
-                    const res = await supabase.from('warehouse_products').select('id, name, unit');
+                    const res = await supabase.from('romix_inventory').select('id, product_name, unit');
                     if (res.error) throw res.error;
-                    whMats = res.data || [];
+                    whMats = (res.data || []).map(p => ({ id: p.id, name: p.product_name, unit: p.unit }));
                 } catch(err) {
                     console.warn("Supabase warehouse fetch for BOM failed, using local fallback:", err);
                     whMats = [
@@ -1134,6 +1161,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     document.getElementById('logoutBtn').onclick = () => { localStorage.removeItem('currentUser'); window.location.href = '/'; };
 
+    syncMaterialPrices();
     loadWarehouseMaterials();
     loadOrders();
 });
