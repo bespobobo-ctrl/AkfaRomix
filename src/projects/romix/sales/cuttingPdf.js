@@ -356,138 +356,152 @@ export function generateCuttingPdf(order) {
                 ['Chiqit foizi', result.offcutRate.toFixed(2) + ' %'],
             ],
             styles: { fontSize: 8.5, cellPadding: 1.5 },
-            headStyles: { fillColor: [16, 122, 124] },
+            headStyles: { fillColor: [80, 80, 80] },
             columnStyles: { 0: { fontStyle: 'bold', cellWidth: 70 } },
             margin: { left: M, right: M }
         });
     });
 
     // ══════════════════════════════════════════════════════
-    // Vizual kesim chizmalari — arra zazorlarini aniq ko'rsatish
+    // Vizual kesim chizmalari — OptiCut Usulida (Greyscale)
     // ══════════════════════════════════════════════════════
     visualPages.forEach(({ mat, result }) => {
         doc.addPage();
         doc.setFontSize(12); doc.setFont(undefined, 'bold');
+        doc.setTextColor(40);
         doc.text('Kesim chizmasi — ' + mat, M, 14);
-        doc.setFontSize(8); doc.setFont(undefined, 'normal');
-        doc.text(`Standart profil: ${fmtMm(BAR_LEN)} mm  |  Arra zazori: 45°=${KERF_45}mm, 90°=${KERF_90}mm`, M, 19);
+        doc.setFontSize(8.5); doc.setFont(undefined, 'normal');
+        doc.setTextColor(80);
+        doc.text(`Standart profil: ${fmtMm(BAR_LEN)} mm  |  Arra zazori: 45°=${KERF_45}mm, 90°=${KERF_90}mm  |  Trim: ${TRIM}mm`, M, 19);
 
         const barW = PW - 2 * M;
         const scale = barW / BAR_LEN;
-        let yy = 26;
+        let yy = 32;
 
         result.maps.forEach((mp, mi) => {
-            if (yy > 265) { doc.addPage(); yy = 20; }
+            if (yy > 255) { doc.addPage(); yy = 22; }
 
-            // Xarita sarlavhasi
-            doc.setFontSize(8.5); doc.setFont(undefined, 'bold'); doc.setTextColor(20);
-            doc.text(`${mi + 1}-xarita  ×${mp.count} profil`, M, yy);
-            yy += 4;
+            // Xarita sarlavhasi / Tavsifi
+            doc.setFontSize(9); doc.setFont(undefined, 'bold'); doc.setTextColor(40);
+            doc.text(`${mi + 1}/${result.maps.length} -- ${mat} -- ${fmtMm(BAR_LEN)} mm -- Soni: ${mp.count} dona`, M, yy);
+            yy += 8; // Joy qoldiramiz o'lchamlar uchun
 
-            const barH = 12;
+            const barH = 10;
+            const bevel = 6 * scale; // 45 gradusli kesimning diagonal eni
 
-            // Profil konturi (fon)
-            doc.setDrawColor(180); doc.setLineWidth(0.3);
-            doc.setFillColor(245, 247, 250);
+            // 1) Profil konturi (fon)
+            doc.setDrawColor(180); doc.setLineWidth(0.25);
+            doc.setFillColor(250, 250, 250);
             doc.rect(M, yy, barW, barH, 'FD');
 
-            let x = M;
+            // Trim chizig'i va yozuvi
+            const trimW = TRIM * scale;
+            doc.setDrawColor(120); doc.setLineWidth(0.4);
+            doc.line(M + trimW, yy - 1, M + trimW, yy + barH + 1); // trim kesim chizig'i
+            doc.setFontSize(5.5); doc.setFont(undefined, 'normal'); doc.setTextColor(100);
+            doc.text(TRIM.toFixed(2), M + trimW / 2, yy + barH + 4, { align: 'center' });
+
+            let x = M + trimW;
+
             mp.pieces.forEach((p, pi) => {
                 const w = p.len * scale;
-                const is45 = p.angle && p.angle.includes('45');
+                const nextPiece = mp.pieces[pi + 1];
 
-                // Bo'lak to'rtburchagi
-                if (is45) {
-                    doc.setFillColor(200, 225, 245); // ko'k — 45° kesim
-                } else {
-                    doc.setFillColor(220, 245, 220); // yashil — 90° kesim
-                }
+                // Burchaklarni tahlil qilish
+                // Masalan, angles string: "45°/45°" yoki "45°/90°" va h.k.
+                const angles = p.angle ? p.angle.split('/') : ['90°', '90°'];
+                const left45 = angles[0] && angles[0].includes('45');
+                const right45 = angles[1] && angles[1].includes('45');
+
+                // Bo'lak to'rtburchagi (oq/och-kulrang)
+                doc.setFillColor(255, 255, 255);
                 doc.rect(x, yy, w, barH, 'F');
-                doc.setDrawColor(80); doc.setLineWidth(0.25);
+                doc.setDrawColor(50); doc.setLineWidth(0.3);
                 doc.rect(x, yy, w, barH);
 
-                // 45° burchak — diagonal arra chiziqlari
-                if (is45) {
-                    doc.setDrawColor(200, 60, 60); doc.setLineWidth(0.4);
-                    // Chap uchi — 45° diagonal
-                    const d = Math.min(4, w * 0.15);
-                    doc.line(x, yy + barH, x + d, yy);
-                    // O'ng uchi — 45° diagonal
-                    doc.line(x + w, yy, x + w - d, yy + barH);
+                // Diagonal kesim liniyalari (OptiCut uslubidagi ko'rinish)
+                doc.setDrawColor(120); doc.setLineWidth(0.3);
+                if (left45) {
+                    // Chap tomondagi diagonal
+                    doc.line(x, yy + barH, x + bevel, yy);
+                    // Kesilgan joyni soya qilish
+                    doc.setDrawColor(210);
+                    doc.line(x + 0.5, yy + barH - 1, x + bevel - 0.5, yy + 1);
+                    doc.setDrawColor(120);
                 } else {
-                    // 90° kesim — to'g'ri vertikal chiziq
-                    doc.setDrawColor(60, 150, 60); doc.setLineWidth(0.5);
+                    // 90 darajali kesik chizig'i
                     doc.line(x, yy, x, yy + barH);
+                }
+
+                if (right45) {
+                    // O'ng tomondagi diagonal
+                    doc.line(x + w, yy, x + w - bevel, yy + barH);
+                    // Kesilgan joyni soya qilish
+                    doc.setDrawColor(210);
+                    doc.line(x + w - 0.5, yy + 1, x + w - bevel + 0.5, yy + barH - 1);
+                    doc.setDrawColor(120);
+                } else {
+                    // 90 darajali o'ng kesik chizig'i
                     doc.line(x + w, yy, x + w, yy + barH);
                 }
 
-                // Bo'lak uzunligi matni
-                doc.setFontSize(6.5); doc.setTextColor(20); doc.setFont(undefined, 'bold');
-                if (w > 10) {
-                    doc.text(fmtMm(p.len), x + w / 2, yy + barH / 2 + 1.5, { align: 'center' });
+                // Reference kodi (masalan: P-01 / 2)
+                doc.setFontSize(6.5); doc.setTextColor(40); doc.setFont(undefined, 'normal');
+                if (w > 12) {
+                    doc.text(p.ref, x + w / 2, yy + barH / 2 + 1.5, { align: 'center' });
                 }
+
+                // O'lcham belgisi (tepasida tick-mark va o'lcham matni)
+                doc.setDrawColor(120); doc.setLineWidth(0.25);
+                doc.line(x + w / 2, yy, x + w / 2, yy - 3); // Tick mark
+                doc.setFontSize(7); doc.setTextColor(30); doc.setFont(undefined, 'bold');
+                doc.text(fmtMm(p.len), x + w / 2, yy - 4, { align: 'center' });
 
                 x += w;
 
-                // ── ARRA ZAZORI (kerf gap) ──
-                if (pi < mp.pieces.length - 1) {
-                    const nextAngle = mp.pieces[pi + 1].angle;
-                    const kerf = kerfBetween(p.angle, nextAngle);
+                // Arra zazori (kerf gap)
+                if (nextPiece) {
+                    const kerf = kerfBetween(p.angle, nextPiece.angle);
                     const kerfW = kerf * scale;
 
-                    // Zazor to'rtburchagi — qizil rang
-                    doc.setFillColor(255, 80, 80);
-                    doc.rect(x, yy, Math.max(kerfW, 0.6), barH, 'F');
+                    // Arra kesik chizig'i (rangsiz, faqat bo'shliq)
+                    doc.setDrawColor(150); doc.setLineWidth(0.3);
+                    doc.line(x, yy - 1, x, yy + barH + 1);
+                    doc.line(x + kerfW, yy - 1, x + kerfW, yy + barH + 1);
 
-                    // Zazor o'lchami (yuqorida)
-                    doc.setFontSize(4.5); doc.setTextColor(220, 50, 50); doc.setFont(undefined, 'bold');
-                    doc.text(kerf + 'mm', x + Math.max(kerfW, 0.6) / 2, yy - 1, { align: 'center' });
-
-                    x += Math.max(kerfW, 0.6);
+                    x += kerfW;
                 }
             });
 
-            // Chiqit (off-cut) — kulrang
+            // Chiqit (off-cut) — kulrang va shtrixlangan (hatch lines)
             if (mp.remaining > 0) {
-                const remW = Math.max(mp.remaining * scale, 0.5);
-                doc.setFillColor(180, 180, 180);
-                doc.rect(x, yy, barW - (x - M), barH, 'F');
-                doc.setDrawColor(140); doc.rect(x, yy, barW - (x - M), barH);
-                // Diagonal chiziqlar (chiqit belgisi)
-                doc.setDrawColor(160);
-                for (let dx = 0; dx < barW - (x - M); dx += 4) {
-                    doc.line(x + dx, yy + barH, x + dx + 3, yy);
+                const remW = barW - (x - M);
+                doc.setFillColor(230, 230, 230);
+                doc.rect(x, yy, remW, barH, 'F');
+                doc.setDrawColor(100); doc.setLineWidth(0.3);
+                doc.rect(x, yy, remW, barH);
+
+                // Hatch lines
+                doc.setDrawColor(170); doc.setLineWidth(0.2);
+                for (let lx = x; lx < x + remW; lx += 4) {
+                    doc.line(lx, yy + barH, Math.min(lx + 3, x + remW), yy);
                 }
-                doc.setFontSize(5.5); doc.setTextColor(255); doc.setFont(undefined, 'bold');
-                const actualRemW = barW - (x - M);
-                if (actualRemW > 12) {
-                    doc.text(fmtMm(mp.remaining) + ' chiqit', x + actualRemW / 2, yy + barH / 2 + 1.5, { align: 'center' });
+
+                // Chiqit o'lchami va yozuvi
+                doc.setFontSize(6.5); doc.setTextColor(80); doc.setFont(undefined, 'bold');
+                if (remW > 18) {
+                    doc.text(`Chiqit: ${fmtMm(mp.remaining)}`, x + remW / 2, yy + barH / 2 + 1.5, { align: 'center' });
+                } else if (remW > 8) {
+                    doc.text(fmtMm(mp.remaining), x + remW / 2, yy + barH / 2 + 1.5, { align: 'center' });
                 }
             }
 
             doc.setTextColor(20);
-
-            // Pastda rang izohi (birinchi xaritada)
-            if (mi === 0) {
-                yy += barH + 3;
-                doc.setFontSize(5); doc.setFont(undefined, 'normal'); doc.setTextColor(100);
-                // Rang izohi
-                doc.setFillColor(200, 225, 245); doc.rect(M, yy, 4, 3, 'F');
-                doc.text('45° kesim', M + 5, yy + 2.5);
-                doc.setFillColor(220, 245, 220); doc.rect(M + 22, yy, 4, 3, 'F');
-                doc.text('90° kesim', M + 27, yy + 2.5);
-                doc.setFillColor(255, 80, 80); doc.rect(M + 50, yy, 4, 3, 'F');
-                doc.text('Arra zazori', M + 55, yy + 2.5);
-                doc.setFillColor(180, 180, 180); doc.rect(M + 78, yy, 4, 3, 'F');
-                doc.text('Chiqit', M + 83, yy + 2.5);
-                doc.setTextColor(20);
-                yy += 7;
-            } else {
-                yy += barH + 7;
-            }
+            yy += barH + 15; // Keyingi chizmagacha masofa
         });
     });
 
     const fname = `AKFA_Kesim_${(order.customer || 'zakaz').replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
     doc.save(fname);
 }
+
