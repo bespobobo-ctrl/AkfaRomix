@@ -147,12 +147,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ============================================================
     async function loadProductionPipeline() {
         let orders = [];
+        let reqStatusByOrder = {};
         try {
             const { data, error } = await supabase.from('sales_orders').select('*').eq('status', 'Jarayonda').order('created_at', { ascending: false });
             if (error) throw error;
             orders = data || [];
         } catch (err) {
             console.warn("loadProductionPipeline fetch failed:", err);
+        }
+
+        try {
+            const { data, error } = await supabase.from('material_requests').select('order_id, status');
+            if (error) throw error;
+            (data || []).forEach(r => { reqStatusByOrder[r.order_id] = r.status; });
+        } catch (err) {
+            console.warn("loadProductionPipeline material_requests fetch failed:", err);
         }
 
         const cols = {
@@ -182,9 +191,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (cols.new) {
-            cols.new.innerHTML = buckets.new.length === 0 ? emptyMsg : buckets.new.map(o => card(o,
-                `<button class="pipeline-advance-btn" data-id="${o.id}" data-next="kesish" style="background:#ffaa00; color:#000; border:none; padding:8px; border-radius:8px; font-weight:700; font-size:0.74rem; cursor:pointer;">✅ Qabul Qilish</button>`
-            )).join('');
+            cols.new.innerHTML = buckets.new.length === 0 ? emptyMsg : buckets.new.map(o => {
+                const reqStatus = reqStatusByOrder[o.id];
+                const approved = reqStatus === 'Tasdiqlandi';
+                const actionHtml = approved
+                    ? `<button class="pipeline-advance-btn" data-id="${o.id}" data-next="kesish" style="background:#ffaa00; color:#000; border:none; padding:8px; border-radius:8px; font-weight:700; font-size:0.74rem; cursor:pointer;">✅ Qabul Qilish</button>`
+                    : `<div style="text-align:center; background:rgba(239,68,68,0.08); color:#ef4444; padding:8px; border-radius:8px; font-weight:600; font-size:0.7rem;">⏳ Ombor tasdiqlashini kutmoqda</div>`;
+                return card(o, actionHtml);
+            }).join('');
         }
         if (cols.kesish) {
             cols.kesish.innerHTML = buckets.kesish.length === 0 ? emptyMsg : buckets.kesish.map(o => card(o,
