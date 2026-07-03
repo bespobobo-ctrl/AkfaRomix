@@ -213,8 +213,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     window.update3DPreview = function update3D() {
         const type = itemTypeSel ? itemTypeSel.value : 'rom';
-        const isRom = ['rom', 'rom_fortochka'].includes(type);
-        const isEshik = type === 'eshik';
+        const isRom = ['rom', 'rom_fortochka', 'eshik'].includes(type);
+        const isEshik = false;
         const stv = parseInt(stvInp && stvInp.value) || 0;
         // Sodda maydonlar (impost/stvorka/ochilish) — faqat eshik; romда dizayner boshqaradi
         if (impostWrap) impostWrap.style.display = isEshik ? '' : 'none';
@@ -304,7 +304,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 stvorka: parseInt(document.getElementById('itemStvorka')?.value) || 0,
                 openType: document.getElementById('itemOpenType')?.value || 'kasement_chap',
                 arch: document.getElementById('itemArch')?.checked || false,
-                design: (['rom', 'rom_fortochka'].includes(type) && _designer) ? _designer.getModel() : null,
+                design: (['rom', 'rom_fortochka', 'eshik'].includes(type) && _designer) ? _designer.getModel() : null,
                 calcVal: calcVal,
                 subtotal: subtotal,
                 unit: matOpt.dataset.unit
