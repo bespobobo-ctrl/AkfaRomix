@@ -672,17 +672,40 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (tableEl) {
             if (items.length === 0) {
-                tableEl.innerHTML = '<tr><td colspan="4" style="text-align:center; color:rgba(255,255,255,0.3); padding:20px;">Ombor bo\'sh</td></tr>';
+                tableEl.innerHTML = '<tr><td colspan="5" style="text-align:center; color:rgba(255,255,255,0.3); padding:20px;">Ombor bo\'sh</td></tr>';
             } else {
                 tableEl.innerHTML = items.map(p => {
                     const val = (Number(p.price) || 0) * (Number(p.stock_quantity) || 0);
                     const lowStyle = (Number(p.stock_quantity) || 0) < 10 ? 'color:#ff4d4f;font-weight:700;' : '';
-                    return `<tr><td>${p.product_name}</td><td style="text-align:right; ${lowStyle}">${p.stock_quantity || 0} ${p.unit || ''}</td><td style="text-align:right;">${_buhFmt(p.price)}</td><td style="text-align:right;">${_buhFmt(val)}</td></tr>`;
+                    return `<tr>
+                        <td>${p.product_name}</td>
+                        <td style="text-align:right; ${lowStyle}">${p.stock_quantity || 0} ${p.unit || ''}</td>
+                        <td style="text-align:right; font-weight:700; color:#00ff88;">${_buhFmt(p.price)}</td>
+                        <td style="text-align:right;">${_buhFmt(val)}</td>
+                        <td style="text-align:right;">
+                            <button class="buh-row-action-btn" style="background:rgba(0,186,255,0.15); color:#00baff;" onclick="window.updateRomixProductPrice('${p.id}', '${p.product_name.replace(/'/g, "\\'")}', ${p.price || 0})">
+                                ✏️ Narx belgilash
+                            </button>
+                        </td>
+                    </tr>`;
                 }).join('');
             }
         }
         return { totalValue };
     }
+
+    window.updateRomixProductPrice = async (id, name, currentPrice) => {
+        const val = parseFloat(prompt(`"${name}" uchun yangi tan narxni kiriting (UZS):`, currentPrice || 0));
+        if (isNaN(val) || val < 0) return;
+        try {
+            const { error } = await supabase.from('romix_inventory').update({ price: val }).eq('id', id);
+            if (error) throw error;
+            window.showPremiumToast('Muvaffaqiyatli', 'Tan narx yangilandi.', true);
+            await renderRomixBuhOmbor();
+        } catch (err) {
+            alert('Xatolik: ' + err.message);
+        }
+    };
 
     async function renderBuhTayyorMahsulot() {
         const statsEl = document.getElementById('buh-tayyor-stats');
