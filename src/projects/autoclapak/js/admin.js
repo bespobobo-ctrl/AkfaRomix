@@ -721,11 +721,53 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     let _buhSotuvChart = null;
+    // Bir buyurtmadan qolayotgan taxminiy foyda va to'lov holatini hisoblaydi.
+    // Eslatma: sales_orders'da alohida 'profit' ustuni saqlanmaydi (faqat total_price/production_cost/
+    // installation_cost bor), shuning uchun foyda = total_price - (production_cost + installation_cost)
+    // sifatida taxminiy hisoblanadi. To'lov: "Naqd"/"Karta" buyurtmalar darhol to'langan deb olinadi;
+    // "Qarz" buyurtmalarda haqiqiy holat paid_amount ustuniga (mavjud bo'lsa) qaraladi.
+    function _buhOrderPaymentInfo(o) {
+        const total = Number(o.total_price) || 0;
+        const isDebtOrder = o.payment_type === 'Qarz';
+        const paidAmount = isDebtOrder ? (Number(o.paid_amount) || 0) : total;
+        const remaining = Math.max(0, total - paidAmount);
+        const fullyPaid = remaining <= 0;
+        return { total, isDebtOrder, paidAmount, remaining, fullyPaid, paymentDate: o.payment_date || null };
+    }
+    function _buhOrderProfit(o) {
+        const total = Number(o.total_price) || 0;
+        const cost = (Number(o.production_cost) || 0) + (Number(o.installation_cost) || 0);
+        return total - cost;
+    }
+
+    window.payRomixSalesOrder = async (orderId) => {
+        let order = null;
+        try {
+            const { data } = await supabase.from('sales_orders').select('*').eq('id', orderId).single();
+            order = data;
+        } catch (e) { console.warn('Buh: order fetch for payment failed', e); }
+        if (!order) return;
+        const info = _buhOrderPaymentInfo(order);
+        const val = parseFloat(prompt(`"${order.customer_name}" buyurtmasi uchun to'lov summasini kiriting (qoldiq: ${info.remaining.toLocaleString()} UZS):`, info.remaining));
+        if (!val || val <= 0) return;
+        const newPaid = info.paidAmount + val;
+        try {
+            const { error } = await supabase.from('sales_orders').update({ paid_amount: newPaid, payment_date: new Date().toISOString() }).eq('id', orderId);
+            if (error) throw error;
+        } catch (e) {
+            alert("To'lovni saqlashda xatolik: bazada 'paid_amount'/'payment_date' ustunlari mavjudligini tekshiring (⚙️ Jadval Sozlash).");
+            return;
+        }
+        await renderBuhKunlikSotuv(window._buhSotuvActivePeriod || 'today');
+        window.showPremiumToast('To\'lov Qayd Etildi', `${val.toLocaleString()} UZS to'lov sifatida saqlandi.`, true);
+    };
+
     async function renderBuhKunlikSotuv(period) {
         period = period || 'today';
+        window._buhSotuvActivePeriod = period;
         const statsEl = document.getElementById('buh-sotuv-stats');
-        const tableEl = document.getElementById('buh-sotuv-daily-table');
-        if (!statsEl && !tableEl) return;
+        const gridEl = document.getElementById('buh-sotuv-orders-grid');
+        if (!statsEl && !gridEl) return;
 
         let orders = [];
         try {
@@ -736,13 +778,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         const from = _buhPeriodStart(period);
         const inPeriod = orders.filter(o => o.created_at && new Date(o.created_at) >= from);
         const totalRevenue = inPeriod.reduce((s, o) => s + (Number(o.total_price) || 0), 0);
-        const debtRevenue = inPeriod.filter(o => o.payment_type === 'Qarz').reduce((s, o) => s + (Number(o.total_price) || 0), 0);
+        const totalProfit = inPeriod.reduce((s, o) => s + _buhOrderProfit(o), 0);
+        const unpaidRemaining = inPeriod.reduce((s, o) => s + _buhOrderPaymentInfo(o).remaining, 0);
 
         if (statsEl) {
             statsEl.innerHTML = `
                 <div class="buh-mini-stat"><span class="buh-mini-label">Buyurtmalar</span><span class="buh-mini-value">${inPeriod.length}</span></div>
                 <div class="buh-mini-stat"><span class="buh-mini-label">Jami Savdo</span><span class="buh-mini-value" style="color:#00ff88;">${_buhFmt(totalRevenue)}</span></div>
-                <div class="buh-mini-stat"><span class="buh-mini-label">Qarzga Sotilgan</span><span class="buh-mini-value" style="color:#fabb18;">${_buhFmt(debtRevenue)}</span></div>
+                <div class="buh-mini-stat"><span class="buh-mini-label">Jami Foyda (taxminiy)</span><span class="buh-mini-value" style="color:#00d2ff;">${_buhFmt(totalProfit)}</span></div>
+                <div class="buh-mini-stat"><span class="buh-mini-label">To'lanmagan Qarz</span><span class="buh-mini-value" style="color:#fabb18;">${_buhFmt(unpaidRemaining)}</span></div>
             `;
         }
 
@@ -756,15 +800,47 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (o.payment_type === 'Qarz') byDate[d].debt += Number(o.total_price) || 0;
         });
 
-        const sortedDates = Object.keys(byDate).sort().reverse();
-        if (tableEl) {
-            if (sortedDates.length === 0) {
-                tableEl.innerHTML = '<tr><td colspan="4" style="text-align:center; color:rgba(255,255,255,0.3); padding:20px;">Savdo topilmadi</td></tr>';
+        if (gridEl) {
+            if (inPeriod.length === 0) {
+                gridEl.innerHTML = '<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Bu davrda buyurtma topilmadi</div>';
             } else {
-                tableEl.innerHTML = sortedDates.slice(0, 30).map(d => {
-                    const row = byDate[d];
-                    const debtStyle = row.debt > 0 ? 'color:#ff4d4f;' : '';
-                    return `<tr><td>${d}</td><td>${row.count}</td><td style="text-align:right;">${_buhFmt(row.total)}</td><td style="text-align:right; ${debtStyle}">${_buhFmt(row.debt)}</td></tr>`;
+                gridEl.innerHTML = inPeriod.slice(0, 60).map(o => {
+                    const pay = _buhOrderPaymentInfo(o);
+                    const profit = _buhOrderProfit(o);
+                    const statusColor = o.status === 'Jarayonda' ? '#00d2ff' : (o.status && (o.status.includes('Tayyor') || o.status.includes('Yetkazildi')) ? '#00ff88' : '#ffaa00');
+                    const payBadge = pay.fullyPaid
+                        ? `<span style="background:rgba(0,255,136,0.1); color:#00ff88; padding:3px 10px; border-radius:12px; font-size:0.68rem; font-weight:700;">✓ To'langan</span>`
+                        : (pay.paidAmount > 0
+                            ? `<span style="background:rgba(255,170,0,0.1); color:#ffaa00; padding:3px 10px; border-radius:12px; font-size:0.68rem; font-weight:700;">Qisman to'langan</span>`
+                            : `<span style="background:rgba(255,77,79,0.1); color:#ff4d4f; padding:3px 10px; border-radius:12px; font-size:0.68rem; font-weight:700;">Qarzga (to'lanmagan)</span>`);
+                    const payDateHtml = pay.paymentDate
+                        ? `<div style="font-size:0.65rem; color:rgba(255,255,255,0.35); margin-top:2px;">To'lov sanasi: ${new Date(pay.paymentDate).toLocaleDateString('uz-UZ')}</div>`
+                        : (pay.isDebtOrder ? `<div style="font-size:0.65rem; color:rgba(255,255,255,0.35); margin-top:2px;">To'lov hali amalga oshirilmagan</div>` : '');
+                    const payBtn = !pay.fullyPaid
+                        ? `<button onclick="window.payRomixSalesOrder('${o.id}')" style="background:rgba(0,255,136,0.12); border:1px solid rgba(0,255,136,0.25); color:#00ff88; padding:6px 12px; border-radius:8px; font-size:0.72rem; font-weight:700; cursor:pointer; width:100%; margin-top:8px;">💳 To'lov Qilish</button>`
+                        : '';
+                    return `
+                    <div style="border-top:3px solid ${statusColor}; border-radius:16px; background:rgba(255,255,255,0.015); border-left:1px solid rgba(255,255,255,0.03); border-right:1px solid rgba(255,255,255,0.03); border-bottom:1px solid rgba(255,255,255,0.03); padding:14px 16px; display:flex; flex-direction:column; gap:8px; transition:all 0.25s;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+                            <div style="min-width:0;">
+                                <div style="font-weight:700; color:#fff; font-size:0.9rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${o.customer_name || 'Noma\'lum mijoz'}</div>
+                                <div style="font-size:0.68rem; color:rgba(255,255,255,0.4); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${o.prod_type || 'Mahsulot'} • ${o.quantity || 1} ta</div>
+                            </div>
+                            <span style="font-size:0.6rem; color:${statusColor}; background:${statusColor}22; padding:2px 8px; border-radius:12px; font-weight:700; white-space:nowrap;">${o.status || 'Kutilmoqda'}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:rgba(255,255,255,0.5); border-top:1px dashed rgba(255,255,255,0.06); padding-top:8px;">
+                            <span>Jami narx</span><strong style="color:#00ff88; font-family:monospace;">${_buhFmt(pay.total)}</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:rgba(255,255,255,0.5);">
+                            <span>Foyda (taxminiy)</span><strong style="color:${profit >= 0 ? '#00d2ff' : '#ff4d4f'}; font-family:monospace;">${_buhFmt(profit)}</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px;">
+                            ${payBadge}
+                            <span style="font-size:0.65rem; color:rgba(255,255,255,0.3);">${o.created_at ? o.created_at.slice(0, 10) : ''}</span>
+                        </div>
+                        ${payDateHtml}
+                        ${payBtn}
+                    </div>`;
                 }).join('');
             }
         }
@@ -1069,7 +1145,11 @@ CREATE TABLE IF NOT EXISTS romix_debts (
     note TEXT,
     date TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT now()
-);`;
+);
+
+-- Sotuv buyurtmalarida to'lov holatini kuzatish uchun (Buhgalteriya > Kunlik Sotuv)
+ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS paid_amount NUMERIC DEFAULT 0;
+ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS payment_date TIMESTAMPTZ;`;
 
     window.openRomixBuhDbSetupModal = () => {
         const ta = document.getElementById('romix-buh-sql-text');
