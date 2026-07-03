@@ -1467,11 +1467,11 @@
                 <div id="buh-panel-xodimlar" class="buh-tab-panel">
                     <div class="hr-card">
                         <div class="buh-mini-row" id="buh-xodimlar-stats"></div>
-                        <div style="overflow-x:auto;">
-                            <table class="v2-table">
-                                <thead><tr><th>Ism</th><th>Lavozim</th><th>Bugungi Holat</th><th style="text-align:right;">Bugungi Jonli Haq</th><th style="text-align:right;">Oylik Maosh</th></tr></thead>
-                                <tbody id="buh-xodimlar-table"><tr><td colspan="5" style="text-align:center; color:rgba(255,255,255,0.3); padding:20px;">Yuklanmoqda...</td></tr></tbody>
-                            </table>
+                        <div style="display:flex; align-items:center; gap:10px; margin:18px 0 12px;">
+                            <input type="text" id="buh-xodimlar-search" placeholder="🔍 Ism yoki lavozim bo'yicha qidirish..." style="flex:1; max-width:320px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:9px 14px; border-radius:12px; font-size:0.82rem;">
+                        </div>
+                        <div id="buh-xodimlar-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px;">
+                            <div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Yuklanmoqda...</div>
                         </div>
                     </div>
                 </div>

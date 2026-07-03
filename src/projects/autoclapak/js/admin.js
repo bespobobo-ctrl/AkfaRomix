@@ -506,6 +506,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (_romixBuhFormsBound) return;
         _romixBuhFormsBound = true;
 
+        const empSearch = document.getElementById('buh-xodimlar-search');
+        if (empSearch) empSearch.addEventListener('input', () => {
+            const q = empSearch.value.trim().toLowerCase();
+            document.querySelectorAll('#buh-xodimlar-grid .buh-emp-card').forEach(card => {
+                card.style.display = (!q || (card.dataset.search || '').includes(q)) ? '' : 'none';
+            });
+        });
+
         const prodDateEl = document.getElementById('buh-prod-date');
         if (prodDateEl) prodDateEl.value = _buhToday();
         const expDateEl = document.getElementById('buh-exp-date');
@@ -564,8 +572,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function renderBuhXodimlar() {
         const statsEl = document.getElementById('buh-xodimlar-stats');
-        const tableEl = document.getElementById('buh-xodimlar-table');
-        if (!statsEl && !tableEl) return;
+        const gridEl = document.getElementById('buh-xodimlar-grid');
+        if (!statsEl && !gridEl) return;
 
         const todayStr = _buhToday();
         let emps = [], att = [];
@@ -612,19 +620,40 @@ document.addEventListener('DOMContentLoaded', async () => {
             activeWorkers.push({ id: e.id, checkIn: a.check_in, checkOut: a.check_out, checkInDate, checkOutDate, perSecondRate });
         });
 
-        if (tableEl) {
+        if (gridEl) {
             if (emps.length === 0) {
-                tableEl.innerHTML = '<tr><td colspan="5" style="text-align:center; color:rgba(255,255,255,0.3); padding:20px;">Xodimlar topilmadi</td></tr>';
+                gridEl.innerHTML = '<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Xodimlar topilmadi</div>';
             } else {
-                tableEl.innerHTML = emps.map(e => {
+                gridEl.innerHTML = emps.map(e => {
                     const a = attByEmp[e.id];
-                    const statusHtml = a && a.check_in
-                        ? (a.check_out
-                            ? `<span style="background:rgba(255,77,79,0.1); color:#ff4d4f; padding:2px 8px; border-radius:12px; font-size:0.7rem; font-weight:700;">Ketdi: ${a.check_out}</span>`
-                            : `<span style="background:rgba(0,255,136,0.1); color:#00ff88; padding:2px 8px; border-radius:12px; font-size:0.7rem; font-weight:700; display:inline-flex; align-items:center; gap:4px;"><span class="pulse-dot" style="width:6px; height:6px; color:#00ff88;"></span>Ishlamoqda (${a.check_in})</span>`)
-                        : `<span style="color:rgba(255,255,255,0.3);">Kelmagan</span>`;
+                    const isWorking = !!(a && a.check_in && !a.check_out);
+                    const hasLeft = !!(a && a.check_in && a.check_out);
+                    const statusColor = isWorking ? '#00ff88' : (hasLeft ? '#ff4d4f' : 'rgba(255,255,255,0.15)');
+                    const statusHtml = isWorking
+                        ? `<span style="background:rgba(0,255,136,0.1); color:#00ff88; padding:3px 10px; border-radius:12px; font-size:0.68rem; font-weight:700; display:inline-flex; align-items:center; gap:5px;"><span class="pulse-dot" style="width:6px; height:6px; color:#00ff88;"></span>Ishlamoqda (${a.check_in})</span>`
+                        : (hasLeft
+                            ? `<span style="background:rgba(255,77,79,0.1); color:#ff4d4f; padding:3px 10px; border-radius:12px; font-size:0.68rem; font-weight:700;">Ketdi: ${a.check_out}</span>`
+                            : `<span style="background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.35); padding:3px 10px; border-radius:12px; font-size:0.68rem; font-weight:700;">Kelmagan</span>`);
                     const salary = parseFloat((e.salary_info || '').toString().replace(/[^0-9]/g, '')) || 0;
-                    return `<tr><td>${e.full_name}</td><td>${e.role || '-'}</td><td>${statusHtml}</td><td style="text-align:right; color:#ffaa00; font-family:monospace;" id="buh-live-wage-${e.id}">${a && a.check_in ? '0 UZS' : '-'}</td><td style="text-align:right;">${_buhFmt(salary)}</td></tr>`;
+                    const initials = (e.full_name || '?').split(' ').map(n => n?.[0]).join('').slice(0, 2).toUpperCase();
+                    const searchKey = `${e.full_name || ''} ${e.role || ''}`.toLowerCase();
+                    return `<div class="buh-emp-card" data-search="${searchKey.replace(/"/g, '')}" style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-top:3px solid ${statusColor}; border-radius:18px; padding:16px; display:flex; flex-direction:column; gap:10px; transition:all 0.25s;">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <div style="width:44px; height:44px; border-radius:14px; background:linear-gradient(135deg,#00d2ff,#007aff); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; font-size:0.85rem; flex-shrink:0;">${initials}</div>
+                            <div style="min-width:0; flex:1;">
+                                <div style="font-weight:700; color:#fff; font-size:0.9rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${e.full_name}</div>
+                                <div style="font-size:0.7rem; color:rgba(255,255,255,0.4); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${e.role || 'Lavozimsiz'}</div>
+                            </div>
+                        </div>
+                        <div style="border-top:1px dashed rgba(255,255,255,0.06); padding-top:10px;">${statusHtml}</div>
+                        <div style="background:rgba(255,170,0,0.05); border:1px solid rgba(255,170,0,0.15); border-radius:12px; padding:9px 12px; display:flex; flex-direction:column; gap:2px;">
+                            <span style="font-size:0.6rem; color:rgba(255,255,255,0.4); font-weight:700; text-transform:uppercase; letter-spacing:0.4px;">Bugungi Jonli Ish Haqi</span>
+                            <span id="buh-live-wage-${e.id}" style="font-size:1.05rem; font-weight:800; color:#ffaa00; font-family:monospace;">${isWorking ? '0.00 UZS' : '—'}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:rgba(255,255,255,0.45);">
+                            <span>Oylik Maosh</span><strong style="color:#ba00ff; font-family:monospace;">${_buhFmt(salary)}</strong>
+                        </div>
+                    </div>`;
                 }).join('');
             }
         }
