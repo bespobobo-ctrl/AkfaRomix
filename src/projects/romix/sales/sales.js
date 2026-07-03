@@ -325,6 +325,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 typeName: type === 'rom' ? 'Rom' : type === 'rom_fortochka' ? 'Rom (Fortochkali)' : type === 'eshik' ? 'Eshik' : type === 'padakonnik' ? 'Padakonnik' : 'Aksesuar',
                 materialId: matOpt.value,
                 materialName: matOpt.dataset.name,
+                profPricePerM: itemPrice,
                 height: h,
                 width: w,
                 quantity: qty,

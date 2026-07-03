@@ -264,6 +264,18 @@ export function optimize(pieces, bar = BAR_LEN) {
 }
 
 const fmtMm = n => Number(n).toLocaleString('ru-RU');
+const fmtSom = n => Number(Math.round(n)).toLocaleString('ru-RU') + " so'm";
+
+// Profil narxini aniqlash: Rama/Impost/Stvorka = asosiy seriya narxi, Shtapik = 35%
+const SHTAPIK_PRICE_FACTOR = 0.35;
+function resolvePricePerM(mat, priceOf) {
+    // " · Rama/Impost/Stvorka/Shtapik" suffiksini ajratamiz (o'rta nuqta bayti muhim emas)
+    const m = mat.match(/^(.*?) . (Rama|Impost|Stvorka|Shtapik)$/);
+    const base = m ? m[1] : mat;
+    const part = m ? m[2] : '';
+    const pricePerM = priceOf[base] || priceOf[mat] || 0;
+    return part === 'Shtapik' ? pricePerM * SHTAPIK_PRICE_FACTOR : pricePerM;
+}
 
 // ══════════════════════════════════════════════════════
 // 3) PDF yaratish
@@ -289,10 +301,23 @@ export function generateCuttingPdf(order) {
     let first = true;
     const visualPages = [];
 
+    // Profil narxlari (harajat hisobi) — order itemlaridan
+    const priceOf = {};
+    (order.items || []).forEach(it => { if (it && it.materialName) priceOf[it.materialName] = Number(it.profPricePerM) || 0; });
+    const costRows = [];
+    let grandCost = 0, grandBars = 0;
+
     mats.forEach(mat => {
         const pieces = groups[mat];
         const result = optimize(pieces);
         visualPages.push({ mat, result, pieces });
+
+        // ── Harajat (narx) hisobi ──
+        const pricePerM = resolvePricePerM(mat, priceOf);
+        const matMeters = result.totalBars * BAR_LEN / 1000;
+        const matCost = Math.round(pricePerM * matMeters);
+        costRows.push([mat, result.totalBars, matMeters.toFixed(1) + ' m', fmtSom(pricePerM), fmtSom(matCost)]);
+        grandCost += matCost; grandBars += result.totalBars;
 
         if (!first) doc.addPage();
         first = false;
@@ -370,6 +395,8 @@ export function generateCuttingPdf(order) {
                 ["Bo'laklar umumiy uzunligi", (result.piecesLen / 1000).toFixed(2) + ' m'],
                 ['Chiqit (Off-Cut)', (result.offcut / 1000).toFixed(2) + ' m'],
                 ['Chiqit foizi', result.offcutRate.toFixed(2) + ' %'],
+                ['Profil narxi (1 m)', fmtSom(pricePerM)],
+                ['Profil harajati', fmtSom(matCost)],
             ],
             styles: { fontSize: 8.5, cellPadding: 1.5 },
             headStyles: { fillColor: [80, 80, 80] },
@@ -377,6 +404,36 @@ export function generateCuttingPdf(order) {
             margin: { left: M, right: M }
         });
     });
+
+    // ══════════════════════════════════════════════════════
+    // PROFIL HARAJATI — UMUMIY XULOSA (barcha profillar)
+    // ══════════════════════════════════════════════════════
+    doc.addPage();
+    doc.setFontSize(15); doc.setFont(undefined, 'bold');
+    doc.text('AKFA Romix — Profil Harajati (Xulosa)', M, 14);
+    doc.setFontSize(9); doc.setFont(undefined, 'normal');
+    doc.text(dateStr, PW - M, 14, { align: 'right' });
+    doc.text(`Mijoz: ${order.customer || '—'}${order.phone ? ' · ' + order.phone : ''}`, M, 20);
+    doc.autoTable({
+        startY: 26,
+        head: [['Profil', 'Profil (dona)', 'Uzunlik (m)', 'Narx (1 m)', 'Harajat']],
+        body: costRows,
+        foot: [['JAMI', grandBars + ' dona', (grandBars * BAR_LEN / 1000).toFixed(1) + ' m', '', fmtSom(grandCost)]],
+        styles: { fontSize: 8.5, cellPadding: 2 },
+        headStyles: { fillColor: [14, 28, 46] },
+        footStyles: { fillColor: [16, 122, 124], textColor: 255, fontStyle: 'bold' },
+        columnStyles: { 0: { cellWidth: 68 }, 4: { halign: 'right' } },
+        margin: { left: M, right: M }
+    });
+    let cy = doc.lastAutoTable.finalY + 8;
+    doc.setFillColor(16, 122, 124);
+    doc.roundedRect(M, cy, PW - 2 * M, 16, 2, 2, 'F');
+    doc.setTextColor(255); doc.setFont(undefined, 'bold'); doc.setFontSize(13);
+    doc.text('UMUMIY PROFIL HARAJATI:', M + 4, cy + 10);
+    doc.text(fmtSom(grandCost), PW - M - 4, cy + 10, { align: 'right' });
+    doc.setTextColor(20); doc.setFont(undefined, 'normal'); doc.setFontSize(7.5);
+    doc.text('* Harajat = kerakli butun profillar soni × standart uzunlik × 1 metr narxi (chiqit bilan).', M, cy + 22);
+    doc.text('* Stvorka (ochiladigan) va shtapik alohida qatorlarda. Shtapik narxi asosiy profilning 35%.', M, cy + 26);
 
     // ══════════════════════════════════════════════════════
     // Vizual kesim chizmalari — OptiCut Usulida (Greyscale)
