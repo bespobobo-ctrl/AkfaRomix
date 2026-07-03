@@ -147,22 +147,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         const dimX = document.getElementById('dimX');
 
         if (type === 'rom' || type === 'rom_fortochka' || type === 'eshik') {
-            // Full dimension: Height x Width
+            // Full dimension: Width x Height (mm)
             dimWrapper.style.display = 'block';
             itemHeightInput.style.display = '';
             if (dimX) dimX.style.display = '';
             itemWidthInput.style.display = '';
-            dimLabel.textContent = "O'lcham (Balandlik x Eni) m";
+            dimLabel.textContent = "O'lcham (Eni x Bo'yi) mm";
             materialLabel.textContent = "Profil (Material)";
 
         } else if (type === 'padakonnik') {
-            // Width only (length)
+            // Width only (length in mm)
             dimWrapper.style.display = 'block';
             itemHeightInput.style.display = 'none';
             if (dimX) dimX.style.display = 'none';
             itemWidthInput.style.display = '';
-            itemWidthInput.value = "1.50";
-            dimLabel.textContent = "Uzunligi (metr)";
+            itemWidthInput.value = "1500";
+            dimLabel.textContent = "Uzunligi (mm)";
             materialLabel.textContent = "Padakonnik turi";
 
         } else {
@@ -188,8 +188,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     function ensureDesigner() {
         if (!_designer && designerHost) {
             _designer = createDesigner(designerHost, {
-                W: (parseFloat(itemWidthInput.value) || 1.5) * 1000,
-                H: (parseFloat(itemHeightInput.value) || 2.0) * 1000
+                W: parseInt(itemWidthInput.value) || 1500,
+                H: parseInt(itemHeightInput.value) || 2000
             });
         }
         return _designer;
@@ -229,7 +229,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (isRom) {
             const d = ensureDesigner();
-            if (d) d.setSize((parseFloat(itemWidthInput.value) || 1.5) * 1000, (parseFloat(itemHeightInput.value) || 2.0) * 1000);
+            if (d) d.setSize(parseInt(itemWidthInput.value) || 1500, parseInt(itemHeightInput.value) || 2000);
             return;
         }
         if (isEshik) {
@@ -264,8 +264,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const matOpt = itemMaterialSel.options[itemMaterialSel.selectedIndex];
             if (!matOpt) return alert('Material tanlang!');
 
-            const h = parseFloat(itemHeightInput.value) || 0;
-            const w = parseFloat(itemWidthInput.value) || 0;
+            const hMM = parseInt(itemHeightInput.value) || 0;
+            const wMM = parseInt(itemWidthInput.value) || 0;
+            const h = hMM / 1000; // metrga aylantirish (hisob uchun)
+            const w = wMM / 1000;
             const qty = parseInt(document.getElementById('itemQty').value) || 1;
 
             if (qty <= 0) return alert('Miqdorni to\'g\'ri kiriting!');
@@ -276,13 +278,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             let subtotal = 0;
 
             if (type === 'rom' || type === 'rom_fortochka' || type === 'eshik') {
-                if (h <= 0 || w <= 0) return alert('Balandlik va enini kiriting!');
-                sizeText = `${h.toFixed(2)}m x ${w.toFixed(2)}m`;
-                calcVal = h * w * qty; // total area
+                if (hMM <= 0 || wMM <= 0) return alert('Eni va bo\'yini kiriting!');
+                sizeText = `${wMM} x ${hMM} mm`;
+                calcVal = h * w * qty; // total area in sq.m
                 subtotal = (calcVal * itemPrice) + (PRODUCTION_COST * qty); // material cost + base assembly fee
             } else if (type === 'padakonnik') {
-                if (w <= 0) return alert('Uzunlikni kiriting!');
-                sizeText = `${w.toFixed(2)}m`;
+                if (wMM <= 0) return alert('Uzunlikni kiriting!');
+                sizeText = `${wMM} mm`;
                 calcVal = w * qty; // total length
                 subtotal = calcVal * itemPrice;
             } else {
