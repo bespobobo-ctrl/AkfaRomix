@@ -1367,24 +1367,243 @@
                 <iframe src="sales/sales_dashboard.html" style="width: 100%; height: 100%; border: none; background: transparent; border-radius: 24px;"></iframe>
             </section>
 
-            <!-- Section: Buhgalter -->
+            <!-- Section: Buhgalter (Premium Moliyaviy Boshqaruv Markazi) -->
             <section id="section-buhgalter" class="admin-section romix-sub-section">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-                    <h1>Moliya va Hisobot</h1>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="icon-small-btn" title="Haftalik">H</button>
-                        <button class="icon-small-btn" title="Oylik">O</button>
-                        <button class="icon-small-btn" title="Yillik">Y</button>
+                <style>
+                    .buh-tab-panel { display: none; animation: fadeIn 0.35s ease; }
+                    .buh-tab-panel.active { display: block; }
+                    .buh-mini-stat {
+                        background: rgba(255,255,255,0.015);
+                        border: 1px solid rgba(255,255,255,0.03);
+                        border-radius: 16px;
+                        padding: 14px 16px;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 4px;
+                    }
+                    .buh-mini-label { font-size: 0.65rem; color: rgba(255,255,255,0.4); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+                    .buh-mini-value { font-size: 1.15rem; font-weight: 800; color: #fff; font-family: monospace; }
+                    .buh-mini-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 18px; }
+                    .buh-form-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 18px; }
+                    .buh-form-group { display: flex; flex-direction: column; gap: 4px; }
+                    .buh-form-group label { font-size: 0.68rem; color: rgba(255,255,255,0.4); font-weight: 700; text-transform: uppercase; }
+                    .buh-input {
+                        background: rgba(0,0,0,0.2);
+                        border: 1px solid rgba(255,255,255,0.1);
+                        color: #fff;
+                        padding: 9px 12px;
+                        border-radius: 10px;
+                        font-family: inherit;
+                        font-size: 0.85rem;
+                    }
+                    .buh-save-btn {
+                        background: var(--adm-accent);
+                        color: #fff;
+                        border: none;
+                        padding: 10px 20px;
+                        border-radius: 10px;
+                        font-weight: 700;
+                        font-size: 0.8rem;
+                        cursor: pointer;
+                    }
+                    .buh-chart-wrap { position: relative; height: 220px; margin: 16px 0; }
+                    .buh-row-action-btn {
+                        border: none; border-radius: 8px; padding: 5px 10px; font-size: 0.72rem; font-weight: 700; cursor: pointer; margin-right: 4px;
+                    }
+                </style>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+                    <div>
+                        <h1 style="margin-bottom: 4px;">💰 Moliya va Hisobot</h1>
+                        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.4); margin: 0;">Romix — real vaqtli buxgalteriya boshqaruv markazi</p>
+                    </div>
+                    <button class="icon-small-btn" style="width: auto; border-radius: 12px; padding: 0 14px; gap: 6px;" onclick="window.openRomixBuhDbSetupModal()" title="Yangi jadvallar uchun SQL">
+                        ⚙️ Jadval Sozlash
+                    </button>
+                </div>
+
+                <!-- ============ HERO KPI QATORI ============ -->
+                <div class="bento-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 25px;">
+                    <div class="premium-card glow-green">
+                        <h3 style="color: #fff; font-weight: 700;">📈 Jami Savdo (oy)</h3>
+                        <div class="balance-lg" id="buh-hero-savdo" style="background: linear-gradient(135deg, #00FF88 0%, #00d2ff 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-family: monospace;">-- UZS</div>
+                    </div>
+                    <div class="premium-card">
+                        <h3 style="color: #fff; font-weight: 700;">📉 Jami Xarajat (oy)</h3>
+                        <div class="balance-lg" id="buh-hero-xarajat" style="color: #ff4d4f; font-family: monospace;">-- UZS</div>
+                    </div>
+                    <div class="premium-card glow-blue">
+                        <h3 style="color: #fff; font-weight: 700;">🏦 Sof Foyda</h3>
+                        <div class="balance-lg" id="buh-hero-foyda" style="color: #00d2ff; font-family: monospace;">-- UZS</div>
+                    </div>
+                    <div class="premium-card">
+                        <h3 style="color: #fff; font-weight: 700;">🧾 Tashqi Qarz</h3>
+                        <div class="balance-lg" id="buh-hero-qarz" style="color: #fabb18; font-family: monospace;">-- UZS</div>
                     </div>
                 </div>
-                <div class="bento-grid">
-                    <div class="bento-card">
-                        <h3>Foyda</h3>
-                        <div class="balance-lg" style="color: #00ff88;">+85,600,000 UZS</div>
+
+                <!-- ============ ICHKI TAB (PILL) NAVIGATSIYASI ============ -->
+                <div class="pills-container" id="buhPillTabs" style="margin-bottom: 20px;">
+                    <div class="pill-btn active" data-buh-panel="buh-panel-umumiy">📊 Umumiy</div>
+                    <div class="pill-btn" data-buh-panel="buh-panel-xodimlar">👥 Xodimlar</div>
+                    <div class="pill-btn" data-buh-panel="buh-panel-sotuv">🛒 Kunlik Sotuv</div>
+                    <div class="pill-btn" data-buh-panel="buh-panel-ishlab-chiqarish">🏭 Ishlab Chiqarish</div>
+                    <div class="pill-btn" data-buh-panel="buh-panel-tayyor">📦 Tayyor Mahsulot</div>
+                    <div class="pill-btn" data-buh-panel="buh-panel-harajat">💸 Harajatlar</div>
+                    <div class="pill-btn" data-buh-panel="buh-panel-ombor">🏬 Ombor</div>
+                    <div class="pill-btn" data-buh-panel="buh-panel-qarz">🧾 Tashqi Qarz</div>
+                </div>
+
+                <!-- ============ PANEL 1: UMUMIY ============ -->
+                <div id="buh-panel-umumiy" class="buh-tab-panel active">
+                    <div class="hr-card">
+                        <h3 style="color:#fff; margin-bottom: 14px;">7 Kunlik Savdo va Ishlab Chiqarish Trendi</h3>
+                        <div class="buh-chart-wrap"><canvas id="buh-overview-chart"></canvas></div>
+                        <div class="buh-mini-row" id="buh-umumiy-stats"></div>
                     </div>
-                    <div class="bento-card">
-                        <h3>Qarzlar</h3>
-                        <div class="balance-lg" style="color: #ff4d4f;">12,000,000 UZS</div>
+                </div>
+
+                <!-- ============ PANEL 2: XODIMLAR ============ -->
+                <div id="buh-panel-xodimlar" class="buh-tab-panel">
+                    <div class="hr-card">
+                        <div class="buh-mini-row" id="buh-xodimlar-stats"></div>
+                        <div style="overflow-x:auto;">
+                            <table class="v2-table">
+                                <thead><tr><th>Ism</th><th>Lavozim</th><th>Bugungi Holat</th><th style="text-align:right;">Oylik Maosh</th></tr></thead>
+                                <tbody id="buh-xodimlar-table"><tr><td colspan="4" style="text-align:center; color:rgba(255,255,255,0.3); padding:20px;">Yuklanmoqda...</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============ PANEL 3: KUNLIK SOTUV HISOBOTI ============ -->
+                <div id="buh-panel-sotuv" class="buh-tab-panel">
+                    <div class="hr-card">
+                        <div class="pills-container" id="buhSotuvPeriodTabs" style="margin-bottom: 16px;">
+                            <div class="pill active" data-sotuv-period="today">Bugun</div>
+                            <div class="pill" data-sotuv-period="week">Bu hafta</div>
+                            <div class="pill" data-sotuv-period="month">Bu oy</div>
+                        </div>
+                        <div class="buh-mini-row" id="buh-sotuv-stats"></div>
+                        <div class="buh-chart-wrap"><canvas id="buh-sotuv-chart"></canvas></div>
+                        <div style="overflow-x:auto;">
+                            <table class="v2-table">
+                                <thead><tr><th>Sana</th><th>Buyurtmalar</th><th style="text-align:right;">Jami Summa</th><th style="text-align:right;">Qarz Summasi</th></tr></thead>
+                                <tbody id="buh-sotuv-daily-table"><tr><td colspan="4" style="text-align:center; color:rgba(255,255,255,0.3); padding:20px;">Yuklanmoqda...</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============ PANEL 4: ISHLAB CHIQARISH ============ -->
+                <div id="buh-panel-ishlab-chiqarish" class="buh-tab-panel">
+                    <div class="hr-card">
+                        <h3 style="color:#fff; margin-bottom: 14px;">🏭 Kunlik Ishlab Chiqarish Qaydnomasi</h3>
+                        <form id="buh-production-form" class="buh-form-row">
+                            <div class="buh-form-group"><label>Sana</label><input type="date" id="buh-prod-date" class="buh-input" required></div>
+                            <div class="buh-form-group"><label>Model / Mahsulot</label><input type="text" id="buh-prod-model" class="buh-input" placeholder="Masalan: Eshik 800x2000" required></div>
+                            <div class="buh-form-group"><label>Miqdor (dona)</label><input type="number" id="buh-prod-qty" class="buh-input" min="1" required></div>
+                            <div class="buh-form-group"><label>Izoh</label><input type="text" id="buh-prod-note" class="buh-input" placeholder="Ixtiyoriy"></div>
+                            <button type="submit" class="buh-save-btn">💾 Saqlash</button>
+                        </form>
+                        <div class="buh-mini-row" id="buh-ishlab-chiqarish-stats"></div>
+                        <div class="buh-chart-wrap"><canvas id="buh-ishlab-chiqarish-chart"></canvas></div>
+                        <div style="overflow-x:auto;">
+                            <table class="v2-table">
+                                <thead><tr><th>Sana</th><th>Model</th><th style="text-align:right;">Miqdor</th><th>Izoh</th><th></th></tr></thead>
+                                <tbody id="buh-ishlab-chiqarish-table"><tr><td colspan="5" style="text-align:center; color:rgba(255,255,255,0.3); padding:20px;">Yuklanmoqda...</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============ PANEL 5: TAYYOR MAHSULOT ============ -->
+                <div id="buh-panel-tayyor" class="buh-tab-panel">
+                    <div class="hr-card">
+                        <div class="buh-mini-row" id="buh-tayyor-stats"></div>
+                        <div style="overflow-x:auto;">
+                            <table class="v2-table">
+                                <thead><tr><th>Mahsulot</th><th style="text-align:right;">Miqdor</th><th style="text-align:right;">Narx</th><th style="text-align:right;">Qiymat</th></tr></thead>
+                                <tbody id="buh-tayyor-table"><tr><td colspan="4" style="text-align:center; color:rgba(255,255,255,0.3); padding:20px;">Yuklanmoqda...</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============ PANEL 6: HARAJATLAR ============ -->
+                <div id="buh-panel-harajat" class="buh-tab-panel">
+                    <div class="hr-card">
+                        <h3 style="color:#fff; margin-bottom: 14px;">💸 Kunlik / Oylik Harajatlar</h3>
+                        <form id="buh-expense-form" class="buh-form-row">
+                            <div class="buh-form-group"><label>Sana</label><input type="date" id="buh-exp-date" class="buh-input" required></div>
+                            <div class="buh-form-group">
+                                <label>Kategoriya</label>
+                                <select id="buh-exp-category" class="buh-input">
+                                    <option value="Ijara">Ijara</option>
+                                    <option value="Kommunal">Kommunal (svet/gaz/suv)</option>
+                                    <option value="Transport">Transport</option>
+                                    <option value="Maosh">Maosh</option>
+                                    <option value="Boshqa">Boshqa</option>
+                                </select>
+                            </div>
+                            <div class="buh-form-group"><label>Summa (UZS)</label><input type="number" id="buh-exp-amount" class="buh-input" min="0" required></div>
+                            <div class="buh-form-group"><label>Izoh</label><input type="text" id="buh-exp-note" class="buh-input" placeholder="Ixtiyoriy"></div>
+                            <button type="submit" class="buh-save-btn">💾 Saqlash</button>
+                        </form>
+                        <div class="buh-mini-row" id="buh-harajat-stats"></div>
+                        <div style="overflow-x:auto;">
+                            <table class="v2-table">
+                                <thead><tr><th>Sana</th><th>Kategoriya</th><th style="text-align:right;">Summa</th><th>Izoh</th><th></th></tr></thead>
+                                <tbody id="buh-harajat-table"><tr><td colspan="5" style="text-align:center; color:rgba(255,255,255,0.3); padding:20px;">Yuklanmoqda...</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============ PANEL 7: OMBOR HOLATI ============ -->
+                <div id="buh-panel-ombor" class="buh-tab-panel">
+                    <div class="hr-card">
+                        <div class="buh-mini-row" id="buh-ombor-stats"></div>
+                        <div style="overflow-x:auto;">
+                            <table class="v2-table">
+                                <thead><tr><th>Mahsulot</th><th style="text-align:right;">Qoldiq</th><th style="text-align:right;">Narx</th><th style="text-align:right;">Qiymat</th></tr></thead>
+                                <tbody id="buh-ombor-table"><tr><td colspan="4" style="text-align:center; color:rgba(255,255,255,0.3); padding:20px;">Yuklanmoqda...</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============ PANEL 8: TASHQI QARZ ============ -->
+                <div id="buh-panel-qarz" class="buh-tab-panel">
+                    <div class="hr-card">
+                        <h3 style="color:#fff; margin-bottom: 14px;">🧾 Tashqi Qarz To'lovlari</h3>
+                        <form id="buh-debt-form" class="buh-form-row">
+                            <div class="buh-form-group"><label>Kreditor / Tashkilot</label><input type="text" id="buh-debt-creditor" class="buh-input" placeholder="Nomi" required></div>
+                            <div class="buh-form-group"><label>Summa (UZS)</label><input type="number" id="buh-debt-amount" class="buh-input" min="0" required></div>
+                            <div class="buh-form-group"><label>Muddat</label><input type="date" id="buh-debt-due" class="buh-input"></div>
+                            <div class="buh-form-group"><label>Izoh</label><input type="text" id="buh-debt-note" class="buh-input" placeholder="Ixtiyoriy"></div>
+                            <button type="submit" class="buh-save-btn">💾 Saqlash</button>
+                        </form>
+                        <div class="buh-mini-row" id="buh-qarz-stats"></div>
+                        <div style="overflow-x:auto;">
+                            <table class="v2-table">
+                                <thead><tr><th>Kreditor</th><th style="text-align:right;">Summa</th><th style="text-align:right;">To'langan</th><th style="text-align:right;">Qoldiq</th><th>Muddat</th><th></th></tr></thead>
+                                <tbody id="buh-qarz-table"><tr><td colspan="6" style="text-align:center; color:rgba(255,255,255,0.3); padding:20px;">Yuklanmoqda...</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============ SQL Setup Modal ============ -->
+                <div id="romix-buh-db-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:10000; align-items:center; justify-content:center;">
+                    <div style="background:#141e2d; border:1px solid rgba(255,255,255,0.08); width:90%; max-width:650px; border-radius:24px; padding:28px; max-height:85vh; overflow-y:auto;">
+                        <h3 style="color:#fff; margin-bottom: 8px;">⚙️ Yangi Jadvallarni Sozlash</h3>
+                        <p style="font-size:0.8rem; color:rgba(255,255,255,0.5); margin-bottom:14px;">Ishlab chiqarish, harajat va tashqi qarz ma'lumotlari uchun quyidagi SQL skriptni Supabase SQL Editor'ga kiritib ishga tushiring. Jadval mavjud bo'lmasa, ma'lumotlar vaqtincha shu brauzerda (localStorage) saqlanadi.</p>
+                        <textarea id="romix-buh-sql-text" readonly style="width:100%; height:260px; background:#0b111a; color:#00ff88; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:14px; font-family:monospace; font-size:0.75rem;"></textarea>
+                        <div style="display:flex; gap:10px; margin-top:14px; justify-content:flex-end;">
+                            <button class="icon-small-btn" style="width:auto; border-radius:10px; padding:0 16px;" onclick="window.copyRomixBuhSql()">📋 Nusxalash</button>
+                            <button class="buh-save-btn" onclick="window.closeRomixBuhDbSetupModal()">Yopish</button>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -2346,6 +2565,8 @@
 
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Premium Buhgalter: trend grafiklari -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <script type="module" src="../autoclapak/js/admin.js?v=6.0"></script>
 

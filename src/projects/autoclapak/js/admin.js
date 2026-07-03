@@ -40,6 +40,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (document.getElementById('section-dashboard') && document.getElementById('stat-total-emp')) {
             loadRomixDashboardStats();
         }
+        if (document.getElementById('section-buhgalter')) {
+            loadRomixBuhgalter();
+        }
     }, 200);
     let editingUserId = null;
 
@@ -411,8 +414,665 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (tab === 'logins') loadSystemUsers();
             if (tab === 'xodimlar') loadRomixHRData();
             if (tab === 'dashboard') loadRomixDashboardStats();
+            if (tab === 'buhgalter') loadRomixBuhgalter();
         });
     });
+
+    // ========================================================
+    // ======== ROMIX BUHGALTER MODULE (Premium Finance) =======
+    // ========================================================
+    const ROMIX_BUH_KEYS = {
+        production: 'romix_production_log_v1',
+        expenses: 'romix_expenses_v1',
+        debts: 'romix_debts_v1'
+    };
+
+    function _buhToday() { return new Date().toISOString().slice(0, 10); }
+    function _buhFmt(n) { return Math.round(Number(n) || 0).toLocaleString('uz-UZ') + ' UZS'; }
+    function _buhPeriodStart(period) {
+        const now = new Date();
+        if (period === 'week') return new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+        if (period === 'month') return new Date(now.getFullYear(), now.getMonth(), 1);
+        return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    }
+    function _buhSetText(id, val) { const el = document.getElementById(id); if (el) el.textContent = _buhFmt(val); }
+
+    async function romixBuhSelect(table, localKey) {
+        try {
+            const { data, error } = await supabase.from(table).select('*').order('created_at', { ascending: false });
+            if (!error && data) {
+                localStorage.setItem(localKey, JSON.stringify(data));
+                return data;
+            }
+        } catch (e) { /* jadval hali yaratilmagan yoki offline */ }
+        try { return JSON.parse(localStorage.getItem(localKey)) || []; } catch { return []; }
+    }
+    async function romixBuhInsert(table, localKey, record) {
+        let localList = [];
+        try { localList = JSON.parse(localStorage.getItem(localKey)) || []; } catch {}
+        localList.unshift(record);
+        localStorage.setItem(localKey, JSON.stringify(localList));
+        try {
+            const { error } = await supabase.from(table).insert([record]);
+            if (error) console.warn(`Romix Buh insert failed on ${table}:`, error);
+        } catch (e) { console.warn(`Romix Buh insert exception on ${table}:`, e); }
+        return record;
+    }
+    async function romixBuhUpdate(table, localKey, id, patch) {
+        let localList = [];
+        try { localList = JSON.parse(localStorage.getItem(localKey)) || []; } catch {}
+        localList = localList.map(x => x.id === id ? { ...x, ...patch } : x);
+        localStorage.setItem(localKey, JSON.stringify(localList));
+        try {
+            const { error } = await supabase.from(table).update(patch).eq('id', id);
+            if (error) console.warn(`Romix Buh update failed on ${table}:`, error);
+        } catch (e) { console.warn(`Romix Buh update exception on ${table}:`, e); }
+    }
+    async function romixBuhDelete(table, localKey, id) {
+        let localList = [];
+        try { localList = JSON.parse(localStorage.getItem(localKey)) || []; } catch {}
+        localList = localList.filter(x => x.id !== id);
+        localStorage.setItem(localKey, JSON.stringify(localList));
+        try {
+            const { error } = await supabase.from(table).delete().eq('id', id);
+            if (error) console.warn(`Romix Buh delete failed on ${table}:`, error);
+        } catch (e) { console.warn(`Romix Buh delete exception on ${table}:`, e); }
+    }
+
+    let _romixBuhPillsBound = false;
+    let _romixBuhFormsBound = false;
+
+    function bindRomixBuhPillTabs() {
+        if (_romixBuhPillsBound) return;
+        _romixBuhPillsBound = true;
+        document.querySelectorAll('#buhPillTabs .pill-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#buhPillTabs .pill-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const target = btn.getAttribute('data-buh-panel');
+                document.querySelectorAll('.buh-tab-panel').forEach(p => p.classList.toggle('active', p.id === target));
+            });
+        });
+        document.querySelectorAll('#buhSotuvPeriodTabs .pill').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#buhSotuvPeriodTabs .pill').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderBuhKunlikSotuv(btn.getAttribute('data-sotuv-period'));
+            });
+        });
+    }
+
+    function bindRomixBuhForms() {
+        if (_romixBuhFormsBound) return;
+        _romixBuhFormsBound = true;
+
+        const prodDateEl = document.getElementById('buh-prod-date');
+        if (prodDateEl) prodDateEl.value = _buhToday();
+        const expDateEl = document.getElementById('buh-exp-date');
+        if (expDateEl) expDateEl.value = _buhToday();
+
+        const prodForm = document.getElementById('buh-production-form');
+        if (prodForm) prodForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const date = document.getElementById('buh-prod-date').value || _buhToday();
+            const model = document.getElementById('buh-prod-model').value.trim();
+            const qty = parseInt(document.getElementById('buh-prod-qty').value) || 0;
+            const note = document.getElementById('buh-prod-note').value.trim();
+            if (!model || qty <= 0) return;
+            const record = { id: 'PRD-' + Date.now(), date, model_name: model, quantity: qty, note, created_at: new Date().toISOString() };
+            await romixBuhInsert('romix_production_log', ROMIX_BUH_KEYS.production, record);
+            prodForm.reset();
+            document.getElementById('buh-prod-date').value = _buhToday();
+            await renderRomixBuhIshlabChiqarish();
+            await renderBuhOverview();
+            window.showPremiumToast('Saqlandi', "Ishlab chiqarish yozuvi qo'shildi.", true);
+        });
+
+        const expForm = document.getElementById('buh-expense-form');
+        if (expForm) expForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const date = document.getElementById('buh-exp-date').value || _buhToday();
+            const category = document.getElementById('buh-exp-category').value;
+            const amount = parseFloat(document.getElementById('buh-exp-amount').value) || 0;
+            const note = document.getElementById('buh-exp-note').value.trim();
+            if (amount <= 0) return;
+            const record = { id: 'EXP-' + Date.now(), date, category, amount, note, created_at: new Date().toISOString() };
+            await romixBuhInsert('romix_expenses', ROMIX_BUH_KEYS.expenses, record);
+            expForm.reset();
+            document.getElementById('buh-exp-date').value = _buhToday();
+            await renderRomixBuhHarajatlar();
+            await updateBuhHeroKPIs();
+            window.showPremiumToast('Saqlandi', "Xarajat qo'shildi.", true);
+        });
+
+        const debtForm = document.getElementById('buh-debt-form');
+        if (debtForm) debtForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const creditor = document.getElementById('buh-debt-creditor').value.trim();
+            const amount = parseFloat(document.getElementById('buh-debt-amount').value) || 0;
+            const due = document.getElementById('buh-debt-due').value;
+            const note = document.getElementById('buh-debt-note').value.trim();
+            if (!creditor || amount <= 0) return;
+            const record = { id: 'DBT-' + Date.now(), creditor, amount, paid_amount: 0, due_date: due, note, date: _buhToday(), created_at: new Date().toISOString() };
+            await romixBuhInsert('romix_debts', ROMIX_BUH_KEYS.debts, record);
+            debtForm.reset();
+            await renderBuhTashqiQarz();
+            await updateBuhHeroKPIs();
+            window.showPremiumToast('Saqlandi', "Qarz yozuvi qo'shildi.", true);
+        });
+    }
+
+    async function renderBuhXodimlar() {
+        const statsEl = document.getElementById('buh-xodimlar-stats');
+        const tableEl = document.getElementById('buh-xodimlar-table');
+        if (!statsEl && !tableEl) return;
+
+        const todayStr = _buhToday();
+        let emps = [], att = [];
+        try {
+            const { data: eData } = await supabase.from('employees').select('id, full_name, role, salary_info');
+            emps = eData || [];
+            const { data: aData } = await supabase.from('attendance').select('status, check_in, check_out, employee_id').eq('date', todayStr);
+            att = aData || [];
+        } catch (e) { console.warn('Buh Xodimlar fetch error:', e); }
+
+        const attByEmp = {};
+        att.forEach(a => { attByEmp[a.employee_id] = a; });
+
+        const totalEmp = emps.length;
+        const presentToday = att.filter(a => a.check_in).length;
+        const monthlyPayrollFund = emps.reduce((s, e) => s + (parseFloat((e.salary_info || '').toString().replace(/[^0-9]/g, '')) || 0), 0);
+
+        if (statsEl) {
+            statsEl.innerHTML = `
+                <div class="buh-mini-stat"><span class="buh-mini-label">Jami Xodimlar</span><span class="buh-mini-value">${totalEmp}</span></div>
+                <div class="buh-mini-stat"><span class="buh-mini-label">Bugun Ishda</span><span class="buh-mini-value" style="color:#00ff88;">${presentToday}</span></div>
+                <div class="buh-mini-stat"><span class="buh-mini-label">Oylik Maosh Fondi</span><span class="buh-mini-value" style="color:#ba00ff;">${_buhFmt(monthlyPayrollFund)}</span></div>
+            `;
+        }
+
+        if (tableEl) {
+            if (emps.length === 0) {
+                tableEl.innerHTML = '<tr><td colspan="4" style="text-align:center; color:rgba(255,255,255,0.3); padding:20px;">Xodimlar topilmadi</td></tr>';
+            } else {
+                tableEl.innerHTML = emps.map(e => {
+                    const a = attByEmp[e.id];
+                    const statusHtml = a && a.check_in
+                        ? (a.check_out ? `<span style="color:#ff4d4f;">Ketdi: ${a.check_out}</span>` : `<span style="color:#00ff88;">Ishda (${a.check_in})</span>`)
+                        : `<span style="color:rgba(255,255,255,0.3);">Kelmagan</span>`;
+                    const salary = parseFloat((e.salary_info || '').toString().replace(/[^0-9]/g, '')) || 0;
+                    return `<tr><td>${e.full_name}</td><td>${e.role || '-'}</td><td>${statusHtml}</td><td style="text-align:right;">${_buhFmt(salary)}</td></tr>`;
+                }).join('');
+            }
+        }
+        return { totalEmp, monthlyPayrollFund };
+    }
+
+    async function renderRomixBuhOmbor() {
+        const statsEl = document.getElementById('buh-ombor-stats');
+        const tableEl = document.getElementById('buh-ombor-table');
+        if (!statsEl && !tableEl) return;
+
+        let items = [];
+        try {
+            const { data } = await supabase.from('romix_inventory').select('*').order('product_name', { ascending: true });
+            items = data || [];
+        } catch (e) { console.warn('Buh Ombor fetch error:', e); }
+
+        const totalItems = items.length;
+        const lowStock = items.filter(p => (Number(p.stock_quantity) || 0) < 10).length;
+        const totalValue = items.reduce((s, p) => s + ((Number(p.price) || 0) * (Number(p.stock_quantity) || 0)), 0);
+
+        if (statsEl) {
+            statsEl.innerHTML = `
+                <div class="buh-mini-stat"><span class="buh-mini-label">Mahsulot Turlari</span><span class="buh-mini-value">${totalItems}</span></div>
+                <div class="buh-mini-stat"><span class="buh-mini-label">Kam Qolgan (&lt;10)</span><span class="buh-mini-value" style="color:#ff4d4f;">${lowStock}</span></div>
+                <div class="buh-mini-stat"><span class="buh-mini-label">Jami Qiymat</span><span class="buh-mini-value" style="color:#00ff88;">${_buhFmt(totalValue)}</span></div>
+            `;
+        }
+
+        if (tableEl) {
+            if (items.length === 0) {
+                tableEl.innerHTML = '<tr><td colspan="4" style="text-align:center; color:rgba(255,255,255,0.3); padding:20px;">Ombor bo\'sh</td></tr>';
+            } else {
+                tableEl.innerHTML = items.map(p => {
+                    const val = (Number(p.price) || 0) * (Number(p.stock_quantity) || 0);
+                    const lowStyle = (Number(p.stock_quantity) || 0) < 10 ? 'color:#ff4d4f;font-weight:700;' : '';
+                    return `<tr><td>${p.product_name}</td><td style="text-align:right; ${lowStyle}">${p.stock_quantity || 0} ${p.unit || ''}</td><td style="text-align:right;">${_buhFmt(p.price)}</td><td style="text-align:right;">${_buhFmt(val)}</td></tr>`;
+                }).join('');
+            }
+        }
+        return { totalValue };
+    }
+
+    async function renderBuhTayyorMahsulot() {
+        const statsEl = document.getElementById('buh-tayyor-stats');
+        const tableEl = document.getElementById('buh-tayyor-table');
+        if (!statsEl && !tableEl) return;
+
+        let items = [];
+        try {
+            const { data } = await supabase.from('showroom_products').select('*').order('name', { ascending: true });
+            items = data || [];
+        } catch (e) { console.warn('Buh Tayyor Mahsulot fetch error:', e); }
+
+        const totalTypes = items.length;
+        const totalQty = items.reduce((s, p) => s + (Number(p.current_stock) || 0), 0);
+        const totalValue = items.reduce((s, p) => s + ((Number(p.price) || 0) * (Number(p.current_stock) || 0)), 0);
+
+        if (statsEl) {
+            statsEl.innerHTML = `
+                <div class="buh-mini-stat"><span class="buh-mini-label">Mahsulot Turlari</span><span class="buh-mini-value">${totalTypes}</span></div>
+                <div class="buh-mini-stat"><span class="buh-mini-label">Jami Dona</span><span class="buh-mini-value">${totalQty}</span></div>
+                <div class="buh-mini-stat"><span class="buh-mini-label">Jami Qiymat</span><span class="buh-mini-value" style="color:#00ff88;">${_buhFmt(totalValue)}</span></div>
+            `;
+        }
+
+        if (tableEl) {
+            if (items.length === 0) {
+                tableEl.innerHTML = '<tr><td colspan="4" style="text-align:center; color:rgba(255,255,255,0.3); padding:20px;">Tayyor mahsulot topilmadi</td></tr>';
+            } else {
+                tableEl.innerHTML = items.map(p => {
+                    const val = (Number(p.price) || 0) * (Number(p.current_stock) || 0);
+                    return `<tr><td>${p.name}</td><td style="text-align:right;">${p.current_stock || 0}</td><td style="text-align:right;">${_buhFmt(p.price)}</td><td style="text-align:right;">${_buhFmt(val)}</td></tr>`;
+                }).join('');
+            }
+        }
+        return { totalValue, totalQty };
+    }
+
+    let _buhSotuvChart = null;
+    async function renderBuhKunlikSotuv(period) {
+        period = period || 'today';
+        const statsEl = document.getElementById('buh-sotuv-stats');
+        const tableEl = document.getElementById('buh-sotuv-daily-table');
+        if (!statsEl && !tableEl) return;
+
+        let orders = [];
+        try {
+            const { data } = await supabase.from('sales_orders').select('*').order('created_at', { ascending: false });
+            orders = data || [];
+        } catch (e) { console.warn('Buh Kunlik Sotuv fetch error:', e); }
+
+        const from = _buhPeriodStart(period);
+        const inPeriod = orders.filter(o => o.created_at && new Date(o.created_at) >= from);
+        const totalRevenue = inPeriod.reduce((s, o) => s + (Number(o.total_price) || 0), 0);
+        const debtRevenue = inPeriod.filter(o => o.payment_type === 'Qarz').reduce((s, o) => s + (Number(o.total_price) || 0), 0);
+
+        if (statsEl) {
+            statsEl.innerHTML = `
+                <div class="buh-mini-stat"><span class="buh-mini-label">Buyurtmalar</span><span class="buh-mini-value">${inPeriod.length}</span></div>
+                <div class="buh-mini-stat"><span class="buh-mini-label">Jami Savdo</span><span class="buh-mini-value" style="color:#00ff88;">${_buhFmt(totalRevenue)}</span></div>
+                <div class="buh-mini-stat"><span class="buh-mini-label">Qarzga Sotilgan</span><span class="buh-mini-value" style="color:#fabb18;">${_buhFmt(debtRevenue)}</span></div>
+            `;
+        }
+
+        const byDate = {};
+        orders.forEach(o => {
+            if (!o.created_at) return;
+            const d = o.created_at.slice(0, 10);
+            if (!byDate[d]) byDate[d] = { count: 0, total: 0, debt: 0 };
+            byDate[d].count++;
+            byDate[d].total += Number(o.total_price) || 0;
+            if (o.payment_type === 'Qarz') byDate[d].debt += Number(o.total_price) || 0;
+        });
+
+        const sortedDates = Object.keys(byDate).sort().reverse();
+        if (tableEl) {
+            if (sortedDates.length === 0) {
+                tableEl.innerHTML = '<tr><td colspan="4" style="text-align:center; color:rgba(255,255,255,0.3); padding:20px;">Savdo topilmadi</td></tr>';
+            } else {
+                tableEl.innerHTML = sortedDates.slice(0, 30).map(d => {
+                    const row = byDate[d];
+                    const debtStyle = row.debt > 0 ? 'color:#ff4d4f;' : '';
+                    return `<tr><td>${d}</td><td>${row.count}</td><td style="text-align:right;">${_buhFmt(row.total)}</td><td style="text-align:right; ${debtStyle}">${_buhFmt(row.debt)}</td></tr>`;
+                }).join('');
+            }
+        }
+
+        const chartCanvas = document.getElementById('buh-sotuv-chart');
+        if (chartCanvas && typeof Chart !== 'undefined') {
+            const last7 = [];
+            const now = new Date();
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+                const key = d.toISOString().slice(0, 10);
+                last7.push({ label: key.slice(5), total: (byDate[key] && byDate[key].total) || 0 });
+            }
+            if (_buhSotuvChart) _buhSotuvChart.destroy();
+            _buhSotuvChart = new Chart(chartCanvas, {
+                type: 'bar',
+                data: { labels: last7.map(d => d.label), datasets: [{ label: 'Savdo', data: last7.map(d => d.total), backgroundColor: 'rgba(0,255,136,0.55)', borderRadius: 6 }] },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: 'rgba(255,255,255,0.5)' }, grid: { display: false } },
+                        y: { ticks: { color: 'rgba(255,255,255,0.5)' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                    }
+                }
+            });
+        }
+        return { totalRevenue, byDate };
+    }
+
+    let _buhProdChart = null;
+    async function renderRomixBuhIshlabChiqarish() {
+        const statsEl = document.getElementById('buh-ishlab-chiqarish-stats');
+        const tableEl = document.getElementById('buh-ishlab-chiqarish-table');
+        if (!statsEl && !tableEl) return;
+
+        const logs = await romixBuhSelect('romix_production_log', ROMIX_BUH_KEYS.production);
+        const todayStr = _buhToday();
+        const monthKey = todayStr.slice(0, 7);
+        const todayQty = logs.filter(l => l.date === todayStr).reduce((s, l) => s + (Number(l.quantity) || 0), 0);
+        const monthQty = logs.filter(l => (l.date || '').startsWith(monthKey)).reduce((s, l) => s + (Number(l.quantity) || 0), 0);
+
+        if (statsEl) {
+            statsEl.innerHTML = `
+                <div class="buh-mini-stat"><span class="buh-mini-label">Bugun Ishlab Chiqarilgan</span><span class="buh-mini-value" style="color:#00ff88;">${todayQty} dona</span></div>
+                <div class="buh-mini-stat"><span class="buh-mini-label">Shu Oy Ishlab Chiqarilgan</span><span class="buh-mini-value" style="color:#00d2ff;">${monthQty} dona</span></div>
+            `;
+        }
+
+        if (tableEl) {
+            if (logs.length === 0) {
+                tableEl.innerHTML = '<tr><td colspan="5" style="text-align:center; color:rgba(255,255,255,0.3); padding:20px;">Hozircha yozuv yo\'q</td></tr>';
+            } else {
+                tableEl.innerHTML = logs.slice(0, 60).map(l => `
+                    <tr>
+                        <td>${l.date}</td><td>${l.model_name}</td><td style="text-align:right;">${l.quantity}</td><td>${l.note || '-'}</td>
+                        <td><button class="buh-row-action-btn" style="background:rgba(255,77,79,0.15); color:#ff4d4f;" onclick="window.deleteRomixProductionLog('${l.id}')">O'chirish</button></td>
+                    </tr>`).join('');
+            }
+        }
+
+        const chartCanvas = document.getElementById('buh-ishlab-chiqarish-chart');
+        if (chartCanvas && typeof Chart !== 'undefined') {
+            const byDate = {};
+            logs.forEach(l => { byDate[l.date] = (byDate[l.date] || 0) + (Number(l.quantity) || 0); });
+            const last7 = [];
+            const now = new Date();
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+                const key = d.toISOString().slice(0, 10);
+                last7.push({ label: key.slice(5), qty: byDate[key] || 0 });
+            }
+            if (_buhProdChart) _buhProdChart.destroy();
+            _buhProdChart = new Chart(chartCanvas, {
+                type: 'line',
+                data: { labels: last7.map(d => d.label), datasets: [{ label: 'Ishlab chiqarilgan (dona)', data: last7.map(d => d.qty), borderColor: '#00d2ff', backgroundColor: 'rgba(0,210,255,0.15)', tension: 0.35, fill: true, pointRadius: 3 }] },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: 'rgba(255,255,255,0.5)' }, grid: { display: false } },
+                        y: { ticks: { color: 'rgba(255,255,255,0.5)' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                    }
+                }
+            });
+        }
+        return { todayQty, monthQty };
+    }
+
+    window.deleteRomixProductionLog = async (id) => {
+        if (!confirm("Ushbu yozuvni o'chirmoqchimisiz?")) return;
+        await romixBuhDelete('romix_production_log', ROMIX_BUH_KEYS.production, id);
+        await renderRomixBuhIshlabChiqarish();
+        await renderBuhOverview();
+    };
+
+    async function renderRomixBuhHarajatlar() {
+        const statsEl = document.getElementById('buh-harajat-stats');
+        const tableEl = document.getElementById('buh-harajat-table');
+        if (!statsEl && !tableEl) return;
+
+        const list = await romixBuhSelect('romix_expenses', ROMIX_BUH_KEYS.expenses);
+        const todayStr = _buhToday();
+        const monthKey = todayStr.slice(0, 7);
+        const todayTotal = list.filter(e => e.date === todayStr).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+        const monthTotal = list.filter(e => (e.date || '').startsWith(monthKey)).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+
+        if (statsEl) {
+            statsEl.innerHTML = `
+                <div class="buh-mini-stat"><span class="buh-mini-label">Bugungi Xarajat</span><span class="buh-mini-value" style="color:#ff4d4f;">${_buhFmt(todayTotal)}</span></div>
+                <div class="buh-mini-stat"><span class="buh-mini-label">Shu Oylik Xarajat</span><span class="buh-mini-value" style="color:#ff4d4f;">${_buhFmt(monthTotal)}</span></div>
+            `;
+        }
+
+        if (tableEl) {
+            if (list.length === 0) {
+                tableEl.innerHTML = '<tr><td colspan="5" style="text-align:center; color:rgba(255,255,255,0.3); padding:20px;">Hozircha xarajat yo\'q</td></tr>';
+            } else {
+                tableEl.innerHTML = list.slice(0, 60).map(e => `
+                    <tr>
+                        <td>${e.date}</td><td>${e.category}</td><td style="text-align:right; color:#ff4d4f;">-${_buhFmt(e.amount)}</td><td>${e.note || '-'}</td>
+                        <td><button class="buh-row-action-btn" style="background:rgba(255,77,79,0.15); color:#ff4d4f;" onclick="window.deleteRomixExpense('${e.id}')">O'chirish</button></td>
+                    </tr>`).join('');
+            }
+        }
+        return { todayTotal, monthTotal };
+    }
+
+    window.deleteRomixExpense = async (id) => {
+        if (!confirm("Ushbu xarajatni o'chirmoqchimisiz?")) return;
+        await romixBuhDelete('romix_expenses', ROMIX_BUH_KEYS.expenses, id);
+        await renderRomixBuhHarajatlar();
+        await updateBuhHeroKPIs();
+    };
+
+    async function renderBuhTashqiQarz() {
+        const statsEl = document.getElementById('buh-qarz-stats');
+        const tableEl = document.getElementById('buh-qarz-table');
+        if (!statsEl && !tableEl) return;
+
+        const list = await romixBuhSelect('romix_debts', ROMIX_BUH_KEYS.debts);
+        const totalRemaining = list.reduce((s, d) => s + Math.max(0, (Number(d.amount) || 0) - (Number(d.paid_amount) || 0)), 0);
+        const openCount = list.filter(d => ((Number(d.amount) || 0) - (Number(d.paid_amount) || 0)) > 0).length;
+
+        if (statsEl) {
+            statsEl.innerHTML = `
+                <div class="buh-mini-stat"><span class="buh-mini-label">Ochiq Qarzlar</span><span class="buh-mini-value">${openCount}</span></div>
+                <div class="buh-mini-stat"><span class="buh-mini-label">Jami Qoldiq Qarz</span><span class="buh-mini-value" style="color:#fabb18;">${_buhFmt(totalRemaining)}</span></div>
+            `;
+        }
+
+        if (tableEl) {
+            if (list.length === 0) {
+                tableEl.innerHTML = '<tr><td colspan="6" style="text-align:center; color:rgba(255,255,255,0.3); padding:20px;">Tashqi qarz mavjud emas</td></tr>';
+            } else {
+                tableEl.innerHTML = list.map(d => {
+                    const remaining = Math.max(0, (Number(d.amount) || 0) - (Number(d.paid_amount) || 0));
+                    const payBtn = remaining > 0 ? `<button class="buh-row-action-btn" style="background:rgba(0,255,136,0.15); color:#00ff88;" onclick="window.payRomixDebt('${d.id}')">To'lov</button>` : '';
+                    return `<tr>
+                        <td>${d.creditor}</td>
+                        <td style="text-align:right;">${_buhFmt(d.amount)}</td>
+                        <td style="text-align:right; color:#00ff88;">${_buhFmt(d.paid_amount)}</td>
+                        <td style="text-align:right; color:${remaining > 0 ? '#ff4d4f' : '#00ff88'}; font-weight:700;">${_buhFmt(remaining)}</td>
+                        <td>${d.due_date || '-'}</td>
+                        <td>${payBtn}<button class="buh-row-action-btn" style="background:rgba(255,77,79,0.15); color:#ff4d4f;" onclick="window.deleteRomixDebt('${d.id}')">O'chirish</button></td>
+                    </tr>`;
+                }).join('');
+            }
+        }
+        return { totalRemaining };
+    }
+
+    window.payRomixDebt = async (id) => {
+        let list = [];
+        try { list = JSON.parse(localStorage.getItem(ROMIX_BUH_KEYS.debts) || '[]'); } catch {}
+        const debt = list.find(d => d.id === id);
+        if (!debt) return;
+        const remaining = Math.max(0, (Number(debt.amount) || 0) - (Number(debt.paid_amount) || 0));
+        const val = parseFloat(prompt(`"${debt.creditor}" uchun to'lov summasini kiriting (qoldiq: ${remaining.toLocaleString()} UZS):`, remaining));
+        if (!val || val <= 0) return;
+        const newPaid = (Number(debt.paid_amount) || 0) + val;
+        await romixBuhUpdate('romix_debts', ROMIX_BUH_KEYS.debts, id, { paid_amount: newPaid });
+        await renderBuhTashqiQarz();
+        await updateBuhHeroKPIs();
+    };
+
+    window.deleteRomixDebt = async (id) => {
+        if (!confirm("Ushbu qarz yozuvini o'chirmoqchimisiz?")) return;
+        await romixBuhDelete('romix_debts', ROMIX_BUH_KEYS.debts, id);
+        await renderBuhTashqiQarz();
+        await updateBuhHeroKPIs();
+    };
+
+    let _buhOverviewChart = null;
+    async function renderBuhOverview() {
+        const chartCanvas = document.getElementById('buh-overview-chart');
+        const statsEl = document.getElementById('buh-umumiy-stats');
+        if (!chartCanvas && !statsEl) return;
+
+        let orders = [];
+        try {
+            const { data } = await supabase.from('sales_orders').select('total_price, created_at');
+            orders = data || [];
+        } catch (e) { /* offline */ }
+        const logs = await romixBuhSelect('romix_production_log', ROMIX_BUH_KEYS.production);
+
+        const salesByDate = {};
+        orders.forEach(o => { if (o.created_at) { const d = o.created_at.slice(0, 10); salesByDate[d] = (salesByDate[d] || 0) + (Number(o.total_price) || 0); } });
+        const prodByDate = {};
+        logs.forEach(l => { prodByDate[l.date] = (prodByDate[l.date] || 0) + (Number(l.quantity) || 0); });
+
+        const last7 = [];
+        const now = new Date();
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+            const key = d.toISOString().slice(0, 10);
+            last7.push({ label: key.slice(5), sales: salesByDate[key] || 0, prod: prodByDate[key] || 0 });
+        }
+
+        if (chartCanvas && typeof Chart !== 'undefined') {
+            if (_buhOverviewChart) _buhOverviewChart.destroy();
+            _buhOverviewChart = new Chart(chartCanvas, {
+                data: {
+                    labels: last7.map(d => d.label),
+                    datasets: [
+                        { type: 'bar', label: 'Savdo (UZS)', data: last7.map(d => d.sales), backgroundColor: 'rgba(0,255,136,0.5)', yAxisID: 'y', borderRadius: 6 },
+                        { type: 'line', label: 'Ishlab chiqarilgan (dona)', data: last7.map(d => d.prod), borderColor: '#ffaa00', backgroundColor: 'rgba(255,170,0,0.15)', yAxisID: 'y1', tension: 0.35, pointRadius: 3 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: 'rgba(255,255,255,0.6)' } } },
+                    scales: {
+                        x: { ticks: { color: 'rgba(255,255,255,0.5)' }, grid: { display: false } },
+                        y: { position: 'left', ticks: { color: 'rgba(255,255,255,0.5)' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y1: { position: 'right', ticks: { color: 'rgba(255,255,255,0.5)' }, grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        if (statsEl) {
+            const totalSales7 = last7.reduce((s, d) => s + d.sales, 0);
+            const totalProd7 = last7.reduce((s, d) => s + d.prod, 0);
+            statsEl.innerHTML = `
+                <div class="buh-mini-stat"><span class="buh-mini-label">7 Kunlik Savdo</span><span class="buh-mini-value" style="color:#00ff88;">${_buhFmt(totalSales7)}</span></div>
+                <div class="buh-mini-stat"><span class="buh-mini-label">7 Kunlik Ishlab Chiqarish</span><span class="buh-mini-value" style="color:#ffaa00;">${totalProd7} dona</span></div>
+            `;
+        }
+    }
+
+    async function updateBuhHeroKPIs() {
+        let orders = [];
+        try {
+            const { data } = await supabase.from('sales_orders').select('total_price, created_at');
+            orders = data || [];
+        } catch (e) { /* offline */ }
+
+        const monthKey = _buhToday().slice(0, 7);
+        const monthlySales = orders.filter(o => (o.created_at || '').startsWith(monthKey)).reduce((s, o) => s + (Number(o.total_price) || 0), 0);
+
+        const expenses = await romixBuhSelect('romix_expenses', ROMIX_BUH_KEYS.expenses);
+        const monthlyExpense = expenses.filter(e => (e.date || '').startsWith(monthKey)).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+        const netProfit = monthlySales - monthlyExpense;
+
+        const debts = await romixBuhSelect('romix_debts', ROMIX_BUH_KEYS.debts);
+        const totalDebt = debts.reduce((s, d) => s + Math.max(0, (Number(d.amount) || 0) - (Number(d.paid_amount) || 0)), 0);
+
+        _buhSetText('buh-hero-savdo', monthlySales);
+        _buhSetText('buh-hero-xarajat', monthlyExpense);
+        _buhSetText('buh-hero-foyda', netProfit);
+        const foydaEl = document.getElementById('buh-hero-foyda');
+        if (foydaEl) foydaEl.style.color = netProfit >= 0 ? '#00d2ff' : '#ff4d4f';
+        _buhSetText('buh-hero-qarz', totalDebt);
+    }
+
+    const ROMIX_BUH_SQL_SCRIPT = `-- Romix Buhgalter uchun yangi jadvallar
+CREATE TABLE IF NOT EXISTS romix_production_log (
+    id TEXT PRIMARY KEY,
+    date TEXT NOT NULL,
+    model_name TEXT NOT NULL,
+    quantity INTEGER DEFAULT 0,
+    note TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS romix_expenses (
+    id TEXT PRIMARY KEY,
+    date TEXT NOT NULL,
+    category TEXT NOT NULL,
+    amount NUMERIC DEFAULT 0,
+    note TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS romix_debts (
+    id TEXT PRIMARY KEY,
+    creditor TEXT NOT NULL,
+    amount NUMERIC DEFAULT 0,
+    paid_amount NUMERIC DEFAULT 0,
+    due_date TEXT,
+    note TEXT,
+    date TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+);`;
+
+    window.openRomixBuhDbSetupModal = () => {
+        const ta = document.getElementById('romix-buh-sql-text');
+        if (ta) ta.value = ROMIX_BUH_SQL_SCRIPT;
+        const modal = document.getElementById('romix-buh-db-modal');
+        if (modal) modal.style.display = 'flex';
+    };
+    window.closeRomixBuhDbSetupModal = () => {
+        const modal = document.getElementById('romix-buh-db-modal');
+        if (modal) modal.style.display = 'none';
+    };
+    window.copyRomixBuhSql = () => {
+        const ta = document.getElementById('romix-buh-sql-text');
+        if (!ta) return;
+        ta.select();
+        document.execCommand('copy');
+        window.showPremiumToast('Nusxalandi', 'SQL skript buferga nusxalandi.', true);
+    };
+
+    async function loadRomixBuhgalter() {
+        bindRomixBuhPillTabs();
+        bindRomixBuhForms();
+
+        const steps = [
+            ['renderBuhXodimlar', renderBuhXodimlar],
+            ['renderBuhKunlikSotuv', () => renderBuhKunlikSotuv('today')],
+            ['renderRomixBuhIshlabChiqarish', renderRomixBuhIshlabChiqarish],
+            ['renderBuhTayyorMahsulot', renderBuhTayyorMahsulot],
+            ['renderRomixBuhHarajatlar', renderRomixBuhHarajatlar],
+            ['renderRomixBuhOmbor', renderRomixBuhOmbor],
+            ['renderBuhTashqiQarz', renderBuhTashqiQarz],
+            ['renderBuhOverview', renderBuhOverview],
+            ['updateBuhHeroKPIs', updateBuhHeroKPIs]
+        ];
+        for (const [name, fn] of steps) {
+            try {
+                await fn();
+            } catch (e) {
+                console.error(`[DEBUG loadRomixBuhgalter] ${name} threw:`, e);
+            }
+        }
+    }
 
     // Auto-detect and set active Auto Clapak tab based on current URL path
     const currentPath = window.location.pathname;
