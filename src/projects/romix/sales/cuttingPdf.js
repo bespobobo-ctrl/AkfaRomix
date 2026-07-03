@@ -2,19 +2,30 @@
 //  AKFA Romix — Kesim optimizatsiya PDF (OptiCut uslubida)
 //  Zakazdagi rom/eshik'larni profil bo'laklariga bo'lib, 6000mm
 //  profillarni eng kam chiqit bilan kesish rejasini PDF qiladi.
+//
+//  Arra zazori:
+//    45° kesim (2 arra uchrashganda) = 4 mm
+//    90° kesim (1 arra)              = 2 mm
 // ═══════════════════════════════════════════════════════════
 
-const FRAME_W = 60;   // rama profil eni (mm)
-const SASH_W = 60;    // stvorka (створка) profil eni (mm)
-const BEAD_W = 20;    // shtapik (штапик) eni (mm)
-const SASH_GAP = 3;   // rama–stvorka orasidagi zazor (mm)
-const IMPOST_MM = 45; // impost eni (2D dizayner bilan bir xil)
-const BAR_LEN = 6000; // standart profil uzunligi (mm)
+const FRAME_PROFILE = 60; // rama profil eni (mm)
+const SASH_PROFILE = 50;  // stvorka profil eni (mm)
+const BEAD_W = 20;        // shtapik eni (mm)
+const SASH_GAP = 3;       // rama–stvorka orasidagi zazor (mm)
+const IMPOST_MM = 30;     // impost eni (2D dizayner bilan bir xil)
+const BAR_LEN = 6000;     // standart profil uzunligi (mm)
+
+const KERF_45 = 4;  // 2 ta arra uchrashganda (45° burchak kesim) → 4mm zazor
+const KERF_90 = 2;  // 1 ta arra (90° to'g'ri kesim) → 2mm zazor
+const TRIM = 5;     // profil chetidan qirqim (mm)
 
 // 2D dizayner daraxti layout (bo'lim kataklari + impostlar)
 function layoutTree(node, box, out) {
     if (!node) return;
-    if (node.kind === 'leaf') { out.cells.push({ opening: node.opening, box }); return; }
+    if (node.kind === 'leaf') {
+        out.cells.push({ opening: node.opening, box });
+        return;
+    }
     const horiz = node.dir === 'v';
     const total = horiz ? box.w : box.h;
     const gaps = (node.children.length - 1) * IMPOST_MM;
@@ -25,22 +36,36 @@ function layoutTree(node, box, out) {
     let pos = horiz ? box.x : box.y;
     node.children.forEach((c, i) => {
         const len = c.size || flexSize;
-        const sub = horiz ? { x: pos, y: box.y, w: len, h: box.h } : { x: box.x, y: pos, w: box.w, h: len };
+        const sub = horiz
+            ? { x: pos, y: box.y, w: len, h: box.h }
+            : { x: box.x, y: pos, w: box.w, h: len };
         layoutTree(c.node, sub, out);
         pos += len;
         if (i < node.children.length - 1) {
-            out.imposts.push(horiz ? { w: IMPOST_MM, h: box.h } : { w: box.w, h: IMPOST_MM });
+            // Impost uzunligi = ota katakdagi teskari o'lcham
+            const imLen = horiz ? box.h : box.w;
+            out.imposts.push({ len: imLen, dir: horiz ? 'v' : 'h' });
             pos += IMPOST_MM;
         }
     });
 }
-const KERF = 10;      // arra kesuvi (mm)
-const TRIM = 10;      // chetdan qirqim (mm)
 
+// Arra zazorini aniqlash (qo'shni bo'laklar burchagiga qarab)
+function kerfBetween(angleA, angleB) {
+    const a45 = angleA && angleA.includes('45');
+    const b45 = angleB && angleB.includes('45');
+    // Ikkala uchida 45° kesim bo'lsa → 2 arra uchrashadi → 4mm
+    // Kamida biri 90° bo'lsa → 1 arra → 2mm
+    if (a45 && b45) return KERF_45;
+    return KERF_90;
+}
+
+// ══════════════════════════════════════════════════════
 // 1) Zakaz elementlarini profil bo'laklariga aylantirish
+// ══════════════════════════════════════════════════════
 export function derivePieces(items) {
     const groups = {}; // material -> [{ref,len,angle,qty}]
-    const posMap = {}; // "P-xx|material" -> position counter
+    const posMap = {};
     let productIdx = 0;
 
     items.forEach(it => {
@@ -51,105 +76,156 @@ export function derivePieces(items) {
         const qty = Math.max(1, it.quantity || 1);
         const H = Math.round((it.height || 0) * 1000);
         const W = Math.round((it.width || 0) * 1000);
-        const vDiv = Math.max(0, it.vDiv || 0);
-        const hDiv = Math.max(0, it.hDiv || 0);
-        const stv = Math.max(0, it.stvorka || 0);
-        const arch = !!it.arch && it.type !== 'eshik';
-        const archRise = arch ? Math.round(Math.min(W / 2, H * 0.42)) : 0;
-        const rectH = H - archRise;
-        const innerW = W - 2 * FRAME_W, innerH = rectH - 2 * FRAME_W;
 
-        // Har komponent o'z profilidan kesiladi — alohida guruh
         const add = (mat, len, angle, count) => {
             if (len <= 0 || count <= 0) return;
             if (!groups[mat]) groups[mat] = [];
             const k = P + '|' + mat;
             posMap[k] = (posMap[k] || 0) + 1;
-            groups[mat].push({ ref: `${P} / ${posMap[k]}`, len: Math.round(len), angle, qty: count });
+            groups[mat].push({ ref: `${P}/${posMap[k]}`, len: Math.round(len), angle, qty: count });
         };
 
         // ── 2D DIZAYNER modeli bo'lsa — undan bo'laklar ──
         if (it.design && it.design.tree) {
-            const dW = Math.round(it.design.W || W), dH = Math.round(it.design.H || H);
+            const dW = Math.round(it.design.W || W);
+            const dH = Math.round(it.design.H || H);
             const out = { cells: [], imposts: [] };
-            layoutTree(it.design.tree, { x: FRAME_W, y: FRAME_W, w: dW - 2 * FRAME_W, h: dH - 2 * FRAME_W }, out);
-            add(baseMat, dH, '45° ; 45°', 2 * qty);            // rama vertikal
-            add(baseMat, dW, '45° ; 45°', 2 * qty);            // rama gorizontal
-            out.imposts.forEach(im => add(baseMat, Math.round(Math.max(im.w, im.h)), '90° ; 90°', qty));
-            const sashMat = baseMat + ' · Stvorka', beadMat = baseMat + ' · Shtapik';
-            out.cells.forEach(c => {
-                const cw = Math.round(c.box.w), ch = Math.round(c.box.h);
-                if (c.opening && c.opening !== 'kar') {
-                    add(sashMat, ch - 2 * SASH_GAP, '45° ; 45°', 2 * qty);
-                    add(sashMat, cw - 2 * SASH_GAP, '45° ; 45°', 2 * qty);
-                }
-                const gW = cw - 2 * BEAD_W, gH = ch - 2 * BEAD_W;
-                if (gW > 0 && gH > 0) {
-                    add(beadMat, gH, '45° ; 45°', 2 * qty);
-                    add(beadMat, gW, '45° ; 45°', 2 * qty);
+
+            // Layout: FRAME=0 (dizayner bilan bir xil)
+            layoutTree(it.design.tree, { x: 0, y: 0, w: dW, h: dH }, out);
+
+            // ① RAMA (Frame) profillar — tashqi o'lcham, 45° kesim
+            const ramaMat = baseMat + ' · Rama';
+            add(ramaMat, dH, '45°/45°', 2 * qty);  // 2ta vertikal
+            add(ramaMat, dW, '45°/45°', 2 * qty);  // 2ta gorizontal
+
+            // ② IMPOST profillar — ichki o'lcham, 90° kesim
+            const impostMat = baseMat + ' · Impost';
+            out.imposts.forEach(im => {
+                // Impost rama ichiga joylashadi → har ikki uchidan rama profil eni ayriladi
+                const cutLen = im.len - 2 * FRAME_PROFILE;
+                if (cutLen > 0) {
+                    add(impostMat, cutLen, '90°/90°', qty);
                 }
             });
-            return; // sodda hisobни o'tkazib yuboramiz
+
+            // ③ STVORKA (ochiladigan qism) profillar — 45° kesim
+            const sashMat = baseMat + ' · Stvorka';
+            out.cells.forEach(c => {
+                const cw = Math.round(c.box.w);
+                const ch = Math.round(c.box.h);
+                if (c.opening && c.opening !== 'kar') {
+                    // Stvorka rama ichiga joylashadi, zazor bilan
+                    const sashH = ch - 2 * SASH_GAP;
+                    const sashW = cw - 2 * SASH_GAP;
+                    if (sashH > 0 && sashW > 0) {
+                        add(sashMat, sashH, '45°/45°', 2 * qty); // 2ta vertikal
+                        add(sashMat, sashW, '45°/45°', 2 * qty); // 2ta gorizontal
+                    }
+                }
+            });
+
+            // ④ SHTAPIK (oyna atrofidagi profillar) — 45° kesim
+            const beadMat = baseMat + ' · Shtapik';
+            out.cells.forEach(c => {
+                const cw = Math.round(c.box.w);
+                const ch = Math.round(c.box.h);
+                let gW, gH;
+                if (c.opening && c.opening !== 'kar') {
+                    // Ochiladigan: oyna stvorka ichida
+                    gW = cw - 2 * SASH_GAP - 2 * SASH_PROFILE + 2 * BEAD_W;
+                    gH = ch - 2 * SASH_GAP - 2 * SASH_PROFILE + 2 * BEAD_W;
+                } else {
+                    // Kar: oyna to'g'ridan-to'g'ri ramaga o'rnashadi
+                    gW = cw - 2 * BEAD_W;
+                    gH = ch - 2 * BEAD_W;
+                }
+                if (gW > 0 && gH > 0) {
+                    add(beadMat, gH, '45°/45°', 2 * qty);
+                    add(beadMat, gW, '45°/45°', 2 * qty);
+                }
+            });
+
+            return; // dizayner modeli ishlatildi
         }
 
-        // 1) Rama (frame) — 45° (arka bo'lsa: to'g'ri tepa o'rniga yoy profili)
-        if (arch) {
-            add(baseMat, rectH, '45° ; 45°', 2 * qty);                  // vertikal (rect balandlik)
-            add(baseMat, W, '45° ; 45°', qty);                          // past
-            add(baseMat, Math.round(Math.PI * W / 2), 'ARKA (egilgan)', qty); // yarim doira yoy profili
-        } else {
-            add(baseMat, H, '45° ; 45°', 2 * qty);
-            add(baseMat, W, '45° ; 45°', 2 * qty);
-        }
-        // 2) Impostlar — 90°
-        add(baseMat, innerH, '90° ; 90°', vDiv * qty);
-        add(baseMat, innerW, '90° ; 90°', hDiv * qty);
+        // ── Oddiy hisob (dizaynersiz) ──
+        const innerW = W - 2 * FRAME_PROFILE;
+        const innerH = H - 2 * FRAME_PROFILE;
+        const vDiv = Math.max(0, it.vDiv || 0);
+        const hDiv = Math.max(0, it.hDiv || 0);
+        const stv = Math.max(0, it.stvorka || 0);
 
-        // 3) Stvorka (створка) — alohida profil, 45°
+        // 1) Rama
+        add(baseMat + ' · Rama', H, '45°/45°', 2 * qty);
+        add(baseMat + ' · Rama', W, '45°/45°', 2 * qty);
+
+        // 2) Impostlar
+        if (vDiv > 0) add(baseMat + ' · Impost', innerH, '90°/90°', vDiv * qty);
+        if (hDiv > 0) add(baseMat + ' · Impost', innerW, '90°/90°', hDiv * qty);
+
+        // 3) Stvorka
         if (stv > 0) {
             const sashMat = baseMat + ' · Stvorka';
             const sashW = Math.round(innerW / stv - 2 * SASH_GAP);
             const sashH = Math.round(innerH - 2 * SASH_GAP);
-            add(sashMat, sashH, '45° ; 45°', 2 * stv * qty);
-            add(sashMat, sashW, '45° ; 45°', 2 * stv * qty);
+            add(sashMat, sashH, '45°/45°', 2 * stv * qty);
+            add(sashMat, sashW, '45°/45°', 2 * stv * qty);
         }
 
-        // 4) Shtapik (штапик) — alohida profil, har oyna katagi atrofida, 45°
+        // 4) Shtapik
         const cols = vDiv + 1, rows = hDiv + 1;
-        const impW = Math.round(FRAME_W * 0.75);
-        const cellW = Math.round((innerW - vDiv * impW) / cols);
-        const cellH = Math.round((innerH - hDiv * impW) / rows);
+        const cellW = Math.round(innerW / cols);
+        const cellH = Math.round(innerH / rows);
         const gW = cellW - 2 * BEAD_W, gH = cellH - 2 * BEAD_W;
         if (gW > 0 && gH > 0) {
             const beadMat = baseMat + ' · Shtapik';
-            add(beadMat, gH, '45° ; 45°', 2 * cols * rows * qty);
-            add(beadMat, gW, '45° ; 45°', 2 * cols * rows * qty);
+            add(beadMat, gH, '45°/45°', 2 * cols * rows * qty);
+            add(beadMat, gW, '45°/45°', 2 * cols * rows * qty);
         }
 
-        // 5) Fortochka — kichik ramka (rama profilidan)
+        // 5) Fortochka
         if (it.type === 'rom_fortochka') {
-            add(baseMat, Math.round(innerH * 0.32), '45° ; 45°', 2 * qty);
-            add(baseMat, Math.round(innerW * 0.40), '45° ; 45°', 2 * qty);
+            add(baseMat + ' · Rama', Math.round(innerH * 0.32), '45°/45°', 2 * qty);
+            add(baseMat + ' · Rama', Math.round(innerW * 0.40), '45°/45°', 2 * qty);
         }
     });
-    return groups; // { material: [pieces] }
+
+    return groups;
 }
 
+// ══════════════════════════════════════════════════════
 // 2) Kesim-stok optimizatsiya (First-Fit-Decreasing)
-export function optimize(pieces, bar = BAR_LEN, kerf = KERF, trim = TRIM) {
+//    Arra zazori: 45° → 4mm, 90° → 2mm
+// ══════════════════════════════════════════════════════
+export function optimize(pieces, bar = BAR_LEN) {
     const units = [];
-    pieces.forEach(p => { for (let i = 0; i < p.qty; i++) units.push({ ref: p.ref, len: p.len, angle: p.angle }); });
+    pieces.forEach(p => {
+        for (let i = 0; i < p.qty; i++) {
+            units.push({ ref: p.ref, len: p.len, angle: p.angle });
+        }
+    });
     units.sort((a, b) => b.len - a.len);
 
-    const usable = bar - trim;
+    const usable = bar - TRIM;
     const bars = [];
+
     units.forEach(u => {
         let placed = false;
         for (const b of bars) {
-            const need = u.len + (b.pieces.length > 0 ? kerf : 0);
-            if (b.remaining >= need) { b.pieces.push(u); b.remaining -= need; placed = true; break; }
+            const lastAngle = b.pieces[b.pieces.length - 1].angle;
+            const kerf = kerfBetween(lastAngle, u.angle);
+            const need = u.len + kerf;
+            if (b.remaining >= need) {
+                b.pieces.push(u);
+                b.remaining -= need;
+                placed = true;
+                break;
+            }
         }
-        if (!placed) bars.push({ pieces: [u], remaining: usable - u.len });
+        if (!placed) {
+            bars.push({ pieces: [u], remaining: usable - u.len });
+        }
     });
 
     const totalBars = bars.length;
@@ -159,10 +235,10 @@ export function optimize(pieces, bar = BAR_LEN, kerf = KERF, trim = TRIM) {
     const offcut = totalBarLen - piecesLen;
     const offcutRate = totalBarLen ? (offcut / totalBarLen * 100) : 0;
 
-    // Bir xil kesim namunalarini guruhlaymiz (cutting maps)
+    // Bir xil kesim namunalarini guruhlaymiz
     const mapObj = {};
     bars.forEach(b => {
-        const key = b.pieces.map(p => p.len).sort((a, z) => z - a).join(',');
+        const key = b.pieces.map(p => p.len + ':' + p.angle).sort().join(',');
         if (!mapObj[key]) mapObj[key] = { pieces: b.pieces, count: 0, remaining: b.remaining };
         mapObj[key].count++;
     });
@@ -173,9 +249,14 @@ export function optimize(pieces, bar = BAR_LEN, kerf = KERF, trim = TRIM) {
 
 const fmtMm = n => Number(n).toLocaleString('ru-RU');
 
+// ══════════════════════════════════════════════════════
 // 3) PDF yaratish
+// ══════════════════════════════════════════════════════
 export function generateCuttingPdf(order) {
-    if (!window.jspdf || !window.jspdf.jsPDF) { alert('PDF kutubxonasi yuklanmadi. Sahifani yangilang.'); return; }
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+        alert('PDF kutubxonasi yuklanmadi. Sahifani yangilang.');
+        return;
+    }
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const PW = doc.internal.pageSize.getWidth();
@@ -184,22 +265,25 @@ export function generateCuttingPdf(order) {
 
     const groups = derivePieces(order.items || []);
     const mats = Object.keys(groups);
-    if (mats.length === 0) { alert("Zakazda rom/eshik yo'q — kesim uchun profil bo'lagi topilmadi."); return; }
+    if (mats.length === 0) {
+        alert("Zakazda rom/eshik yo'q — kesim uchun profil bo'lagi topilmadi.");
+        return;
+    }
 
     let first = true;
-    const visualPages = []; // { mat, result } — vizual chizmalar uchun
+    const visualPages = [];
 
     mats.forEach(mat => {
         const pieces = groups[mat];
         const result = optimize(pieces);
-        visualPages.push({ mat, result });
+        visualPages.push({ mat, result, pieces });
 
         if (!first) doc.addPage();
         first = false;
 
-        // Sarlavha
+        // ── Sarlavha ──
         doc.setFontSize(15); doc.setFont(undefined, 'bold');
-        doc.text('AKFA Romix — Kesim Optimizatsiya', M, 14);
+        doc.text('AKFA Romix — Kesim Rejasi', M, 14);
         doc.setFontSize(9); doc.setFont(undefined, 'normal');
         doc.text(dateStr, PW - M, 14, { align: 'right' });
         doc.setFontSize(9);
@@ -207,11 +291,17 @@ export function generateCuttingPdf(order) {
         doc.setFont(undefined, 'bold'); doc.setFontSize(10);
         doc.text(`Profil: ${mat}  —  standart ${fmtMm(BAR_LEN)} mm`, M, 27);
 
-        // Cutting List
+        // ── Arra zazori haqida izoh ──
+        doc.setFontSize(7.5); doc.setFont(undefined, 'normal');
+        doc.setTextColor(120);
+        doc.text(`Arra zazori: 45° kesim = ${KERF_45}mm (2 arra) | 90° kesim = ${KERF_90}mm (1 arra)`, M, 32);
+        doc.setTextColor(20);
+
+        // ── Cutting List (bo'laklar ro'yxati) ──
         const clRows = pieces.map((p, i) => [i + 1, p.ref, fmtMm(p.len), p.qty, p.angle]);
         doc.autoTable({
-            startY: 31,
-            head: [['#', 'Reference', "Uzunlik (mm)", 'Soni', 'Burchak']],
+            startY: 36,
+            head: [['#', 'Reference', 'Uzunlik (mm)', 'Soni', 'Kesim burchagi']],
             body: clRows,
             foot: [['', 'JAMI', '', pieces.reduce((s, p) => s + p.qty, 0), '']],
             styles: { fontSize: 8, cellPadding: 1.5 },
@@ -220,7 +310,7 @@ export function generateCuttingPdf(order) {
             margin: { left: M, right: M }
         });
 
-        // Required Bars + Cutting Maps
+        // ── Kerakli profillar ──
         let y = doc.lastAutoTable.finalY + 6;
         doc.setFont(undefined, 'bold'); doc.setFontSize(10);
         doc.text('Kerakli profillar', M, y); y += 2;
@@ -233,6 +323,7 @@ export function generateCuttingPdf(order) {
             margin: { left: M, right: M }
         });
 
+        // ── Kesim xaritalari ──
         y = doc.lastAutoTable.finalY + 6;
         doc.setFont(undefined, 'bold'); doc.setFontSize(10);
         doc.text('Kesim xaritalari (Cutting Maps)', M, y); y += 2;
@@ -243,15 +334,15 @@ export function generateCuttingPdf(order) {
         ]);
         doc.autoTable({
             startY: y,
-            head: [['#', 'Soni', "Bo'lak", 'Kesim (mm)', 'Chiqit']],
+            head: [['#', 'Profil soni', "Bo'lak", 'Kesim (mm)', 'Chiqit']],
             body: mapRows,
             styles: { fontSize: 7.5, cellPadding: 1.3 },
             headStyles: { fillColor: [14, 28, 46] },
-            columnStyles: { 3: { cellWidth: 90 } },
+            columnStyles: { 3: { cellWidth: 85 } },
             margin: { left: M, right: M }
         });
 
-        // Recapitulatory
+        // ── Xulosa ──
         y = doc.lastAutoTable.finalY + 6;
         doc.autoTable({
             startY: y,
@@ -271,56 +362,129 @@ export function generateCuttingPdf(order) {
         });
     });
 
-    // ── Vizual kesim chizmalari ──
+    // ══════════════════════════════════════════════════════
+    // Vizual kesim chizmalari — arra zazorlarini aniq ko'rsatish
+    // ══════════════════════════════════════════════════════
     visualPages.forEach(({ mat, result }) => {
         doc.addPage();
         doc.setFontSize(12); doc.setFont(undefined, 'bold');
         doc.text('Kesim chizmasi — ' + mat, M, 14);
         doc.setFontSize(8); doc.setFont(undefined, 'normal');
-        doc.text(`Standart profil ${fmtMm(BAR_LEN)} mm`, M, 19);
+        doc.text(`Standart profil: ${fmtMm(BAR_LEN)} mm  |  Arra zazori: 45°=${KERF_45}mm, 90°=${KERF_90}mm`, M, 19);
 
         const barW = PW - 2 * M;
         const scale = barW / BAR_LEN;
         let yy = 26;
+
         result.maps.forEach((mp, mi) => {
-            if (yy > 270) { doc.addPage(); yy = 20; }
-            doc.setFontSize(8.5); doc.setFont(undefined, 'bold');
+            if (yy > 265) { doc.addPage(); yy = 20; }
+
+            // Xarita sarlavhasi
+            doc.setFontSize(8.5); doc.setFont(undefined, 'bold'); doc.setTextColor(20);
             doc.text(`${mi + 1}-xarita  ×${mp.count} profil`, M, yy);
-            yy += 3;
-            const barH = 9;
-            // profil konturi
-            doc.setDrawColor(120); doc.setLineWidth(0.2);
-            doc.rect(M, yy, barW, barH);
+            yy += 4;
+
+            const barH = 12;
+
+            // Profil konturi (fon)
+            doc.setDrawColor(180); doc.setLineWidth(0.3);
+            doc.setFillColor(245, 247, 250);
+            doc.rect(M, yy, barW, barH, 'FD');
+
             let x = M;
             mp.pieces.forEach((p, pi) => {
                 const w = p.len * scale;
-                // bo'lak
-                doc.setFillColor(224, 232, 238);
-                doc.rect(x, yy, w, barH, 'F');
-                doc.setDrawColor(90); doc.rect(x, yy, w, barH);
-                // 45° burchak — diagonal chiziq
-                if (p.angle && p.angle.indexOf('45') >= 0) {
-                    doc.setDrawColor(150);
-                    doc.line(x, yy, x + Math.min(3, w), yy + barH);
-                    doc.line(x + w, yy, x + w - Math.min(3, w), yy + barH);
+                const is45 = p.angle && p.angle.includes('45');
+
+                // Bo'lak to'rtburchagi
+                if (is45) {
+                    doc.setFillColor(200, 225, 245); // ko'k — 45° kesim
+                } else {
+                    doc.setFillColor(220, 245, 220); // yashil — 90° kesim
                 }
-                // uzunlik yozuvi
-                doc.setFontSize(6); doc.setTextColor(20);
-                if (w > 8) doc.text(fmtMm(p.len), x + w / 2, yy + barH / 2 + 1, { align: 'center' });
-                x += w;
-                // kerf gap
-                if (pi < mp.pieces.length - 1) x += KERF * scale;
-            });
-            // chiqit (off-cut) — kulrang
-            if (mp.remaining > 0) {
-                const w = mp.remaining * scale;
-                doc.setFillColor(160, 160, 160);
                 doc.rect(x, yy, w, barH, 'F');
-                doc.setFontSize(6); doc.setTextColor(255);
-                if (w > 10) doc.text(fmtMm(mp.remaining), x + w / 2, yy + barH / 2 + 1, { align: 'center' });
+                doc.setDrawColor(80); doc.setLineWidth(0.25);
+                doc.rect(x, yy, w, barH);
+
+                // 45° burchak — diagonal arra chiziqlari
+                if (is45) {
+                    doc.setDrawColor(200, 60, 60); doc.setLineWidth(0.4);
+                    // Chap uchi — 45° diagonal
+                    const d = Math.min(4, w * 0.15);
+                    doc.line(x, yy + barH, x + d, yy);
+                    // O'ng uchi — 45° diagonal
+                    doc.line(x + w, yy, x + w - d, yy + barH);
+                } else {
+                    // 90° kesim — to'g'ri vertikal chiziq
+                    doc.setDrawColor(60, 150, 60); doc.setLineWidth(0.5);
+                    doc.line(x, yy, x, yy + barH);
+                    doc.line(x + w, yy, x + w, yy + barH);
+                }
+
+                // Bo'lak uzunligi matni
+                doc.setFontSize(6.5); doc.setTextColor(20); doc.setFont(undefined, 'bold');
+                if (w > 10) {
+                    doc.text(fmtMm(p.len), x + w / 2, yy + barH / 2 + 1.5, { align: 'center' });
+                }
+
+                x += w;
+
+                // ── ARRA ZAZORI (kerf gap) ──
+                if (pi < mp.pieces.length - 1) {
+                    const nextAngle = mp.pieces[pi + 1].angle;
+                    const kerf = kerfBetween(p.angle, nextAngle);
+                    const kerfW = kerf * scale;
+
+                    // Zazor to'rtburchagi — qizil rang
+                    doc.setFillColor(255, 80, 80);
+                    doc.rect(x, yy, Math.max(kerfW, 0.6), barH, 'F');
+
+                    // Zazor o'lchami (yuqorida)
+                    doc.setFontSize(4.5); doc.setTextColor(220, 50, 50); doc.setFont(undefined, 'bold');
+                    doc.text(kerf + 'mm', x + Math.max(kerfW, 0.6) / 2, yy - 1, { align: 'center' });
+
+                    x += Math.max(kerfW, 0.6);
+                }
+            });
+
+            // Chiqit (off-cut) — kulrang
+            if (mp.remaining > 0) {
+                const remW = Math.max(mp.remaining * scale, 0.5);
+                doc.setFillColor(180, 180, 180);
+                doc.rect(x, yy, barW - (x - M), barH, 'F');
+                doc.setDrawColor(140); doc.rect(x, yy, barW - (x - M), barH);
+                // Diagonal chiziqlar (chiqit belgisi)
+                doc.setDrawColor(160);
+                for (let dx = 0; dx < barW - (x - M); dx += 4) {
+                    doc.line(x + dx, yy + barH, x + dx + 3, yy);
+                }
+                doc.setFontSize(5.5); doc.setTextColor(255); doc.setFont(undefined, 'bold');
+                const actualRemW = barW - (x - M);
+                if (actualRemW > 12) {
+                    doc.text(fmtMm(mp.remaining) + ' chiqit', x + actualRemW / 2, yy + barH / 2 + 1.5, { align: 'center' });
+                }
             }
+
             doc.setTextColor(20);
-            yy += barH + 8;
+
+            // Pastda rang izohi (birinchi xaritada)
+            if (mi === 0) {
+                yy += barH + 3;
+                doc.setFontSize(5); doc.setFont(undefined, 'normal'); doc.setTextColor(100);
+                // Rang izohi
+                doc.setFillColor(200, 225, 245); doc.rect(M, yy, 4, 3, 'F');
+                doc.text('45° kesim', M + 5, yy + 2.5);
+                doc.setFillColor(220, 245, 220); doc.rect(M + 22, yy, 4, 3, 'F');
+                doc.text('90° kesim', M + 27, yy + 2.5);
+                doc.setFillColor(255, 80, 80); doc.rect(M + 50, yy, 4, 3, 'F');
+                doc.text('Arra zazori', M + 55, yy + 2.5);
+                doc.setFillColor(180, 180, 180); doc.rect(M + 78, yy, 4, 3, 'F');
+                doc.text('Chiqit', M + 83, yy + 2.5);
+                doc.setTextColor(20);
+                yy += 7;
+            } else {
+                yy += barH + 7;
+            }
         });
     });
 
