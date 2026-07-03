@@ -828,6 +828,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     let _buhSotuvChart = null;
+    // Zakazning ish-jarayon bosqichini aniqlaydi: Zakaz qabul qilindi → Ishlab chiqarishda → Tayyor/Yetkazildi
+    // (Sotuv bo'limi: buyurtma olinadi (Kutilmoqda) → guruhga biriktirilib omborga so'rov beriladi (Jarayonda) → tugaydi)
+    function _buhOrderStageInfo(status) {
+        if (status && (status.includes('Tayyor') || status.includes('Yetkazildi'))) {
+            return { label: 'Tayyor / Yetkazildi', icon: '✅', color: '#00ff88' };
+        }
+        if (status === 'Jarayonda') {
+            return { label: 'Ishlab chiqarishda', icon: '⚙️', color: '#00d2ff' };
+        }
+        return { label: 'Zakaz qabul qilindi', icon: '📝', color: '#ffaa00' };
+    }
+
     // Bir buyurtmadan qolayotgan taxminiy foyda va to'lov holatini hisoblaydi.
     // Eslatma: sales_orders'da alohida 'profit' ustuni saqlanmaydi (faqat total_price/production_cost/
     // installation_cost bor), shuning uchun foyda = total_price - (production_cost + installation_cost)
@@ -914,7 +926,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 gridEl.innerHTML = inPeriod.slice(0, 60).map(o => {
                     const pay = _buhOrderPaymentInfo(o);
                     const profit = _buhOrderProfit(o);
-                    const statusColor = o.status === 'Jarayonda' ? '#00d2ff' : (o.status && (o.status.includes('Tayyor') || o.status.includes('Yetkazildi')) ? '#00ff88' : '#ffaa00');
+                    const stage = _buhOrderStageInfo(o.status);
+                    const statusColor = stage.color;
+                    const orderDateStr = o.created_at ? new Date(o.created_at).toLocaleDateString('uz-UZ') : '—';
+                    const deadlineStr = o.deadline_date ? new Date(o.deadline_date).toLocaleDateString('uz-UZ') : '—';
+                    const isOverdue = o.deadline_date && stage.label !== 'Tayyor / Yetkazildi' && new Date(o.deadline_date) < new Date();
                     const payBadge = pay.fullyPaid
                         ? `<span style="background:rgba(0,255,136,0.1); color:#00ff88; padding:3px 10px; border-radius:12px; font-size:0.68rem; font-weight:700;">✓ To'langan</span>`
                         : (pay.paidAmount > 0
@@ -933,7 +949,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <div style="font-weight:700; color:#fff; font-size:0.9rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${o.customer_name || 'Noma\'lum mijoz'}</div>
                                 <div style="font-size:0.68rem; color:rgba(255,255,255,0.4); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${o.prod_type || 'Mahsulot'} • ${o.quantity || 1} ta</div>
                             </div>
-                            <span style="font-size:0.6rem; color:${statusColor}; background:${statusColor}22; padding:2px 8px; border-radius:12px; font-weight:700; white-space:nowrap;">${o.status || 'Kutilmoqda'}</span>
+                            <span style="font-size:0.62rem; color:${statusColor}; background:${statusColor}22; padding:3px 9px; border-radius:12px; font-weight:700; white-space:nowrap; display:inline-flex; align-items:center; gap:4px;">${stage.icon} ${stage.label}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:rgba(255,255,255,0.45); background:rgba(255,255,255,0.02); border-radius:10px; padding:8px 10px;">
+                            <span>📅 Zakaz sanasi: <strong style="color:rgba(255,255,255,0.7);">${orderDateStr}</strong></span>
+                            <span style="${isOverdue ? 'color:#ff4d4f; font-weight:700;' : ''}">⏳ Va'da muddati: <strong style="color:${isOverdue ? '#ff4d4f' : 'rgba(255,255,255,0.7)'};">${deadlineStr}${isOverdue ? ' ⚠️' : ''}</strong></span>
                         </div>
                         <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:rgba(255,255,255,0.5); border-top:1px dashed rgba(255,255,255,0.06); padding-top:8px;">
                             <span>Jami narx</span><strong style="color:#00ff88; font-family:monospace;">${_buhFmt(pay.total)}</strong>
@@ -943,7 +963,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </div>
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px;">
                             ${payBadge}
-                            <span style="font-size:0.65rem; color:rgba(255,255,255,0.3);">${o.created_at ? o.created_at.slice(0, 10) : ''}</span>
                         </div>
                         ${payDateHtml}
                         ${payBtn}
