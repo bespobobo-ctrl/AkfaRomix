@@ -91,21 +91,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             const matSum = (r.materials_json || []).reduce((a, m) => a + (m.qty * m.cost), 0);
             const accSum = (r.accessories_json || []).reduce((a, m) => a + (m.qty * m.cost), 0);
             const badgeClass = r.type === 'Eshik' ? 'eshik' : r.type === 'Rom' ? 'rom' : 'fasad';
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><strong>${r.name}</strong></td>
-                <td><span class="recipe-badge ${badgeClass}">${r.type}</span></td>
-                <td>${matSum.toLocaleString()} <small style="color:var(--adm-text-sec);">(${(r.materials_json || []).length} xil)</small></td>
-                <td>${accSum.toLocaleString()} <small style="color:var(--adm-text-sec);">(${(r.accessories_json || []).length} xil)</small></td>
-                <td>${Number(r.machine_cost).toLocaleString()}</td>
-                <td>${Number(r.overhead_cost).toLocaleString()}</td>
-                <td class="cost-green">${Number(r.total_cost).toLocaleString()} UZS</td>
-                <td>
-                    <button class="view-recipe" data-id="${r.id}" style="background:none; border:none; font-size:1.1rem; cursor:pointer;" title="Ko'rish">👁️</button>
-                    <button class="del-recipe" data-id="${r.id}" style="background:none; border:none; font-size:1.1rem; cursor:pointer; color:red;" title="O'chirish">🗑️</button>
-                </td>
+            const accentColor = r.type === 'Eshik' ? '#8b5cf6' : (r.type === 'Rom' ? '#00d2ff' : '#ffaa00');
+            const card = document.createElement('div');
+            card.style.cssText = `border-top:3px solid ${accentColor}; border-radius:16px; background:var(--adm-surface); border:1px solid var(--adm-border); border-top:3px solid ${accentColor}; padding:16px; display:flex; flex-direction:column; gap:9px; box-shadow:var(--adm-shadow);`;
+            card.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+                    <div style="font-weight:700; color:var(--adm-text); font-size:0.92rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${r.name}</div>
+                    <span class="recipe-badge ${badgeClass}" style="white-space:nowrap;">${r.type}</span>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:0.75rem; color:var(--adm-text-sec); border-top:1px dashed var(--adm-border); padding-top:9px;">
+                    <div>Materiallar: <strong style="color:var(--adm-text);">${matSum.toLocaleString()}</strong> <span style="opacity:0.6;">(${(r.materials_json || []).length} xil)</span></div>
+                    <div>Aksessuar: <strong style="color:var(--adm-text);">${accSum.toLocaleString()}</strong> <span style="opacity:0.6;">(${(r.accessories_json || []).length} xil)</span></div>
+                    <div>Stanok: <strong style="color:var(--adm-text);">${Number(r.machine_cost).toLocaleString()}</strong></div>
+                    <div>Korxona: <strong style="color:var(--adm-text);">${Number(r.overhead_cost).toLocaleString()}</strong></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed var(--adm-border); padding-top:9px; margin-top:2px;">
+                    <strong class="cost-green" style="font-size:0.95rem;">${Number(r.total_cost).toLocaleString()} UZS</strong>
+                    <div>
+                        <button class="view-recipe" data-id="${r.id}" style="background:none; border:none; font-size:1.05rem; cursor:pointer;" title="Ko'rish">👁️</button>
+                        <button class="del-recipe" data-id="${r.id}" style="background:none; border:none; font-size:1.05rem; cursor:pointer; color:red;" title="O'chirish">🗑️</button>
+                    </div>
+                </div>
             `;
-            tb.appendChild(tr);
+            tb.appendChild(card);
         });
 
         // Bind view buttons
