@@ -200,6 +200,24 @@
         </main>
     </div>
 
+    <!-- Modal: Bosqichni Yakunlash (partial-batch o'tkazish) -->
+    <div id="batchCompleteModal" class="hidden"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px;">
+        <div class="user-form-modal" style="width: 420px; background:var(--adm-surface);">
+            <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+                <span style="font-size: 1.5rem;">✅</span>
+                <h2 style="color:var(--adm-text);">Bosqichni Yakunlash</h2>
+            </div>
+            <p id="batchCompleteInfo" style="color:var(--adm-text-sec); font-size:0.85rem; margin-bottom:15px;"></p>
+            <label class="form-label">Nechta birlik tayyor / o'tkazilsin?</label>
+            <input type="number" id="batchCompleteQty" class="form-input-v2" min="1" step="1">
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button id="batchCompleteSaveBtn" style="flex:1; background:#00d2ff; color:#000; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">O'tkazish</button>
+                <button id="batchCompleteCloseBtn" style="flex:1; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; border-radius:12px; cursor:pointer;">Bekor qilish</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal: Yangi Brigada Qo'shish -->
     <div id="addBrigadeModal" class="hidden"
         style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px;">
