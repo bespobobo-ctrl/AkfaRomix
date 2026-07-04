@@ -1567,6 +1567,7 @@
                             <button onclick="window.openBuhKirimModal()" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(0,255,136,0.1); border:1px solid rgba(0,255,136,0.3); color:#00ff88; font-weight:700; font-size:0.8rem;">➕ Kirim Qilish</button>
                             <button onclick="window.openBuhProfilKirimModal()" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(0,186,255,0.1); border:1px solid rgba(0,186,255,0.3); color:#00baff; font-weight:700; font-size:0.8rem;">📦 Profil Kirim</button>
                             <button onclick="window.openBuhAccKirimModal()" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(186,104,200,0.1); border:1px solid rgba(186,104,200,0.3); color:#BA68C8; font-weight:700; font-size:0.8rem;">🔩 Aksessuar Kirim</button>
+                            <button onclick="window.openBuhSpiskaModal()" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(0,210,255,0.1); border:1px solid rgba(0,210,255,0.3); color:#00d2ff; font-weight:700; font-size:0.8rem;">📜 Spiska Kirim</button>
                         </div>
                         <div id="buh-ombor-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:14px;">
                             <div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Yuklanmoqda...</div>
@@ -1784,6 +1785,84 @@
                         <div style="display:flex; gap:12px; margin-top:22px;">
                             <button onclick="window.saveBuhAccKirim()" class="buh-save-btn" style="flex:1;">💾 Tasdiqlash va Saqlash</button>
                             <button onclick="window.closeBuhAccKirimModal()" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); padding:13px; border-radius:14px; font-weight:700; cursor:pointer;">Bekor qilish</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============ Buxgalteriya: Spiska Kirim (Guruhli) Modal ============ -->
+                <div id="buh-spiska-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:10001; align-items:center; justify-content:center; padding:20px;">
+                    <div style="background:#0b111a; border:1px solid rgba(0,210,255,0.25); width:100%; max-width:950px; max-height:92vh; overflow-y:auto; border-radius:24px; padding:28px;">
+                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <span style="font-size:1.6rem;">📜</span>
+                                <h3 style="color:#fff; margin:0;">Spiska Kirim (Guruhli Kirim Hujjati)</h3>
+                            </div>
+                            <span onclick="window.closeBuhSpiskaModal()" style="cursor:pointer; font-size:1.4rem; opacity:0.7; color:#fff;">&times;</span>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1.5fr; gap:20px;">
+                            <!-- Chap: qo'shish formasi -->
+                            <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:18px; border-radius:16px; display:flex; flex-direction:column; gap:12px;">
+                                <h4 style="color:#ffaa00; font-size:0.8rem; text-transform:uppercase; margin:0;">➕ Tovar Ma'lumotlari</h4>
+                                <div><label class="buh-form-label" style="display:block; font-size:0.7rem; color:rgba(255,255,255,0.5); margin-bottom:4px;">Mahsulot Nomi</label>
+                                    <input type="text" id="buhSpiskaName" placeholder="Masalan: AKFA Eshik Qulflari" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                                <div><label class="buh-form-label" style="display:block; font-size:0.7rem; color:rgba(255,255,255,0.5); margin-bottom:4px;">Kategoriya</label>
+                                    <select id="buhSpiskaCategory" class="buh-input" style="width:100%; box-sizing:border-box;" onchange="document.getElementById('buhSpiskaCustomCategoryGroup').style.display = this.value === 'Boshqa...' ? 'block' : 'none';">
+                                        <option value="Zamoklar">🔒 Zamoklar</option>
+                                        <option value="Ruchkalar">🚪 Ruchkalar</option>
+                                        <option value="Qistirmalar">🌀 Qistirmalar</option>
+                                        <option value="Biriktiruvchilar">🧩 Biriktiruvchilar</option>
+                                        <option value="Boshqa...">⚙️ Boshqa...</option>
+                                    </select></div>
+                                <div id="buhSpiskaCustomCategoryGroup" style="display:none;">
+                                    <label class="buh-form-label" style="display:block; font-size:0.7rem; color:rgba(255,255,255,0.5); margin-bottom:4px;">Yangi Kategoriya Nomi</label>
+                                    <input type="text" id="buhSpiskaCustomCategory" placeholder="Kategoriya nomini yozing..." class="buh-input" style="width:100%; box-sizing:border-box;">
+                                </div>
+                                <div><label class="buh-form-label" style="display:block; font-size:0.7rem; color:rgba(255,255,255,0.5); margin-bottom:4px;">Mahsulot Xususiyati</label>
+                                    <input type="text" id="buhSpiskaSpec" placeholder="Rangi, o'lchami..." class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                                <div style="display:grid; grid-template-columns:1.1fr 0.9fr; gap:10px;">
+                                    <div><label class="buh-form-label" style="display:block; font-size:0.7rem; color:rgba(255,255,255,0.5); margin-bottom:4px;">O'lchov Birligi</label>
+                                        <select id="buhSpiskaUnit" class="buh-input" style="width:100%; box-sizing:border-box;">
+                                            <option value="dona">📦 dona</option>
+                                            <option value="kg">⚖️ kg</option>
+                                            <option value="litr">🧪 litr</option>
+                                            <option value="metr">📏 metr</option>
+                                        </select></div>
+                                    <div><label class="buh-form-label" style="display:block; font-size:0.7rem; color:rgba(255,255,255,0.5); margin-bottom:4px;">Miqdori</label>
+                                        <input type="number" id="buhSpiskaQty" min="1" placeholder="Miqdor..." class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                                </div>
+                                <button onclick="window.addBuhSpiskaTempItem()" style="margin-top:6px; background:linear-gradient(135deg,#00d2ff,#0076a3); border:none; color:#fff; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">➕ Ro'yxatga Qo'shish</button>
+                            </div>
+                            <!-- O'ng: vaqtinchalik ro'yxat -->
+                            <div style="background:rgba(0,0,0,0.15); border:1px solid rgba(255,255,255,0.03); padding:18px; border-radius:16px; display:flex; flex-direction:column; justify-content:space-between;">
+                                <div>
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                                        <h4 style="color:#00ff88; font-size:0.8rem; text-transform:uppercase; margin:0;">📑 Hujjatdagi Tovar Ro'yxati</h4>
+                                        <span id="buhSpiskaTempCount" style="font-size:0.75rem; background:rgba(0,255,136,0.1); color:#00ff88; border:1px solid rgba(0,255,136,0.2); padding:2px 8px; border-radius:10px;">0 ta tovar</span>
+                                    </div>
+                                    <div style="max-height:260px; overflow-y:auto; border-radius:10px; border:1px solid rgba(255,255,255,0.05);">
+                                        <table style="width:100%; border-collapse:collapse; font-size:0.8rem;">
+                                            <thead style="position:sticky; top:0; background:#0f172a;">
+                                                <tr>
+                                                    <th style="padding:8px; text-align:left; color:rgba(255,255,255,0.5); font-size:0.7rem;">Mahsulot</th>
+                                                    <th style="padding:8px; text-align:left; color:rgba(255,255,255,0.5); font-size:0.7rem;">Kategoriya</th>
+                                                    <th style="padding:8px; text-align:right; color:rgba(255,255,255,0.5); font-size:0.7rem;">Miqdor</th>
+                                                    <th style="padding:8px; text-align:right; color:rgba(255,255,255,0.5); font-size:0.7rem; width:40px;"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="buhSpiskaTempTableBody">
+                                                <tr><td colspan="4" style="text-align:center; padding:20px; color:rgba(255,255,255,0.3); font-size:0.8rem;">Ro'yxat bo'sh. Tovar qo'shing...</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div style="border-top:1px dashed rgba(255,255,255,0.08); padding-top:12px; margin-top:14px; display:flex; justify-content:space-between; align-items:center;">
+                                    <div style="font-size:0.8rem; color:rgba(255,255,255,0.5);">Jami: <strong id="buhSpiskaTempTotalQty" style="color:#00ff88;">0 dona</strong></div>
+                                    <div style="display:flex; gap:10px;">
+                                        <button onclick="window.closeBuhSpiskaModal()" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); padding:10px 16px; border-radius:12px; font-weight:700; cursor:pointer;">Bekor qilish</button>
+                                        <button onclick="window.commitBuhSpiskaDeposit()" style="background:linear-gradient(135deg,#00ff88,#00b359); border:none; color:#000; padding:10px 18px; border-radius:12px; font-weight:800; cursor:pointer;">📥 TASDIQLASH</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

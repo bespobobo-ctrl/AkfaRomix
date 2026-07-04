@@ -2828,6 +2828,11 @@
 
         // --- Edit Modal Control & Submit ---
         function openAccEditModal(idx) {
+            const curUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            if (curUser.role !== 'admin') {
+                alert("Mahsulot miqdorini o'zgartirish (kiritish) endi faqat Buxgalteriya bo'limida amalga oshiriladi.");
+                return;
+            }
             const item = inventory[idx];
             if (!item) return;
 

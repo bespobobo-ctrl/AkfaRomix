@@ -994,6 +994,112 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('buhAccCustomCategoryGroup').style.display = 'none';
     };
 
+    // ========================================================
+    // ======== BUXGALTERIYA: SPISKA KIRIM (guruhli, localStorage) =
+    // Bir nechta aksessuar tovarni vaqtinchalik ro'yxatga
+    // qo'shib, birdaniga romix_accessories_inventory'ga yozadi.
+    // ========================================================
+    let buhSpiskaTempItems = [];
+
+    window.openBuhSpiskaModal = () => {
+        buhSpiskaTempItems = [];
+        window.renderBuhSpiskaTempList();
+        const modal = document.getElementById('buh-spiska-modal');
+        if (modal) modal.style.display = 'flex';
+    };
+    window.closeBuhSpiskaModal = () => {
+        buhSpiskaTempItems = [];
+        const modal = document.getElementById('buh-spiska-modal');
+        if (modal) modal.style.display = 'none';
+    };
+    window.addBuhSpiskaTempItem = () => {
+        const name = document.getElementById('buhSpiskaName').value.trim();
+        const categorySelect = document.getElementById('buhSpiskaCategory').value;
+        const customCategory = document.getElementById('buhSpiskaCustomCategory').value.trim();
+        const spec = document.getElementById('buhSpiskaSpec').value.trim();
+        const unit = document.getElementById('buhSpiskaUnit').value;
+        const qty = parseInt(document.getElementById('buhSpiskaQty').value);
+        const finalCategory = categorySelect === 'Boshqa...' ? customCategory : categorySelect;
+
+        if (!name || !finalCategory || isNaN(qty) || qty <= 0) {
+            alert("Iltimos, barcha maydonlarni to'g'ri to'ldiring!");
+            return;
+        }
+
+        const existingIdx = buhSpiskaTempItems.findIndex(item => item.name.toLowerCase() === name.toLowerCase());
+        if (existingIdx > -1) {
+            buhSpiskaTempItems[existingIdx].qty += qty;
+            buhSpiskaTempItems[existingIdx].spec = spec;
+            buhSpiskaTempItems[existingIdx].category = finalCategory;
+        } else {
+            buhSpiskaTempItems.push({ name, category: finalCategory, qty, unit, spec });
+        }
+
+        ['buhSpiskaName','buhSpiskaSpec','buhSpiskaQty'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+        document.getElementById('buhSpiskaName').focus();
+        window.renderBuhSpiskaTempList();
+    };
+    window.removeBuhSpiskaTempItem = (idx) => {
+        buhSpiskaTempItems.splice(idx, 1);
+        window.renderBuhSpiskaTempList();
+    };
+    window.renderBuhSpiskaTempList = () => {
+        const tbody = document.getElementById('buhSpiskaTempTableBody');
+        if (!tbody) return;
+        let totalQty = 0;
+        if (buhSpiskaTempItems.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:rgba(255,255,255,0.3); font-size:0.8rem;">Ro\'yxat bo\'sh. Tovar qo\'shing...</td></tr>';
+        } else {
+            tbody.innerHTML = buhSpiskaTempItems.map((item, idx) => {
+                totalQty += item.qty;
+                return `<tr style="border-top:1px solid rgba(255,255,255,0.05);">
+                    <td style="padding:8px; color:#fff; font-weight:600;">${item.name}</td>
+                    <td style="padding:8px; color:rgba(255,255,255,0.5); font-size:0.75rem;">${item.category}</td>
+                    <td style="padding:8px; text-align:right; color:#00ff88; font-weight:700;">${item.qty.toLocaleString()} ${item.unit}</td>
+                    <td style="padding:8px; text-align:right;"><button onclick="window.removeBuhSpiskaTempItem(${idx})" style="background:none; border:none; color:#ff4d4f; cursor:pointer; font-size:0.85rem;">🗑️</button></td>
+                </tr>`;
+            }).join('');
+        }
+        document.getElementById('buhSpiskaTempCount').textContent = `${buhSpiskaTempItems.length} ta tovar`;
+        document.getElementById('buhSpiskaTempTotalQty').textContent = `${totalQty.toLocaleString()} dona`;
+    };
+    window.commitBuhSpiskaDeposit = () => {
+        if (buhSpiskaTempItems.length === 0) {
+            alert("Iltimos, tasdiqlashdan oldin hech bo'lmaganda bitta mahsulot qo'shing!");
+            return;
+        }
+        let inventory = JSON.parse(localStorage.getItem('romix_accessories_inventory')) || [];
+        const curUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const operator = (curUser.full_name || curUser.username || 'BUXGALTERIYA').toUpperCase();
+        let logs = JSON.parse(localStorage.getItem('romix_accessories_history_log')) || [];
+
+        buhSpiskaTempItems.forEach(item => {
+            const matchedIndex = inventory.findIndex(inv => inv.name.toLowerCase() === item.name.toLowerCase());
+            if (matchedIndex > -1) {
+                inventory[matchedIndex].qty += item.qty;
+                inventory[matchedIndex].spec = item.spec;
+                inventory[matchedIndex].category = item.category;
+            } else {
+                inventory.push({ name: item.name, category: item.category, qty: item.qty, unit: item.unit, spec: item.spec });
+            }
+            const now = new Date();
+            const timeStr = now.toLocaleDateString('uz-UZ') + ' ' + now.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+            logs.unshift({
+                timestamp: timeStr,
+                action: 'Spiska Kirim 📜',
+                details: `"${item.name}" mahsulotidan ${item.qty.toLocaleString()} ${item.unit} Spiska orqali guruhli kirim qilindi (Buxgalteriya). Kategoriya: ${item.category}.`,
+                operator: operator
+            });
+        });
+        if (logs.length > 100) logs = logs.slice(0, 100);
+
+        localStorage.setItem('romix_accessories_inventory', JSON.stringify(inventory));
+        localStorage.setItem('romix_accessories_history_log', JSON.stringify(logs));
+
+        window.showPremiumToast('Muvaffaqiyatli', `${buhSpiskaTempItems.length} ta tovar kirim qilindi.`, true);
+        window.closeBuhSpiskaModal();
+    };
+
     async function renderBuhTayyorMahsulot() {
         const statsEl = document.getElementById('buh-tayyor-stats');
         const tableEl = document.getElementById('buh-tayyor-table');
