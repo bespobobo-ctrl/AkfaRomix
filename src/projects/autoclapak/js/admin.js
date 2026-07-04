@@ -1279,10 +1279,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     window.payRomixDebt = async (id) => {
-        let list = [];
-        try { list = JSON.parse(localStorage.getItem(ROMIX_BUH_KEYS.debts) || '[]'); } catch {}
+        const list = await romixBuhSelect('romix_debts', ROMIX_BUH_KEYS.debts);
         const debt = list.find(d => d.id === id);
-        if (!debt) return;
+        if (!debt) { alert("Qarz yozuvi topilmadi. Sahifani yangilab ko'ring."); return; }
         const remaining = Math.max(0, (Number(debt.amount) || 0) - (Number(debt.paid_amount) || 0));
         const val = parseFloat(prompt(`"${debt.creditor}" uchun to'lov summasini kiriting (qoldiq: ${remaining.toLocaleString()} UZS):`, remaining));
         if (!val || val <= 0) return;
