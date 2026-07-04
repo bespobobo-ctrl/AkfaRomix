@@ -220,6 +220,16 @@
                         <input type="text" id="oTg" placeholder="@user" class="form-input-v2" style="flex:1;">
                     </div>
                 </div>
+                <div style="grid-column: 1 / -1;">
+                    <label class="form-label">Yetkazish Manzili</label>
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" id="oAddress" class="form-input-v2" placeholder="Ko'cha, uy, mo'ljal..." style="flex:1;">
+                        <button id="oGetLocationBtn" type="button" class="form-input-v2"
+                            style="width:45px; flex:none; cursor:pointer; background:rgba(0,210,255,0.15); border:1px solid rgba(0,210,255,0.3); font-size:1.1rem;"
+                            title="Joriy joylashuvni olish">📍</button>
+                    </div>
+                    <small id="oLocationStatus" style="display:block; margin-top:4px; color:var(--adm-text-sec); font-size:0.75rem;"></small>
+                </div>
             </div>
 
             <!-- Item Constructor Group -->
@@ -472,6 +482,8 @@
             <input type="text" id="eCustomer" class="form-input-v2">
             <label class="form-label">Telefon Raqami</label>
             <input type="text" id="ePhone" class="form-input-v2">
+            <label class="form-label">Yetkazish Manzili</label>
+            <input type="text" id="eAddress" class="form-input-v2">
             <label class="form-label">Status</label>
             <select id="eStatus" class="form-input-v2">
                 <option value="Kutilmoqda">Kutilmoqda</option>
