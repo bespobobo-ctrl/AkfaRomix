@@ -413,8 +413,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (document.getElementById('cInstall')) document.getElementById('cInstall').textContent = totalInstall.toLocaleString() + " so'm";
         if (document.getElementById('cTotal')) document.getElementById('cTotal').textContent = grandTotal.toLocaleString() + " so'm";
 
+        window.updateAdvancePercent && window.updateAdvancePercent(grandTotal);
+
         return { totalArea, totalMaterials, totalInstall, grandTotal, expenses, profit };
     }
+
+    // Avans foizini jonli ko'rsatish (50% chegarasi — Ishlab Chiqarishga o'tkazish uchun)
+    window.updateAdvancePercent = (knownGrandTotal) => {
+        const advInput = document.getElementById('oAdvance');
+        const hint = document.getElementById('oAdvancePercentHint');
+        if (!advInput || !hint) return;
+        const grandTotal = knownGrandTotal !== undefined ? knownGrandTotal : calculateTotal().grandTotal;
+        const advance = parseFloat(advInput.value) || 0;
+        const percent = grandTotal > 0 ? Math.round((advance / grandTotal) * 100) : 0;
+        const ok = percent >= 50;
+        hint.style.color = ok ? '#00ff88' : '#ef4444';
+        hint.textContent = ok
+            ? `✅ Jami summaning ${percent}% — Ishlab Chiqarishga o'tkaziladi`
+            : `⚠️ Jami summaning ${percent}% — 50% dan kam, buyurtma Ishlab Chiqarishga o'tmaydi (keyinroq to'ldirib qo'yish mumkin)`;
+    };
 
     const installCheck = document.getElementById('oInstall');
     if (installCheck) {
@@ -578,6 +595,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             return `<div class="countdown-live" data-target="${o.production_deadline}" style="font-size:0.72rem; font-weight:700; margin-top:2px;"></div>`;
         }
 
+        // Avans (50% chegarasi) holati — Ishlab Chiqarishga o'tish uchun kerak
+        function advanceBadgeHtml(o) {
+            const total = Number(o.total_price) || 0;
+            const paid = Number(o.paid_amount) || 0;
+            const percent = total > 0 ? Math.round((paid / total) * 100) : 0;
+            const ok = percent >= 50;
+            const color = ok ? '#00ff88' : (paid > 0 ? '#ffaa00' : '#ef4444');
+            const whoWhen = o.advance_received_by
+                ? ` — ${o.advance_received_by}${o.payment_date ? ' (' + new Date(o.payment_date).toLocaleDateString('uz-UZ') + ')' : ''}`
+                : '';
+            return `<div style="font-size:0.72rem; color:${color}; font-weight:700;" title="Avans: ${paid.toLocaleString()} so'm${whoWhen}">
+                💰 Avans: ${paid.toLocaleString()} so'm (${percent}%)${ok ? ' ✅' : ' ⚠️'}${whoWhen}
+            </div>`;
+        }
+
         // Jonli teskari sanoq: har soniya barcha ".countdown-live" belgilarini yangilaydi
         function tickCountdowns() {
             document.querySelectorAll('.countdown-live').forEach(el => {
@@ -658,6 +690,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                     <div style="font-size:0.75rem; color:var(--adm-text-sec);">⏳ Muddat: <strong style="color:var(--adm-text);">${new Date(o.deadline_date).toLocaleDateString()}</strong></div>
                     ${deadlineBadge}
+                    ${o.status !== 'Tayyor / Yetkazildi' ? advanceBadgeHtml(o) : ''}
                     <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed var(--adm-border); padding-top:9px; margin-top:2px;">
                         <strong style="color:#00ff88; font-family:monospace; font-size:0.95rem;">${Number(o.total_price).toLocaleString()} UZS</strong>
                         <div>
@@ -685,6 +718,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </div>
                         <div style="font-size:0.76rem; color:var(--adm-text-sec); border-top:1px dashed var(--adm-border); padding-top:8px;">Ishchi guruh: <strong style="color:#00d2ff;">${o.worker_group || "Tayinlanmagan"}</strong></div>
                         ${deadlineBadge}
+                        ${advanceBadgeHtml(o)}
                         <div style="display:flex; gap:8px;">
                             <button class="assign-btn" data-id="${o.id}" data-order='${JSON.stringify(o).replace(/'/g, '&#39;')}' style="flex:1; background:#00d2ff; color:#000; border:none; padding:9px 12px; border-radius:10px; font-weight:600; font-size:0.78rem; cursor:pointer;">${o.worker_group ? "O'zgartirish" : "Guruh Tayinlash"}</button>
                             ${o.worker_group ? `<button class="complete-btn" data-id="${o.id}" style="flex:1; background:#00ff88; color:#000; border:none; padding:9px 12px; border-radius:10px; font-weight:600; font-size:0.78rem; cursor:pointer;">✓ Bitirish</button>` : ''}
@@ -745,11 +779,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             b.onclick = () => {
                 const o = JSON.parse(b.dataset.order);
                 window.editingOrderId = o.id;
+                window.editingOrderOriginalPaid = Number(o.paid_amount) || 0;
                 document.getElementById('eCustomer').value = o.customer_name;
                 document.getElementById('ePhone').value = o.customer_phone;
                 document.getElementById('eAddress').value = o.customer_address || '';
                 document.getElementById('eProdDeadline').value = o.production_deadline || '';
                 document.getElementById('eStatus').value = o.status;
+                document.getElementById('eAdvance').value = o.paid_amount || '';
+                const ePercentHint = document.getElementById('eAdvancePercentHint');
+                const eTotal = Number(o.total_price) || 0;
+                const ePercent = eTotal > 0 ? Math.round(((Number(o.paid_amount) || 0) / eTotal) * 100) : 0;
+                ePercentHint.style.color = ePercent >= 50 ? '#00ff88' : '#ef4444';
+                ePercentHint.textContent = `Jami: ${eTotal.toLocaleString()} so'm — hozircha ${ePercent}%${ePercent >= 50 ? ' ✅' : ' (50% dan kam)'}`;
                 editModal.classList.remove('hidden');
             };
         });
@@ -1035,6 +1076,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             created_at: new Date().toISOString()
         };
 
+        // Avans (boshlang'ich to'lov) — 50% dan kam bo'lsa ham saqlanadi, keyinroq to'ldirish mumkin
+        const advanceAmount = parseFloat(document.getElementById('oAdvance').value) || 0;
+        if (advanceAmount > 0) {
+            newOrder.paid_amount = advanceAmount;
+            newOrder.payment_date = new Date().toISOString();
+            newOrder.advance_received_by = user?.full_name || user?.username || 'Sotuv';
+        }
+
         try {
             const res = await supabase.from('sales_orders').insert([newOrder]).select().single();
             if (res.error) throw res.error;
@@ -1061,15 +1110,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         const customer_address = document.getElementById('eAddress').value;
         const production_deadline = document.getElementById('eProdDeadline').value || null;
         const status = document.getElementById('eStatus').value;
+        const paid_amount = parseFloat(document.getElementById('eAdvance').value) || 0;
+
+        const updatePayload = {
+            customer_name,
+            customer_phone,
+            customer_address,
+            production_deadline,
+            status,
+            paid_amount
+        };
+        // Avans summasi o'zgargan bo'lsagina qabul qilgan xodim/sana yangilanadi
+        if (paid_amount !== (window.editingOrderOriginalPaid || 0) && paid_amount > 0) {
+            updatePayload.payment_date = new Date().toISOString();
+            updatePayload.advance_received_by = user?.full_name || user?.username || 'Sotuv';
+        }
 
         try {
-            const { error } = await supabase.from('sales_orders').update({
-                customer_name,
-                customer_phone,
-                customer_address,
-                production_deadline,
-                status
-            }).eq('id', id);
+            const { error } = await supabase.from('sales_orders').update(updatePayload).eq('id', id);
             if (error) throw error;
         } catch (err) {
             console.warn("Supabase update order failed, applying to local storage:", err);
@@ -1080,11 +1138,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const localOrders = JSON.parse(localRaw);
             const ord = localOrders.find(x => x.id === id);
             if (ord) {
-                ord.customer_name = customer_name;
-                ord.customer_phone = customer_phone;
-                ord.customer_address = customer_address;
-                ord.production_deadline = production_deadline;
-                ord.status = status;
+                Object.assign(ord, updatePayload);
                 localStorage.setItem('romix_orders_local', JSON.stringify(localOrders));
             }
         }
@@ -1261,6 +1315,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         calculateTotal();
         document.getElementById('oDeadline').value = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         document.getElementById('oProdDeadline').value = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        document.getElementById('oAdvance').value = '';
+        window.updateAdvancePercent();
         orderModal.classList.remove('hidden');
         // 3D preview modal ochilгач o'lchamни oladi
         setTimeout(() => { try { window.update3DPreview(); } catch (e) {} }, 60);

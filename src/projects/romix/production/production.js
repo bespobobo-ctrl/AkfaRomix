@@ -266,6 +266,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.warn("loadProductionPipeline fetch failed:", err);
         }
 
+        // Qat'iy qoida: kamida 50% avans to'lanmagan buyurtma Ishlab Chiqarishga o'tmaydi.
+        // Allaqachon ishlab chiqarish bosqichiga qabul qilingan (production_stage bor)
+        // buyurtmalar bundan mustasno (avvalgi/eski buyurtmalarni to'satdan yo'qotmaslik uchun).
+        orders = orders.filter(o => {
+            if (o.production_stage) return true;
+            const total = Number(o.total_price) || 0;
+            const paid = Number(o.paid_amount) || 0;
+            return total > 0 && (paid / total) >= 0.5;
+        });
+
         try {
             const { data, error } = await supabase.from('material_requests').select('order_id, status');
             if (error) throw error;
@@ -824,4 +834,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     loadData();
     loadProductionPipeline(); // "Zakazlar Jarayoni" endi standart ko'rinish, shuning uchun sahifa ochilishida darhol yuklanadi
+    // Avtomatik yangilanish: Sotuv'da avans/muddat o'zgarsa, bu taxta ochiq turgan
+    // holatda ham (qayta yuklamasdan) 30 soniyada bir yangilanib boradi.
+    setInterval(() => {
+        if (!document.getElementById('pipeline-view').classList.contains('hidden')) {
+            loadProductionPipeline();
+        }
+    }, 30000);
 });
