@@ -877,6 +877,10 @@ function handlePremya() {
         input: true,
         confirmText: "PREMYANI TASDIQLASH",
         onConfirm: (val) => {
+            if (!val || isNaN(parseFloat(val)) || parseFloat(val) <= 0) {
+                alert("Iltimos, 0 dan katta to'g'ri summa kiriting!");
+                return;
+            }
             logActivity('admin', 'Premya berildi', `${currentEmp.full_name}: ${val} UZS`);
             alert(`${val} UZS premya muvaffaqiyatli qo'shildi!`);
             closeActionModal();
@@ -1325,8 +1329,10 @@ function handleDelete() {
 
         // Try DB delete
         try {
-            supabase.from('employees').delete().eq('id', empId).then(() => {
-                console.log("Deleted from Supabase");
+            supabase.from('attendance').delete().eq('employee_id', empId).then(() => {
+                supabase.from('employees').delete().eq('id', empId).then(() => {
+                    console.log("Deleted from Supabase");
+                });
             });
         } catch (e) {
             console.warn("Delete from db failed:", e);

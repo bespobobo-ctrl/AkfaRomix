@@ -707,9 +707,7 @@ window.submitProfileRequest = async function () {
     const emp = employees[0];
     const requestedData = {
         full_name: document.getElementById('editFullName').value,
-        birth_year: document.getElementById('editBirthYear').value,
         phone: document.getElementById('editPhone').value,
-        phone_alt: document.getElementById('editPhoneAlt').value,
         address: document.getElementById('editAddress').value,
         avatar_url: document.getElementById('editAvatar').value
     };

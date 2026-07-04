@@ -923,6 +923,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        const saveProfilBtn = document.getElementById('saveProfilBtn');
+        if (saveProfilBtn.disabled) return;
+        saveProfilBtn.disabled = true;
+        const saveProfilBtnOrigText = saveProfilBtn.textContent;
+        saveProfilBtn.textContent = 'Saqlanmoqda...';
+
         // --- Pachka → Metr hisoblash ---
         const METR_PER_PACHKA = 48;
         const pachkaSoni = soni; // foydalanuvchi pachka sonini kiritadi
@@ -993,6 +999,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (err) {
             console.error("Profil Kirim Error:", err);
             alert("Xatolik yuz berdi: " + err.message);
+        } finally {
+            saveProfilBtn.disabled = false;
+            saveProfilBtn.textContent = saveProfilBtnOrigText;
         }
     };
 

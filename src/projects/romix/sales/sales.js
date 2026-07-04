@@ -653,6 +653,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (confirm("Uchirasizmi?")) {
                     const id = b.dataset.id;
                     try {
+                        await supabase.from('material_requests').delete().eq('order_id', id);
                         const { error } = await supabase.from('sales_orders').delete().eq('id', id);
                         if (error) throw error;
                     } catch(err) {
