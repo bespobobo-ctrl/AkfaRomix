@@ -5286,6 +5286,10 @@ ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS payment_date TIMESTAMPTZ;`;
                 currentSaveBtn.onclick = async () => {
                     const start = document.getElementById('hrActionStart').value;
                     const end = document.getElementById('hrActionEnd').value;
+                    if (start && end && new Date(end) < new Date(start)) {
+                        alert("Tugash sanasi boshlanish sanasidan oldin bo'lishi mumkin emas!");
+                        return;
+                    }
                     if (start && end) {
                         currentSaveBtn.innerHTML = "Yuborilmoqda...";
 

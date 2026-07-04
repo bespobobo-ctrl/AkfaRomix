@@ -780,9 +780,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     document.getElementById('saveEditBtn').onclick = async () => {
-        const name = document.getElementById('eName').value;
+        const name = document.getElementById('eName').value.trim();
         const qty = parseFloat(document.getElementById('eQty').value);
         const price = parseFloat(document.getElementById('ePrice').value);
+        if (!name) return alert("Nomi bo'sh bo'lmasligi kerak!");
+        if (isNaN(qty) || qty < 0) return alert("Iltimos, to'g'ri miqdor kiriting (0 dan kichik bo'lmasligi kerak)!");
+        if (isNaN(price) || price < 0) return alert("Iltimos, to'g'ri narx kiriting (0 dan kichik bo'lmasligi kerak)!");
         await supabase.from('romix_inventory').update({ product_name: name, stock_quantity: qty, price }).eq('id', window.editingProdId);
         editModal.classList.add('hidden');
         loadInventory();

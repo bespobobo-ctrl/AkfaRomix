@@ -281,9 +281,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Edit
     document.getElementById('saveEditBtn').onclick = async () => {
+        const qty = parseInt(document.getElementById('eQty').value);
+        const price = parseFloat(document.getElementById('ePrice').value);
+        if (isNaN(qty) || qty < 0) return alert("Iltimos, to'g'ri miqdor kiriting (0 dan kichik bo'lmasligi kerak)!");
+        if (isNaN(price) || price < 0) return alert("Iltimos, to'g'ri narx kiriting (0 dan kichik bo'lmasligi kerak)!");
         await supabase.from('showroom_products').update({
-            current_stock: document.getElementById('eQty').value,
-            price: document.getElementById('ePrice').value
+            current_stock: qty,
+            price: price
         }).eq('id', window.editingProdId);
         editModal.classList.add('hidden');
         loadInventory();
