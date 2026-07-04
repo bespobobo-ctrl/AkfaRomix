@@ -45,6 +45,45 @@ export async function chatText(system, userText) {
     return (c.parts || []).map(p => p.text || "").join("").trim() || "…";
 }
 
+// Spiska (kirim hujjati) rasmidan mahsulotlar ro'yxatini o'qib olish
+export async function extractSpiskaFromImage(base64, mimeType) {
+    const prompt = `Bu ombor kirim hujjati yoki qo'lda yozilgan tovar spiskasi rasmi. Rasmdagi HAR BIR mahsulot qatorini diqqat bilan o'qib, faqat quyidagi JSON massiv ko'rinishida javob qaytar (hech qanday qo'shimcha matn, izoh yoki markdown belgisi yozma):
+[{"name": "mahsulot nomi", "qty": son, "unit": "dona|kg|litr|metr|pachka", "type": "profil" yoki "aksessuar", "category": "aksessuar bo'lsa: Zamoklar|Ruchkalar|Qistirmalar|Biriktiruvchilar|Boshqa..., profil bo'lsa bo'sh string", "spec": "rangi/o'lchami/xususiyati agar bor bo'lsa, aks holda bo'sh string"}]
+
+"type" ni aniqlash qoidasi: profil, PVX, alyuminiy, shtapik, tokcha, lambri kabi qurilish/tuzilma materiallari — "profil"; zamok, ruchka, qistirma (rezinka), vint, burama, dovodchik kabi kichik butlovchi/aksessuar qismlar — "aksessuar". Agar noaniq bo'lsa "aksessuar" deb belgila. Miqdorni rasmda yozilgan songa qat'iy asoslanib yoz; agar biror qatorni ishonchli o'qiy olmasang, o'sha qatorni ro'yxatga umuman qo'shma.`;
+    const body = {
+        contents: [{
+            role: "user", parts: [
+                { text: prompt },
+                { inlineData: { mimeType: mimeType || "image/jpeg", data: base64 } }
+            ]
+        }],
+        generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
+    };
+    const d = await callGemini(MODEL, body);
+    const cand = d.candidates && d.candidates[0];
+    const text = cand ? (cand.content.parts || []).map(p => p.text || "").join("").trim() : "[]";
+    let items;
+    try {
+        items = JSON.parse(text);
+    } catch (e) {
+        const m = text.match(/\[[\s\S]*\]/);
+        if (!m) throw new Error("AI javobini o'qib bo'lmadi: " + text.slice(0, 200));
+        items = JSON.parse(m[0]);
+    }
+    if (!Array.isArray(items)) throw new Error("AI noto'g'ri formatda javob berdi");
+    return items
+        .filter(it => it && it.name && Number(it.qty) > 0)
+        .map(it => ({
+            name: String(it.name).trim(),
+            qty: Number(it.qty) || 0,
+            unit: it.unit || 'dona',
+            type: it.type === 'profil' ? 'profil' : 'aksessuar',
+            category: it.category || '',
+            spec: it.spec || ''
+        }));
+}
+
 // O'zbekcha ovozli xabar → matn
 export async function transcribeAudio(base64, mimeType, hint = "") {
     const body = {
