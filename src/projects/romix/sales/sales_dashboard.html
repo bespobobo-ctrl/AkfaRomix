@@ -363,7 +363,11 @@
                     <label class="form-label">O'rnatish & Qarz tugash sanasi</label>
                     <input type="date" id="oDeadline" class="form-input-v2">
                 </div>
-                
+                <div style="grid-column: span 2; background:rgba(255,170,0,0.06); padding:15px; border-radius:15px; border:1px solid rgba(255,170,0,0.2);">
+                    <label class="form-label" style="color:#ffaa00;">⏰ Buyurtma Tayyor Bo'lish Muddati (Ishlab Chiqarish uchun, MAJBURIY)</label>
+                    <input type="date" id="oProdDeadline" class="form-input-v2" required>
+                </div>
+
                 <div style="grid-column: span 2;">
                     <label style="display:flex; align-items:center; gap:10px; padding:15px; background:rgba(0,210,255,0.08); border-radius:12px; color:#00d2ff; cursor:pointer; font-weight:600; border:1px solid rgba(0,210,255,0.15);">
                         <input type="checkbox" id="oInstall" style="width:18px; height:18px; cursor:pointer;"> 
@@ -484,6 +488,8 @@
             <input type="text" id="ePhone" class="form-input-v2">
             <label class="form-label">Yetkazish Manzili</label>
             <input type="text" id="eAddress" class="form-input-v2">
+            <label class="form-label" style="color:#ffaa00;">⏰ Tayyor Bo'lish Muddati</label>
+            <input type="date" id="eProdDeadline" class="form-input-v2">
             <label class="form-label">Status</label>
             <select id="eStatus" class="form-input-v2">
                 <option value="Kutilmoqda">Kutilmoqda</option>
