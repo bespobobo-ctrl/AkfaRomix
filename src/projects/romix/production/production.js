@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (view) view.classList.remove('hidden');
 
             if (tab === 'pipeline') loadProductionPipeline();
+            if (tab === 'brigades') loadBrigadesTab();
         });
     });
 
@@ -308,6 +309,224 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
         });
     }
+
+    // ============================================================
+    // BRIGADALAR — brigada tarkibi (a'zolar) va o'rnatish sifatini baholash
+    // ============================================================
+    let currentBrigadeIdForMember = null;
+    let currentRatingOrderId = null;
+    let currentRatingBrigadeId = null;
+
+    async function loadBrigadesTab() {
+        await Promise.all([renderBrigadesGrid(), renderRatingQueue()]);
+    }
+
+    async function renderBrigadesGrid() {
+        const grid = document.getElementById('brigadesGrid');
+        if (!grid) return;
+
+        let brigades = [];
+        try {
+            const { data, error } = await supabase.from('romix_brigades').select('*').order('name');
+            if (error) throw error;
+            brigades = data || [];
+        } catch (err) {
+            grid.innerHTML = '<div style="color:var(--adm-text-sec); grid-column:1/-1;">Brigadalar topilmadi. \'romix_brigades\' jadvali mavjudligini tekshiring.</div>';
+            console.warn("renderBrigadesGrid fetch failed:", err);
+            return;
+        }
+
+        if (brigades.length === 0) {
+            grid.innerHTML = '<div style="color:var(--adm-text-sec); grid-column:1/-1;">Hozircha brigada yo\'q. "+ Brigada Qo\'shish" tugmasini bosing.</div>';
+            return;
+        }
+
+        let membersByBrigade = {};
+        try {
+            const { data, error } = await supabase.from('romix_brigade_members').select('*, employees(full_name)').in('brigade_id', brigades.map(b => b.id));
+            if (error) throw error;
+            (data || []).forEach(m => {
+                if (!membersByBrigade[m.brigade_id]) membersByBrigade[m.brigade_id] = [];
+                membersByBrigade[m.brigade_id].push(m);
+            });
+        } catch (err) {
+            console.warn("renderBrigadesGrid members fetch failed:", err);
+        }
+
+        grid.innerHTML = brigades.map(b => {
+            const members = membersByBrigade[b.id] || [];
+            const membersHtml = members.length
+                ? members.map(m => `<div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); padding:6px 10px; border-radius:8px; font-size:0.78rem; margin-bottom:4px;">
+                    <span>${m.employees ? m.employees.full_name : "Noma'lum"}</span>
+                    <button class="rm-brigade-member" data-id="${m.id}" style="background:none; border:none; color:#ef4444; cursor:pointer;">✕</button>
+                </div>`).join('')
+                : '<div style="font-size:0.75rem; color:var(--adm-text-sec);">A\'zo yo\'q</div>';
+            return `<div style="background:var(--adm-surface); border:1px solid var(--adm-border); border-top:3px solid #8b5cf6; border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:8px; box-shadow:var(--adm-shadow);">
+                <div style="font-weight:700; color:var(--adm-text); font-size:0.92rem;">${b.name}</div>
+                <div style="border-top:1px dashed var(--adm-border); padding-top:8px;">${membersHtml}</div>
+                <button class="add-brigade-member-btn" data-id="${b.id}" data-name="${b.name}" style="background:rgba(139,92,246,0.1); color:#8b5cf6; border:none; padding:8px; border-radius:8px; font-weight:600; font-size:0.74rem; cursor:pointer;">+ A'zo Qo'shish</button>
+            </div>`;
+        }).join('');
+
+        document.querySelectorAll('.add-brigade-member-btn').forEach(btn => {
+            btn.onclick = async () => {
+                currentBrigadeIdForMember = btn.dataset.id;
+                document.getElementById('addMemberBrigadeName').textContent = `Brigada: ${btn.dataset.name}`;
+                let emps = [];
+                try {
+                    const { data, error } = await supabase.from('employees').select('id, full_name').order('full_name');
+                    if (error) throw error;
+                    emps = data || [];
+                } catch (err) { console.warn("employees fetch failed:", err); }
+                const sel = document.getElementById('newMemberEmp');
+                sel.innerHTML = emps.map(e => `<option value="${e.id}">${e.full_name}</option>`).join('');
+                document.getElementById('addMemberModal').classList.remove('hidden');
+            };
+        });
+
+        document.querySelectorAll('.rm-brigade-member').forEach(btn => {
+            btn.onclick = async () => {
+                if (!confirm("A'zoni brigadadan chiqarasizmi?")) return;
+                await supabase.from('romix_brigade_members').delete().eq('id', btn.dataset.id);
+                renderBrigadesGrid();
+            };
+        });
+    }
+
+    async function renderRatingQueue() {
+        const grid = document.getElementById('ratingQueueGrid');
+        if (!grid) return;
+
+        let orders = [];
+        try {
+            const { data, error } = await supabase.from('sales_orders').select('*').eq('install_status', 'Bajarildi');
+            if (error) throw error;
+            orders = data || [];
+        } catch (err) {
+            grid.innerHTML = '<div style="color:var(--adm-text-sec); grid-column:1/-1;">Yuklashda xatolik.</div>';
+            console.warn("renderRatingQueue fetch failed:", err);
+            return;
+        }
+
+        let ratedOrderIds = new Set();
+        try {
+            const { data, error } = await supabase.from('romix_brigade_ratings').select('order_id');
+            if (error) throw error;
+            (data || []).forEach(r => ratedOrderIds.add(r.order_id));
+        } catch (err) {
+            console.warn("renderRatingQueue ratings fetch failed:", err);
+        }
+
+        const pending = orders.filter(o => !ratedOrderIds.has(o.id));
+
+        if (pending.length === 0) {
+            grid.innerHTML = '<div style="text-align:center; color:var(--adm-text-sec); padding:20px; grid-column:1/-1;">Baholash kutilayotgan buyurtma yo\'q</div>';
+            return;
+        }
+
+        let brigadesByName = {};
+        try {
+            const { data, error } = await supabase.from('romix_brigades').select('*');
+            if (error) throw error;
+            (data || []).forEach(b => { brigadesByName[b.name] = b; });
+        } catch (err) { console.warn("brigades fetch for rating failed:", err); }
+
+        grid.innerHTML = pending.map(o => `<div style="background:var(--adm-surface); border:1px solid var(--adm-border); border-top:3px solid #ffaa00; border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:6px; box-shadow:var(--adm-shadow);">
+            <div style="font-weight:700; color:var(--adm-text); font-size:0.9rem;">${o.customer_name || "Noma'lum"}</div>
+            <div style="font-size:0.75rem; color:var(--adm-text-sec);">Brigada: <strong style="color:#00d2ff;">${o.install_group || '—'}</strong></div>
+            <button class="rate-brigade-btn" data-order-id="${o.id}" data-group="${(o.install_group || '').replace(/"/g, '')}" style="background:#ffaa00; color:#000; border:none; padding:8px; border-radius:8px; font-weight:700; font-size:0.74rem; cursor:pointer; margin-top:6px;">⭐ Baholash</button>
+        </div>`).join('');
+
+        document.querySelectorAll('.rate-brigade-btn').forEach(btn => {
+            btn.onclick = async () => {
+                currentRatingOrderId = btn.dataset.orderId;
+                const groupName = btn.dataset.group;
+                const brigade = brigadesByName[groupName];
+                currentRatingBrigadeId = brigade ? brigade.id : null;
+                document.getElementById('rateOrderInfo').textContent = `Brigada: ${groupName}`;
+                document.getElementById('rateQuality').value = '5';
+                document.getElementById('rateTimeliness').value = '5';
+                document.getElementById('rateService').value = '5';
+                document.getElementById('rateNote').value = '';
+                document.getElementById('rateBrigadeModal').classList.remove('hidden');
+            };
+        });
+    }
+
+    document.getElementById('openAddBrigadeBtn').onclick = () => {
+        document.getElementById('newBrigadeName').value = '';
+        document.getElementById('addBrigadeModal').classList.remove('hidden');
+    };
+    document.getElementById('closeAddBrigadeModal').onclick = () => document.getElementById('addBrigadeModal').classList.add('hidden');
+    document.getElementById('saveBrigadeBtn').onclick = async () => {
+        const name = document.getElementById('newBrigadeName').value.trim();
+        if (!name) return alert("Brigada nomini kiriting!");
+        const saveBtn = document.getElementById('saveBrigadeBtn');
+        if (saveBtn.disabled) return;
+        saveBtn.disabled = true;
+        try {
+            const { error } = await supabase.from('romix_brigades').insert([{ name }]);
+            if (error) throw error;
+        } catch (err) {
+            alert("Xatolik: bazada 'romix_brigades' jadvali mavjudligini tekshiring.");
+            console.warn("add brigade failed:", err);
+            saveBtn.disabled = false;
+            return;
+        }
+        saveBtn.disabled = false;
+        document.getElementById('addBrigadeModal').classList.add('hidden');
+        renderBrigadesGrid();
+    };
+
+    document.getElementById('closeAddMemberModal').onclick = () => document.getElementById('addMemberModal').classList.add('hidden');
+    document.getElementById('saveMemberBtn').onclick = async () => {
+        const empId = document.getElementById('newMemberEmp').value;
+        if (!empId || !currentBrigadeIdForMember) return;
+        const saveBtn = document.getElementById('saveMemberBtn');
+        if (saveBtn.disabled) return;
+        saveBtn.disabled = true;
+        try {
+            const { error } = await supabase.from('romix_brigade_members').insert([{ brigade_id: currentBrigadeIdForMember, employee_id: empId }]);
+            if (error) throw error;
+        } catch (err) {
+            alert("Xatolik: " + err.message);
+            saveBtn.disabled = false;
+            return;
+        }
+        saveBtn.disabled = false;
+        document.getElementById('addMemberModal').classList.add('hidden');
+        renderBrigadesGrid();
+    };
+
+    document.getElementById('closeRateBrigadeModal').onclick = () => document.getElementById('rateBrigadeModal').classList.add('hidden');
+    document.getElementById('saveRatingBtn').onclick = async () => {
+        const quality = parseInt(document.getElementById('rateQuality').value);
+        const timeliness = parseInt(document.getElementById('rateTimeliness').value);
+        const service = parseInt(document.getElementById('rateService').value);
+        const note = document.getElementById('rateNote').value.trim();
+        const saveBtn = document.getElementById('saveRatingBtn');
+        if (saveBtn.disabled) return;
+        saveBtn.disabled = true;
+        try {
+            const { error } = await supabase.from('romix_brigade_ratings').insert([{
+                order_id: currentRatingOrderId,
+                brigade_id: currentRatingBrigadeId,
+                quality_score: quality,
+                timeliness_score: timeliness,
+                service_score: service,
+                note
+            }]);
+            if (error) throw error;
+        } catch (err) {
+            alert("Baholashda xatolik: bazada 'romix_brigade_ratings' jadvali mavjudligini tekshiring.");
+            console.warn("save rating failed:", err);
+            saveBtn.disabled = false;
+            return;
+        }
+        saveBtn.disabled = false;
+        document.getElementById('rateBrigadeModal').classList.add('hidden');
+        renderRatingQueue();
+    };
 
     // Builder Logic
     document.getElementById('addMatBtn').onclick = () => {
