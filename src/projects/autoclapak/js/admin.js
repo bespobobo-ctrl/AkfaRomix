@@ -1180,7 +1180,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         reader.onload = (e) => {
             const img = new Image();
             img.onload = () => {
-                const MAX_DIM = 1600;
+                // Vercel serverless funksiyalarida so'rov tanasi ~4.5MB bilan chegaralangan
+                // (base64 ~33% kattalashadi) — shu sabab MAX_BASE64_BYTES'dan oshmaguncha
+                // eng yuqori sifat/o'lchamni saqlashga harakat qilamiz (skanerlash sifati uchun).
+                const MAX_DIM = 2600;
+                const MAX_BASE64_BYTES = 3.6 * 1024 * 1024;
                 let width = img.width, height = img.height;
                 if (width > MAX_DIM || height > MAX_DIM) {
                     const scale = MAX_DIM / Math.max(width, height);
@@ -1190,7 +1194,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const canvas = document.createElement('canvas');
                 canvas.width = width; canvas.height = height;
                 canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+                let quality = 0.95;
+                let dataUrl = canvas.toDataURL('image/jpeg', quality);
+                while (dataUrl.length > MAX_BASE64_BYTES && quality > 0.5) {
+                    quality -= 0.1;
+                    dataUrl = canvas.toDataURL('image/jpeg', quality);
+                }
                 window.__buhVisionImageData = { image: dataUrl.split(',')[1], mimeType: 'image/jpeg' };
                 document.getElementById('buhVisionPreviewImg').src = dataUrl;
                 document.getElementById('buhVisionPreviewWrap').style.display = 'block';
@@ -1258,14 +1268,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </select>
                 </td>
                 <td style="padding:6px;"><input type="number" value="${it.qty}" min="0" oninput="window.updateBuhVisionItem(${idx},'qty',this.value)" style="width:70px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#00ff88; font-weight:700; padding:5px 8px; border-radius:6px; font-size:0.76rem; text-align:right;"></td>
+                <td style="padding:6px;">
+                    ${!isAcc ? `<input type="number" value="${it.lengthMm || ''}" min="0" placeholder="mm" oninput="window.updateBuhVisionItem(${idx},'lengthMm',this.value)" title="Har bir dona/pachka uzunligi (mm) — to'ldirilsa, jami metr avtomatik hisoblanadi" style="width:70px; background:rgba(0,210,255,0.06); border:1px solid rgba(0,210,255,0.25); color:#00d2ff; font-weight:700; padding:5px 8px; border-radius:6px; font-size:0.76rem; text-align:right;">` : '<span style="color:rgba(255,255,255,0.3); font-size:0.72rem;">—</span>'}
+                </td>
                 <td style="padding:6px;"><input type="text" value="${(it.spec || '').replace(/"/g, '&quot;')}" oninput="window.updateBuhVisionItem(${idx},'spec',this.value)" style="width:100%; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:5px 8px; border-radius:6px; font-size:0.76rem; box-sizing:border-box;"></td>
                 <td style="padding:6px; text-align:center;"><button onclick="window.removeBuhVisionItem(${idx})" style="background:none; border:none; color:#ff4d4f; cursor:pointer; font-size:0.85rem;">🗑️</button></td>
             </tr>`;
-        }).join('') || '<tr><td colspan="7" style="text-align:center; padding:20px; color:rgba(255,255,255,0.3);">Ro\'yxat bo\'sh</td></tr>';
+        }).join('') || '<tr><td colspan="8" style="text-align:center; padding:20px; color:rgba(255,255,255,0.3);">Ro\'yxat bo\'sh</td></tr>';
     };
     window.updateBuhVisionItem = (idx, field, value) => {
         if (!window.__buhVisionItems || !window.__buhVisionItems[idx]) return;
-        if (field === 'qty') value = parseFloat(value) || 0;
+        if (field === 'qty' || field === 'lengthMm') value = parseFloat(value) || 0;
         window.__buhVisionItems[idx][field] = value;
         if (field === 'type') window.renderBuhVisionResults();
     };
@@ -1284,11 +1297,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         for (const it of profilItems) {
             try {
+                // Uzunligi (mm) kiritilgan bo'lsa: jami metr = miqdor (dona/pachka) x uzunligi(mm) / 1000
+                const useLength = Number(it.lengthMm) > 0;
+                const finalQty = useLength ? (it.qty * Number(it.lengthMm) / 1000) : it.qty;
+                const finalUnit = useLength ? 'metr' : it.unit;
+                const desc = useLength
+                    ? `${it.spec ? it.spec + ' | ' : ''}${it.qty} ${it.unit} x ${it.lengthMm}mm`
+                    : (it.spec || '');
+
                 const { data: existing } = await supabase.from('romix_inventory').select('*').eq('product_name', it.name).maybeSingle();
                 const payload = {
-                    product_name: it.name, category: 'Profil', description: it.spec || '', unit: it.unit,
+                    product_name: it.name, category: 'Profil', description: desc, unit: finalUnit,
                     price: existing ? (existing.price || 0) : 0,
-                    stock_quantity: existing ? (parseFloat(existing.stock_quantity) || 0) + it.qty : it.qty
+                    stock_quantity: existing ? (parseFloat(existing.stock_quantity) || 0) + finalQty : finalQty
                 };
                 let product;
                 if (existing) {
@@ -1301,8 +1322,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     product = data;
                 }
                 await supabase.from('romix_transactions').insert([{
-                    product_id: product.id, type: 'IN', quantity: it.qty,
-                    note: `Rasmdan Kirim (AI) - Buxgalteriya${it.spec ? ' | ' + it.spec : ''}`
+                    product_id: product.id, type: 'IN', quantity: finalQty,
+                    note: `Rasmdan Kirim (AI) - Buxgalteriya${desc ? ' | ' + desc : ''}`
                 }]);
             } catch (err) {
                 console.error('Vision kirim (profil) xatolik:', it.name, err);
