@@ -75,8 +75,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const user = authService.getCurrentUser();
     console.log('Current User for Admin Dashboard:', user);
 
-    if (!user || (user.role !== 'admin' && user.role !== 'ac_manager')) {
-        console.warn('Auth Failed: User is not an admin or ac_manager', user);
+    if (!user || (user.role !== 'admin' && user.role !== 'ac_manager' && user.role !== 'buxgalter')) {
+        console.warn('Auth Failed: User is not an admin, ac_manager or buxgalter', user);
         // Wait a bit to show current page or error before redirecting
         setTimeout(() => {
             authService.logout();
