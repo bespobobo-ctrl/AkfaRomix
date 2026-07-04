@@ -869,6 +869,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const info = _buhOrderPaymentInfo(order);
         const val = parseFloat(prompt(`"${order.customer_name}" buyurtmasi uchun to'lov summasini kiriting (qoldiq: ${info.remaining.toLocaleString()} UZS):`, info.remaining));
         if (!val || val <= 0) return;
+        if (val > info.remaining) return alert(`Qoldiqdan ortiq summa kiritdingiz! Qoldiq: ${info.remaining.toLocaleString()} UZS`);
         const newPaid = info.paidAmount + val;
         try {
             const { error } = await supabase.from('sales_orders').update({ paid_amount: newPaid, payment_date: new Date().toISOString() }).eq('id', orderId);
@@ -1147,6 +1148,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const remaining = Math.max(0, (Number(debt.amount) || 0) - (Number(debt.paid_amount) || 0));
         const val = parseFloat(prompt(`"${debt.creditor}" uchun to'lov summasini kiriting (qoldiq: ${remaining.toLocaleString()} UZS):`, remaining));
         if (!val || val <= 0) return;
+        if (val > remaining) return alert(`Qoldiqdan ortiq summa kiritdingiz! Qoldiq: ${remaining.toLocaleString()} UZS`);
         const newPaid = (Number(debt.paid_amount) || 0) + val;
         await romixBuhUpdate('romix_debts', ROMIX_BUH_KEYS.debts, id, { paid_amount: newPaid });
         await renderBuhTashqiQarz();
