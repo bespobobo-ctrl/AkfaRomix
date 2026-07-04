@@ -448,8 +448,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 `<div style="text-align:center; background:rgba(239,68,68,0.08); color:#ef4444; padding:8px; border-radius:8px; font-weight:600; font-size:0.7rem;">⏳ Ombor tasdig'ini kutmoqda</div>`
             )).join('');
         }
+        function omborConfirmedHtml(o) {
+            if (!o.ombor_confirmed_at) return '';
+            const dt = new Date(o.ombor_confirmed_at).toLocaleString('uz-UZ');
+            return `<div style="font-size:0.7rem; color:#00ff88; background:rgba(0,255,136,0.08); border-radius:8px; padding:6px 8px;">✅ Ombor tasdiqladi: <strong>${o.ombor_confirmed_by || '—'}</strong> (${dt})</div>`;
+        }
+
         if (cols.new) {
             cols.new.innerHTML = buckets.new.length === 0 ? emptyMsg : buckets.new.map(o => card(o,
+                omborConfirmedHtml(o) +
+                materialSummaryHtml(o) +
                 `<button class="accept-order-btn" data-id="${o.id}" data-deadline="${o.production_deadline || ''}" style="background:#ffaa00; color:#000; border:none; padding:8px; border-radius:8px; font-weight:700; font-size:0.74rem; cursor:pointer;">✅ Qabul Qilish</button>`
             )).join('');
         }
