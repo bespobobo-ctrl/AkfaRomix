@@ -1077,6 +1077,23 @@
 </head>
 
 <body class="admin-v2-body">
+    <script>
+        // Buxgalter roli uchun boshqa bo'limlarni DARHOL (asosiy JS bundle
+        // yuklanishini kutmasdan) yashirish — aks holda "Panel" 2-3 soniyaga
+        // ko'rinib, keyin Buhgalterga o'tib ketadi (JS sekin yuklanadi).
+        (function () {
+            try {
+                var u = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                if (u.role === 'buxgalter') document.body.classList.add('buxgalter-only-view');
+            } catch (e) {}
+        })();
+    </script>
+    <style>
+        body.buxgalter-only-view .sidebar-slim .nav-icon[data-section] { display: none !important; }
+        body.buxgalter-only-view .nav-link-item[data-tab]:not([data-tab="buhgalter"]) { display: none !important; }
+        body.buxgalter-only-view .admin-section:not(#section-buhgalter) { display: none !important; }
+        body.buxgalter-only-view #section-buhgalter.admin-section { display: block !important; }
+    </style>
     <div class="admin-layout">
         <!-- Slim Sidebar -->
         <aside class="sidebar-slim">
