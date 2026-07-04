@@ -558,56 +558,85 @@ document.addEventListener('DOMContentLoaded', async () => {
             totalSum += parseFloat(o.total_price || 0);
             count++;
 
-            // Shared status HTML
-            let statusHtml = '';
-            if (o.status === 'Kutilmoqda') statusHtml = '<span class="status-pill status-pending">Kutilmoqda</span>';
-            else if (o.status === 'Jarayonda') statusHtml = '<span class="status-pill status-active">Jarayonda (Ishlab. chiqishda)</span>';
-            else statusHtml = '<span class="status-pill status-delivered">Tayyor / O\'rnatildi</span>';
-
-            // --- Dashboard View (All Orders) ---
-            if (table) {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><strong>${o.customer_name}</strong><br><small style="color:#888;">${o.customer_phone}${o.customer_address ? ` <span title="${o.customer_address.replace(/"/g, '&quot;')}">📍</span>` : ''}</small></td>
-                    <td>${o.prod_type}<br><small style="color:#888;">${o.model_name.length > 50 ? o.model_name.slice(0, 48) + '...' : o.model_name}</small></td>
-                    <td>${new Date(o.deadline_date).toLocaleDateString()}</td>
-                    <td style="font-weight:600;">${Number(o.total_price).toLocaleString()} UZS</td>
-                    <td>${statusHtml}</td>
-                    <td>
-                        <button class="action-icon view-ord-btn" data-order='${JSON.stringify(o)}' style="font-size:1.1rem; border:none; background:transparent; cursor:pointer;" title="Shartnomani ko'rish">👁️</button>
-                        <button class="action-icon edit-btn" data-order='${JSON.stringify(o)}' style="font-size:1.1rem; border:none; background:transparent; cursor:pointer; margin: 0 5px;" title="Tahrirlash">✏️</button>
-                        <button class="action-icon del-btn" data-id="${o.id}" style="font-size:1.1rem; border:none; background:transparent; cursor:pointer; color:red;" title="O'chirish">🗑️</button>
-                    </td>
-                `;
-                table.appendChild(tr);
+            // Shared status: premium accent rangi + belgi (Buxgalteriya'dagi zakaz bosqichlari bilan bir xil)
+            let statusColor = '#ffaa00', statusHtml = '';
+            if (o.status === 'Kutilmoqda') {
+                statusColor = '#ffaa00';
+                statusHtml = `<span class="status-pill status-pending" style="background:rgba(255,170,0,0.1); color:#ffaa00; padding:3px 10px; border-radius:12px; font-size:0.66rem; font-weight:700; white-space:nowrap;">📝 Kutilmoqda</span>`;
+            } else if (o.status === 'Jarayonda') {
+                statusColor = '#00d2ff';
+                statusHtml = `<span class="status-pill status-active" style="background:rgba(0,210,255,0.1); color:#00d2ff; padding:3px 10px; border-radius:12px; font-size:0.66rem; font-weight:700; white-space:nowrap;">⚙️ Ishlab chiqarishda</span>`;
+            } else {
+                statusColor = '#00ff88';
+                statusHtml = `<span class="status-pill status-delivered" style="background:rgba(0,255,136,0.1); color:#00ff88; padding:3px 10px; border-radius:12px; font-size:0.66rem; font-weight:700; white-space:nowrap;">✅ Tayyor / O'rnatildi</span>`;
             }
 
-            // --- Installation / Production Board ---
+            // --- Dashboard View (All Orders) — premium kartochka ---
+            if (table) {
+                const card = document.createElement('div');
+                card.style.cssText = `border-top:3px solid ${statusColor}; border-radius:16px; background:var(--adm-surface); border:1px solid var(--adm-border); border-top:3px solid ${statusColor}; padding:16px; display:flex; flex-direction:column; gap:9px; box-shadow:var(--adm-shadow); transition:transform 0.2s;`;
+                const modelShort = o.model_name && o.model_name.length > 50 ? o.model_name.slice(0, 48) + '...' : (o.model_name || '');
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+                        <div style="min-width:0;">
+                            <div style="font-weight:700; color:var(--adm-text); font-size:0.9rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${o.customer_name}</div>
+                            <div style="font-size:0.72rem; color:var(--adm-text-sec); margin-top:2px;">${o.customer_phone || ''}${o.customer_address ? ` <span title="${o.customer_address.replace(/"/g, '&quot;')}">📍</span>` : ''}</div>
+                        </div>
+                        ${statusHtml}
+                    </div>
+                    <div style="font-size:0.78rem; color:var(--adm-text-sec); border-top:1px dashed var(--adm-border); padding-top:8px;">
+                        <div style="font-weight:600; color:var(--adm-text); margin-bottom:2px;">${o.prod_type || ''}</div>
+                        <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${(o.model_name || '').replace(/"/g, '')}">${modelShort}</div>
+                    </div>
+                    <div style="font-size:0.75rem; color:var(--adm-text-sec);">⏳ Muddat: <strong style="color:var(--adm-text);">${new Date(o.deadline_date).toLocaleDateString()}</strong></div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed var(--adm-border); padding-top:9px; margin-top:2px;">
+                        <strong style="color:#00ff88; font-family:monospace; font-size:0.95rem;">${Number(o.total_price).toLocaleString()} UZS</strong>
+                        <div>
+                            <button class="action-icon view-ord-btn" data-order='${JSON.stringify(o).replace(/'/g, '&#39;')}' style="font-size:1.05rem; border:none; background:transparent; cursor:pointer;" title="Shartnomani ko'rish">👁️</button>
+                            <button class="action-icon edit-btn" data-order='${JSON.stringify(o).replace(/'/g, '&#39;')}' style="font-size:1.05rem; border:none; background:transparent; cursor:pointer; margin: 0 4px;" title="Tahrirlash">✏️</button>
+                            <button class="action-icon del-btn" data-id="${o.id}" style="font-size:1.05rem; border:none; background:transparent; cursor:pointer; color:red;" title="O'chirish">🗑️</button>
+                        </div>
+                    </div>
+                `;
+                table.appendChild(card);
+            }
+
+            // --- Installation / Production Board — premium kartochka ---
             if (o.status !== 'Tayyor / Yetkazildi') {
                 if (procTable) {
-                    const otr = document.createElement('tr');
-                    otr.innerHTML = `
-                        <td><strong>#${o.id.slice(0, 6).toUpperCase()}</strong><br><small>${o.customer_name}</small></td>
-                        <td>${statusHtml}</td>
-                        <td style="color:#00d2ff; font-weight:600;">${o.worker_group || "Tayinlanmagan"}</td>
-                        <td>
-                            <button class="assign-btn" data-id="${o.id}" data-order='${JSON.stringify(o)}' style="background:#00d2ff; color:#000; border:none; padding:8px 15px; border-radius:10px; font-weight:600; cursor:pointer;">${o.worker_group ? "O'zgartirish" : "Guruh Tayinlash"}</button>
-                            ${o.worker_group ? `<button class="complete-btn" data-id="${o.id}" style="background:#00ff88; color:#000; border:none; padding:8px 15px; border-radius:10px; font-weight:600; cursor:pointer; margin-left:5px;">✓ Bitirish</button>` : ''}
-                        </td>
+                    const ocard = document.createElement('div');
+                    ocard.style.cssText = `border-top:3px solid ${statusColor}; border-radius:16px; background:var(--adm-surface); border:1px solid var(--adm-border); border-top:3px solid ${statusColor}; padding:16px; display:flex; flex-direction:column; gap:10px; box-shadow:var(--adm-shadow);`;
+                    ocard.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+                            <div>
+                                <div style="font-weight:700; color:var(--adm-text); font-size:0.85rem;">#${o.id.slice(0, 6).toUpperCase()}</div>
+                                <div style="font-size:0.78rem; color:var(--adm-text-sec); margin-top:2px;">${o.customer_name}</div>
+                            </div>
+                            ${statusHtml}
+                        </div>
+                        <div style="font-size:0.76rem; color:var(--adm-text-sec); border-top:1px dashed var(--adm-border); padding-top:8px;">Ishchi guruh: <strong style="color:#00d2ff;">${o.worker_group || "Tayinlanmagan"}</strong></div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="assign-btn" data-id="${o.id}" data-order='${JSON.stringify(o).replace(/'/g, '&#39;')}' style="flex:1; background:#00d2ff; color:#000; border:none; padding:9px 12px; border-radius:10px; font-weight:600; font-size:0.78rem; cursor:pointer;">${o.worker_group ? "O'zgartirish" : "Guruh Tayinlash"}</button>
+                            ${o.worker_group ? `<button class="complete-btn" data-id="${o.id}" style="flex:1; background:#00ff88; color:#000; border:none; padding:9px 12px; border-radius:10px; font-weight:600; font-size:0.78rem; cursor:pointer;">✓ Bitirish</button>` : ''}
+                        </div>
                     `;
-                    procTable.appendChild(otr);
+                    procTable.appendChild(ocard);
                 }
             } else {
-                // Completed
+                // Completed — premium kartochka (arxiv)
                 if (compTable) {
-                    const ctr = document.createElement('tr');
-                    ctr.innerHTML = `
-                        <td><strong>#${o.id.slice(0, 6).toUpperCase()}</strong><br><small>${o.customer_name}</small></td>
-                        <td style="font-weight:600;">${Number(o.total_price).toLocaleString()} UZS</td>
-                        <td style="color:#888;">${new Date().toLocaleDateString()}</td>
-                        <td style="font-weight:600; color:#00ff88;">${o.worker_group || "Noma'lum"}</td>
+                    const ccard = document.createElement('div');
+                    ccard.style.cssText = `border-top:3px solid #00ff88; border-radius:16px; background:var(--adm-surface); border:1px solid var(--adm-border); border-top:3px solid #00ff88; padding:16px; display:flex; flex-direction:column; gap:8px; box-shadow:var(--adm-shadow);`;
+                    ccard.innerHTML = `
+                        <div style="font-weight:700; color:var(--adm-text); font-size:0.85rem;">#${o.id.slice(0, 6).toUpperCase()}</div>
+                        <div style="font-size:0.78rem; color:var(--adm-text-sec);">${o.customer_name}</div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed var(--adm-border); padding-top:8px; font-size:0.76rem;">
+                            <span style="color:var(--adm-text-sec);">Tugatilgan: ${new Date().toLocaleDateString()}</span>
+                            <strong style="color:#00ff88; font-family:monospace;">${Number(o.total_price).toLocaleString()} UZS</strong>
+                        </div>
+                        <div style="font-size:0.74rem; color:var(--adm-text-sec);">Guruh: <strong style="color:#00ff88;">${o.worker_group || "Noma'lum"}</strong></div>
                     `;
-                    compTable.appendChild(ctr);
+                    compTable.appendChild(ccard);
                 }
             }
         });

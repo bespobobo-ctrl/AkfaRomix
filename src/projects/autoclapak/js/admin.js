@@ -514,6 +514,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         });
 
+        const omborSearch = document.getElementById('buh-ombor-search');
+        if (omborSearch) omborSearch.addEventListener('input', () => {
+            const q = omborSearch.value.trim().toLowerCase();
+            document.querySelectorAll('#buh-ombor-grid .buh-ombor-card').forEach(card => {
+                card.style.display = (!q || (card.dataset.search || '').includes(q)) ? '' : 'none';
+            });
+        });
+
         const prodDateEl = document.getElementById('buh-prod-date');
         if (prodDateEl) prodDateEl.value = _buhToday();
         const expDateEl = document.getElementById('buh-exp-date');
@@ -678,8 +686,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function renderRomixBuhOmbor() {
         const statsEl = document.getElementById('buh-ombor-stats');
-        const tableEl = document.getElementById('buh-ombor-table');
-        if (!statsEl && !tableEl) return;
+        const gridEl = document.getElementById('buh-ombor-grid');
+        if (!statsEl && !gridEl) return;
 
         let items = [];
         try {
@@ -699,29 +707,39 @@ document.addEventListener('DOMContentLoaded', async () => {
             `;
         }
 
-        if (tableEl) {
+        if (gridEl) {
             if (items.length === 0) {
-                tableEl.innerHTML = '<tr><td colspan="5" style="text-align:center; color:rgba(255,255,255,0.3); padding:20px;">Ombor bo\'sh</td></tr>';
+                gridEl.innerHTML = '<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Ombor bo\'sh</div>';
             } else {
-                tableEl.innerHTML = items.map(p => {
-                    const val = (Number(p.price) || 0) * (Number(p.stock_quantity) || 0);
-                    const lowStyle = (Number(p.stock_quantity) || 0) < 10 ? 'color:#ff4d4f;font-weight:700;' : '';
+                gridEl.innerHTML = items.map(p => {
+                    const qty = Number(p.stock_quantity) || 0;
+                    const val = (Number(p.price) || 0) * qty;
+                    const isLow = qty < 10;
+                    const accentColor = isLow ? '#ff4d4f' : '#00baff';
                     const nameEsc = (p.product_name || '').replace(/'/g, "\\'");
                     const unitEsc = (p.unit || '').replace(/'/g, "\\'");
-                    return `<tr>
-                        <td>${p.product_name}</td>
-                        <td style="text-align:right; ${lowStyle}">${p.stock_quantity || 0} ${p.unit || ''}</td>
-                        <td style="text-align:right; font-weight:700; color:#00ff88;">${_buhFmt(p.price)}</td>
-                        <td style="text-align:right;">${_buhFmt(val)}</td>
-                        <td style="text-align:right;">
-                            <button onclick="window.openRomixPriceModal('${p.id}', '${nameEsc}', ${p.price || 0}, ${p.stock_quantity || 0}, '${unitEsc}')"
-                                style="display:inline-flex; align-items:center; gap:6px; background:rgba(0,186,255,0.1); border:1px solid rgba(0,186,255,0.25); color:#00baff; padding:7px 14px; border-radius:10px; font-size:0.74rem; font-weight:700; cursor:pointer; transition:all 0.2s;"
-                                onmouseenter="this.style.background='rgba(0,186,255,0.2)'; this.style.transform='translateY(-1px)';"
-                                onmouseleave="this.style.background='rgba(0,186,255,0.1)'; this.style.transform='translateY(0)';">
-                                💲 Narx belgilash
-                            </button>
-                        </td>
-                    </tr>`;
+                    const lowBadge = isLow ? `<span style="background:rgba(255,77,79,0.1); color:#ff4d4f; padding:2px 8px; border-radius:10px; font-size:0.62rem; font-weight:700; margin-left:6px;">⚠️ Kam qolgan</span>` : '';
+                    return `<div class="buh-ombor-card" data-search="${(p.product_name || '').toLowerCase().replace(/"/g, '')}" style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-top:3px solid ${accentColor}; border-radius:18px; padding:16px; display:flex; flex-direction:column; gap:10px; transition:all 0.25s;">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <div style="width:44px; height:44px; border-radius:14px; background:linear-gradient(135deg,#00baff,#0072ff); display:flex; align-items:center; justify-content:center; font-size:1.15rem; flex-shrink:0;">📦</div>
+                            <div style="min-width:0; flex:1;">
+                                <div style="font-weight:700; color:#fff; font-size:0.88rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${p.product_name || ''}">${p.product_name || 'Noma\'lum'}</div>
+                                <div style="font-size:0.7rem; color:${isLow ? '#ff4d4f' : 'rgba(255,255,255,0.4)'}; font-weight:${isLow ? '700' : '500'}; margin-top:2px;">${qty} ${p.unit || ''}${lowBadge}</div>
+                            </div>
+                        </div>
+                        <div style="border-top:1px dashed rgba(255,255,255,0.06); padding-top:10px; display:flex; justify-content:space-between; font-size:0.76rem; color:rgba(255,255,255,0.5);">
+                            <span>Narx (birlik)</span><strong style="color:#00ff88; font-family:monospace;">${_buhFmt(p.price)}</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.76rem; color:rgba(255,255,255,0.5);">
+                            <span>Jami qiymat</span><strong style="color:#00d2ff; font-family:monospace;">${_buhFmt(val)}</strong>
+                        </div>
+                        <button onclick="window.openRomixPriceModal('${p.id}', '${nameEsc}', ${p.price || 0}, ${qty}, '${unitEsc}')"
+                            style="display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(0,186,255,0.1); border:1px solid rgba(0,186,255,0.25); color:#00baff; padding:9px; border-radius:10px; font-size:0.76rem; font-weight:700; cursor:pointer; transition:all 0.2s; width:100%; margin-top:2px;"
+                            onmouseenter="this.style.background='rgba(0,186,255,0.2)'; this.style.transform='translateY(-1px)';"
+                            onmouseleave="this.style.background='rgba(0,186,255,0.1)'; this.style.transform='translateY(0)';">
+                            💲 Narx belgilash
+                        </button>
+                    </div>`;
                 }).join('');
             }
         }
@@ -810,6 +828,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     let _buhSotuvChart = null;
+    // Zakazning ish-jarayon bosqichini aniqlaydi: Zakaz qabul qilindi → Ishlab chiqarishda → Tayyor/Yetkazildi
+    // (Sotuv bo'limi: buyurtma olinadi (Kutilmoqda) → guruhga biriktirilib omborga so'rov beriladi (Jarayonda) → tugaydi)
+    function _buhOrderStageInfo(status) {
+        if (status && (status.includes('Tayyor') || status.includes('Yetkazildi'))) {
+            return { label: 'Tayyor / Yetkazildi', icon: '✅', color: '#00ff88' };
+        }
+        if (status === 'Jarayonda') {
+            return { label: 'Ishlab chiqarishda', icon: '⚙️', color: '#00d2ff' };
+        }
+        return { label: 'Zakaz qabul qilindi', icon: '📝', color: '#ffaa00' };
+    }
+
     // Bir buyurtmadan qolayotgan taxminiy foyda va to'lov holatini hisoblaydi.
     // Eslatma: sales_orders'da alohida 'profit' ustuni saqlanmaydi (faqat total_price/production_cost/
     // installation_cost bor), shuning uchun foyda = total_price - (production_cost + installation_cost)
@@ -839,6 +869,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const info = _buhOrderPaymentInfo(order);
         const val = parseFloat(prompt(`"${order.customer_name}" buyurtmasi uchun to'lov summasini kiriting (qoldiq: ${info.remaining.toLocaleString()} UZS):`, info.remaining));
         if (!val || val <= 0) return;
+        if (val > info.remaining) return alert(`Qoldiqdan ortiq summa kiritdingiz! Qoldiq: ${info.remaining.toLocaleString()} UZS`);
         const newPaid = info.paidAmount + val;
         try {
             const { error } = await supabase.from('sales_orders').update({ paid_amount: newPaid, payment_date: new Date().toISOString() }).eq('id', orderId);
@@ -896,7 +927,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 gridEl.innerHTML = inPeriod.slice(0, 60).map(o => {
                     const pay = _buhOrderPaymentInfo(o);
                     const profit = _buhOrderProfit(o);
-                    const statusColor = o.status === 'Jarayonda' ? '#00d2ff' : (o.status && (o.status.includes('Tayyor') || o.status.includes('Yetkazildi')) ? '#00ff88' : '#ffaa00');
+                    const stage = _buhOrderStageInfo(o.status);
+                    const statusColor = stage.color;
+                    const orderDateStr = o.created_at ? new Date(o.created_at).toLocaleDateString('uz-UZ') : '—';
+                    const deadlineStr = o.deadline_date ? new Date(o.deadline_date).toLocaleDateString('uz-UZ') : '—';
+                    const isOverdue = o.deadline_date && stage.label !== 'Tayyor / Yetkazildi' && new Date(o.deadline_date) < new Date();
                     const payBadge = pay.fullyPaid
                         ? `<span style="background:rgba(0,255,136,0.1); color:#00ff88; padding:3px 10px; border-radius:12px; font-size:0.68rem; font-weight:700;">✓ To'langan</span>`
                         : (pay.paidAmount > 0
@@ -915,7 +950,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <div style="font-weight:700; color:#fff; font-size:0.9rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${o.customer_name || 'Noma\'lum mijoz'}</div>
                                 <div style="font-size:0.68rem; color:rgba(255,255,255,0.4); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${o.prod_type || 'Mahsulot'} • ${o.quantity || 1} ta</div>
                             </div>
-                            <span style="font-size:0.6rem; color:${statusColor}; background:${statusColor}22; padding:2px 8px; border-radius:12px; font-weight:700; white-space:nowrap;">${o.status || 'Kutilmoqda'}</span>
+                            <span style="font-size:0.62rem; color:${statusColor}; background:${statusColor}22; padding:3px 9px; border-radius:12px; font-weight:700; white-space:nowrap; display:inline-flex; align-items:center; gap:4px;">${stage.icon} ${stage.label}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:rgba(255,255,255,0.45); background:rgba(255,255,255,0.02); border-radius:10px; padding:8px 10px;">
+                            <span>📅 Zakaz sanasi: <strong style="color:rgba(255,255,255,0.7);">${orderDateStr}</strong></span>
+                            <span style="${isOverdue ? 'color:#ff4d4f; font-weight:700;' : ''}">⏳ Va'da muddati: <strong style="color:${isOverdue ? '#ff4d4f' : 'rgba(255,255,255,0.7)'};">${deadlineStr}${isOverdue ? ' ⚠️' : ''}</strong></span>
                         </div>
                         <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:rgba(255,255,255,0.5); border-top:1px dashed rgba(255,255,255,0.06); padding-top:8px;">
                             <span>Jami narx</span><strong style="color:#00ff88; font-family:monospace;">${_buhFmt(pay.total)}</strong>
@@ -925,7 +964,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </div>
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px;">
                             ${payBadge}
-                            <span style="font-size:0.65rem; color:rgba(255,255,255,0.3);">${o.created_at ? o.created_at.slice(0, 10) : ''}</span>
                         </div>
                         ${payDateHtml}
                         ${payBtn}
@@ -1110,6 +1148,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const remaining = Math.max(0, (Number(debt.amount) || 0) - (Number(debt.paid_amount) || 0));
         const val = parseFloat(prompt(`"${debt.creditor}" uchun to'lov summasini kiriting (qoldiq: ${remaining.toLocaleString()} UZS):`, remaining));
         if (!val || val <= 0) return;
+        if (val > remaining) return alert(`Qoldiqdan ortiq summa kiritdingiz! Qoldiq: ${remaining.toLocaleString()} UZS`);
         const newPaid = (Number(debt.paid_amount) || 0) + val;
         await romixBuhUpdate('romix_debts', ROMIX_BUH_KEYS.debts, id, { paid_amount: newPaid });
         await renderBuhTashqiQarz();

@@ -830,24 +830,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         const req = window.currentReqData;
         if (!req) return;
 
+        // Pre-check: confirm every material has enough stock BEFORE touching anything
+        const stockMap = {};
+        const shortages = [];
+        for (let m of req.materials_json) {
+            const { data: prod } = await supabase.from('romix_inventory').select('stock_quantity').eq('id', m.product_id).maybeSingle();
+            const current = prod ? (parseFloat(prod.stock_quantity) || 0) : 0;
+            stockMap[m.product_id] = current;
+            if (current < m.qty) {
+                shortages.push(`${m.name}: kerak ${m.qty} ${m.unit}, omborda bor-yo'g'i ${current} ${m.unit}`);
+            }
+        }
+
+        if (shortages.length > 0) {
+            alert(`❌ Omborda yetarli mahsulot yo'q, chiqim qilib bo'lmaydi:\n\n${shortages.join('\n')}`);
+            return;
+        }
+
         // Loop and subtract qty
         for (let m of req.materials_json) {
-            // Get current stock
-            const { data: prod } = await supabase.from('romix_inventory').select('stock_quantity').eq('id', m.product_id).maybeSingle();
-            if (prod) {
-                // Subtract
-                await supabase.from('romix_inventory').update({
-                    stock_quantity: (parseFloat(prod.stock_quantity) || 0) - m.qty
-                }).eq('id', m.product_id);
+            await supabase.from('romix_inventory').update({
+                stock_quantity: stockMap[m.product_id] - m.qty
+            }).eq('id', m.product_id);
 
-                // Add to transactions as 'OUT'
-                await supabase.from('romix_transactions').insert([{
-                    product_id: m.product_id,
-                    type: 'OUT',
-                    quantity: m.qty,
-                    note: `Romix Sotuv (Buyurtma/Guruh: ${req.worker_group})`
-                }]);
-            }
+            // Add to transactions as 'OUT'
+            await supabase.from('romix_transactions').insert([{
+                product_id: m.product_id,
+                type: 'OUT',
+                quantity: m.qty,
+                note: `Romix Sotuv (Buyurtma/Guruh: ${req.worker_group})`
+            }]);
         }
 
         // Change request status

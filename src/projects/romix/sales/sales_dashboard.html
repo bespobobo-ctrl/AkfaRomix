@@ -174,19 +174,7 @@
                         <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
                             <h3 style="font-weight: 600;">Oxirgi buyurtmalar</h3>
                         </div>
-                        <table class="v2-table">
-                            <thead>
-                                <tr>
-                                    <th>Mijoz</th>
-                                    <th>Model & O'lcham</th>
-                                    <th>Muddat</th>
-                                    <th>Jami Summa</th>
-                                    <th>Status</th>
-                                    <th>Harakat</th>
-                                </tr>
-                            </thead>
-                            <tbody id="ordersTable"></tbody>
-                        </table>
+                        <div id="ordersTable" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px;"></div>
                     </div>
                 </div>
             </section>
@@ -201,33 +189,13 @@
                 <div class="bento-card" style="margin-bottom: 25px; border-top: 4px solid #00d2ff;">
                     <h3 style="font-weight: 600; margin-bottom: 20px; color: #00d2ff;">Aktiv Buyurtmalar (Kutilmoqda &
                         Jarayonda)</h3>
-                    <table class="v2-table">
-                        <thead>
-                            <tr>
-                                <th>Buyurtma # / Mijoz</th>
-                                <th>Holat / Jarayon</th>
-                                <th>Ishchi Guruh</th>
-                                <th>O'rnatishga Berish</th>
-                            </tr>
-                        </thead>
-                        <tbody id="processOrdersTable"></tbody>
-                    </table>
+                    <div id="processOrdersTable" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px;"></div>
                 </div>
 
                 <div class="bento-card" style="border-top: 4px solid #00ff88;">
                     <h3 style="font-weight: 600; margin-bottom: 20px; color: #00ff88;">Bitirilgan Buyurtmalar (Arxiv)
                     </h3>
-                    <table class="v2-table">
-                        <thead>
-                            <tr>
-                                <th>Buyurtma # / Mijoz</th>
-                                <th>Jami Summa</th>
-                                <th>Tugatilgan Sana</th>
-                                <th>Bajargan Guruh</th>
-                            </tr>
-                        </thead>
-                        <tbody id="completedOrdersTable"></tbody>
-                    </table>
+                    <div id="completedOrdersTable" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px;"></div>
                 </div>
             </section>
         </main>
