@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         let orders = [];
         let reqStatusByOrder = {};
         try {
-            const { data, error } = await supabase.from('sales_orders').select('*').eq('status', 'Jarayonda').order('created_at', { ascending: false });
+            const { data, error } = await supabase.from('sales_orders').select('*').in('status', ['Kutilmoqda', 'Jarayonda']).order('created_at', { ascending: false });
             if (error) throw error;
             orders = data || [];
         } catch (err) {
@@ -165,6 +165,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const cols = {
+            awaiting: document.getElementById('pipelineColAwaiting'),
             new: document.getElementById('pipelineColNew'),
             kesish: document.getElementById('pipelineColKesish'),
             payvandlash: document.getElementById('pipelineColPayvand'),
@@ -175,27 +176,49 @@ document.addEventListener('DOMContentLoaded', async () => {
         const emptyMsg = '<div style="text-align:center; color:var(--adm-text-sec); font-size:0.78rem; padding:16px 0;">Bo\'sh</div>';
         // tayyor_omborda bosqichidagilar bu boardda ko'rsatilmaydi (ular Tayyor Mahsulotga o'tgan)
         const buckets = {
-            new: orders.filter(o => !o.production_stage),
+            awaiting: orders.filter(o => o.status === 'Kutilmoqda'),
+            new: orders.filter(o => o.status === 'Jarayonda' && !o.production_stage),
             kesish: orders.filter(o => o.production_stage === 'kesish'),
             payvandlash: orders.filter(o => o.production_stage === 'payvandlash'),
             yigish_qadoqlash: orders.filter(o => o.production_stage === 'yigish_qadoqlash')
         };
+
+        // Qat'iy muddat nazorati: har bir buyurtma kartochkasida qolgan/kechikkan kunlarni ko'rsatadi
+        function deadlineBadge(o) {
+            const targetDate = o.production_target_date || o.production_deadline;
+            if (!targetDate) return '';
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const dl = new Date(targetDate);
+            const diffDays = Math.round((dl - today) / 86400000);
+            let color, text;
+            if (diffDays < 0) { color = '#ef4444'; text = `⚠️ Muddati o'tdi! (${Math.abs(diffDays)} kun kechikdi)`; }
+            else if (diffDays === 0) { color = '#ef4444'; text = `⚠️ BUGUN tayyor bo'lishi kerak!`; }
+            else if (diffDays <= 2) { color = '#ffaa00'; text = `⏰ ${diffDays} kun qoldi`; }
+            else { color = '#00ff88'; text = `⏰ ${diffDays} kun qoldi (${dl.toLocaleDateString('uz-UZ')})`; }
+            return `<div style="font-size:0.7rem; color:${color}; font-weight:700;">${text}</div>`;
+        }
 
         function card(o, actionHtml) {
             return `<div style="background:var(--adm-surface); border:1px solid var(--adm-border); border-radius:14px; padding:12px; display:flex; flex-direction:column; gap:8px; box-shadow:var(--adm-shadow);">
                 <div style="font-weight:700; color:var(--adm-text); font-size:0.82rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${o.customer_name || 'Noma\'lum'}</div>
                 <div style="font-size:0.72rem; color:var(--adm-text-sec);">${o.prod_type || ''}</div>
                 <div style="font-size:0.7rem; color:var(--adm-text-sec);">Guruh: <strong style="color:#00d2ff;">${o.worker_group || '—'}</strong></div>
+                ${deadlineBadge(o)}
                 ${actionHtml}
             </div>`;
         }
 
+        if (cols.awaiting) {
+            cols.awaiting.innerHTML = buckets.awaiting.length === 0 ? emptyMsg : buckets.awaiting.map(o => card(o,
+                `<div style="text-align:center; background:rgba(139,92,246,0.08); color:#8b5cf6; padding:8px; border-radius:8px; font-weight:600; font-size:0.7rem;">Sotuv guruh/material belgilashini kutmoqda</div>`
+            )).join('');
+        }
         if (cols.new) {
             cols.new.innerHTML = buckets.new.length === 0 ? emptyMsg : buckets.new.map(o => {
                 const reqStatus = reqStatusByOrder[o.id];
                 const approved = reqStatus === 'Tasdiqlandi';
                 const actionHtml = approved
-                    ? `<button class="pipeline-advance-btn" data-id="${o.id}" data-next="kesish" style="background:#ffaa00; color:#000; border:none; padding:8px; border-radius:8px; font-weight:700; font-size:0.74rem; cursor:pointer;">✅ Qabul Qilish</button>`
+                    ? `<button class="accept-order-btn" data-id="${o.id}" data-deadline="${o.production_deadline || ''}" style="background:#ffaa00; color:#000; border:none; padding:8px; border-radius:8px; font-weight:700; font-size:0.74rem; cursor:pointer;">✅ Qabul Qilish</button>`
                     : `<div style="text-align:center; background:rgba(239,68,68,0.08); color:#ef4444; padding:8px; border-radius:8px; font-weight:600; font-size:0.7rem;">⏳ Ombor tasdiqlashini kutmoqda</div>`;
                 return card(o, actionHtml);
             }).join('');
@@ -226,6 +249,38 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } catch (err) {
                     alert("Bosqichni yangilashda xatolik: bazada 'production_stage' ustuni mavjudligini tekshiring.");
                     console.warn("pipeline-advance failed:", err);
+                    return;
+                }
+                loadProductionPipeline();
+            };
+        });
+
+        // Qabul Qilish: ishlab chiqarish o'zi "chiqish sanasi"ni belgilaydi (standart = sotuv muddati)
+        document.querySelectorAll('.accept-order-btn').forEach(btn => {
+            btn.onclick = async () => {
+                const id = btn.dataset.id;
+                const defaultDate = btn.dataset.deadline || '';
+                let targetDate = prompt("Bu buyurtma qachon tayyor bo'lishini belgilang (chiqish sanasi, YYYY-MM-DD):", defaultDate);
+                if (targetDate === null) return; // bekor qilindi
+                targetDate = targetDate.trim();
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(targetDate)) {
+                    if (!targetDate && defaultDate) {
+                        targetDate = defaultDate;
+                    } else {
+                        alert("Sana formati noto'g'ri. YYYY-MM-DD ko'rinishida kiriting (masalan 2026-07-10).");
+                        return;
+                    }
+                }
+                try {
+                    const { error } = await supabase.from('sales_orders').update({
+                        production_stage: 'kesish',
+                        production_target_date: targetDate,
+                        production_accepted_at: new Date().toISOString()
+                    }).eq('id', id);
+                    if (error) throw error;
+                } catch (err) {
+                    alert("Qabul qilishda xatolik: bazada 'production_target_date'/'production_accepted_at' ustunlari mavjudligini tekshiring.");
+                    console.warn("accept-order failed:", err);
                     return;
                 }
                 loadProductionPipeline();

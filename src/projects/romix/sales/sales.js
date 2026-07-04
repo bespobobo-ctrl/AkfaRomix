@@ -542,6 +542,50 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
+        let reqStatusByOrder = {};
+        try {
+            const { data, error } = await supabase.from('material_requests').select('order_id, status');
+            if (error) throw error;
+            (data || []).forEach(r => { reqStatusByOrder[r.order_id] = r.status; });
+        } catch (err) {
+            console.warn("loadOrders material_requests fetch failed:", err);
+        }
+
+        // Ishlab chiqarish bosqichi bo'yicha aniq holat matni (Sotuv'ga ko'rinadigan)
+        const STAGE_LABELS = {
+            kesish: { text: "✂️ Kesilmoqda", color: '#00d2ff' },
+            payvandlash: { text: "🔥 Payvandlanmoqda", color: '#00d2ff' },
+            yigish_qadoqlash: { text: "📦 Yig'ish/Qadoqlanmoqda", color: '#00d2ff' },
+            tayyor_omborda: { text: "🏬 Tayyor (Omborda)", color: '#00ff88' }
+        };
+        function stageStatusHtml(o) {
+            if (o.status === 'Tayyor / Yetkazildi') return null; // fallback to base pill
+            if (o.production_stage && STAGE_LABELS[o.production_stage]) {
+                const s = STAGE_LABELS[o.production_stage];
+                return `<span style="background:${s.color}1a; color:${s.color}; padding:3px 10px; border-radius:12px; font-size:0.66rem; font-weight:700; white-space:nowrap;">${s.text}</span>`;
+            }
+            if (o.worker_group) {
+                const approved = reqStatusByOrder[o.id] === 'Tasdiqlandi';
+                return approved
+                    ? `<span style="background:rgba(0,210,255,0.1); color:#00d2ff; padding:3px 10px; border-radius:12px; font-size:0.66rem; font-weight:700; white-space:nowrap;">✅ Ishlab chiqarish qabul qilishi kutilmoqda</span>`
+                    : `<span style="background:rgba(239,68,68,0.1); color:#ef4444; padding:3px 10px; border-radius:12px; font-size:0.66rem; font-weight:700; white-space:nowrap;">⏳ Ombor tasdiqlashini kutmoqda</span>`;
+            }
+            return null;
+        }
+        // Buyurtma tayyor bo'lish muddati bo'yicha qattiq nazorat belgisi
+        function deadlineBadgeHtml(o) {
+            if (!o.production_deadline || o.status === 'Tayyor / Yetkazildi') return '';
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const dl = new Date(o.production_deadline);
+            const diffDays = Math.round((dl - today) / 86400000);
+            let color, text;
+            if (diffDays < 0) { color = '#ef4444'; text = `⚠️ Muddati o'tdi! (${Math.abs(diffDays)} kun kechikdi)`; }
+            else if (diffDays === 0) { color = '#ef4444'; text = `⚠️ BUGUN tayyor bo'lishi kerak!`; }
+            else if (diffDays <= 2) { color = '#ffaa00'; text = `⏰ ${diffDays} kun qoldi`; }
+            else { color = '#00ff88'; text = `⏰ ${diffDays} kun qoldi (${dl.toLocaleDateString('uz-UZ')})`; }
+            return `<div style="font-size:0.72rem; color:${color}; font-weight:700; margin-top:2px;">${text}</div>`;
+        }
+
         // Clear views
         const table = document.getElementById('ordersTable');
         const procTable = document.getElementById('processOrdersTable');
@@ -570,6 +614,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 statusColor = '#00ff88';
                 statusHtml = `<span class="status-pill status-delivered" style="background:rgba(0,255,136,0.1); color:#00ff88; padding:3px 10px; border-radius:12px; font-size:0.66rem; font-weight:700; white-space:nowrap;">✅ Tayyor / O'rnatildi</span>`;
             }
+            const refinedStageHtml = stageStatusHtml(o);
+            if (refinedStageHtml) statusHtml = refinedStageHtml;
+            const deadlineBadge = deadlineBadgeHtml(o);
 
             // --- Dashboard View (All Orders) — premium kartochka ---
             if (table) {
@@ -589,6 +636,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${(o.model_name || '').replace(/"/g, '')}">${modelShort}</div>
                     </div>
                     <div style="font-size:0.75rem; color:var(--adm-text-sec);">⏳ Muddat: <strong style="color:var(--adm-text);">${new Date(o.deadline_date).toLocaleDateString()}</strong></div>
+                    ${deadlineBadge}
                     <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed var(--adm-border); padding-top:9px; margin-top:2px;">
                         <strong style="color:#00ff88; font-family:monospace; font-size:0.95rem;">${Number(o.total_price).toLocaleString()} UZS</strong>
                         <div>
@@ -615,6 +663,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             ${statusHtml}
                         </div>
                         <div style="font-size:0.76rem; color:var(--adm-text-sec); border-top:1px dashed var(--adm-border); padding-top:8px;">Ishchi guruh: <strong style="color:#00d2ff;">${o.worker_group || "Tayinlanmagan"}</strong></div>
+                        ${deadlineBadge}
                         <div style="display:flex; gap:8px;">
                             <button class="assign-btn" data-id="${o.id}" data-order='${JSON.stringify(o).replace(/'/g, '&#39;')}' style="flex:1; background:#00d2ff; color:#000; border:none; padding:9px 12px; border-radius:10px; font-weight:600; font-size:0.78rem; cursor:pointer;">${o.worker_group ? "O'zgartirish" : "Guruh Tayinlash"}</button>
                             ${o.worker_group ? `<button class="complete-btn" data-id="${o.id}" style="flex:1; background:#00ff88; color:#000; border:none; padding:9px 12px; border-radius:10px; font-weight:600; font-size:0.78rem; cursor:pointer;">✓ Bitirish</button>` : ''}
@@ -677,6 +726,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('eCustomer').value = o.customer_name;
                 document.getElementById('ePhone').value = o.customer_phone;
                 document.getElementById('eAddress').value = o.customer_address || '';
+                document.getElementById('eProdDeadline').value = o.production_deadline || '';
                 document.getElementById('eStatus').value = o.status;
                 editModal.classList.remove('hidden');
             };
@@ -756,6 +806,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <h3>Payment Method:</h3>
                             <p>${isDebt ? 'Muddatli To\'lov (Qarz)' : o.payment_type || 'Naqd'}</p>
                             <div class="amount-badge ${isDebt ? 'debt' : ''}">Total: ${Number(o.total_price).toLocaleString()} UZS</div>
+                            <p style="margin-top:8px;"><b>⏰ Tayyor bo'lish muddati:</b> ${o.production_deadline ? new Date(o.production_deadline).toLocaleDateString('uz-UZ') : '---'}</p>
                         </div>
                     </div>
 
@@ -927,6 +978,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Save New
     document.getElementById('saveOrderBtn').onclick = async () => {
         if (orderItems.length === 0) return alert("Savatga kamida bitta mahsulot qo'shing!");
+        if (!document.getElementById('oProdDeadline').value) return alert("Buyurtma tayyor bo'lish muddatini kiriting! Bu ishlab chiqarish bo'limi uchun majburiy.");
 
         const saveBtn = document.getElementById('saveOrderBtn');
         if (saveBtn.disabled) return;
@@ -956,6 +1008,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             total_price: calcObj.grandTotal,
             payment_type: document.getElementById('oPayment').value,
             deadline_date: document.getElementById('oDeadline').value || new Date(Date.now() + 7*24*60*60*1000).toISOString().split('T')[0],
+            production_deadline: document.getElementById('oProdDeadline').value,
             status: 'Kutilmoqda',
             created_at: new Date().toISOString()
         };
@@ -984,6 +1037,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const customer_name = document.getElementById('eCustomer').value;
         const customer_phone = document.getElementById('ePhone').value;
         const customer_address = document.getElementById('eAddress').value;
+        const production_deadline = document.getElementById('eProdDeadline').value || null;
         const status = document.getElementById('eStatus').value;
 
         try {
@@ -991,6 +1045,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 customer_name,
                 customer_phone,
                 customer_address,
+                production_deadline,
                 status
             }).eq('id', id);
             if (error) throw error;
@@ -1006,6 +1061,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ord.customer_name = customer_name;
                 ord.customer_phone = customer_phone;
                 ord.customer_address = customer_address;
+                ord.production_deadline = production_deadline;
                 ord.status = status;
                 localStorage.setItem('romix_orders_local', JSON.stringify(localOrders));
             }
@@ -1182,6 +1238,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderBasket();
         calculateTotal();
         document.getElementById('oDeadline').value = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        document.getElementById('oProdDeadline').value = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         orderModal.classList.remove('hidden');
         // 3D preview modal ochilгач o'lchamни oladi
         setTimeout(() => { try { window.update3DPreview(); } catch (e) {} }, 60);
