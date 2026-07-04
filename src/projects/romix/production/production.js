@@ -214,9 +214,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (saveBtn.disabled) return;
         saveBtn.disabled = true;
         try {
+            // Batch miqdori boshqa joyda (masalan boshqa oynada) o'zgargan bo'lishi mumkin -
+            // saqlashdan oldin joriy qiymatni qayta tekshiramiz
+            const { data: freshBatch } = await supabase.from('romix_production_batches').select('quantity').eq('id', batchId).maybeSingle();
+            const currentQty = freshBatch ? Number(freshBatch.quantity) : 0;
+            if (movedQty > currentQty) {
+                alert(`Bu batch miqdori o'zgargan (hozir: ${currentQty} dona). Iltimos, oynani yopib qayta urinib ko'ring.`);
+                saveBtn.disabled = false;
+                loadProductionPipeline();
+                return;
+            }
             const nextStageMap = { kesish: 'payvandlash', payvandlash: 'yigish_qadoqlash', yigish_qadoqlash: 'tayyor' };
             const nextStage = nextStageMap[stage];
-            const remaining = qty - movedQty;
+            const remaining = currentQty - movedQty;
             if (remaining > 0) {
                 await supabase.from('romix_production_batches').update({ quantity: remaining }).eq('id', batchId);
             } else {
