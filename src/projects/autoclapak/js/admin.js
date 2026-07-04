@@ -5219,7 +5219,7 @@ ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS payment_date TIMESTAMPTZ;`;
 
                 currentSaveBtn.onclick = async () => {
                     const val = document.getElementById('hrActionAmount').value;
-                    if (val) {
+                    if (val && parseFloat(val) > 0) {
                         currentSaveBtn.innerHTML = "Saqlanmoqda...";
                         const today = new Date().toISOString().split('T')[0];
                         const { error } = await supabase.from('attendance').insert({ employee_id: selectedWorkerId, date: today, status: `Premya: ${val} so'm` });
@@ -5228,6 +5228,8 @@ ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS payment_date TIMESTAMPTZ;`;
                         alert(`${val} so'm premya muvaffaqiyatli belgilandi.`);
                         modal.style.display = 'none';
                         loadRomixHRData();
+                    } else {
+                        alert("Iltimos, 0 dan katta to'g'ri miqdor kiriting!");
                     }
                 };
             } else if (actionType === 'raise') {
@@ -5245,7 +5247,7 @@ ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS payment_date TIMESTAMPTZ;`;
 
                 currentSaveBtn.onclick = async () => {
                     const val = document.getElementById('hrActionSalary').value;
-                    if (val) {
+                    if (val && parseFloat(val) > 0) {
                         currentSaveBtn.innerHTML = "Saqlanmoqda...";
                         const today = new Date().toISOString().split('T')[0];
                         await supabase.from('employees').update({ salary_info: val }).eq('id', selectedWorkerId);
@@ -5255,6 +5257,8 @@ ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS payment_date TIMESTAMPTZ;`;
                         alert("Oylik muvaffaqiyatli yangilandi.");
                         modal.style.display = 'none';
                         loadRomixHRData();
+                    } else {
+                        alert("Iltimos, 0 dan katta to'g'ri oylik miqdorini kiriting!");
                     }
                 };
             } else if (actionType === 'leave') {
@@ -6034,7 +6038,7 @@ ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS payment_date TIMESTAMPTZ;`;
     async function saveHRAction(type) {
         const inputEl = document.getElementById('hrActionValue');
         const val = inputEl ? inputEl.value.trim() : '';
-        if (!val) { alert('Summani kiriting!'); return; }
+        if (!val || isNaN(parseFloat(val)) || parseFloat(val) <= 0) { alert("Iltimos, 0 dan katta to'g'ri summa kiriting!"); return; }
 
         const saveBtn = document.getElementById('hrActionSaveBtn');
         const originalText = saveBtn.textContent;
