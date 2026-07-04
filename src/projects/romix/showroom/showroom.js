@@ -13,6 +13,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const outModal = document.getElementById('outModal');
     const installModal = document.getElementById('installModal');
     const inventoryTable = document.getElementById('inventoryTable');
+    const mainApp = document.getElementById('mainApp');
+    const printArea = document.getElementById('printArea');
+    document.getElementById('closePrintBtn')?.addEventListener('click', () => location.reload());
 
     let allProducts = [];
 
@@ -335,6 +338,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div style="font-size:0.75rem; color:var(--adm-text-sec); border-top:1px dashed var(--adm-border); padding-top:8px; margin-top:6px;">Brigada: <strong style="color:#00d2ff;">${o.install_group}</strong></div>
                     ${deadlineHtml}
                     ${matsHtml}
+                    <button class="install-contract-btn" data-id="${o.id}" style="width:100%; background:rgba(255,255,255,0.08); color:var(--adm-text); border:1px solid var(--adm-border); padding:8px; border-radius:10px; font-weight:600; font-size:0.74rem; cursor:pointer; margin-top:4px;">📄 Shartnoma / Dalolatnoma</button>
                     ${isInstalled
                         ? `<span style="display:inline-block; margin-top:6px; background:rgba(0,255,136,0.1); color:#00ff88; padding:4px 10px; border-radius:12px; font-size:0.7rem; font-weight:700;">✓ O'rnatildi</span>`
                         : `<button class="install-complete-btn" data-id="${o.id}" style="width:100%; background:#00ff88; color:#000; border:none; padding:9px; border-radius:10px; font-weight:700; font-size:0.78rem; cursor:pointer; margin-top:6px;">✓ O'rnatildi Deb Belgilash</button>`
@@ -379,6 +383,126 @@ document.addEventListener('DOMContentLoaded', async () => {
                 loadIncomingProduction();
             };
         });
+
+        document.querySelectorAll('.install-contract-btn').forEach(btn => {
+            btn.onclick = () => {
+                const o = orders.find(x => x.id === btn.dataset.id);
+                if (o) showInstallationContract(o, matsByOrder[o.id] || []);
+            };
+        });
+    }
+
+    // ============================================================
+    // O'RNATISH DALOLATNOMASI — 2 tomonlama premium shartnoma (chop etish uchun)
+    // ============================================================
+    function showInstallationContract(o, mats) {
+        const createdDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+        const deadlineStr = o.install_deadline ? new Date(o.install_deadline).toLocaleDateString('en-GB') : '---';
+        const totalPrice = Number(o.total_price) || 0;
+        const paidAmount = Number(o.paid_amount) || 0;
+        const isFullyPaid = o.payment_type !== 'Qarz' || paidAmount >= totalPrice;
+        const remaining = isFullyPaid ? 0 : Math.max(0, totalPrice - paidAmount);
+
+        const matsRows = mats.length
+            ? mats.map((m, idx) => `
+                <tr>
+                    <td>${(idx + 1).toString().padStart(2, '0')}.</td>
+                    <td><b style="color:#222;">${m.product_name}</b></td>
+                    <td>${m.qty} ${m.unit}</td>
+                </tr>
+            `).join('')
+            : `<tr><td colspan="3" style="text-align:center; color:#999;">Aksesuar ro'yxati kiritilmagan</td></tr>`;
+
+        document.getElementById('invPaperContent').innerHTML = `
+            <div class="inv-header">
+                <div class="inv-top">
+                    <div>
+                        <h1 class="inv-title">O'rnatish<br>Dalolatnomasi</h1>
+                        <div class="inv-id">Shartnoma No. ${o.id.slice(0, 8).toUpperCase()}</div>
+                    </div>
+                    <div class="inv-date-box">
+                        <div style="font-size:0.9rem; opacity:0.85; text-transform:uppercase; letter-spacing:1px;">Sana:</div>
+                        <div style="font-size:1.1rem; font-weight:600;">${createdDate}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="inv-cards-row">
+                <div class="inv-box">
+                    <h3>1-Tomon (Buyurtmachi):</h3>
+                    <p style="font-size:1.1rem; color:#f97316; font-weight:700;">${o.customer_name || "Noma'lum"}</p>
+                    <p><b>Telefon:</b> ${o.customer_phone || '---'}</p>
+                    <p><b>Manzil:</b> ${o.customer_address || '---'}</p>
+                </div>
+                <div class="inv-box">
+                    <h3>2-Tomon (Ijrochi Brigada):</h3>
+                    <p style="font-size:1.1rem; color:#f97316; font-weight:700;">AKFA Romix</p>
+                    <p><b>Brigada:</b> ${o.install_group || '---'}</p>
+                    <p><b>O'rnatish muddati:</b> ${deadlineStr}</p>
+                </div>
+            </div>
+
+            <div class="qr-absolute">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=INSTALL-${o.id.slice(0, 8)}" style="width:100px; height:100px;">
+            </div>
+
+            <div class="inv-body">
+                <h3 style="color:#222; font-size:1.05rem; margin-bottom:12px;">Mahsulot: ${o.prod_type || 'Mahsulot'} — ${o.quantity || 1} dona</h3>
+
+                <table class="inv-table">
+                    <thead>
+                        <tr>
+                            <th style="width:8%;">No.</th>
+                            <th>O'rnatish uchun aksesuar / material</th>
+                            <th>Miqdor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${matsRows}
+                    </tbody>
+                </table>
+
+                <div style="display:flex; justify-content:flex-end; margin-top:20px; font-size:0.85rem; line-height:1.6; color:#333;">
+                    <div style="width:300px; background:#f8fafc; padding:15px; border-radius:12px; border:1px solid #e2e8f0;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                            <span>Jami Buyurtma Summasi:</span>
+                            <strong>${totalPrice.toLocaleString()} UZS</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                            <span>To'langan:</span>
+                            <strong style="color:#10b981;">${paidAmount.toLocaleString()} UZS</strong>
+                        </div>
+                        <hr style="border:none; border-top:1px solid #cbd5e1; margin:8px 0;">
+                        <div style="display:flex; justify-content:space-between; font-size:1.15rem; font-weight:800; color:${remaining > 0 ? '#ef4444' : '#0f172a'};">
+                            <span>O'rnatishda olinadigan qoldiq:</span>
+                            <span>${remaining.toLocaleString()} UZS</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="inv-footer-row">
+                    <div class="terms-box ${remaining > 0 ? 'debt-terms' : ''}" style="${remaining > 0 ? 'background:#fff; color:#ef4444; border:2px dashed #ef4444;' : ''}">
+                        <h4>Shartlar:</h4>
+                        <p>${remaining > 0
+                ? `Brigada o'rnatishni yakunlagandan so'ng, mijozdan <b>${remaining.toLocaleString()} UZS</b> qoldiq summani naqd yoki karta orqali qabul qilib olishi shart. Ikkala tomon ushbu dalolatnomani imzolash orqali o'rnatish ishlari sifati va miqdori bo'yicha kelishuvga erishdi.`
+                : `To'lov to'liq amalga oshirilgan. Ikkala tomon ushbu dalolatnomani imzolash orqali o'rnatish ishlari sifati va miqdori bo'yicha kelishuvga erishdi.`}
+                        </p>
+                    </div>
+                    <div class="sign-box-row">
+                        <div class="sign-box">
+                            <div class="sign-line"></div>
+                            <div style="font-size:0.85rem; font-weight:600;">Buyurtmachi Imzosi</div>
+                        </div>
+                        <div class="sign-box">
+                            <div class="sign-line"></div>
+                            <div style="font-size:0.85rem; font-weight:600;">Brigada Imzosi</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        mainApp.classList.add('hidden');
+        printArea.classList.remove('hidden');
     }
 
     document.getElementById('closeInstallModal').onclick = () => installModal.classList.add('hidden');
