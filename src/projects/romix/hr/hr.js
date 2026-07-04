@@ -2347,18 +2347,61 @@ async function onScanSuccess(decodedText) {
         return;
     }
 
-    showActionModal({
-        title: emp.full_name,
-        desc: "DAVOMATNI BELGILANG:",
-        icon: "clock",
-        confirmText: "ISHGA KELDI",
-        onConfirm: () => processAttendance(emp, 'in'),
-        customContent: `
-            <div style="display:grid; grid-template-columns:1fr; gap:10px; margin-top:20px;">
-                <button onclick="window.processAttendanceExternal('${emp.id}', 'out')" class="mgmt-btn" style="background:#ff4d4f; color:#fff;">ISHdan KETDI</button>
-            </div>
-        `
-    });
+    // Fetch today's attendance state so we only offer the next valid action
+    const today = new Date();
+    const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+    let att = null;
+    try {
+        const res = await supabase.from('attendance').select('*').eq('employee_id', emp.id).eq('date', todayStr).maybeSingle();
+        if (!res.error) att = res.data;
+    } catch (_) {}
+
+    if (!att || !att.check_in) {
+        // Not checked in yet today
+        showActionModal({
+            title: emp.full_name,
+            desc: "DAVOMATNI BELGILANG:",
+            icon: "clock",
+            confirmText: "✅ ISHGA KELDI",
+            onConfirm: () => processAttendance(emp, 'in')
+        });
+    } else if (!att.lunch_start && !att.check_out) {
+        // Checked in, still working, hasn't gone to lunch yet
+        showActionModal({
+            title: emp.full_name,
+            desc: "DAVOMATNI BELGILANG:",
+            icon: "clock",
+            confirmText: "🍔 TUSHLIKKA CHIQDI",
+            onConfirm: () => processAttendance(emp, 'lunch_out'),
+            customContent: `
+                <div style="display:grid; grid-template-columns:1fr; gap:10px; margin-top:20px;">
+                    <button onclick="window.processAttendanceExternal('${emp.id}', 'out')" class="mgmt-btn" style="background:#ff4d4f; color:#fff;">🚪 ISHDAN KETDI</button>
+                </div>
+            `
+        });
+    } else if (att.lunch_start && !att.lunch_end) {
+        // Currently on lunch break
+        showActionModal({
+            title: emp.full_name,
+            desc: "DAVOMATNI BELGILANG:",
+            icon: "clock",
+            confirmText: "🔙 TUSHLIKDAN QAYTDI",
+            onConfirm: () => processAttendance(emp, 'lunch_in')
+        });
+    } else if (!att.check_out) {
+        // Back from lunch, still working
+        showActionModal({
+            title: emp.full_name,
+            desc: "DAVOMATNI BELGILANG:",
+            icon: "clock",
+            confirmText: "🚪 ISHDAN KETDI",
+            onConfirm: () => processAttendance(emp, 'out')
+        });
+    } else {
+        // Already checked out today — nothing left to do
+        alert(`${emp.full_name} bugun allaqachon ishdan ketgan (${new Date(att.check_out).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}).`);
+        startScanner();
+    }
 }
 
 // Global hook for the custom button
@@ -2390,12 +2433,23 @@ async function processAttendance(emp, type) {
 
     if (existing) payload.id = existing.id;
 
+    let actionLabel = '';
     if (type === 'in') {
         payload.check_in = nowIso;
         payload.status = 'ISHDA';
+        actionLabel = 'Ishga keldi';
+    } else if (type === 'lunch_out') {
+        payload.lunch_start = nowIso;
+        payload.status = 'TUSHLIKDA';
+        actionLabel = 'Tushlikka chiqdi';
+    } else if (type === 'lunch_in') {
+        payload.lunch_end = nowIso;
+        payload.status = 'ISHDA';
+        actionLabel = 'Tushlikdan qaytdi';
     } else {
         payload.check_out = nowIso;
         payload.status = 'KETGAN';
+        actionLabel = 'Ishdan ketti';
     }
 
     // --- Try Supabase, fall back to localStorage if offline ---
@@ -2429,7 +2483,7 @@ async function processAttendance(emp, type) {
     filterAndRender();
     switchTab('dashboard');
     console.log(`✅ ${emp.full_name} → ${payload.status} (saved: ${saved ? 'Supabase' : 'LocalStorage'}`);
-    logActivity('attendance', type === 'in' ? 'Ishga keldi' : 'Ishdan ketti', emp.full_name);
+    logActivity('attendance', actionLabel, emp.full_name);
 
     if (saved) loadInitialData(); // Only background-refresh when online
 }

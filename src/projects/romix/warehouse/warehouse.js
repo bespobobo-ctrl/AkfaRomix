@@ -780,9 +780,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     document.getElementById('saveEditBtn').onclick = async () => {
-        const name = document.getElementById('eName').value;
+        const name = document.getElementById('eName').value.trim();
         const qty = parseFloat(document.getElementById('eQty').value);
         const price = parseFloat(document.getElementById('ePrice').value);
+        if (!name) return alert("Nomi bo'sh bo'lmasligi kerak!");
+        if (isNaN(qty) || qty < 0) return alert("Iltimos, to'g'ri miqdor kiriting (0 dan kichik bo'lmasligi kerak)!");
+        if (isNaN(price) || price < 0) return alert("Iltimos, to'g'ri narx kiriting (0 dan kichik bo'lmasligi kerak)!");
         await supabase.from('romix_inventory').update({ product_name: name, stock_quantity: qty, price }).eq('id', window.editingProdId);
         editModal.classList.add('hidden');
         loadInventory();
@@ -830,44 +833,65 @@ document.addEventListener('DOMContentLoaded', async () => {
         const req = window.currentReqData;
         if (!req) return;
 
-        // Pre-check: confirm every material has enough stock BEFORE touching anything
-        const stockMap = {};
-        const shortages = [];
-        for (let m of req.materials_json) {
-            const { data: prod } = await supabase.from('romix_inventory').select('stock_quantity').eq('id', m.product_id).maybeSingle();
-            const current = prod ? (parseFloat(prod.stock_quantity) || 0) : 0;
-            stockMap[m.product_id] = current;
-            if (current < m.qty) {
-                shortages.push(`${m.name}: kerak ${m.qty} ${m.unit}, omborda bor-yo'g'i ${current} ${m.unit}`);
+        const approveBtn = document.getElementById('approveReqBtn');
+        if (approveBtn.disabled) return;
+        approveBtn.disabled = true;
+        const approveBtnOrigText = approveBtn.textContent;
+        approveBtn.textContent = 'Tekshirilmoqda...';
+
+        try {
+            // Re-check the request hasn't already been approved (guards against a second
+            // tab/device approving it between search and this click)
+            const { data: freshReq } = await supabase.from('material_requests').select('status').eq('id', req.id).maybeSingle();
+            if (freshReq && freshReq.status === 'Tasdiqlandi') {
+                alert("Diqqat! Bu ruxsatnomaga oldin material berilgan (Status: Tasdiqlandi).");
+                return;
             }
+
+            // Pre-check: confirm every material has enough stock BEFORE touching anything
+            const stockMap = {};
+            const shortages = [];
+            for (let m of req.materials_json) {
+                const { data: prod } = await supabase.from('romix_inventory').select('stock_quantity').eq('id', m.product_id).maybeSingle();
+                const current = prod ? (parseFloat(prod.stock_quantity) || 0) : 0;
+                stockMap[m.product_id] = current;
+                if (current < m.qty) {
+                    shortages.push(`${m.name}: kerak ${m.qty} ${m.unit}, omborda bor-yo'g'i ${current} ${m.unit}`);
+                }
+            }
+
+            if (shortages.length > 0) {
+                alert(`❌ Omborda yetarli mahsulot yo'q, chiqim qilib bo'lmaydi:\n\n${shortages.join('\n')}`);
+                return;
+            }
+
+            approveBtn.textContent = 'Saqlanmoqda...';
+
+            // Loop and subtract qty
+            for (let m of req.materials_json) {
+                await supabase.from('romix_inventory').update({
+                    stock_quantity: stockMap[m.product_id] - m.qty
+                }).eq('id', m.product_id);
+
+                // Add to transactions as 'OUT'
+                await supabase.from('romix_transactions').insert([{
+                    product_id: m.product_id,
+                    type: 'OUT',
+                    quantity: m.qty,
+                    note: `Romix Sotuv (Buyurtma/Guruh: ${req.worker_group})`
+                }]);
+            }
+
+            // Change request status
+            await supabase.from('material_requests').update({ status: 'Tasdiqlandi' }).eq('id', req.id);
+
+            alert(`✅ Ruxsatnoma tasdiqlandi. Barcha mahsulotlar Ombordan muvaffaqiyatli chiqim qilingan!`);
+            qrScanModal.classList.add('hidden');
+            loadInventory(); // reload
+        } finally {
+            approveBtn.disabled = false;
+            approveBtn.textContent = approveBtnOrigText;
         }
-
-        if (shortages.length > 0) {
-            alert(`❌ Omborda yetarli mahsulot yo'q, chiqim qilib bo'lmaydi:\n\n${shortages.join('\n')}`);
-            return;
-        }
-
-        // Loop and subtract qty
-        for (let m of req.materials_json) {
-            await supabase.from('romix_inventory').update({
-                stock_quantity: stockMap[m.product_id] - m.qty
-            }).eq('id', m.product_id);
-
-            // Add to transactions as 'OUT'
-            await supabase.from('romix_transactions').insert([{
-                product_id: m.product_id,
-                type: 'OUT',
-                quantity: m.qty,
-                note: `Romix Sotuv (Buyurtma/Guruh: ${req.worker_group})`
-            }]);
-        }
-
-        // Change request status
-        await supabase.from('material_requests').update({ status: 'Tasdiqlandi' }).eq('id', req.id);
-
-        alert(`✅ Ruxsatnoma tasdiqlandi. Barcha mahsulotlar Ombordan muvaffaqiyatli chiqim qilingan!`);
-        qrScanModal.classList.add('hidden');
-        loadInventory(); // reload
     };
 
     // Generic

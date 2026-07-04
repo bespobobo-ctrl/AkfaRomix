@@ -530,50 +530,62 @@ document.addEventListener('DOMContentLoaded', async () => {
         const prodForm = document.getElementById('buh-production-form');
         if (prodForm) prodForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const submitBtn = prodForm.querySelector('button[type="submit"]');
+            if (submitBtn && submitBtn.disabled) return;
             const date = document.getElementById('buh-prod-date').value || _buhToday();
             const model = document.getElementById('buh-prod-model').value.trim();
             const qty = parseInt(document.getElementById('buh-prod-qty').value) || 0;
             const note = document.getElementById('buh-prod-note').value.trim();
             if (!model || qty <= 0) return;
+            if (submitBtn) submitBtn.disabled = true;
             const record = { id: 'PRD-' + Date.now(), date, model_name: model, quantity: qty, note, created_at: new Date().toISOString() };
             await romixBuhInsert('romix_production_log', ROMIX_BUH_KEYS.production, record);
             prodForm.reset();
             document.getElementById('buh-prod-date').value = _buhToday();
             await renderRomixBuhIshlabChiqarish();
             await renderBuhOverview();
+            if (submitBtn) submitBtn.disabled = false;
             window.showPremiumToast('Saqlandi', "Ishlab chiqarish yozuvi qo'shildi.", true);
         });
 
         const expForm = document.getElementById('buh-expense-form');
         if (expForm) expForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const submitBtn = expForm.querySelector('button[type="submit"]');
+            if (submitBtn && submitBtn.disabled) return;
             const date = document.getElementById('buh-exp-date').value || _buhToday();
             const category = document.getElementById('buh-exp-category').value;
             const amount = parseFloat(document.getElementById('buh-exp-amount').value) || 0;
             const note = document.getElementById('buh-exp-note').value.trim();
             if (amount <= 0) return;
+            if (submitBtn) submitBtn.disabled = true;
             const record = { id: 'EXP-' + Date.now(), date, category, amount, note, created_at: new Date().toISOString() };
             await romixBuhInsert('romix_expenses', ROMIX_BUH_KEYS.expenses, record);
             expForm.reset();
             document.getElementById('buh-exp-date').value = _buhToday();
             await renderRomixBuhHarajatlar();
             await updateBuhHeroKPIs();
+            if (submitBtn) submitBtn.disabled = false;
             window.showPremiumToast('Saqlandi', "Xarajat qo'shildi.", true);
         });
 
         const debtForm = document.getElementById('buh-debt-form');
         if (debtForm) debtForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const submitBtn = debtForm.querySelector('button[type="submit"]');
+            if (submitBtn && submitBtn.disabled) return;
             const creditor = document.getElementById('buh-debt-creditor').value.trim();
             const amount = parseFloat(document.getElementById('buh-debt-amount').value) || 0;
             const due = document.getElementById('buh-debt-due').value;
             const note = document.getElementById('buh-debt-note').value.trim();
             if (!creditor || amount <= 0) return;
+            if (submitBtn) submitBtn.disabled = true;
             const record = { id: 'DBT-' + Date.now(), creditor, amount, paid_amount: 0, due_date: due, note, date: _buhToday(), created_at: new Date().toISOString() };
             await romixBuhInsert('romix_debts', ROMIX_BUH_KEYS.debts, record);
             debtForm.reset();
             await renderBuhTashqiQarz();
             await updateBuhHeroKPIs();
+            if (submitBtn) submitBtn.disabled = false;
             window.showPremiumToast('Saqlandi', "Qarz yozuvi qo'shildi.", true);
         });
     }
@@ -5207,7 +5219,7 @@ ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS payment_date TIMESTAMPTZ;`;
 
                 currentSaveBtn.onclick = async () => {
                     const val = document.getElementById('hrActionAmount').value;
-                    if (val) {
+                    if (val && parseFloat(val) > 0) {
                         currentSaveBtn.innerHTML = "Saqlanmoqda...";
                         const today = new Date().toISOString().split('T')[0];
                         const { error } = await supabase.from('attendance').insert({ employee_id: selectedWorkerId, date: today, status: `Premya: ${val} so'm` });
@@ -5216,6 +5228,8 @@ ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS payment_date TIMESTAMPTZ;`;
                         alert(`${val} so'm premya muvaffaqiyatli belgilandi.`);
                         modal.style.display = 'none';
                         loadRomixHRData();
+                    } else {
+                        alert("Iltimos, 0 dan katta to'g'ri miqdor kiriting!");
                     }
                 };
             } else if (actionType === 'raise') {
@@ -5233,7 +5247,7 @@ ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS payment_date TIMESTAMPTZ;`;
 
                 currentSaveBtn.onclick = async () => {
                     const val = document.getElementById('hrActionSalary').value;
-                    if (val) {
+                    if (val && parseFloat(val) > 0) {
                         currentSaveBtn.innerHTML = "Saqlanmoqda...";
                         const today = new Date().toISOString().split('T')[0];
                         await supabase.from('employees').update({ salary_info: val }).eq('id', selectedWorkerId);
@@ -5243,6 +5257,8 @@ ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS payment_date TIMESTAMPTZ;`;
                         alert("Oylik muvaffaqiyatli yangilandi.");
                         modal.style.display = 'none';
                         loadRomixHRData();
+                    } else {
+                        alert("Iltimos, 0 dan katta to'g'ri oylik miqdorini kiriting!");
                     }
                 };
             } else if (actionType === 'leave') {
@@ -5270,6 +5286,10 @@ ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS payment_date TIMESTAMPTZ;`;
                 currentSaveBtn.onclick = async () => {
                     const start = document.getElementById('hrActionStart').value;
                     const end = document.getElementById('hrActionEnd').value;
+                    if (start && end && new Date(end) < new Date(start)) {
+                        alert("Tugash sanasi boshlanish sanasidan oldin bo'lishi mumkin emas!");
+                        return;
+                    }
                     if (start && end) {
                         currentSaveBtn.innerHTML = "Yuborilmoqda...";
 
@@ -6022,7 +6042,7 @@ ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS payment_date TIMESTAMPTZ;`;
     async function saveHRAction(type) {
         const inputEl = document.getElementById('hrActionValue');
         const val = inputEl ? inputEl.value.trim() : '';
-        if (!val) { alert('Summani kiriting!'); return; }
+        if (!val || isNaN(parseFloat(val)) || parseFloat(val) <= 0) { alert("Iltimos, 0 dan katta to'g'ri summa kiriting!"); return; }
 
         const saveBtn = document.getElementById('hrActionSaveBtn');
         const originalText = saveBtn.textContent;

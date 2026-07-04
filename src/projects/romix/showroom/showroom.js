@@ -129,8 +129,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (!name) return alert("Nomi yozilishi shart!");
 
-        /* 
-        User SQL: 
+        const saveInBtn = document.getElementById('saveInBtn');
+        if (saveInBtn.disabled) return;
+        saveInBtn.disabled = true;
+        const saveInBtnOrigText = saveInBtn.textContent;
+        saveInBtn.textContent = 'Saqlanmoqda...';
+
+        /*
+        User SQL:
         CREATE TABLE IF NOT EXISTS showroom_products ( id UUID DEFAULT gen_random_uuid() PRIMARY KEY, name TEXT NOT NULL, category TEXT, dimensions TEXT, color TEXT, current_stock INTEGER DEFAULT 0, price DECIMAL(12,2), image_url TEXT, created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) );
         */
 
@@ -138,6 +144,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             name, category, dimensions, color, current_stock: qty, price
         }]);
 
+        saveInBtn.disabled = false;
+        saveInBtn.textContent = saveInBtnOrigText;
         inModal.classList.add('hidden');
         loadInventory();
 
@@ -273,9 +281,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Edit
     document.getElementById('saveEditBtn').onclick = async () => {
+        const qty = parseInt(document.getElementById('eQty').value);
+        const price = parseFloat(document.getElementById('ePrice').value);
+        if (isNaN(qty) || qty < 0) return alert("Iltimos, to'g'ri miqdor kiriting (0 dan kichik bo'lmasligi kerak)!");
+        if (isNaN(price) || price < 0) return alert("Iltimos, to'g'ri narx kiriting (0 dan kichik bo'lmasligi kerak)!");
         await supabase.from('showroom_products').update({
-            current_stock: document.getElementById('eQty').value,
-            price: document.getElementById('ePrice').value
+            current_stock: qty,
+            price: price
         }).eq('id', window.editingProdId);
         editModal.classList.add('hidden');
         loadInventory();
