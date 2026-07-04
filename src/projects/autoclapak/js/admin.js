@@ -929,6 +929,71 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+    // ========================================================
+    // ======== BUXGALTERIYA: AKSESSUAR KIRIMI (localStorage) ==
+    // Aksessuar ombori (romix_ombor_aksesuvar.html) alohida
+    // localStorage tizimi ishlatadi (romix_inventory'dan farqli).
+    // Bir xil origin bo'lgani uchun shu yerdan yozilgan yozuv
+    // o'sha sahifada ham to'g'ridan-to'g'ri ko'rinadi.
+    // ========================================================
+    window.openBuhAccKirimModal = () => {
+        const modal = document.getElementById('buh-acc-kirim-modal');
+        if (modal) modal.style.display = 'flex';
+    };
+    window.closeBuhAccKirimModal = () => {
+        const modal = document.getElementById('buh-acc-kirim-modal');
+        if (modal) modal.style.display = 'none';
+    };
+    window.saveBuhAccKirim = () => {
+        const name = document.getElementById('buhAccName').value.trim();
+        const categorySelect = document.getElementById('buhAccCategory').value;
+        const customCategory = document.getElementById('buhAccCustomCategory').value.trim();
+        const spec = document.getElementById('buhAccSpec').value.trim();
+        const unit = document.getElementById('buhAccUnit').value;
+        const qty = parseInt(document.getElementById('buhAccQty').value);
+        const finalCategory = categorySelect === 'Boshqa...' ? customCategory : categorySelect;
+
+        if (!name || !finalCategory || isNaN(qty) || qty <= 0) {
+            alert("Iltimos, barcha maydonlarni to'g'ri to'ldiring!");
+            return;
+        }
+
+        let inventory = JSON.parse(localStorage.getItem('romix_accessories_inventory')) || [];
+        const matchedIndex = inventory.findIndex(item => item.name.toLowerCase() === name.toLowerCase());
+        if (matchedIndex > -1) {
+            inventory[matchedIndex].qty += qty;
+            inventory[matchedIndex].spec = spec;
+            inventory[matchedIndex].category = finalCategory;
+        } else {
+            inventory.push({ name, category: finalCategory, qty, unit, spec });
+        }
+        localStorage.setItem('romix_accessories_inventory', JSON.stringify(inventory));
+
+        // Tarix jurnaliga yozish (romix_ombor_aksesuvar.html'dagi addHistoryLog bilan bir xil shakl)
+        const curUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const operator = (curUser.full_name || curUser.username || 'BUXGALTERIYA').toUpperCase();
+        const now = new Date();
+        const timeStr = now.toLocaleDateString('uz-UZ') + ' ' + now.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+        let logs = JSON.parse(localStorage.getItem('romix_accessories_history_log')) || [];
+        logs.unshift({
+            timestamp: timeStr,
+            action: 'Dona Kirim 📥',
+            details: `"${name}" mahsulotidan ${qty.toLocaleString()} ${unit} Dona Kirim qilindi (Buxgalteriya). Kategoriya: ${finalCategory}. Xususiyati: ${spec}.`,
+            operator: operator
+        });
+        if (logs.length > 100) logs.pop();
+        localStorage.setItem('romix_accessories_history_log', JSON.stringify(logs));
+
+        window.showPremiumToast('Muvaffaqiyatli', `${name} — ${qty} ${unit} kirim qilindi.`, true);
+        window.closeBuhAccKirimModal();
+        ['buhAccName','buhAccSpec','buhAccQty','buhAccCustomCategory'].forEach(id => {
+            const el = document.getElementById(id); if (el) el.value = '';
+        });
+        document.getElementById('buhAccCategory').selectedIndex = 0;
+        document.getElementById('buhAccUnit').selectedIndex = 0;
+        document.getElementById('buhAccCustomCategoryGroup').style.display = 'none';
+    };
+
     async function renderBuhTayyorMahsulot() {
         const statsEl = document.getElementById('buh-tayyor-stats');
         const tableEl = document.getElementById('buh-tayyor-table');
