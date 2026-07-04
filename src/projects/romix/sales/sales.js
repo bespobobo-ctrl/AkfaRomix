@@ -380,6 +380,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // Buyurtma elementlaridan (2D dizayner o'lchamlari asosida) taxminiy profil metri
+    // va aksessuar ro'yxatini avtomatik hisoblaydi — Sotuv qo'lda BOM kiritmaydi,
+    // Ombor shu hisobga qarab tasdiqlaydi/ombordan ajratadi.
+    function computeMaterialEstimate(items) {
+        const profilesByName = {};
+        const accessoriesByName = {};
+        (items || []).forEach(it => {
+            if (it.type === 'rom' || it.type === 'rom_fortochka' || it.type === 'eshik') {
+                // Rama perimetri + impostlar (taxminiy, 10% zaxira bilan)
+                const perimeter = 2 * (it.width + it.height);
+                const impostLen = (it.vDiv || 0) * it.height + (it.hDiv || 0) * it.width;
+                const perUnit = (perimeter + impostLen) * 1.10;
+                const meters = perUnit * it.quantity;
+                profilesByName[it.materialName] = (profilesByName[it.materialName] || 0) + meters;
+            } else if (it.type === 'padakonnik') {
+                const meters = it.width * it.quantity;
+                profilesByName[it.materialName] = (profilesByName[it.materialName] || 0) + meters;
+            } else if (it.type === 'aksesuar_rom' || it.type === 'aksesuar_eshik') {
+                accessoriesByName[it.materialName] = (accessoriesByName[it.materialName] || 0) + it.quantity;
+            }
+        });
+        return {
+            profiles: Object.entries(profilesByName).map(([material_name, meters]) => ({ material_name, meters: Math.round(meters * 100) / 100 })),
+            accessories: Object.entries(accessoriesByName).map(([name, qty]) => ({ name, qty }))
+        };
+    }
+
     function calculateTotal() {
         let totalArea = 0;
         let totalMaterials = 0; // Tan narxi (materiallar narxi)
@@ -716,12 +743,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                             </div>
                             ${statusHtml}
                         </div>
-                        <div style="font-size:0.76rem; color:var(--adm-text-sec); border-top:1px dashed var(--adm-border); padding-top:8px;">Ishchi guruh: <strong style="color:#00d2ff;">${o.worker_group || "Tayinlanmagan"}</strong></div>
+                        <div style="font-size:0.76rem; color:var(--adm-text-sec); border-top:1px dashed var(--adm-border); padding-top:8px;">Ombor: ${o.ombor_confirmed_at ? `<strong style="color:#00ff88;">✅ Tasdiqlangan (${new Date(o.ombor_confirmed_at).toLocaleDateString('uz-UZ')})</strong>` : `<strong style="color:#ffaa00;">⏳ Tasdiq kutilmoqda</strong>`}</div>
                         ${deadlineBadge}
                         ${advanceBadgeHtml(o)}
                         <div style="display:flex; gap:8px;">
-                            <button class="assign-btn" data-id="${o.id}" data-order='${JSON.stringify(o).replace(/'/g, '&#39;')}' style="flex:1; background:#00d2ff; color:#000; border:none; padding:9px 12px; border-radius:10px; font-weight:600; font-size:0.78rem; cursor:pointer;">${o.worker_group ? "O'zgartirish" : "Guruh Tayinlash"}</button>
-                            ${o.worker_group ? `<button class="complete-btn" data-id="${o.id}" style="flex:1; background:#00ff88; color:#000; border:none; padding:9px 12px; border-radius:10px; font-weight:600; font-size:0.78rem; cursor:pointer;">✓ Bitirish</button>` : ''}
+                            <button class="complete-btn" data-id="${o.id}" style="flex:1; background:#00ff88; color:#000; border:none; padding:9px 12px; border-radius:10px; font-weight:600; font-size:0.78rem; cursor:pointer;">✓ Bitirish</button>
                         </div>
                     `;
                     procTable.appendChild(ocard);
@@ -1072,6 +1098,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             payment_type: document.getElementById('oPayment').value,
             deadline_date: document.getElementById('oDeadline').value || new Date(Date.now() + 7*24*60*60*1000).toISOString().split('T')[0],
             production_deadline: document.getElementById('oProdDeadline').value,
+            material_estimate: computeMaterialEstimate(orderItems),
             status: 'Kutilmoqda',
             created_at: new Date().toISOString()
         };

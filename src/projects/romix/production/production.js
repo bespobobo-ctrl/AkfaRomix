@@ -404,10 +404,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         Object.values(cols).forEach(c => { if (c) c.innerHTML = ''; });
 
         const emptyMsg = '<div style="text-align:center; color:var(--adm-text-sec); font-size:0.78rem; padding:16px 0;">Bo\'sh</div>';
+        // Sanasi eng oldin bo'lgan buyurtma tepada tursin (qat'iy nazorat: eski buyurtmalar birinchi bajarilsin)
+        const byDeadlineAsc = (a, b) => {
+            const da = a.production_deadline || a.created_at || '';
+            const db = b.production_deadline || b.created_at || '';
+            return da.localeCompare(db);
+        };
         // tayyor_omborda bosqichidagilar bu boardda ko'rsatilmaydi (ular Tayyor Mahsulotga o'tgan)
         const buckets = {
-            awaiting: orders.filter(o => o.status === 'Kutilmoqda'),
-            new: orders.filter(o => o.status === 'Jarayonda' && !o.production_stage)
+            awaiting: orders.filter(o => o.status === 'Kutilmoqda').sort(byDeadlineAsc),
+            new: orders.filter(o => o.status === 'Jarayonda' && !o.production_stage).sort(byDeadlineAsc)
         };
 
         // Qat'iy muddat nazorati: jonli teskari sanoq (har soniya yangilanadi, window.tickCountdowns orqali)
@@ -427,20 +433,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>`;
         }
 
+        // Sotuvda kiritilgan material ehtiyoji (avtomatik hisoblangan) + Ombor holati
+        function materialSummaryHtml(o) {
+            const est = o.material_estimate;
+            if (!est || (!est.profiles?.length && !est.accessories?.length)) return '';
+            const profLines = (est.profiles || []).map(p => `<div>📏 ${p.material_name}: <strong style="color:var(--adm-text);">${p.meters} m</strong></div>`).join('');
+            const accLines = (est.accessories || []).map(a => `<div>🔩 ${a.name}: <strong style="color:var(--adm-text);">${a.qty} dona</strong></div>`).join('');
+            return `<div style="font-size:0.68rem; color:var(--adm-text-sec); background:rgba(255,255,255,0.02); border-radius:8px; padding:8px; display:flex; flex-direction:column; gap:2px;">${profLines}${accLines}</div>`;
+        }
+
         if (cols.awaiting) {
             cols.awaiting.innerHTML = buckets.awaiting.length === 0 ? emptyMsg : buckets.awaiting.map(o => card(o,
-                `<div style="text-align:center; background:rgba(139,92,246,0.08); color:#8b5cf6; padding:8px; border-radius:8px; font-weight:600; font-size:0.7rem;">Sotuv guruh/material belgilashini kutmoqda</div>`
+                materialSummaryHtml(o) +
+                `<div style="text-align:center; background:rgba(239,68,68,0.08); color:#ef4444; padding:8px; border-radius:8px; font-weight:600; font-size:0.7rem;">⏳ Ombor tasdig'ini kutmoqda</div>`
             )).join('');
         }
         if (cols.new) {
-            cols.new.innerHTML = buckets.new.length === 0 ? emptyMsg : buckets.new.map(o => {
-                const reqStatus = reqStatusByOrder[o.id];
-                const approved = reqStatus === 'Tasdiqlandi';
-                const actionHtml = approved
-                    ? `<button class="accept-order-btn" data-id="${o.id}" data-deadline="${o.production_deadline || ''}" style="background:#ffaa00; color:#000; border:none; padding:8px; border-radius:8px; font-weight:700; font-size:0.74rem; cursor:pointer;">✅ Qabul Qilish</button>`
-                    : `<div style="text-align:center; background:rgba(239,68,68,0.08); color:#ef4444; padding:8px; border-radius:8px; font-weight:600; font-size:0.7rem;">⏳ Ombor tasdiqlashini kutmoqda</div>`;
-                return card(o, actionHtml);
-            }).join('');
+            cols.new.innerHTML = buckets.new.length === 0 ? emptyMsg : buckets.new.map(o => card(o,
+                `<button class="accept-order-btn" data-id="${o.id}" data-deadline="${o.production_deadline || ''}" style="background:#ffaa00; color:#000; border:none; padding:8px; border-radius:8px; font-weight:700; font-size:0.74rem; cursor:pointer;">✅ Qabul Qilish</button>`
+            )).join('');
         }
 
         // Kesish / Payvandlash / Yig'ish-Qadoqlash — endi BATCH bo'yicha (miqdor-asosli, partial-transfer)
