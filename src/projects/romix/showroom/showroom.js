@@ -129,8 +129,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (!name) return alert("Nomi yozilishi shart!");
 
-        /* 
-        User SQL: 
+        const saveInBtn = document.getElementById('saveInBtn');
+        if (saveInBtn.disabled) return;
+        saveInBtn.disabled = true;
+        const saveInBtnOrigText = saveInBtn.textContent;
+        saveInBtn.textContent = 'Saqlanmoqda...';
+
+        /*
+        User SQL:
         CREATE TABLE IF NOT EXISTS showroom_products ( id UUID DEFAULT gen_random_uuid() PRIMARY KEY, name TEXT NOT NULL, category TEXT, dimensions TEXT, color TEXT, current_stock INTEGER DEFAULT 0, price DECIMAL(12,2), image_url TEXT, created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) );
         */
 
@@ -138,6 +144,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             name, category, dimensions, color, current_stock: qty, price
         }]);
 
+        saveInBtn.disabled = false;
+        saveInBtn.textContent = saveInBtnOrigText;
         inModal.classList.add('hidden');
         loadInventory();
 

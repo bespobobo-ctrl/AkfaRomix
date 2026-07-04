@@ -530,50 +530,62 @@ document.addEventListener('DOMContentLoaded', async () => {
         const prodForm = document.getElementById('buh-production-form');
         if (prodForm) prodForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const submitBtn = prodForm.querySelector('button[type="submit"]');
+            if (submitBtn && submitBtn.disabled) return;
             const date = document.getElementById('buh-prod-date').value || _buhToday();
             const model = document.getElementById('buh-prod-model').value.trim();
             const qty = parseInt(document.getElementById('buh-prod-qty').value) || 0;
             const note = document.getElementById('buh-prod-note').value.trim();
             if (!model || qty <= 0) return;
+            if (submitBtn) submitBtn.disabled = true;
             const record = { id: 'PRD-' + Date.now(), date, model_name: model, quantity: qty, note, created_at: new Date().toISOString() };
             await romixBuhInsert('romix_production_log', ROMIX_BUH_KEYS.production, record);
             prodForm.reset();
             document.getElementById('buh-prod-date').value = _buhToday();
             await renderRomixBuhIshlabChiqarish();
             await renderBuhOverview();
+            if (submitBtn) submitBtn.disabled = false;
             window.showPremiumToast('Saqlandi', "Ishlab chiqarish yozuvi qo'shildi.", true);
         });
 
         const expForm = document.getElementById('buh-expense-form');
         if (expForm) expForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const submitBtn = expForm.querySelector('button[type="submit"]');
+            if (submitBtn && submitBtn.disabled) return;
             const date = document.getElementById('buh-exp-date').value || _buhToday();
             const category = document.getElementById('buh-exp-category').value;
             const amount = parseFloat(document.getElementById('buh-exp-amount').value) || 0;
             const note = document.getElementById('buh-exp-note').value.trim();
             if (amount <= 0) return;
+            if (submitBtn) submitBtn.disabled = true;
             const record = { id: 'EXP-' + Date.now(), date, category, amount, note, created_at: new Date().toISOString() };
             await romixBuhInsert('romix_expenses', ROMIX_BUH_KEYS.expenses, record);
             expForm.reset();
             document.getElementById('buh-exp-date').value = _buhToday();
             await renderRomixBuhHarajatlar();
             await updateBuhHeroKPIs();
+            if (submitBtn) submitBtn.disabled = false;
             window.showPremiumToast('Saqlandi', "Xarajat qo'shildi.", true);
         });
 
         const debtForm = document.getElementById('buh-debt-form');
         if (debtForm) debtForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const submitBtn = debtForm.querySelector('button[type="submit"]');
+            if (submitBtn && submitBtn.disabled) return;
             const creditor = document.getElementById('buh-debt-creditor').value.trim();
             const amount = parseFloat(document.getElementById('buh-debt-amount').value) || 0;
             const due = document.getElementById('buh-debt-due').value;
             const note = document.getElementById('buh-debt-note').value.trim();
             if (!creditor || amount <= 0) return;
+            if (submitBtn) submitBtn.disabled = true;
             const record = { id: 'DBT-' + Date.now(), creditor, amount, paid_amount: 0, due_date: due, note, date: _buhToday(), created_at: new Date().toISOString() };
             await romixBuhInsert('romix_debts', ROMIX_BUH_KEYS.debts, record);
             debtForm.reset();
             await renderBuhTashqiQarz();
             await updateBuhHeroKPIs();
+            if (submitBtn) submitBtn.disabled = false;
             window.showPremiumToast('Saqlandi', "Qarz yozuvi qo'shildi.", true);
         });
     }

@@ -927,6 +927,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('saveOrderBtn').onclick = async () => {
         if (orderItems.length === 0) return alert("Savatga kamida bitta mahsulot qo'shing!");
 
+        const saveBtn = document.getElementById('saveOrderBtn');
+        if (saveBtn.disabled) return;
+        saveBtn.disabled = true;
+        const saveBtnOrigText = saveBtn.textContent;
+        saveBtn.textContent = 'Saqlanmoqda...';
+
         const calcObj = calculateTotal();
         const typesSummary = Array.from(new Set(orderItems.map(it => it.typeName))).join(', ');
         
@@ -965,6 +971,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             localStorage.setItem('romix_orders_local', JSON.stringify(localOrders));
         }
 
+        saveBtn.disabled = false;
+        saveBtn.textContent = saveBtnOrigText;
         orderModal.classList.add('hidden');
         loadOrders();
     };
@@ -1015,6 +1023,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             return alert("Ombordan olinishi kerak bo'lgan xom-ashyolarni kiritmadingiz!");
         }
 
+        const assignBtn = document.getElementById('saveAssignBtn');
+        if (assignBtn.disabled) return;
+        assignBtn.disabled = true;
+        const assignBtnOrigText = assignBtn.textContent;
+        assignBtn.textContent = 'Saqlanmoqda...';
+
         // 1. Update order
         try {
             const { error } = await supabase.from('sales_orders').update({
@@ -1059,6 +1073,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
         }
 
+        assignBtn.disabled = false;
+        assignBtn.textContent = assignBtnOrigText;
         assignModal.classList.add('hidden');
         loadOrders();
 
