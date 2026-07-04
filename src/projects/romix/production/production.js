@@ -834,4 +834,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     loadData();
     loadProductionPipeline(); // "Zakazlar Jarayoni" endi standart ko'rinish, shuning uchun sahifa ochilishida darhol yuklanadi
+    // Avtomatik yangilanish: Sotuv'da avans/muddat o'zgarsa, bu taxta ochiq turgan
+    // holatda ham (qayta yuklamasdan) 30 soniyada bir yangilanib boradi.
+    setInterval(() => {
+        if (!document.getElementById('pipeline-view').classList.contains('hidden')) {
+            loadProductionPipeline();
+        }
+    }, 30000);
 });
