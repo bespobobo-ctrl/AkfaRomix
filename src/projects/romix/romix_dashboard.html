@@ -1569,6 +1569,7 @@
                             <button onclick="window.openBuhProfilKirimModal()" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(0,186,255,0.1); border:1px solid rgba(0,186,255,0.3); color:#00baff; font-weight:700; font-size:0.8rem;">📦 Profil Kirim</button>
                             <button onclick="window.openBuhAccKirimModal()" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(186,104,200,0.1); border:1px solid rgba(186,104,200,0.3); color:#BA68C8; font-weight:700; font-size:0.8rem;">🔩 Aksessuar Kirim</button>
                             <button onclick="window.openBuhSpiskaModal()" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(0,210,255,0.1); border:1px solid rgba(0,210,255,0.3); color:#00d2ff; font-weight:700; font-size:0.8rem;">📜 Spiska Kirim</button>
+                            <button onclick="window.openBuhVisionModal()" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:linear-gradient(135deg, rgba(255,105,180,0.12), rgba(0,210,255,0.12)); border:1px solid rgba(255,105,180,0.35); color:#ff69b4; font-weight:700; font-size:0.8rem;">📷 Rasmdan Kirim (AI)</button>
                         </div>
                         <div id="buh-ombor-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:14px;">
                             <div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Yuklanmoqda...</div>
@@ -1862,6 +1863,67 @@
                                         <button onclick="window.closeBuhSpiskaModal()" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); padding:10px 16px; border-radius:12px; font-weight:700; cursor:pointer;">Bekor qilish</button>
                                         <button onclick="window.commitBuhSpiskaDeposit()" style="background:linear-gradient(135deg,#00ff88,#00b359); border:none; color:#000; padding:10px 18px; border-radius:12px; font-weight:800; cursor:pointer;">📥 TASDIQLASH</button>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============ Buxgalteriya: Rasmdan Kirim (AI) Modal ============ -->
+                <div id="buh-vision-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:10001; align-items:center; justify-content:center; padding:20px;">
+                    <div style="background:#0b111a; border:1px solid rgba(255,105,180,0.25); width:100%; max-width:900px; max-height:92vh; overflow-y:auto; border-radius:24px; padding:28px;">
+                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <span style="font-size:1.6rem;">📷</span>
+                                <h3 style="color:#fff; margin:0;">Rasmdan Kirim (AI)</h3>
+                            </div>
+                            <span onclick="window.closeBuhVisionModal()" style="cursor:pointer; font-size:1.4rem; opacity:0.7; color:#fff;">&times;</span>
+                        </div>
+
+                        <!-- 1-qadam: rasm tanlash -->
+                        <div id="buhVisionUploadStep">
+                            <p style="color:rgba(255,255,255,0.5); font-size:0.85rem; margin-bottom:14px;">Spiska (kirim hujjati yoki qo'lda yozilgan ro'yxat) rasmini tanlang yoki suratga oling — AI mahsulotlarni o'qib, ro'yxatga tayyorlab beradi. Tasdiqlashdan oldin ko'rib chiqib, kerak bo'lsa tahrirlashingiz mumkin.</p>
+                            <input type="file" id="buhVisionFileInput" accept="image/*" capture="environment" style="display:none;" onchange="window.handleBuhVisionFileSelect(event)">
+                            <div onclick="document.getElementById('buhVisionFileInput').click()" style="border:2px dashed rgba(255,105,180,0.3); border-radius:16px; padding:30px; text-align:center; cursor:pointer; background:rgba(255,105,180,0.03);">
+                                <div id="buhVisionPreviewWrap" style="display:none; margin-bottom:14px;">
+                                    <img id="buhVisionPreviewImg" style="max-width:100%; max-height:280px; border-radius:12px;">
+                                </div>
+                                <div id="buhVisionPlaceholder">
+                                    <div style="font-size:2rem; margin-bottom:8px;">📸</div>
+                                    <div style="color:#ff69b4; font-weight:700;">Rasm tanlash uchun bosing</div>
+                                </div>
+                            </div>
+                            <button id="buhVisionAnalyzeBtn" onclick="window.analyzeBuhVisionImage()" disabled style="width:100%; margin-top:16px; background:linear-gradient(135deg,#ff69b4,#00d2ff); border:none; color:#000; padding:13px; border-radius:14px; font-weight:800; cursor:pointer; opacity:0.5;">🔍 Tahlil Qilish (AI)</button>
+                            <div id="buhVisionLoading" style="display:none; text-align:center; padding:20px; color:#ff69b4; font-weight:700;">⏳ AI rasmni o'qimoqda...</div>
+                            <div id="buhVisionError" style="display:none; margin-top:12px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#ef4444; padding:12px; border-radius:12px; font-size:0.82rem;"></div>
+                        </div>
+
+                        <!-- 2-qadam: natijalarni ko'rib chiqish -->
+                        <div id="buhVisionReviewStep" style="display:none;">
+                            <p style="color:rgba(255,255,255,0.5); font-size:0.85rem; margin-bottom:10px;">AI aniqlagan mahsulotlar — tekshiring, kerak bo'lsa tahrirlang, keyin tasdiqlang:</p>
+                            <div style="max-height:340px; overflow-y:auto; border-radius:12px; border:1px solid rgba(255,255,255,0.05);">
+                                <table style="width:100%; border-collapse:collapse; font-size:0.78rem;">
+                                    <thead style="position:sticky; top:0; background:#0f172a;">
+                                        <tr>
+                                            <th style="padding:8px; text-align:left; color:rgba(255,255,255,0.5); font-size:0.68rem;">Nomi</th>
+                                            <th style="padding:8px; text-align:left; color:rgba(255,255,255,0.5); font-size:0.68rem;">Turi</th>
+                                            <th style="padding:8px; text-align:left; color:rgba(255,255,255,0.5); font-size:0.68rem;">Kategoriya</th>
+                                            <th style="padding:8px; text-align:left; color:rgba(255,255,255,0.5); font-size:0.68rem;">Birlik</th>
+                                            <th style="padding:8px; text-align:right; color:rgba(255,255,255,0.5); font-size:0.68rem;">Miqdor</th>
+                                            <th style="padding:8px; text-align:right; color:rgba(0,210,255,0.6); font-size:0.68rem;" title="Profil uchun: har bir dona/pachka uzunligi. To'ldirilsa jami metr avtomatik hisoblanadi.">Uzunligi (mm)</th>
+                                            <th style="padding:8px; text-align:left; color:rgba(255,255,255,0.5); font-size:0.68rem;">Xususiyati</th>
+                                            <th style="padding:8px; text-align:right; color:rgba(0,255,136,0.6); font-size:0.68rem;">Narx</th>
+                                            <th style="padding:8px; width:30px;"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="buhVisionResultsBody"></tbody>
+                                </table>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
+                                <button onclick="window.resetBuhVisionModal()" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); padding:11px 18px; border-radius:12px; font-weight:700; cursor:pointer;">↩ Boshqa rasm</button>
+                                <div style="display:flex; gap:10px;">
+                                    <button onclick="window.closeBuhVisionModal()" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); padding:11px 18px; border-radius:12px; font-weight:700; cursor:pointer;">Bekor qilish</button>
+                                    <button onclick="window.confirmBuhVisionKirim()" style="background:linear-gradient(135deg,#00ff88,#00b359); border:none; color:#000; padding:11px 20px; border-radius:12px; font-weight:800; cursor:pointer;">✅ Tasdiqlash va Kirim Qilish</button>
                                 </div>
                             </div>
                         </div>
