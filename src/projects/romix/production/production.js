@@ -445,4 +445,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     loadData();
+    loadProductionPipeline(); // "Zakazlar Jarayoni" endi standart ko'rinish, shuning uchun sahifa ochilishida darhol yuklanadi
 });
