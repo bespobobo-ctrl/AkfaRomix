@@ -54,7 +54,8 @@ export const authService = {
             { id: "41842320-5831-4556-aaf9-a00b6c82133d", username: "hr", password: "123", full_name: "Kadirlar Bo'limi", role: "hr" },
             { id: "550b6df7-52fa-4b43-9285-383d55b6cb86", username: "ombor", password: "123", full_name: "Ali", role: "manager" },
             { id: "26bce1d4-3e98-4703-abf8-754cd686ed86", username: "sotuv", password: "123", full_name: "Jasur", role: "sotuv" },
-            { id: "401046f5-7668-47c5-8099-cb9c81d0d6ca", username: "123", password: "123", full_name: "botir", role: "ishlab_chiqarish" }
+            { id: "401046f5-7668-47c5-8099-cb9c81d0d6ca", username: "123", password: "123", full_name: "botir", role: "ishlab_chiqarish" },
+            { id: "b8f2a4e1-6c3d-4a9f-9e5b-1d7c8a2e0f3b", username: "buxgalter", password: "123", full_name: "Buxgalter", role: "buxgalter" }
         ];
 
         const foundUser = localUsers.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
@@ -165,6 +166,7 @@ export const authService = {
             case 'sotuv': return base + 'src/projects/romix/sales/sales_dashboard.html';
             case 'showroom': return base + 'src/projects/romix/showroom/showroom_dashboard.html';
             case 'ishlab_chiqarish': return base + 'src/projects/romix/production/production_dashboard.html';
+            case 'buxgalter': return base + 'src/projects/romix/romix_dashboard.html';
             case 'ac_manager': return base + 'src/projects/autoclapak/pages/admin_dashboard.html';
             case 'stanok': return base + 'src/projects/autoclapak/mini-app/stanok-app/index.html';
             case 'kraska': return base + 'src/projects/autoclapak/mini-app/kraska-app/index.html';

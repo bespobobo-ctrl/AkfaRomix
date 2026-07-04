@@ -8,6 +8,31 @@ import gentraCalpak from '../../../assets/images/gentra_calpak.png';
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('AKFA Rahbar Paneli v2 Logic Loaded');
 
+    // ========================================================
+    // ======== BUXGALTER ROLI — FAQAT BUHGALTER BO'LIMI ========
+    // "buxgalter" roli bilan kirilganda boshqa hech qanday bo'lim
+    // (Panel, Ombor, Sotuv, Ishlab chiqarish, Tayyor mahsulot,
+    // Xodimlar, Sozlamalar, boshqa biznes hublar) ko'rinmasin —
+    // faqat Buhgalter tabi ochiladi va boshqa yo'l yo'q.
+    // ========================================================
+    const __curUserForGate = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    if (__curUserForGate.role === 'buxgalter' && document.getElementById('section-buhgalter')) {
+        // Chap tomondagi biznes-hub almashtirgichini (Romix/Rassrochka/Oynek/AutoClapak) butunlay yashirish
+        document.querySelectorAll('.sidebar-slim .nav-icon[data-section]').forEach(icon => {
+            icon.style.display = 'none';
+        });
+        // Yuqori navigatsiyada faqat "Buhgalter" tabini qoldirish
+        document.querySelectorAll('.nav-link-item[data-tab]').forEach(link => {
+            if (link.getAttribute('data-tab') !== 'buhgalter') link.style.display = 'none';
+        });
+        // Darhol Buhgalter bo'limini ko'rsatish
+        document.querySelectorAll('.romix-sub-section, .admin-section').forEach(sec => sec.classList.remove('active'));
+        document.querySelectorAll('.nav-link-item[data-tab]').forEach(l => l.classList.remove('active'));
+        const buhLink = document.querySelector('.nav-link-item[data-tab="buhgalter"]');
+        if (buhLink) buhLink.classList.add('active');
+        document.getElementById('section-buhgalter').classList.add('active');
+    }
+
     // Switch to active Romix section if stored from sub-page redirection
     const activeRomixSec = localStorage.getItem('activeRomixSection');
     if (activeRomixSec && document.getElementById('section-dashboard')) {
