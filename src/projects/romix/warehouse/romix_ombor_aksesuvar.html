@@ -2955,6 +2955,14 @@
                 else if (curUser.role === 'manager') displayRole = 'WAREHOUSE MANAGER';
                 
                 document.getElementById('userRole').textContent = displayRole;
+
+                // Kirim (mahsulot qabul qilish) endi Buxgalteriya bo'limida — ombor faqat chiqim qiladi
+                if (curUser.role !== 'admin') {
+                    const kirimBtn = document.querySelector('button[onclick="openAccKirimModal()"]');
+                    const spiskaBtn = document.querySelector('button[onclick="openAccSpiskaModal()"]');
+                    if (kirimBtn) kirimBtn.style.display = 'none';
+                    if (spiskaBtn) spiskaBtn.style.display = 'none';
+                }
             }
 
             // Render Inventory dynamic views
