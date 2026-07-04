@@ -251,6 +251,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderInstallMatList();
     };
 
+    // Jonli teskari sanoq: o'rnatish muddati uchun (sales.js dagi bir xil naqsh)
+    function tickInstallCountdowns() {
+        document.querySelectorAll('.countdown-live').forEach(el => {
+            if (!el.dataset.target) return;
+            const target = new Date(el.dataset.target);
+            target.setHours(23, 59, 59, 999);
+            const diffMs = target.getTime() - Date.now();
+            const overdue = diffMs < 0;
+            const absMs = Math.abs(diffMs);
+            const days = Math.floor(absMs / 86400000);
+            const hours = Math.floor((absMs % 86400000) / 3600000);
+            const mins = Math.floor((absMs % 3600000) / 60000);
+            const secs = Math.floor((absMs % 60000) / 1000);
+            const pad = (n) => String(n).padStart(2, '0');
+            let color;
+            if (overdue) color = '#ef4444';
+            else if (days === 0 && hours < 6) color = '#ef4444';
+            else if (days <= 2) color = '#ffaa00';
+            else color = '#00ff88';
+            el.style.color = color;
+            el.textContent = overdue
+                ? `⚠️ Muddati o'tdi! ${days}k ${pad(hours)}:${pad(mins)}:${pad(secs)} oldin`
+                : `⏰ ${days}k ${pad(hours)}:${pad(mins)}:${pad(secs)} qoldi`;
+        });
+    }
+    if (!window.__romixShowroomCountdownStarted) {
+        window.__romixShowroomCountdownStarted = true;
+        setInterval(tickInstallCountdowns, 1000);
+    }
+
     async function loadIncomingProduction() {
         const grid = document.getElementById('incomingProductionGrid');
         if (!grid) return;
@@ -298,9 +328,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 bodyHtml = `<button class="install-assign-btn" data-id="${o.id}" data-name="${(o.customer_name || '').replace(/"/g, '')}" style="width:100%; background:#00d2ff; color:#000; border:none; padding:9px; border-radius:10px; font-weight:700; font-size:0.78rem; cursor:pointer; margin-top:6px;">🚚 O'rnatishga Yuborish</button>`;
             } else {
                 const deadlineStr = o.install_deadline ? new Date(o.install_deadline).toLocaleDateString('uz-UZ') : '—';
+                const deadlineHtml = isInstalled
+                    ? `<div style="font-size:0.72rem; color:var(--adm-text-sec);">⏳ Muddat edi: <strong>${deadlineStr}</strong></div>`
+                    : `<div class="countdown-live" data-target="${o.install_deadline}" style="font-size:0.72rem; font-weight:700;"></div>`;
                 bodyHtml = `
                     <div style="font-size:0.75rem; color:var(--adm-text-sec); border-top:1px dashed var(--adm-border); padding-top:8px; margin-top:6px;">Brigada: <strong style="color:#00d2ff;">${o.install_group}</strong></div>
-                    <div style="font-size:0.75rem; ${isOverdue ? 'color:#ef4444; font-weight:700;' : 'color:var(--adm-text-sec);'}">⏳ Muddat: <strong>${deadlineStr}</strong>${isOverdue ? ' ⚠️ Muddati o\'tgan!' : ''}</div>
+                    ${deadlineHtml}
                     ${matsHtml}
                     ${isInstalled
                         ? `<span style="display:inline-block; margin-top:6px; background:rgba(0,255,136,0.1); color:#00ff88; padding:4px 10px; border-radius:12px; font-size:0.7rem; font-weight:700;">✓ O'rnatildi</span>`
@@ -315,6 +348,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ${bodyHtml}
             </div>`;
         }).join('');
+
+        tickInstallCountdowns(); // darhol bo'yash, 1 soniya kutmasdan
 
         document.querySelectorAll('.install-assign-btn').forEach(btn => {
             btn.onclick = async () => {

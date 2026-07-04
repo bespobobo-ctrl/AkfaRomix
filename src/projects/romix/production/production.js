@@ -486,6 +486,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (saveBtn.disabled) return;
         saveBtn.disabled = true;
         try {
+            const { data: existing } = await supabase.from('romix_brigade_members').select('id').eq('brigade_id', currentBrigadeIdForMember).eq('employee_id', empId).maybeSingle();
+            if (existing) {
+                alert("Bu xodim allaqachon shu brigadaga a'zo!");
+                saveBtn.disabled = false;
+                return;
+            }
             const { error } = await supabase.from('romix_brigade_members').insert([{ brigade_id: currentBrigadeIdForMember, employee_id: empId }]);
             if (error) throw error;
         } catch (err) {
