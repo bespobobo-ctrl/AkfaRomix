@@ -803,6 +803,132 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+    // ========================================================
+    // ======== BUXGALTERIYA: OMBORGA KIRIM QILISH ============
+    // (Ombor bo'limi endi faqat CHIQIM qiladi — kirimni
+    // Buxgalteriya nazorat qiladi, romix_inventory/romix_transactions
+    // jadvallariga yozadi — Ombor sahifasidagi mantiq bilan bir xil)
+    // ========================================================
+    window.openBuhKirimModal = () => {
+        const modal = document.getElementById('buh-kirim-modal');
+        if (modal) modal.style.display = 'flex';
+    };
+    window.closeBuhKirimModal = () => {
+        const modal = document.getElementById('buh-kirim-modal');
+        if (modal) modal.style.display = 'none';
+    };
+    window.saveBuhKirim = async () => {
+        const name = document.getElementById('buhKName').value.trim();
+        const cat = document.getElementById('buhKCategory').value;
+        const qty = parseFloat(document.getElementById('buhKQty').value);
+        const price = parseFloat(document.getElementById('buhKPrice').value) || 0;
+        const supplier = document.getElementById('buhKSupplier').value.trim();
+        const phone = document.getElementById('buhKPhone').value.trim();
+        const unit = document.getElementById('buhKUnit').value;
+        const gross = parseFloat(document.getElementById('buhKGross').value) || 0;
+        const net = parseFloat(document.getElementById('buhKNet').value) || 0;
+        const desc = document.getElementById('buhKDesc').value;
+
+        if (!name || isNaN(qty)) { alert('Ma\'lumotlarni to\'ldiring!'); return; }
+
+        try {
+            const { data: existing } = await supabase.from('romix_inventory').select('*').eq('product_name', name).maybeSingle();
+            const payload = {
+                product_name: name, category: cat, description: desc, unit: unit,
+                gross_weight: gross, net_weight: net, supplier_name: supplier, supplier_phone: phone, price: price,
+                stock_quantity: existing ? (parseFloat(existing.stock_quantity) || 0) + qty : qty
+            };
+            let product;
+            if (existing) {
+                const { data, error } = await supabase.from('romix_inventory').update(payload).eq('id', existing.id).select().single();
+                if (error) throw error;
+                product = data;
+            } else {
+                const { data, error } = await supabase.from('romix_inventory').insert([payload]).select().single();
+                if (error) throw error;
+                product = data;
+            }
+            await supabase.from('romix_transactions').insert([{
+                product_id: product.id, type: 'IN', quantity: qty,
+                note: `Buxgalteriya Kirim - Taminotchi: ${supplier} | Brutto/Netto: ${gross}/${net}`
+            }]);
+            window.showPremiumToast('Muvaffaqiyatli', `${name} — ${qty} ${unit} kirim qilindi.`, true);
+            window.closeBuhKirimModal();
+            ['buhKName','buhKDesc','buhKSupplier','buhKPhone','buhKQty','buhKPrice','buhKGross','buhKNet'].forEach(id => {
+                const el = document.getElementById(id); if (el) el.value = '';
+            });
+            await renderRomixBuhOmbor();
+        } catch (err) {
+            alert('Xatolik: ' + err.message);
+        }
+    };
+
+    window.openBuhProfilKirimModal = () => {
+        const modal = document.getElementById('buh-profil-kirim-modal');
+        if (modal) modal.style.display = 'flex';
+    };
+    window.closeBuhProfilKirimModal = () => {
+        const modal = document.getElementById('buh-profil-kirim-modal');
+        if (modal) modal.style.display = 'none';
+    };
+    window.updateBuhMetrCalc = () => {
+        const soni = parseFloat(document.getElementById('buhPkSoni').value) || 0;
+        const el = document.getElementById('buhMetrCalcValue');
+        if (el) el.textContent = (soni * 48).toString();
+    };
+    window.saveBuhProfilKirim = async () => {
+        const uzunligi = document.getElementById('buhPkUzunligi').value.trim();
+        const soni = parseFloat(document.getElementById('buhPkSoni').value) || 0;
+        const profil = document.getElementById('buhPkProfil').value;
+        const brend = document.getElementById('buhPkBrend').value;
+        const seriya = document.getElementById('buhPkSeriya').value;
+        const shakli = document.getElementById('buhPkShakli').value;
+        const rangTuri = document.getElementById('buhPkRangTuri').value;
+        const rangi = document.getElementById('buhPkRangi').value;
+
+        if (!uzunligi || soni <= 0 || !profil || !brend || !seriya || !shakli || !rangTuri || !rangi) {
+            alert("Barcha maydonlarni to'g'ri to'ldiring!");
+            return;
+        }
+
+        const METR_PER_PACHKA = 48;
+        const jamiMetr = soni * METR_PER_PACHKA;
+        const name = `${profil} ${brend} ${seriya}`;
+        const desc = `${uzunligi}mm | ${shakli} | ${rangi} (${rangTuri})`;
+        const metadata = { uzunligi, profil, brend, seriya, shakli, rangTuri, rangi };
+
+        try {
+            const { data: existing } = await supabase.from('romix_inventory').select('*').eq('product_name', name).eq('description', desc).maybeSingle();
+            const payload = {
+                product_name: name, category: 'Profil', description: desc, unit: 'metr', price: 0,
+                stock_quantity: existing ? (parseFloat(existing.stock_quantity) || 0) + jamiMetr : jamiMetr,
+                metadata: metadata
+            };
+            let product;
+            if (existing) {
+                const { data, error } = await supabase.from('romix_inventory').update(payload).eq('id', existing.id).select().single();
+                if (error) throw error;
+                product = data;
+            } else {
+                const { data, error } = await supabase.from('romix_inventory').insert([payload]).select().single();
+                if (error) throw error;
+                product = data;
+            }
+            await supabase.from('romix_transactions').insert([{
+                product_id: product.id, type: 'IN', quantity: jamiMetr,
+                note: `Buxgalteriya Profil Kirim - ${soni} pachka × ${METR_PER_PACHKA} = ${jamiMetr} metr | ${desc}`
+            }]);
+            window.showPremiumToast('Muvaffaqiyatli', `${name} — ${jamiMetr} metr kirim qilindi.`, true);
+            window.closeBuhProfilKirimModal();
+            ['buhPkUzunligi','buhPkSoni'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+            ['buhPkProfil','buhPkBrend','buhPkSeriya','buhPkShakli','buhPkRangTuri','buhPkRangi'].forEach(id => { const el = document.getElementById(id); if (el) el.selectedIndex = 0; });
+            const mc = document.getElementById('buhMetrCalcValue'); if (mc) mc.textContent = '0';
+            await renderRomixBuhOmbor();
+        } catch (err) {
+            alert('Xatolik: ' + err.message);
+        }
+    };
+
     async function renderBuhTayyorMahsulot() {
         const statsEl = document.getElementById('buh-tayyor-stats');
         const tableEl = document.getElementById('buh-tayyor-table');
