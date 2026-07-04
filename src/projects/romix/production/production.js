@@ -145,6 +145,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 3 bosqichdan (Kesish -> Payvandlash -> Yig'ish/Qadoqlash) o'tadi,
     // so'ng Tayyor Mahsulotga (showroom) o'tkaziladi.
     // ============================================================
+
+    // Jonli teskari sanoq: har soniya barcha ".countdown-live" belgilarini yangilaydi
+    function tickCountdowns() {
+        document.querySelectorAll('.countdown-live').forEach(el => {
+            const target = new Date(el.dataset.target);
+            target.setHours(23, 59, 59, 999); // muddat kunining oxirigacha
+            const diffMs = target.getTime() - Date.now();
+            const overdue = diffMs < 0;
+            const absMs = Math.abs(diffMs);
+            const days = Math.floor(absMs / 86400000);
+            const hours = Math.floor((absMs % 86400000) / 3600000);
+            const mins = Math.floor((absMs % 3600000) / 60000);
+            const secs = Math.floor((absMs % 60000) / 1000);
+            const pad = (n) => String(n).padStart(2, '0');
+            let color;
+            if (overdue) color = '#ef4444';
+            else if (days === 0 && hours < 6) color = '#ef4444';
+            else if (days <= 2) color = '#ffaa00';
+            else color = '#00ff88';
+            el.style.color = color;
+            el.textContent = overdue
+                ? `⚠️ Muddati o'tdi! ${days}k ${pad(hours)}:${pad(mins)}:${pad(secs)} oldin`
+                : `⏰ ${days}k ${pad(hours)}:${pad(mins)}:${pad(secs)} qoldi`;
+        });
+    }
+    setInterval(tickCountdowns, 1000);
+
     async function loadProductionPipeline() {
         let orders = [];
         let reqStatusByOrder = {};
@@ -183,19 +210,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             yigish_qadoqlash: orders.filter(o => o.production_stage === 'yigish_qadoqlash')
         };
 
-        // Qat'iy muddat nazorati: har bir buyurtma kartochkasida qolgan/kechikkan kunlarni ko'rsatadi
+        // Qat'iy muddat nazorati: jonli teskari sanoq (har soniya yangilanadi, window.tickCountdowns orqali)
         function deadlineBadge(o) {
             const targetDate = o.production_target_date || o.production_deadline;
             if (!targetDate) return '';
-            const today = new Date(); today.setHours(0, 0, 0, 0);
-            const dl = new Date(targetDate);
-            const diffDays = Math.round((dl - today) / 86400000);
-            let color, text;
-            if (diffDays < 0) { color = '#ef4444'; text = `⚠️ Muddati o'tdi! (${Math.abs(diffDays)} kun kechikdi)`; }
-            else if (diffDays === 0) { color = '#ef4444'; text = `⚠️ BUGUN tayyor bo'lishi kerak!`; }
-            else if (diffDays <= 2) { color = '#ffaa00'; text = `⏰ ${diffDays} kun qoldi`; }
-            else { color = '#00ff88'; text = `⏰ ${diffDays} kun qoldi (${dl.toLocaleDateString('uz-UZ')})`; }
-            return `<div style="font-size:0.7rem; color:${color}; font-weight:700;">${text}</div>`;
+            return `<div class="countdown-live" data-target="${targetDate}" style="font-size:0.7rem; font-weight:700;"></div>`;
         }
 
         function card(o, actionHtml) {
@@ -238,6 +257,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 `<button class="pipeline-advance-btn" data-id="${o.id}" data-next="tayyor_omborda" style="background:#00d2ff; color:#000; border:none; padding:8px; border-radius:8px; font-weight:700; font-size:0.74rem; cursor:pointer;">✅ Tayyor, Omborga O'tkazish</button>`
             )).join('');
         }
+
+        tickCountdowns(); // darhol bo'yash, 1 soniya kutmasdan
 
         document.querySelectorAll('.pipeline-advance-btn').forEach(btn => {
             btn.onclick = async () => {
