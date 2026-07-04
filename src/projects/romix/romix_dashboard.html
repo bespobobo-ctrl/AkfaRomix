@@ -1337,7 +1337,7 @@
                     <div class="bento-card" style="flex: 1; border-top: 4px solid #81C784; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'" onclick="window.location.href='warehouse/romix_ombor_profil.html'">
                         <h2 style="color: #81C784; display: flex; justify-content: space-between;">Romix Plast <span style="font-size: 1.5rem;">📦</span></h2>
                         <p style="color: var(--adm-text-sec);">PVX va Alyuminiy profillar ombori</p>
-                        <button style="width: 100%; padding: 12px; margin-top: 15px; border-radius: 12px; background: rgba(129, 199, 132, 0.15); border: 1px solid rgba(129, 199, 132, 0.3); color: #81C784; font-weight: bold; cursor: pointer;">Omborga Kirish (Kirim qilish) &rarr;</button>
+                        <button style="width: 100%; padding: 12px; margin-top: 15px; border-radius: 12px; background: rgba(129, 199, 132, 0.15); border: 1px solid rgba(129, 199, 132, 0.3); color: #81C784; font-weight: bold; cursor: pointer;">Omborga Kirish &rarr;</button>
                     </div>
                     <div class="bento-card" style="flex: 1; border-top: 4px solid #BA68C8; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'" onclick="window.location.href='warehouse/romix_ombor_aksesuvar.html'">
                         <h2 style="color: #BA68C8; display: flex; justify-content: space-between;">Romix Aksesuvar <span style="font-size: 1.5rem;">⚙️</span></h2>
@@ -1563,8 +1563,11 @@
                 <div id="buh-panel-ombor" class="buh-tab-panel">
                     <div class="hr-card">
                         <div class="buh-mini-row" id="buh-ombor-stats"></div>
-                        <div style="display:flex; align-items:center; gap:10px; margin:18px 0 12px;">
+                        <div style="display:flex; align-items:center; gap:10px; margin:18px 0 12px; flex-wrap:wrap;">
                             <input type="text" id="buh-ombor-search" placeholder="🔍 Mahsulot nomi bo'yicha qidirish..." style="flex:1; max-width:320px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:9px 14px; border-radius:12px; font-size:0.82rem;">
+                            <button onclick="window.openBuhKirimModal()" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(0,255,136,0.1); border:1px solid rgba(0,255,136,0.3); color:#00ff88; font-weight:700; font-size:0.8rem;">➕ Kirim Qilish</button>
+                            <button onclick="window.openBuhProfilKirimModal()" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(0,186,255,0.1); border:1px solid rgba(0,186,255,0.3); color:#00baff; font-weight:700; font-size:0.8rem;">📦 Profil Kirim</button>
+                            <button onclick="window.openBuhAccKirimModal()" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(186,104,200,0.1); border:1px solid rgba(186,104,200,0.3); color:#BA68C8; font-weight:700; font-size:0.8rem;">🔩 Aksessuar Kirim</button>
                         </div>
                         <div id="buh-ombor-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:14px;">
                             <div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Yuklanmoqda...</div>
@@ -1626,6 +1629,162 @@
                         <div style="display:flex; gap:10px;">
                             <button onclick="window.closeRomixPriceModal()" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); padding:13px; border-radius:14px; font-weight:700; font-size:0.82rem; cursor:pointer;">Bekor qilish</button>
                             <button onclick="window.saveRomixPriceModal()" style="flex:1.4; background:linear-gradient(135deg,#00baff,#0072ff); border:none; color:#fff; padding:13px; border-radius:14px; font-weight:800; font-size:0.82rem; cursor:pointer; box-shadow:0 10px 24px rgba(0,114,255,0.3);">💾 Saqlash</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============ Buxgalteriya: Yangi Kirim Amali Modal ============ -->
+                <div id="buh-kirim-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:10001; align-items:center; justify-content:center; padding:20px;">
+                    <div style="background:#141e2d; border:1px solid rgba(0,255,136,0.2); width:100%; max-width:750px; max-height:92vh; overflow-y:auto; border-radius:24px; padding:28px;">
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+                            <span style="font-size:1.8rem;">📥</span>
+                            <h3 style="color:#fff; margin:0;">Yangi Kirim Amali</h3>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                            <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Mahsulot Nomi</label>
+                                <input type="text" id="buhKName" placeholder="Masalan: Alyumen Profil" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                            <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Kategoriya</label>
+                                <select id="buhKCategory" class="buh-input" style="width:100%; box-sizing:border-box;">
+                                    <option value="Xomashyo">Xomashyo (Raw Material)</option>
+                                    <option value="Aksessuar">Aksessuar (Accessories)</option>
+                                    <option value="PVX">PVX</option>
+                                </select></div>
+                            <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Mahsulot Xususiyati</label>
+                                <input type="text" id="buhKDesc" placeholder="Rangi, o'lchami va h.k." class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                            <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">O'lchov Birligi</label>
+                                <select id="buhKUnit" class="buh-input" style="width:100%; box-sizing:border-box;">
+                                    <option value="kg">kg (Kilogram)</option>
+                                    <option value="dona">dona (Pcs)</option>
+                                    <option value="pachka">pachka (Pack)</option>
+                                </select></div>
+                            <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Brutto Og'irligi (kg)</label>
+                                <input type="number" id="buhKGross" placeholder="0.00" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                            <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Netto Og'irligi (kg)</label>
+                                <input type="number" id="buhKNet" placeholder="0.00" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                            <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Taminotchi Ismi</label>
+                                <input type="text" id="buhKSupplier" placeholder="Firma yoki shaxs" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                            <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Taminotchi Tel:</label>
+                                <input type="text" id="buhKPhone" placeholder="+998" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                            <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Kirim Miqdori</label>
+                                <input type="number" id="buhKQty" placeholder="0.00" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                            <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Mahsulot Narxi (so'm)</label>
+                                <input type="number" id="buhKPrice" placeholder="0.00" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                        </div>
+                        <div style="display:flex; gap:12px; margin-top:22px;">
+                            <button id="buhSaveKirimBtn" onclick="window.saveBuhKirim()" class="buh-save-btn" style="flex:1;">💾 Tasdiqlash va Saqlash</button>
+                            <button onclick="window.closeBuhKirimModal()" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); padding:13px; border-radius:14px; font-weight:700; cursor:pointer;">Bekor qilish</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============ Buxgalteriya: Profil Kirim Modal ============ -->
+                <div id="buh-profil-kirim-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:10001; align-items:center; justify-content:center; padding:20px;">
+                    <div style="background:#141e2d; border:1px solid rgba(0,186,255,0.2); width:100%; max-width:650px; max-height:92vh; overflow-y:auto; border-radius:24px; padding:28px;">
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+                            <span style="font-size:1.8rem;">📦</span>
+                            <h3 style="color:#fff; margin:0;">Profil Kirim</h3>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
+                            <input type="text" id="buhPkUzunligi" placeholder="Uzunligi (mm)" class="buh-input" style="width:100%; box-sizing:border-box;">
+                            <div>
+                                <input type="number" id="buhPkSoni" placeholder="Pachka soni" min="1" class="buh-input" style="width:100%; box-sizing:border-box;" oninput="window.updateBuhMetrCalc()">
+                                <div id="buhMetrCalcPreview" style="margin-top:8px; padding:10px 12px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); font-size:0.8rem; font-weight:700;">
+                                    <span id="buhMetrCalcValue" style="color:#00baff;">0</span> <span style="color:rgba(255,255,255,0.4); font-weight:400;">metr (1 pachka = 48 metr)</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                            <select id="buhPkProfil" class="buh-input" style="width:100%; box-sizing:border-box;">
+                                <option value="" disabled selected>Profil</option>
+                                <option value="Profil">Profil</option>
+                                <option value="Shtapik">Shtapik</option>
+                                <option value="Tokcha">Tokcha</option>
+                                <option value="Lambri">Lambri</option>
+                            </select>
+                            <select id="buhPkBrend" class="buh-input" style="width:100%; box-sizing:border-box;">
+                                <option value="" disabled selected>Brend</option>
+                                <option value="AKFA Plastik">AKFA Plastik</option>
+                                <option value="AKFA Alyuminiy">AKFA Alyuminiy</option>
+                                <option value="AKFA Termo">AKFA Termo</option>
+                                <option value="RETPEN Plastik">RETPEN Plastik</option>
+                                <option value="Ekopen Plastik">Ekopen Plastik</option>
+                            </select>
+                            <select id="buhPkSeriya" class="buh-input" style="width:100%; box-sizing:border-box;">
+                                <option value="" disabled selected>Seriya</option>
+                                <option value="6000 QVT">6000 QVT</option>
+                                <option value="6000 TRIO">6000 TRIO</option>
+                                <option value="7000 AKFA EKO">7000 AKFA EKO</option>
+                                <option value="5800 TRIO">5800 TRIO</option>
+                                <option value="5200 QVT">5200 QVT</option>
+                                <option value="6500 PENTA">6500 PENTA</option>
+                                <option value="Engelberg 7000">Engelberg 7000</option>
+                            </select>
+                            <select id="buhPkShakli" class="buh-input" style="width:100%; box-sizing:border-box;">
+                                <option value="" disabled selected>Shakli</option>
+                                <option value="To'g'ri">To'g'ri</option>
+                                <option value="Burchakli">Burchakli</option>
+                                <option value="Yumaloq">Yumaloq</option>
+                            </select>
+                            <select id="buhPkRangTuri" class="buh-input" style="width:100%; box-sizing:border-box;">
+                                <option value="" disabled selected>Rang turi</option>
+                                <option value="Matoviy">Matoviy</option>
+                                <option value="Yaltiroq">Yaltiroq</option>
+                                <option value="Teksturali">Teksturali</option>
+                            </select>
+                            <select id="buhPkRangi" class="buh-input" style="width:100%; box-sizing:border-box;">
+                                <option value="" disabled selected>Rangi</option>
+                                <option value="Oq">Oq</option>
+                                <option value="Qora">Qora</option>
+                                <option value="Zolotoy Dub">Zolotoy Dub</option>
+                                <option value="Mocha">Mocha</option>
+                            </select>
+                        </div>
+                        <div style="display:flex; gap:12px; margin-top:22px;">
+                            <button onclick="window.saveBuhProfilKirim()" class="buh-save-btn" style="flex:1;">💾 Tasdiqlash va Saqlash</button>
+                            <button onclick="window.closeBuhProfilKirimModal()" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); padding:13px; border-radius:14px; font-weight:700; cursor:pointer;">Bekor qilish</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============ Buxgalteriya: Aksessuar Kirim Modal ============ -->
+                <div id="buh-acc-kirim-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:10001; align-items:center; justify-content:center; padding:20px;">
+                    <div style="background:#141e2d; border:1px solid rgba(186,104,200,0.2); width:100%; max-width:500px; max-height:92vh; overflow-y:auto; border-radius:24px; padding:28px;">
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+                            <span style="font-size:1.8rem;">🔩</span>
+                            <h3 style="color:#fff; margin:0;">Yangi Aksessuar Kirimi</h3>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:14px;">
+                            <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Mahsulot Nomi</label>
+                                <input type="text" id="buhAccName" placeholder="Masalan: AKFA Eshik Qulflari" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                            <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Kategoriya</label>
+                                <select id="buhAccCategory" class="buh-input" style="width:100%; box-sizing:border-box;" onchange="document.getElementById('buhAccCustomCategoryGroup').style.display = this.value === 'Boshqa...' ? 'block' : 'none';">
+                                    <option value="Zamoklar">🔒 Zamoklar</option>
+                                    <option value="Ruchkalar">🚪 Ruchkalar</option>
+                                    <option value="Qistirmalar">🌀 Qistirmalar</option>
+                                    <option value="Biriktiruvchilar">🧩 Biriktiruvchilar</option>
+                                    <option value="Boshqa...">⚙️ Boshqa...</option>
+                                </select></div>
+                            <div id="buhAccCustomCategoryGroup" style="display:none;">
+                                <label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Yangi Kategoriya Nomi</label>
+                                <input type="text" id="buhAccCustomCategory" placeholder="Kategoriya nomini yozing..." class="buh-input" style="width:100%; box-sizing:border-box;">
+                            </div>
+                            <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Mahsulot Xususiyati</label>
+                                <input type="text" id="buhAccSpec" placeholder="Rangi, o'lchami va h.k." class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                                <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">O'lchov Birligi</label>
+                                    <select id="buhAccUnit" class="buh-input" style="width:100%; box-sizing:border-box;">
+                                        <option value="dona">📦 dona</option>
+                                        <option value="kg">⚖️ kg</option>
+                                        <option value="litr">🧪 litr</option>
+                                        <option value="metr">📏 metr</option>
+                                    </select></div>
+                                <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Kirim Miqdori</label>
+                                    <input type="number" id="buhAccQty" min="1" placeholder="Qancha..." class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:12px; margin-top:22px;">
+                            <button onclick="window.saveBuhAccKirim()" class="buh-save-btn" style="flex:1;">💾 Tasdiqlash va Saqlash</button>
+                            <button onclick="window.closeBuhAccKirimModal()" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); padding:13px; border-radius:14px; font-weight:700; cursor:pointer;">Bekor qilish</button>
                         </div>
                     </div>
                 </div>
