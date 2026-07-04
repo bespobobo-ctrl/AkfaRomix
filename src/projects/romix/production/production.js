@@ -173,6 +173,88 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     setInterval(tickCountdowns, 1000);
 
+    // Jonli stopwatch: har soniya barcha ".batch-stopwatch" belgilarini yangilaydi (yuqoriga sanaydi)
+    function tickStopwatches() {
+        document.querySelectorAll('.batch-stopwatch').forEach(el => {
+            if (!el.dataset.started) return;
+            const started = new Date(el.dataset.started);
+            const diffMs = Math.max(0, Date.now() - started.getTime());
+            const hours = Math.floor(diffMs / 3600000);
+            const mins = Math.floor((diffMs % 3600000) / 60000);
+            const secs = Math.floor((diffMs % 60000) / 1000);
+            const pad = (n) => String(n).padStart(2, '0');
+            el.textContent = `⏱ ${pad(hours)}:${pad(mins)}:${pad(secs)} dan beri shu bosqichda`;
+        });
+    }
+    setInterval(tickStopwatches, 1000);
+
+    let currentBatchComplete = null; // { batchId, stage, qty, orderId }
+
+    function openBatchCompleteModal(batchId, stage, qty, orderId) {
+        currentBatchComplete = { batchId, stage, qty, orderId };
+        const nextLabel = stage === 'yigish_qadoqlash' ? 'Tayyor Mahsulot omboriga' : (stage === 'kesish' ? 'Payvandlashga' : "Yig'ish/Qadoqlashga");
+        document.getElementById('batchCompleteInfo').textContent = `Joriy miqdor: ${qty} dona. Nechtasi tayyor bo'lib, ${nextLabel} o'tkazilsin?`;
+        const qtyInput = document.getElementById('batchCompleteQty');
+        qtyInput.max = qty;
+        qtyInput.value = qty;
+        document.getElementById('batchCompleteModal').classList.remove('hidden');
+    }
+
+    document.getElementById('batchCompleteCloseBtn').onclick = () => document.getElementById('batchCompleteModal').classList.add('hidden');
+
+    document.getElementById('batchCompleteSaveBtn').onclick = async () => {
+        if (!currentBatchComplete) return;
+        const { batchId, stage, qty, orderId } = currentBatchComplete;
+        const movedQty = parseInt(document.getElementById('batchCompleteQty').value);
+        if (!movedQty || movedQty <= 0 || movedQty > qty) {
+            alert(`Iltimos, 1 dan ${qty} gacha to'g'ri son kiriting!`);
+            return;
+        }
+        const saveBtn = document.getElementById('batchCompleteSaveBtn');
+        if (saveBtn.disabled) return;
+        saveBtn.disabled = true;
+        try {
+            // Batch miqdori boshqa joyda (masalan boshqa oynada) o'zgargan bo'lishi mumkin -
+            // saqlashdan oldin joriy qiymatni qayta tekshiramiz
+            const { data: freshBatch } = await supabase.from('romix_production_batches').select('quantity').eq('id', batchId).maybeSingle();
+            const currentQty = freshBatch ? Number(freshBatch.quantity) : 0;
+            if (movedQty > currentQty) {
+                alert(`Bu batch miqdori o'zgargan (hozir: ${currentQty} dona). Iltimos, oynani yopib qayta urinib ko'ring.`);
+                saveBtn.disabled = false;
+                loadProductionPipeline();
+                return;
+            }
+            const nextStageMap = { kesish: 'payvandlash', payvandlash: 'yigish_qadoqlash', yigish_qadoqlash: 'tayyor' };
+            const nextStage = nextStageMap[stage];
+            const remaining = currentQty - movedQty;
+            if (remaining > 0) {
+                await supabase.from('romix_production_batches').update({ quantity: remaining }).eq('id', batchId);
+            } else {
+                await supabase.from('romix_production_batches').delete().eq('id', batchId);
+            }
+            await supabase.from('romix_production_batches').insert([{
+                order_id: orderId, stage: nextStage, quantity: movedQty, started_at: new Date().toISOString()
+            }]);
+
+            if (nextStage === 'tayyor') {
+                const { data: order } = await supabase.from('sales_orders').select('quantity').eq('id', orderId).maybeSingle();
+                const { data: tayyorBatches } = await supabase.from('romix_production_batches').select('quantity').eq('order_id', orderId).eq('stage', 'tayyor');
+                const totalTayyor = (tayyorBatches || []).reduce((s, b) => s + (Number(b.quantity) || 0), 0);
+                if (order && totalTayyor >= (Number(order.quantity) || 1)) {
+                    await supabase.from('sales_orders').update({ production_stage: 'tayyor_omborda' }).eq('id', orderId);
+                }
+            }
+        } catch (err) {
+            alert("Bosqichni o'tkazishda xatolik: bazada 'romix_production_batches' jadvali mavjudligini tekshiring. " + err.message);
+            console.warn("batch-complete failed:", err);
+            saveBtn.disabled = false;
+            return;
+        }
+        saveBtn.disabled = false;
+        document.getElementById('batchCompleteModal').classList.add('hidden');
+        loadProductionPipeline();
+    };
+
     async function loadProductionPipeline() {
         let orders = [];
         let reqStatusByOrder = {};
@@ -202,6 +284,35 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.warn("loadProductionPipeline material_requests fetch failed:", err);
         }
 
+        // Miqdor-asosli batchlar: bir buyurtma bir vaqtda bir nechta bosqichda bo'lishi mumkin
+        let batches = [];
+        try {
+            const { data, error } = await supabase.from('romix_production_batches').select('*').gt('quantity', 0).in('stage', ['kesish', 'payvandlash', 'yigish_qadoqlash']);
+            if (error) throw error;
+            batches = data || [];
+        } catch (err) {
+            console.warn("loadProductionPipeline batches fetch failed (romix_production_batches jadvali mavjudligini tekshiring):", err);
+        }
+
+        let employeesList = [];
+        try {
+            const { data, error } = await supabase.from('employees').select('id, full_name').order('full_name');
+            if (error) throw error;
+            employeesList = data || [];
+        } catch (err) {
+            console.warn("loadProductionPipeline employees fetch failed:", err);
+        }
+
+        const ordersById = {};
+        orders.forEach(o => { ordersById[o.id] = o; });
+        const missingOrderIds = [...new Set(batches.map(b => b.order_id))].filter(id => !ordersById[id]);
+        if (missingOrderIds.length > 0) {
+            try {
+                const { data } = await supabase.from('sales_orders').select('*').in('id', missingOrderIds);
+                (data || []).forEach(o => { ordersById[o.id] = o; });
+            } catch (err) { console.warn("fetch missing orders for batches failed:", err); }
+        }
+
         const cols = {
             awaiting: document.getElementById('pipelineColAwaiting'),
             new: document.getElementById('pipelineColNew'),
@@ -215,10 +326,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // tayyor_omborda bosqichidagilar bu boardda ko'rsatilmaydi (ular Tayyor Mahsulotga o'tgan)
         const buckets = {
             awaiting: orders.filter(o => o.status === 'Kutilmoqda'),
-            new: orders.filter(o => o.status === 'Jarayonda' && !o.production_stage),
-            kesish: orders.filter(o => o.production_stage === 'kesish'),
-            payvandlash: orders.filter(o => o.production_stage === 'payvandlash'),
-            yigish_qadoqlash: orders.filter(o => o.production_stage === 'yigish_qadoqlash')
+            new: orders.filter(o => o.status === 'Jarayonda' && !o.production_stage)
         };
 
         // Qat'iy muddat nazorati: jonli teskari sanoq (har soniya yangilanadi, window.tickCountdowns orqali)
@@ -253,41 +361,61 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return card(o, actionHtml);
             }).join('');
         }
-        if (cols.kesish) {
-            cols.kesish.innerHTML = buckets.kesish.length === 0 ? emptyMsg : buckets.kesish.map(o => card(o,
-                `<button class="pipeline-advance-btn" data-id="${o.id}" data-next="payvandlash" style="background:#ef4444; color:#fff; border:none; padding:8px; border-radius:8px; font-weight:700; font-size:0.74rem; cursor:pointer;">Keyingi bosqich →</button>`
-            )).join('');
+
+        // Kesish / Payvandlash / Yig'ish-Qadoqlash — endi BATCH bo'yicha (miqdor-asosli, partial-transfer)
+        const empOptionsHtml = employeesList.map(e => `<option value="${e.id}">${e.full_name}</option>`).join('');
+        const stageAccent = { kesish: '#ef4444', payvandlash: '#f97316', yigish_qadoqlash: '#00d2ff' };
+        const stageNextLabel = { kesish: "Payvandlashga o'tkazish →", payvandlash: "Yig'ish/Qadoqlashga o'tkazish →", yigish_qadoqlash: "✅ Tayyor, Omborga o'tkazish" };
+
+        function batchCard(b) {
+            const o = ordersById[b.order_id] || {};
+            const totalQty = Number(o.quantity) || 1;
+            return `<div style="background:var(--adm-surface); border:1px solid var(--adm-border); border-radius:14px; padding:12px; display:flex; flex-direction:column; gap:8px; box-shadow:var(--adm-shadow);">
+                <div style="font-weight:700; color:var(--adm-text); font-size:0.82rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${o.customer_name || 'Noma\'lum'}</div>
+                <div style="font-size:0.78rem; color:var(--adm-text-sec);">Miqdor: <strong style="color:var(--adm-text);">${b.quantity} / ${totalQty}</strong></div>
+                <select class="batch-emp-select" data-batch-id="${b.id}" style="width:100%; padding:6px; border-radius:8px; background:rgba(255,255,255,0.03); border:1px solid var(--adm-border); color:var(--adm-text); font-size:0.75rem;">
+                    <option value="">Ishchi tanlanmagan</option>
+                    ${empOptionsHtml}
+                </select>
+                <div class="batch-stopwatch" data-started="${b.started_at}" style="font-size:0.7rem; font-weight:700; color:#00d2ff;"></div>
+                <button class="batch-complete-btn" data-batch-id="${b.id}" data-stage="${b.stage}" data-qty="${b.quantity}" data-order-id="${b.order_id}" style="background:${stageAccent[b.stage]}; color:#fff; border:none; padding:8px; border-radius:8px; font-weight:700; font-size:0.72rem; cursor:pointer;">${stageNextLabel[b.stage]}</button>
+            </div>`;
         }
-        if (cols.payvandlash) {
-            cols.payvandlash.innerHTML = buckets.payvandlash.length === 0 ? emptyMsg : buckets.payvandlash.map(o => card(o,
-                `<button class="pipeline-advance-btn" data-id="${o.id}" data-next="yigish_qadoqlash" style="background:#f97316; color:#fff; border:none; padding:8px; border-radius:8px; font-weight:700; font-size:0.74rem; cursor:pointer;">Keyingi bosqich →</button>`
-            )).join('');
-        }
-        if (cols.yigish_qadoqlash) {
-            cols.yigish_qadoqlash.innerHTML = buckets.yigish_qadoqlash.length === 0 ? emptyMsg : buckets.yigish_qadoqlash.map(o => card(o,
-                `<button class="pipeline-advance-btn" data-id="${o.id}" data-next="tayyor_omborda" style="background:#00d2ff; color:#000; border:none; padding:8px; border-radius:8px; font-weight:700; font-size:0.74rem; cursor:pointer;">✅ Tayyor, Omborga O'tkazish</button>`
-            )).join('');
-        }
+
+        ['kesish', 'payvandlash', 'yigish_qadoqlash'].forEach(stage => {
+            const stageBatches = batches.filter(b => b.stage === stage);
+            const col = cols[stage];
+            if (!col) return;
+            col.innerHTML = stageBatches.length === 0 ? emptyMsg : stageBatches.map(batchCard).join('');
+            stageBatches.forEach(b => {
+                if (!b.employee_id) return;
+                const sel = col.querySelector(`.batch-emp-select[data-batch-id="${b.id}"]`);
+                if (sel) sel.value = b.employee_id;
+            });
+        });
 
         tickCountdowns(); // darhol bo'yash, 1 soniya kutmasdan
+        tickStopwatches();
 
-        document.querySelectorAll('.pipeline-advance-btn').forEach(btn => {
-            btn.onclick = async () => {
-                const id = btn.dataset.id;
-                const next = btn.dataset.next;
+        document.querySelectorAll('.batch-emp-select').forEach(sel => {
+            sel.onchange = async () => {
+                const batchId = sel.dataset.batchId;
+                const empId = sel.value || null;
                 try {
-                    const { error } = await supabase.from('sales_orders').update({ production_stage: next }).eq('id', id);
+                    const { error } = await supabase.from('romix_production_batches').update({ employee_id: empId }).eq('id', batchId);
                     if (error) throw error;
                 } catch (err) {
-                    alert("Bosqichni yangilashda xatolik: bazada 'production_stage' ustuni mavjudligini tekshiring.");
-                    console.warn("pipeline-advance failed:", err);
-                    return;
+                    alert("Ishchini saqlashda xatolik: " + err.message);
                 }
-                loadProductionPipeline();
             };
         });
 
-        // Qabul Qilish: ishlab chiqarish o'zi "chiqish sanasi"ni belgilaydi (standart = sotuv muddati)
+        document.querySelectorAll('.batch-complete-btn').forEach(btn => {
+            btn.onclick = () => openBatchCompleteModal(btn.dataset.batchId, btn.dataset.stage, parseInt(btn.dataset.qty), btn.dataset.orderId);
+        });
+
+        // Qabul Qilish: ishlab chiqarish o'zi "chiqish sanasi"ni belgilaydi (standart = sotuv muddati),
+        // birinchi batchni (kesish bosqichida, to'liq miqdor bilan) yaratadi
         document.querySelectorAll('.accept-order-btn').forEach(btn => {
             btn.onclick = async () => {
                 const id = btn.dataset.id;
@@ -304,14 +432,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 }
                 try {
+                    const { data: order } = await supabase.from('sales_orders').select('quantity').eq('id', id).maybeSingle();
                     const { error } = await supabase.from('sales_orders').update({
                         production_stage: 'kesish',
                         production_target_date: targetDate,
                         production_accepted_at: new Date().toISOString()
                     }).eq('id', id);
                     if (error) throw error;
+                    await supabase.from('romix_production_batches').insert([{
+                        order_id: id, stage: 'kesish', quantity: (order && Number(order.quantity)) || 1, started_at: new Date().toISOString()
+                    }]);
                 } catch (err) {
-                    alert("Qabul qilishda xatolik: bazada 'production_target_date'/'production_accepted_at' ustunlari mavjudligini tekshiring.");
+                    alert("Qabul qilishda xatolik: bazada 'production_target_date'/'production_accepted_at'/'romix_production_batches' mavjudligini tekshiring.");
                     console.warn("accept-order failed:", err);
                     return;
                 }
