@@ -568,7 +568,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (table) {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td><strong>${o.customer_name}</strong><br><small style="color:#888;">${o.customer_phone}</small></td>
+                    <td><strong>${o.customer_name}</strong><br><small style="color:#888;">${o.customer_phone}${o.customer_address ? ` <span title="${o.customer_address.replace(/"/g, '&quot;')}">📍</span>` : ''}</small></td>
                     <td>${o.prod_type}<br><small style="color:#888;">${o.model_name.length > 50 ? o.model_name.slice(0, 48) + '...' : o.model_name}</small></td>
                     <td>${new Date(o.deadline_date).toLocaleDateString()}</td>
                     <td style="font-weight:600;">${Number(o.total_price).toLocaleString()} UZS</td>
@@ -646,6 +646,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 window.editingOrderId = o.id;
                 document.getElementById('eCustomer').value = o.customer_name;
                 document.getElementById('ePhone').value = o.customer_phone;
+                document.getElementById('eAddress').value = o.customer_address || '';
                 document.getElementById('eStatus').value = o.status;
                 editModal.classList.remove('hidden');
             };
@@ -719,6 +720,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <p style="font-size:1.1rem; color:#45c4b0; font-weight:700;">${o.customer_name}</p>
                             <p><b>Phone:</b> ${o.customer_phone}</p>
                             <p><b>Telegram:</b> ${o.tg_user || '---'}</p>
+                            <p><b>Manzil:</b> ${o.customer_address ? o.customer_address.replace(/(https?:\/\/\S+)/g, '<a href="$1" target="_blank" style="color:#00d2ff;">🗺️ Xaritada</a>') : '---'}</p>
                         </div>
                         <div class="inv-box">
                             <h3>Payment Method:</h3>
@@ -905,6 +907,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const newOrder = {
             customer_name: document.getElementById('oCustomer').value.trim() || 'Noma\'lum Mijoz',
             customer_phone: document.getElementById('oPhone').value.trim() || '---',
+            customer_address: document.getElementById('oAddress').value.trim(),
             tg_user: document.getElementById('oTg').value.trim(),
             prod_type: typesSummary,
             model_name: JSON.stringify(orderItems), // store full JSON list in model_name for detail billing
@@ -942,12 +945,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         const id = window.editingOrderId;
         const customer_name = document.getElementById('eCustomer').value;
         const customer_phone = document.getElementById('ePhone').value;
+        const customer_address = document.getElementById('eAddress').value;
         const status = document.getElementById('eStatus').value;
 
         try {
             const { error } = await supabase.from('sales_orders').update({
                 customer_name,
                 customer_phone,
+                customer_address,
                 status
             }).eq('id', id);
             if (error) throw error;
@@ -962,6 +967,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (ord) {
                 ord.customer_name = customer_name;
                 ord.customer_phone = customer_phone;
+                ord.customer_address = customer_address;
                 ord.status = status;
                 localStorage.setItem('romix_orders_local', JSON.stringify(localOrders));
             }
@@ -1134,6 +1140,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 3D preview modal ochilгач o'lchamни oladi
         setTimeout(() => { try { window.update3DPreview(); } catch (e) {} }, 60);
     };
+
+    // Joriy joylashuvni olish (telefon GPS orqali manzilni avtomatik to'ldirish)
+    const oGetLocationBtn = document.getElementById('oGetLocationBtn');
+    if (oGetLocationBtn) {
+        oGetLocationBtn.onclick = () => {
+            const addressInput = document.getElementById('oAddress');
+            const statusEl = document.getElementById('oLocationStatus');
+            if (!navigator.geolocation) {
+                statusEl.textContent = '❌ Bu qurilma/brauzer joylashuvni qo\'llab-quvvatlamaydi';
+                return;
+            }
+            statusEl.textContent = '📍 Joylashuv aniqlanmoqda...';
+            oGetLocationBtn.disabled = true;
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const { latitude, longitude } = pos.coords;
+                const mapsLink = `https://maps.google.com/?q=${latitude},${longitude}`;
+                let humanAddress = '';
+                try {
+                    const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`, {
+                        headers: { 'Accept-Language': 'uz,ru,en' }
+                    });
+                    const data = await resp.json();
+                    humanAddress = data && data.display_name ? data.display_name : '';
+                } catch (e) {
+                    console.warn('Reverse geocoding failed, using coordinates link only:', e);
+                }
+                addressInput.value = humanAddress ? `${humanAddress} (${mapsLink})` : mapsLink;
+                statusEl.textContent = '✅ Joylashuv qo\'shildi';
+                oGetLocationBtn.disabled = false;
+            }, (err) => {
+                statusEl.textContent = '❌ Joylashuvni olib bo\'lmadi: ' + (err.message || 'ruxsat berilmadi');
+                oGetLocationBtn.disabled = false;
+            }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+        };
+    }
 
     // Kesim optimizatsiya PDF — joriy savatdan
     const cuttingBtn = document.getElementById('cuttingPdfBtn');
