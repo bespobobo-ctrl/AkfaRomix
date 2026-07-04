@@ -76,8 +76,8 @@
         <aside class="sidebar-slim">
             <div class="logo-icon-v2" style="font-size: 1.5rem; color: #8b5cf6; margin-bottom: 40px; font-weight: 900;">
                 P</div>
-            <div class="nav-icon active" data-tab="recipes" title="Shablonlar">🏭</div>
-            <div class="nav-icon" data-tab="pipeline" title="Zakazlar Jarayoni">📋</div>
+            <div class="nav-icon" data-tab="recipes" title="Shablonlar">🏭</div>
+            <div class="nav-icon active" data-tab="pipeline" title="Zakazlar Jarayoni">📋</div>
             <div class="nav-icon" data-tab="history" title="Tarix">📑</div>
             <div class="nav-icon" id="logoutBtn">🚪</div>
         </aside>
@@ -86,8 +86,8 @@
             <!-- Top Nav -->
             <nav class="top-nav-v2">
                 <div class="nav-links-v2">
-                    <button class="tab-btn active" data-tab="recipes">Mahsulot Kalkulyatsiyasi</button>
-                    <button class="tab-btn" data-tab="pipeline">Zakazlar Jarayoni</button>
+                    <button class="tab-btn" data-tab="recipes">Mahsulot Kalkulyatsiyasi</button>
+                    <button class="tab-btn active" data-tab="pipeline">Zakazlar Jarayoni</button>
                     <button class="tab-btn" data-tab="history">Saqlangan Shablonlar</button>
                 </div>
                 <div style="display: flex; gap: 20px; align-items: center;">
@@ -100,7 +100,7 @@
             </nav>
 
             <!-- Section: Recipes Table -->
-            <section id="recipes-view" class="warehouse-section">
+            <section id="recipes-view" class="warehouse-section hidden">
                 <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px;">
                     <div>
                         <h1 style="font-size: 2.2rem; font-weight: 600;">Mahsulot Shablonlari</h1>
@@ -142,7 +142,7 @@
             </section>
 
             <!-- Section: Zakazlar Jarayoni (Production Pipeline) -->
-            <section id="pipeline-view" class="warehouse-section hidden">
+            <section id="pipeline-view" class="warehouse-section">
                 <div style="margin-bottom: 25px;">
                     <h1 style="font-size: 2.2rem; font-weight: 600;">Zakazlar Jarayoni</h1>
                     <p style="color: var(--adm-text-sec);">Sotuv guruhga tayinlagan buyurtmalar shu yerda ishlab chiqarish bosqichlaridan o'tadi</p>

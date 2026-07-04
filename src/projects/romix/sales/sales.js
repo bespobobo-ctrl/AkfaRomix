@@ -575,15 +575,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Buyurtma tayyor bo'lish muddati bo'yicha qattiq nazorat belgisi
         function deadlineBadgeHtml(o) {
             if (!o.production_deadline || o.status === 'Tayyor / Yetkazildi') return '';
-            const today = new Date(); today.setHours(0, 0, 0, 0);
-            const dl = new Date(o.production_deadline);
-            const diffDays = Math.round((dl - today) / 86400000);
-            let color, text;
-            if (diffDays < 0) { color = '#ef4444'; text = `⚠️ Muddati o'tdi! (${Math.abs(diffDays)} kun kechikdi)`; }
-            else if (diffDays === 0) { color = '#ef4444'; text = `⚠️ BUGUN tayyor bo'lishi kerak!`; }
-            else if (diffDays <= 2) { color = '#ffaa00'; text = `⏰ ${diffDays} kun qoldi`; }
-            else { color = '#00ff88'; text = `⏰ ${diffDays} kun qoldi (${dl.toLocaleDateString('uz-UZ')})`; }
-            return `<div style="font-size:0.72rem; color:${color}; font-weight:700; margin-top:2px;">${text}</div>`;
+            return `<div class="countdown-live" data-target="${o.production_deadline}" style="font-size:0.72rem; font-weight:700; margin-top:2px;"></div>`;
+        }
+
+        // Jonli teskari sanoq: har soniya barcha ".countdown-live" belgilarini yangilaydi
+        function tickCountdowns() {
+            document.querySelectorAll('.countdown-live').forEach(el => {
+                const target = new Date(el.dataset.target);
+                target.setHours(23, 59, 59, 999); // muddat kunining oxirigacha
+                const diffMs = target.getTime() - Date.now();
+                const overdue = diffMs < 0;
+                const absMs = Math.abs(diffMs);
+                const days = Math.floor(absMs / 86400000);
+                const hours = Math.floor((absMs % 86400000) / 3600000);
+                const mins = Math.floor((absMs % 3600000) / 60000);
+                const secs = Math.floor((absMs % 60000) / 1000);
+                const pad = (n) => String(n).padStart(2, '0');
+                let color;
+                if (overdue) color = '#ef4444';
+                else if (days === 0 && hours < 6) color = '#ef4444';
+                else if (days <= 2) color = '#ffaa00';
+                else color = '#00ff88';
+                el.style.color = color;
+                el.textContent = overdue
+                    ? `⚠️ Muddati o'tdi! ${days}k ${pad(hours)}:${pad(mins)}:${pad(secs)} oldin`
+                    : `⏰ ${days}k ${pad(hours)}:${pad(mins)}:${pad(secs)} qoldi`;
+            });
+        }
+        if (!window.__romixCountdownStarted) {
+            window.__romixCountdownStarted = true;
+            setInterval(tickCountdowns, 1000);
         }
 
         // Clear views
@@ -693,6 +714,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (document.getElementById('kpiTotal')) document.getElementById('kpiTotal').textContent = totalSum.toLocaleString();
         if (document.getElementById('kpiCount')) document.getElementById('kpiCount').textContent = count;
 
+        tickCountdowns(); // darhol bo'yash, 1 soniya kutmasdan
         bindActionButtons();
     }
 
