@@ -604,6 +604,39 @@ document.addEventListener('DOMContentLoaded', async () => {
             att = aData || [];
         } catch (e) { console.warn('Buh Xodimlar fetch error:', e); }
 
+        // --- Brigadalar KPI: reyting jadvali + har bir xodimning brigada orqali KPI belgisi ---
+        let brigadeKpi = {}; // brigade_id -> { name, avg, count }
+        let empBrigadeName = {}; // employee_id -> brigade_id
+        try {
+            const { data: brigades } = await supabase.from('romix_brigades').select('*');
+            const { data: members } = await supabase.from('romix_brigade_members').select('*');
+            const { data: ratings } = await supabase.from('romix_brigade_ratings').select('*');
+            (brigades || []).forEach(b => { brigadeKpi[b.id] = { name: b.name, sum: 0, count: 0 }; });
+            (ratings || []).forEach(r => {
+                if (!brigadeKpi[r.brigade_id]) return;
+                const avgScore = ((Number(r.quality_score) || 0) + (Number(r.timeliness_score) || 0) + (Number(r.service_score) || 0)) / 3;
+                brigadeKpi[r.brigade_id].sum += avgScore;
+                brigadeKpi[r.brigade_id].count += 1;
+            });
+            (members || []).forEach(m => { empBrigadeName[m.employee_id] = m.brigade_id; });
+        } catch (e) { console.warn('Buh Xodimlar brigade KPI fetch error:', e); }
+
+        const leaderboardEl = document.getElementById('buh-brigade-leaderboard');
+        if (leaderboardEl) {
+            const ranked = Object.values(brigadeKpi).filter(b => b.count > 0).map(b => ({ ...b, avg: b.sum / b.count })).sort((a, b) => b.avg - a.avg);
+            leaderboardEl.innerHTML = ranked.length === 0 ? '' : `
+                <div style="background:rgba(255,170,0,0.04); border:1px solid rgba(255,170,0,0.15); border-radius:16px; padding:16px;">
+                    <h3 style="font-size:0.85rem; font-weight:700; color:#ffaa00; margin-bottom:12px;">🏆 Brigadalar Reytingi (O'rnatish sifati bo'yicha)</h3>
+                    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px;">
+                        ${ranked.map((b, i) => `<div style="background:rgba(255,255,255,0.03); border-radius:12px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:0.8rem; font-weight:600; color:#fff;">${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '👷'} ${b.name}</span>
+                            <span style="font-size:0.85rem; font-weight:800; color:#ffaa00;">⭐ ${b.avg.toFixed(1)} <small style="color:rgba(255,255,255,0.4); font-weight:600;">(${b.count})</small></span>
+                        </div>`).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
         const attByEmp = {};
         att.forEach(a => { attByEmp[a.employee_id] = a; });
 
@@ -657,6 +690,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const salary = parseFloat((e.salary_info || '').toString().replace(/[^0-9]/g, '')) || 0;
                     const initials = (e.full_name || '?').split(' ').map(n => n?.[0]).join('').slice(0, 2).toUpperCase();
                     const searchKey = `${e.full_name || ''} ${e.role || ''}`.toLowerCase();
+                    const empBrigadeId = empBrigadeName[e.id];
+                    const empKpi = empBrigadeId ? brigadeKpi[empBrigadeId] : null;
+                    const kpiHtml = (empKpi && empKpi.count > 0)
+                        ? `<span style="background:rgba(255,170,0,0.1); color:#ffaa00; padding:3px 10px; border-radius:12px; font-size:0.68rem; font-weight:700;">⭐ KPI: ${(empKpi.sum / empKpi.count).toFixed(1)} (${empKpi.count})</span>`
+                        : '';
                     return `<div class="buh-emp-card" data-search="${searchKey.replace(/"/g, '')}" style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-top:3px solid ${statusColor}; border-radius:18px; padding:16px; display:flex; flex-direction:column; gap:10px; transition:all 0.25s;">
                         <div style="display:flex; align-items:center; gap:12px;">
                             <div style="width:44px; height:44px; border-radius:14px; background:linear-gradient(135deg,#00d2ff,#007aff); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; font-size:0.85rem; flex-shrink:0;">${initials}</div>
@@ -665,6 +703,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <div style="font-size:0.7rem; color:rgba(255,255,255,0.4); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${e.role || 'Lavozimsiz'}</div>
                             </div>
                         </div>
+                        ${kpiHtml ? `<div>${kpiHtml}</div>` : ''}
                         <div style="border-top:1px dashed rgba(255,255,255,0.06); padding-top:10px;">${statusHtml}</div>
                         <div style="background:rgba(255,170,0,0.05); border:1px solid rgba(255,170,0,0.15); border-radius:12px; padding:9px 12px; display:flex; flex-direction:column; gap:2px;">
                             <span style="font-size:0.6rem; color:rgba(255,255,255,0.4); font-weight:700; text-transform:uppercase; letter-spacing:0.4px;">Bugungi Jonli Ish Haqi</span>
@@ -5112,7 +5151,7 @@ ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS payment_date TIMESTAMPTZ;`;
                 list.appendChild(card);
             });
         } else {
-            panel.style.display = 'none';
+            if (panel) panel.style.display = 'none';
             if (dot) dot.style.display = 'none';
         }
     }

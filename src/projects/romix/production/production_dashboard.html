@@ -78,6 +78,7 @@
                 P</div>
             <div class="nav-icon" data-tab="recipes" title="Shablonlar">🏭</div>
             <div class="nav-icon active" data-tab="pipeline" title="Zakazlar Jarayoni">📋</div>
+            <div class="nav-icon" data-tab="brigades" title="Brigadalar">👷</div>
             <div class="nav-icon" data-tab="history" title="Tarix">📑</div>
             <div class="nav-icon" id="logoutBtn">🚪</div>
         </aside>
@@ -88,6 +89,7 @@
                 <div class="nav-links-v2">
                     <button class="tab-btn" data-tab="recipes">Mahsulot Kalkulyatsiyasi</button>
                     <button class="tab-btn active" data-tab="pipeline">Zakazlar Jarayoni</button>
+                    <button class="tab-btn" data-tab="brigades">Brigadalar</button>
                     <button class="tab-btn" data-tab="history">Saqlangan Shablonlar</button>
                 </div>
                 <div style="display: flex; gap: 20px; align-items: center;">
@@ -170,7 +172,114 @@
                     </div>
                 </div>
             </section>
+
+            <!-- Section: Brigadalar (boshqaruv + baholash) -->
+            <section id="brigades-view" class="warehouse-section hidden">
+                <div style="margin-bottom: 25px;">
+                    <h1 style="font-size: 2.2rem; font-weight: 600;">Brigadalar</h1>
+                    <p style="color: var(--adm-text-sec);">Brigada tarkibi va o'rnatish sifatini baholash</p>
+                </div>
+
+                <div class="bento-grid" style="margin-bottom:20px;">
+                    <div class="bento-card" style="grid-column: span 4; border-top: 4px solid #8b5cf6;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+                            <h3 style="font-weight:700;">👷 Brigada Tarkibi</h3>
+                            <button id="openAddBrigadeBtn" style="background:#8b5cf6; color:#fff; border:none; padding:9px 18px; border-radius:12px; font-weight:700; cursor:pointer; font-size:0.8rem;">+ Brigada Qo'shish</button>
+                        </div>
+                        <div id="brigadesGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px;"></div>
+                    </div>
+                </div>
+
+                <div class="bento-grid">
+                    <div class="bento-card" style="grid-column: span 4; border-top: 4px solid #ffaa00;">
+                        <h3 style="font-weight:700; margin-bottom:18px;">⭐ Baholash Kutilmoqda</h3>
+                        <div id="ratingQueueGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px;"></div>
+                    </div>
+                </div>
+            </section>
         </main>
+    </div>
+
+    <!-- Modal: Yangi Brigada Qo'shish -->
+    <div id="addBrigadeModal" class="hidden"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px;">
+        <div class="user-form-modal" style="width: 420px; background:var(--adm-surface);">
+            <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+                <span style="font-size: 1.5rem;">👷</span>
+                <h2 style="color:var(--adm-text);">Yangi Brigada</h2>
+            </div>
+            <label class="form-label">Brigada Nomi</label>
+            <input type="text" id="newBrigadeName" class="form-input-v2" placeholder="Masalan: Brigada 3 (Bekzod)">
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button id="saveBrigadeBtn" style="flex:1; background:#8b5cf6; color:#fff; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">Qo'shish</button>
+                <button id="closeAddBrigadeModal" style="flex:1; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; border-radius:12px; cursor:pointer;">Yopish</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Brigadaga A'zo Qo'shish -->
+    <div id="addMemberModal" class="hidden"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px;">
+        <div class="user-form-modal" style="width: 420px; background:var(--adm-surface);">
+            <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+                <span style="font-size: 1.5rem;">➕</span>
+                <h2 style="color:var(--adm-text);">A'zo Qo'shish</h2>
+            </div>
+            <p id="addMemberBrigadeName" style="color:var(--adm-text-sec); font-size:0.85rem; margin-bottom:15px;"></p>
+            <label class="form-label">Xodim</label>
+            <select id="newMemberEmp" class="form-input-v2"></select>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button id="saveMemberBtn" style="flex:1; background:#8b5cf6; color:#fff; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">Qo'shish</button>
+                <button id="closeAddMemberModal" style="flex:1; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; border-radius:12px; cursor:pointer;">Yopish</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Brigadani Baholash -->
+    <div id="rateBrigadeModal" class="hidden"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px;">
+        <div class="user-form-modal" style="width: 460px; background:var(--adm-surface);">
+            <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+                <span style="font-size: 1.5rem;">⭐</span>
+                <h2 style="color:var(--adm-text);">Brigadani Baholash</h2>
+            </div>
+            <p id="rateOrderInfo" style="color:var(--adm-text-sec); font-size:0.85rem; margin-bottom:15px;"></p>
+
+            <label class="form-label">Sifat (1-5)</label>
+            <select id="rateQuality" class="form-input-v2">
+                <option value="5">5 - A'lo</option>
+                <option value="4">4 - Yaxshi</option>
+                <option value="3">3 - O'rtacha</option>
+                <option value="2">2 - Qoniqarsiz</option>
+                <option value="1">1 - Yomon</option>
+            </select>
+
+            <label class="form-label" style="margin-top:10px;">Vaqtida Bajarish (1-5)</label>
+            <select id="rateTimeliness" class="form-input-v2">
+                <option value="5">5 - A'lo</option>
+                <option value="4">4 - Yaxshi</option>
+                <option value="3">3 - O'rtacha</option>
+                <option value="2">2 - Qoniqarsiz</option>
+                <option value="1">1 - Yomon</option>
+            </select>
+
+            <label class="form-label" style="margin-top:10px;">Mijoz Bilan Muomala (1-5)</label>
+            <select id="rateService" class="form-input-v2">
+                <option value="5">5 - A'lo</option>
+                <option value="4">4 - Yaxshi</option>
+                <option value="3">3 - O'rtacha</option>
+                <option value="2">2 - Qoniqarsiz</option>
+                <option value="1">1 - Yomon</option>
+            </select>
+
+            <label class="form-label" style="margin-top:10px;">Izoh (ixtiyoriy)</label>
+            <textarea id="rateNote" class="form-input-v2" rows="2" style="resize:vertical;"></textarea>
+
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button id="saveRatingBtn" style="flex:1; background:#ffaa00; color:#000; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">Saqlash</button>
+                <button id="closeRateBrigadeModal" style="flex:1; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; border-radius:12px; cursor:pointer;">Yopish</button>
+            </div>
+        </div>
     </div>
 
     <!-- Modal: Yangi Shablon Qo'shish -->

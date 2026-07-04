@@ -237,20 +237,28 @@
     <!-- Modal: Brigada Biriktirish (O'rnatishga yuborish) -->
     <div id="installModal" class="hidden"
         style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px;">
-        <div class="user-form-modal" style="width: 500px; background:var(--adm-surface);">
+        <div class="user-form-modal" style="width: 560px; max-height:88vh; overflow-y:auto; background:var(--adm-surface);">
             <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
                 <span style="font-size: 1.5rem;">🚚</span>
                 <h2 style="color:var(--adm-text);">O'rnatishga Yuborish</h2>
             </div>
             <p id="installOrderInfo" style="color:var(--adm-text-sec); font-size:0.85rem; margin-bottom:15px;"></p>
-            <label class="form-label">Brigada / Ishchi Guruh</label>
-            <select id="installGroup" class="form-input-v2">
-                <option value="Brigada 1 (Alijon)">Brigada 1 (Alijon)</option>
-                <option value="Brigada 2 (Sardor)">Brigada 2 (Sardor)</option>
-                <option value="Tezkor Guruh (Jasur)">Tezkor Guruh (Jasur)</option>
-            </select>
+            <label class="form-label">Brigada</label>
+            <select id="installGroup" class="form-input-v2"></select>
             <label class="form-label" style="margin-top:10px;">O'rnatish Muddati</label>
             <input type="date" id="installDeadline" class="form-input-v2">
+
+            <div style="background:rgba(0,210,255,0.05); padding:15px; border-radius:15px; margin-top:20px; border:1px solid rgba(0,210,255,0.1);">
+                <label class="form-label" style="margin-top:0;">O'rnatish uchun ombordan olinadigan materiallar</label>
+                <div style="display:flex; gap:10px;">
+                    <select id="installMatSel" class="form-input-v2" style="flex:2;"></select>
+                    <input type="number" id="installMatQty" class="form-input-v2" placeholder="Miqdor" style="flex:1;" min="0" step="0.1">
+                    <button id="addInstallMatBtn" type="button"
+                        style="background:#00d2ff; color:#000; border:none; border-radius:10px; padding:0 15px; font-weight:700; cursor:pointer;">+</button>
+                </div>
+                <div id="installMatList" style="margin-top:12px; display:flex; flex-direction:column; gap:6px;"></div>
+            </div>
+
             <div style="display:flex; gap:10px; margin-top:20px;">
                 <button id="saveInstallBtn"
                     style="flex:1; background:#00d2ff; color:#000; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">Yuborish</button>

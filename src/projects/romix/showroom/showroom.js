@@ -180,6 +180,76 @@ document.addEventListener('DOMContentLoaded', async () => {
     // biriktirish, muddat belgilash va bajarilganini qayd etish
     // ============================================================
     let currentInstallOrderId = null;
+    let romixBrigades = [];
+    let installMaterialOptions = [];
+    window.installMaterials = [];
+
+    async function loadBrigadesAndMaterialOptions() {
+        try {
+            const { data, error } = await supabase.from('romix_brigades').select('*').order('name');
+            if (error) throw error;
+            romixBrigades = data || [];
+        } catch (err) {
+            console.warn("loadBrigades failed (romix_brigades jadvali mavjudligini tekshiring):", err);
+            romixBrigades = [];
+        }
+        const sel = document.getElementById('installGroup');
+        if (sel) {
+            sel.innerHTML = romixBrigades.length
+                ? romixBrigades.map(b => `<option value="${b.name}">${b.name}</option>`).join('')
+                : '<option value="">Brigada topilmadi</option>';
+        }
+
+        try {
+            const { data, error } = await supabase.from('romix_inventory').select('id, product_name, unit').order('product_name');
+            if (error) throw error;
+            installMaterialOptions = data || [];
+        } catch (err) {
+            console.warn("loadInstallMaterialOptions failed:", err);
+            installMaterialOptions = [];
+        }
+        const matSel = document.getElementById('installMatSel');
+        if (matSel) {
+            matSel.innerHTML = installMaterialOptions.map(p => `<option value="${p.id}" data-name="${p.product_name}" data-unit="${p.unit}">${p.product_name} (${p.unit})</option>`).join('');
+        }
+    }
+
+    function renderInstallMatList() {
+        const list = document.getElementById('installMatList');
+        if (!list) return;
+        if (window.installMaterials.length === 0) {
+            list.innerHTML = '<div style="font-size:0.72rem; color:var(--adm-text-sec);">Hozircha material qo\'shilmagan</div>';
+            return;
+        }
+        list.innerHTML = window.installMaterials.map((m, idx) => `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); padding:6px 10px; border-radius:8px; font-size:0.75rem;">
+                <span>${m.product_name} — <strong>${m.qty} ${m.unit}</strong></span>
+                <button type="button" class="rm-install-mat" data-idx="${idx}" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:0.9rem;">✕</button>
+            </div>
+        `).join('');
+        document.querySelectorAll('.rm-install-mat').forEach(btn => {
+            btn.onclick = () => {
+                window.installMaterials.splice(parseInt(btn.dataset.idx), 1);
+                renderInstallMatList();
+            };
+        });
+    }
+
+    document.getElementById('addInstallMatBtn').onclick = () => {
+        const sel = document.getElementById('installMatSel');
+        const qtyInput = document.getElementById('installMatQty');
+        const qty = parseFloat(qtyInput.value);
+        if (!sel.value || !qty || qty <= 0) return alert("Material va to'g'ri miqdorni tanlang!");
+        const opt = sel.options[sel.selectedIndex];
+        window.installMaterials.push({
+            product_id: sel.value,
+            product_name: opt.dataset.name,
+            unit: opt.dataset.unit,
+            qty: qty
+        });
+        qtyInput.value = '';
+        renderInstallMatList();
+    };
 
     async function loadIncomingProduction() {
         const grid = document.getElementById('incomingProductionGrid');
@@ -199,6 +269,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        let matsByOrder = {};
+        try {
+            const { data, error } = await supabase.from('romix_installation_materials').select('*').in('order_id', orders.map(o => o.id));
+            if (error) throw error;
+            (data || []).forEach(m => {
+                if (!matsByOrder[m.order_id]) matsByOrder[m.order_id] = [];
+                matsByOrder[m.order_id].push(m);
+            });
+        } catch (err) {
+            console.warn("loadIncomingProduction installation_materials fetch failed:", err);
+        }
+
         const today = new Date(); today.setHours(0, 0, 0, 0);
 
         grid.innerHTML = orders.map(o => {
@@ -206,6 +288,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const isAssigned = !!o.install_group;
             const isOverdue = isAssigned && !isInstalled && o.install_deadline && new Date(o.install_deadline) < today;
             const accentColor = isInstalled ? '#00ff88' : (isOverdue ? '#ef4444' : (isAssigned ? '#00d2ff' : '#f97316'));
+            const mats = matsByOrder[o.id] || [];
+            const matsHtml = mats.length
+                ? `<div style="font-size:0.7rem; color:var(--adm-text-sec); border-top:1px dashed var(--adm-border); padding-top:6px; margin-top:4px;">📦 ${mats.map(m => `${m.product_name} (${m.qty} ${m.unit})`).join(', ')}</div>`
+                : '';
 
             let bodyHtml = '';
             if (!isAssigned) {
@@ -215,6 +301,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 bodyHtml = `
                     <div style="font-size:0.75rem; color:var(--adm-text-sec); border-top:1px dashed var(--adm-border); padding-top:8px; margin-top:6px;">Brigada: <strong style="color:#00d2ff;">${o.install_group}</strong></div>
                     <div style="font-size:0.75rem; ${isOverdue ? 'color:#ef4444; font-weight:700;' : 'color:var(--adm-text-sec);'}">⏳ Muddat: <strong>${deadlineStr}</strong>${isOverdue ? ' ⚠️ Muddati o\'tgan!' : ''}</div>
+                    ${matsHtml}
                     ${isInstalled
                         ? `<span style="display:inline-block; margin-top:6px; background:rgba(0,255,136,0.1); color:#00ff88; padding:4px 10px; border-radius:12px; font-size:0.7rem; font-weight:700;">✓ O'rnatildi</span>`
                         : `<button class="install-complete-btn" data-id="${o.id}" style="width:100%; background:#00ff88; color:#000; border:none; padding:9px; border-radius:10px; font-weight:700; font-size:0.78rem; cursor:pointer; margin-top:6px;">✓ O'rnatildi Deb Belgilash</button>`
@@ -230,11 +317,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         }).join('');
 
         document.querySelectorAll('.install-assign-btn').forEach(btn => {
-            btn.onclick = () => {
+            btn.onclick = async () => {
                 currentInstallOrderId = btn.dataset.id;
                 document.getElementById('installOrderInfo').textContent = `Mijoz: ${btn.dataset.name}`;
-                document.getElementById('installGroup').value = 'Brigada 1 (Alijon)';
+                await loadBrigadesAndMaterialOptions();
                 document.getElementById('installDeadline').value = '';
+                window.installMaterials = [];
+                renderInstallMatList();
                 installModal.classList.remove('hidden');
             };
         });
@@ -262,18 +351,62 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('saveInstallBtn').onclick = async () => {
         const grp = document.getElementById('installGroup').value;
         const deadline = document.getElementById('installDeadline').value;
+        if (!grp) return alert("Brigadani tanlang!");
         if (!deadline) return alert("O'rnatish muddatini tanlang!");
+
+        const saveInstallBtn = document.getElementById('saveInstallBtn');
+        if (saveInstallBtn.disabled) return;
+        saveInstallBtn.disabled = true;
+        const saveInstallBtnOrigText = saveInstallBtn.textContent;
+        saveInstallBtn.textContent = 'Tekshirilmoqda...';
+
         try {
+            // Pre-check stock sufficiency for every installation material row BEFORE deducting anything
+            const stockMap = {};
+            const shortages = [];
+            for (const m of window.installMaterials) {
+                const { data: prod } = await supabase.from('romix_inventory').select('stock_quantity').eq('id', m.product_id).maybeSingle();
+                const current = prod ? (parseFloat(prod.stock_quantity) || 0) : 0;
+                stockMap[m.product_id] = current;
+                if (current < m.qty) {
+                    shortages.push(`${m.product_name}: kerak ${m.qty} ${m.unit}, omborda bor-yo'g'i ${current} ${m.unit}`);
+                }
+            }
+            if (shortages.length > 0) {
+                alert(`❌ Omborda yetarli mahsulot yo'q:\n\n${shortages.join('\n')}`);
+                return;
+            }
+
             const { error } = await supabase.from('sales_orders').update({
                 install_group: grp,
                 install_deadline: deadline,
                 install_status: 'Tayinlangan'
             }).eq('id', currentInstallOrderId);
             if (error) throw error;
+
+            for (const m of window.installMaterials) {
+                await supabase.from('romix_inventory').update({ stock_quantity: stockMap[m.product_id] - m.qty }).eq('id', m.product_id);
+                await supabase.from('romix_transactions').insert([{
+                    product_id: m.product_id,
+                    type: 'OUT',
+                    quantity: m.qty,
+                    note: `O'rnatish uchun (Brigada: ${grp})`
+                }]);
+                await supabase.from('romix_installation_materials').insert([{
+                    order_id: currentInstallOrderId,
+                    product_id: m.product_id,
+                    product_name: m.product_name,
+                    qty: m.qty,
+                    unit: m.unit
+                }]);
+            }
         } catch (err) {
-            alert("Biriktirishda xatolik: bazada 'install_group'/'install_deadline'/'install_status' ustunlari mavjudligini tekshiring.");
+            alert("Biriktirishda xatolik: bazada 'install_group'/'install_deadline'/'install_status'/'romix_brigades'/'romix_installation_materials' ustunlari/jadvallari mavjudligini tekshiring.");
             console.warn("install assign failed:", err);
             return;
+        } finally {
+            saveInstallBtn.disabled = false;
+            saveInstallBtn.textContent = saveInstallBtnOrigText;
         }
         installModal.classList.add('hidden');
         loadIncomingProduction();
