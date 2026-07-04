@@ -48,9 +48,9 @@ export async function chatText(system, userText) {
 // Spiska (kirim hujjati) rasmidan mahsulotlar ro'yxatini o'qib olish
 export async function extractSpiskaFromImage(base64, mimeType) {
     const prompt = `Bu ombor kirim hujjati yoki qo'lda yozilgan tovar spiskasi rasmi. Rasmdagi HAR BIR mahsulot qatorini diqqat bilan o'qib, faqat quyidagi JSON massiv ko'rinishida javob qaytar (hech qanday qo'shimcha matn, izoh yoki markdown belgisi yozma):
-[{"name": "mahsulot nomi", "qty": son, "unit": "dona|kg|litr|metr|pachka", "type": "profil" yoki "aksessuar", "category": "aksessuar bo'lsa: Zamoklar|Ruchkalar|Qistirmalar|Biriktiruvchilar|Boshqa..., profil bo'lsa bo'sh string", "spec": "rangi/o'lchami/xususiyati agar bor bo'lsa, aks holda bo'sh string", "lengthMm": profil turi uchun agar rasmda har bir dona/pachkaning uzunligi millimetrda (yoki metrda, mm'ga aylantirib) aniq ko'rsatilgan bo'lsa shu son, aks holda 0}]
+[{"name": "mahsulot nomi", "qty": son, "unit": "dona|kg|litr|metr|pachka", "type": "profil" yoki "aksessuar", "category": "aksessuar bo'lsa: Zamoklar|Ruchkalar|Qistirmalar|Biriktiruvchilar|Boshqa..., profil bo'lsa bo'sh string", "spec": "rangi/o'lchami/xususiyati agar bor bo'lsa, aks holda bo'sh string", "lengthMm": profil turi uchun agar rasmda har bir dona/pachkaning uzunligi millimetrda (yoki metrda, mm'ga aylantirib) aniq ko'rsatilgan bo'lsa shu son, aks holda 0, "price": agar hujjatda har bir birlik/dona uchun NARX (so'm/summa) ustuni bo'lsa shu son (faqat raqam, valyuta belgisisiz), aks holda 0}]
 
-"type" ni aniqlash qoidasi: profil, PVX, alyuminiy, shtapik, tokcha, lambri kabi qurilish/tuzilma materiallari — "profil"; zamok, ruchka, qistirma (rezinka), vint, burama, dovodchik kabi kichik butlovchi/aksessuar qismlar — "aksessuar". Agar noaniq bo'lsa "aksessuar" deb belgila. Miqdorni rasmda yozilgan songa qat'iy asoslanib yoz; agar biror qatorni ishonchli o'qiy olmasang, o'sha qatorni ro'yxatga umuman qo'shma. "lengthMm"ni FAQAT rasmda aniq yozilgan bo'lsagina to'ldir — taxmin qilma, noaniq bo'lsa 0 qo'y (buxgalter keyin qo'lda kiritadi).`;
+"type" ni aniqlash qoidasi: profil, PVX, alyuminiy, shtapik, tokcha, lambri kabi qurilish/tuzilma materiallari — "profil"; zamok, ruchka, qistirma (rezinka), vint, burama, dovodchik kabi kichik butlovchi/aksessuar qismlar — "aksessuar". Agar noaniq bo'lsa "aksessuar" deb belgila. Miqdorni rasmda yozilgan songa qat'iy asoslanib yoz; agar biror qatorni ishonchli o'qiy olmasang, o'sha qatorni ro'yxatga umuman qo'shma. "lengthMm"ni FAQAT rasmda aniq yozilgan bo'lsagina to'ldir — taxmin qilma, noaniq bo'lsa 0 qo'y (buxgalter keyin qo'lda kiritadi). "price" ham xuddi shunday: FAQAT hujjatda aniq yozilgan narxni yoz (masalan "Narxi", "Summa", "Birlik narxi" ustuni), agar jami summa/qiymat ustuni bo'lib birlik narxi aniq bo'lmasa yoki umuman narx ustuni bo'lmasa 0 qo'y — taxmin qilma.`;
     const body = {
         contents: [{
             role: "user", parts: [
@@ -81,7 +81,8 @@ export async function extractSpiskaFromImage(base64, mimeType) {
             type: it.type === 'profil' ? 'profil' : 'aksessuar',
             category: it.category || '',
             spec: it.spec || '',
-            lengthMm: Number(it.lengthMm) || 0
+            lengthMm: Number(it.lengthMm) || 0,
+            price: Number(it.price) || 0
         }));
 }
 

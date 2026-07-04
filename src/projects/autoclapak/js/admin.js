@@ -1272,13 +1272,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     ${!isAcc ? `<input type="number" value="${it.lengthMm || ''}" min="0" placeholder="mm" oninput="window.updateBuhVisionItem(${idx},'lengthMm',this.value)" title="Har bir dona/pachka uzunligi (mm) — to'ldirilsa, jami metr avtomatik hisoblanadi" style="width:70px; background:rgba(0,210,255,0.06); border:1px solid rgba(0,210,255,0.25); color:#00d2ff; font-weight:700; padding:5px 8px; border-radius:6px; font-size:0.76rem; text-align:right;">` : '<span style="color:rgba(255,255,255,0.3); font-size:0.72rem;">—</span>'}
                 </td>
                 <td style="padding:6px;"><input type="text" value="${(it.spec || '').replace(/"/g, '&quot;')}" oninput="window.updateBuhVisionItem(${idx},'spec',this.value)" style="width:100%; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:5px 8px; border-radius:6px; font-size:0.76rem; box-sizing:border-box;"></td>
+                <td style="padding:6px;"><input type="number" value="${it.price || ''}" min="0" placeholder="narx" oninput="window.updateBuhVisionItem(${idx},'price',this.value)" title="Bir birlik/dona narxi (so'm)" style="width:90px; background:rgba(0,255,136,0.06); border:1px solid rgba(0,255,136,0.25); color:#00ff88; font-weight:700; padding:5px 8px; border-radius:6px; font-size:0.76rem; text-align:right;"></td>
                 <td style="padding:6px; text-align:center;"><button onclick="window.removeBuhVisionItem(${idx})" style="background:none; border:none; color:#ff4d4f; cursor:pointer; font-size:0.85rem;">🗑️</button></td>
             </tr>`;
-        }).join('') || '<tr><td colspan="8" style="text-align:center; padding:20px; color:rgba(255,255,255,0.3);">Ro\'yxat bo\'sh</td></tr>';
+        }).join('') || '<tr><td colspan="9" style="text-align:center; padding:20px; color:rgba(255,255,255,0.3);">Ro\'yxat bo\'sh</td></tr>';
     };
     window.updateBuhVisionItem = (idx, field, value) => {
         if (!window.__buhVisionItems || !window.__buhVisionItems[idx]) return;
-        if (field === 'qty' || field === 'lengthMm') value = parseFloat(value) || 0;
+        if (field === 'qty' || field === 'lengthMm' || field === 'price') value = parseFloat(value) || 0;
         window.__buhVisionItems[idx][field] = value;
         if (field === 'type') window.renderBuhVisionResults();
     };
@@ -1308,7 +1309,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const { data: existing } = await supabase.from('romix_inventory').select('*').eq('product_name', it.name).maybeSingle();
                 const payload = {
                     product_name: it.name, category: 'Profil', description: desc, unit: finalUnit,
-                    price: existing ? (existing.price || 0) : 0,
+                    price: it.price > 0 ? it.price : (existing ? (existing.price || 0) : 0),
                     stock_quantity: existing ? (parseFloat(existing.stock_quantity) || 0) + finalQty : finalQty
                 };
                 let product;
@@ -1342,8 +1343,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     inventory[matchedIndex].qty += it.qty;
                     inventory[matchedIndex].spec = it.spec;
                     inventory[matchedIndex].category = finalCategory;
+                    if (it.price > 0) inventory[matchedIndex].price = it.price;
                 } else {
-                    inventory.push({ name: it.name, category: finalCategory, qty: it.qty, unit: it.unit, spec: it.spec });
+                    inventory.push({ name: it.name, category: finalCategory, qty: it.qty, unit: it.unit, spec: it.spec, price: it.price || 0 });
                 }
                 const now = new Date();
                 const timeStr = now.toLocaleDateString('uz-UZ') + ' ' + now.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
