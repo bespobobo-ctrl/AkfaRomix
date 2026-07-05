@@ -2043,15 +2043,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         const d = await _buhComputeUmumiyData();
         window._buhUmumiyDrills = {};
 
-        window._buhUmumiyDrills['ombor'] = `<h4 style="color:#fff; margin-bottom:10px;">🏬 Ombor Tarkibi (${d.ombor.items.length} tur)</h4>
+        window._buhUmumiyDrills['ombor'] = `<h4 style="color:var(--adm-text); margin-bottom:10px;">🏬 Ombor Tarkibi (${d.ombor.items.length} tur)</h4>
             <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Mahsulot</th><th style="text-align:right;">Qoldiq</th><th style="text-align:right;">Narx</th><th style="text-align:right;">Qiymat</th></tr></thead>
             <tbody>${_buhInventoryTableRows(d.ombor.items)}</tbody></table></div>`;
 
-        window._buhUmumiyDrills['profil'] = `<h4 style="color:#fff; margin-bottom:10px;">📦 Profil Tarkibi (${d.profil.items.length} tur)</h4>
+        window._buhUmumiyDrills['profil'] = `<h4 style="color:var(--adm-text); margin-bottom:10px;">📦 Profil Tarkibi (${d.profil.items.length} tur)</h4>
             <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Mahsulot</th><th style="text-align:right;">Qoldiq</th><th style="text-align:right;">Narx</th><th style="text-align:right;">Qiymat</th></tr></thead>
             <tbody>${_buhInventoryTableRows(d.profil.items)}</tbody></table></div>`;
 
-        window._buhUmumiyDrills['aksesuar'] = `<h4 style="color:#fff; margin-bottom:10px;">🔩 Aksesuar Tarkibi (${d.accessories.length} tur)</h4>
+        window._buhUmumiyDrills['aksesuar'] = `<h4 style="color:var(--adm-text); margin-bottom:10px;">🔩 Aksesuar Tarkibi (${d.accessories.length} tur)</h4>
             <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Nomi</th><th style="text-align:right;">Soni</th><th style="text-align:right;">Narx</th><th style="text-align:right;">Qiymat</th></tr></thead>
             <tbody>${_buhInventoryTableRows(d.accessories, 'qty')}</tbody></table></div>`;
 
@@ -2059,7 +2059,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             ? d.monthOrders.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).map(o =>
                 `<tr><td>${o.created_at ? new Date(o.created_at).toLocaleDateString('uz-UZ') : '-'}</td><td>${o.customer_name || "Noma'lum"}</td><td>${o.prod_type || ''}</td><td style="text-align:right; color:#00ff88;">${_buhFmt(o.total_price)}</td></tr>`).join('')
             : `<tr><td colspan="4" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Shu oy buyurtma yo'q</td></tr>`;
-        window._buhUmumiyDrills['kirim'] = `<h4 style="color:#fff; margin-bottom:10px;">📈 Shu Oy Kirim Manbalari (${d.monthOrders.length} buyurtma)</h4>
+        window._buhUmumiyDrills['kirim'] = `<h4 style="color:var(--adm-text); margin-bottom:10px;">📈 Shu Oy Kirim Manbalari (${d.monthOrders.length} buyurtma)</h4>
             <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Sana</th><th>Mijoz</th><th>Mahsulot</th><th style="text-align:right;">Summa</th></tr></thead>
             <tbody>${incomeRows}</tbody></table></div>`;
 
@@ -2067,7 +2067,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const expRows = expCats.length
             ? expCats.map(([cat, sum]) => `<tr><td>${cat}</td><td style="text-align:right; color:#ff4d4f;">-${_buhFmt(sum)}</td></tr>`).join('')
             : `<tr><td colspan="2" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Shu oy harajat yo'q</td></tr>`;
-        window._buhUmumiyDrills['harajat'] = `<h4 style="color:#fff; margin-bottom:10px;">📉 Shu Oy Harajat Kategoriyalari</h4>
+        window._buhUmumiyDrills['harajat'] = `<h4 style="color:var(--adm-text); margin-bottom:10px;">📉 Shu Oy Harajat Kategoriyalari</h4>
             <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Kategoriya</th><th style="text-align:right;">Summa</th></tr></thead>
             <tbody>${expRows}</tbody></table></div>`;
 
@@ -2079,14 +2079,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             return `<tr style="cursor:pointer;" onclick="window.toggleBuhPaymentCreditor('${safeKey}')"><td>▸ ${creditor}</td><td></td><td style="text-align:right; font-weight:700;">${_buhFmt(info.total)}</td></tr>
                 <tr id="buh-pay-cred-${safeKey}" style="display:none; background:rgba(255,255,255,0.02);"><td colspan="3" style="padding:0;"><table class="v2-table" style="width:100%;"><tbody>${historyRows}</tbody></table></td></tr>`;
         }).join('') : `<tr><td colspan="3" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Shu oy to'lov qilinmagan</td></tr>`;
-        window._buhUmumiyDrills['tolovlar'] = `<h4 style="color:#fff; margin-bottom:10px;">🧾 Shu Oy To'lovlar — Kimga Qancha (bosib tarixni ko'ring)</h4>
+        window._buhUmumiyDrills['tolovlar'] = `<h4 style="color:var(--adm-text); margin-bottom:10px;">🧾 Shu Oy To'lovlar — Kimga Qancha (bosib tarixni ko'ring)</h4>
             <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Kreditor</th><th></th><th style="text-align:right;">Jami</th></tr></thead>
             <tbody>${paymentsRows}</tbody></table></div>`;
 
         const empRows = d.employeeMonthlyEarnings.length ? d.employeeMonthlyEarnings.map(e =>
             `<tr><td>${e.name}</td><td>${e.role || '-'}</td><td style="text-align:right;">${e.workedDays}</td><td style="text-align:right; color:#ffaa00;">${_buhFmt(e.earned)}</td><td style="text-align:right; color:#ba00ff;">${_buhFmt(e.salary)}</td></tr>`).join('')
             : `<tr><td colspan="5" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Xodim topilmadi</td></tr>`;
-        window._buhUmumiyDrills['xodimlar'] = `<h4 style="color:#fff; margin-bottom:10px;">👥 Shu Oy Xodimlar — Kim Qancha Ishlagani</h4>
+        window._buhUmumiyDrills['xodimlar'] = `<h4 style="color:var(--adm-text); margin-bottom:10px;">👥 Shu Oy Xodimlar — Kim Qancha Ishlagani</h4>
             <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Ism</th><th>Lavozim</th><th style="text-align:right;">Ish Kunlari</th><th style="text-align:right;">Hisoblangan Ish Haqi</th><th style="text-align:right;">Oylik Maosh</th></tr></thead>
             <tbody>${empRows}</tbody></table></div>`;
 
@@ -2095,13 +2095,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const pay = _buhOrderPaymentInfo(o);
                 return `<tr><td>${o.customer_name || "Noma'lum"}</td><td style="text-align:right;">${_buhFmt(pay.total)}</td><td style="text-align:right; color:#00ff88;">${_buhFmt(pay.paidAmount)}</td><td style="text-align:right; color:#ff4d4f; font-weight:700;">${_buhFmt(pay.remaining)}</td></tr>`;
             }).join('') : `<tr><td colspan="4" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Hammasi to'liq to'langan</td></tr>`;
-        window._buhUmumiyDrills['zakaz'] = `<h4 style="color:#fff; margin-bottom:10px;">🛒 Shu Oy Buyurtmalar: ${d.monthOrdersCount} ta — ${_buhFmt(d.monthlyIncome)}</h4>
+        window._buhUmumiyDrills['zakaz'] = `<h4 style="color:var(--adm-text); margin-bottom:10px;">🛒 Shu Oy Buyurtmalar: ${d.monthOrdersCount} ta — ${_buhFmt(d.monthlyIncome)}</h4>
             <div class="buh-mini-row" style="margin-bottom:16px;">
                 <div class="buh-mini-stat"><span class="buh-mini-label">Shu Oy Yig'ilgan</span><span class="buh-mini-value" style="color:#00ff88;">${_buhFmt(d.monthlyCollected)}</span></div>
                 <div class="buh-mini-stat"><span class="buh-mini-label">Hali Ishlanmagan Qoldiq</span><span class="buh-mini-value" style="color:#ffaa00;">${_buhFmt(d.notInstalledUnpaidTotal)}</span></div>
                 <div class="buh-mini-stat"><span class="buh-mini-label">O'tgan Mijozlardan Kutilmoqda</span><span class="buh-mini-value" style="color:#ff4d4f;">${_buhFmt(d.installedUnpaidTotal)}</span></div>
             </div>
-            <h4 style="color:#fff; margin-bottom:10px;">⏳ O'rnatilgan, Lekin To'liq To'lanmagan Mijozlar</h4>
+            <h4 style="color:var(--adm-text); margin-bottom:10px;">⏳ O'rnatilgan, Lekin To'liq To'lanmagan Mijozlar</h4>
             <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Mijoz</th><th style="text-align:right;">Jami</th><th style="text-align:right;">To'langan</th><th style="text-align:right;">Qoldiq</th></tr></thead>
             <tbody>${installedRows}</tbody></table></div>`;
 
