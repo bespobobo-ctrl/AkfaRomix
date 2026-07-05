@@ -197,6 +197,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         const qtyInput = document.getElementById('batchCompleteQty');
         qtyInput.max = qty;
         qtyInput.value = qty;
+
+        // Bosqichga xos maydonlarni ko'rsatish/yashirish va tozalash
+        document.getElementById('stageFieldsKesish').style.display = stage === 'kesish' ? 'block' : 'none';
+        document.getElementById('stageFieldsPayvandlash').style.display = stage === 'payvandlash' ? 'block' : 'none';
+        document.getElementById('stageFieldsYigishQadoqlash').style.display = stage === 'yigish_qadoqlash' ? 'block' : 'none';
+        ['stageProfileUsed', 'stageWaste', 'stageJointCount', 'stageAssemblerCount', 'stageAssemblerNames', 'stagePackerCount', 'stagePackerNames', 'stageAccessoriesUsed'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+
         document.getElementById('batchCompleteModal').classList.remove('hidden');
     }
 
@@ -216,7 +226,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             // Batch miqdori boshqa joyda (masalan boshqa oynada) o'zgargan bo'lishi mumkin -
             // saqlashdan oldin joriy qiymatni qayta tekshiramiz
-            const { data: freshBatch } = await supabase.from('romix_production_batches').select('quantity').eq('id', batchId).maybeSingle();
+            const { data: freshBatch } = await supabase.from('romix_production_batches').select('quantity, employee_id').eq('id', batchId).maybeSingle();
             const currentQty = freshBatch ? Number(freshBatch.quantity) : 0;
             if (movedQty > currentQty) {
                 alert(`Bu batch miqdori o'zgargan (hozir: ${currentQty} dona). Iltimos, oynani yopib qayta urinib ko'ring.`);
@@ -236,6 +246,37 @@ document.addEventListener('DOMContentLoaded', async () => {
                 order_id: orderId, stage: nextStage, quantity: movedQty, started_at: new Date().toISOString()
             }]);
 
+            // Bosqichga xos tafsilotlarni (kim, qancha material/chiqindi, nechta joy
+            // payvandlangan, nechta yig'uvchi/qadoqlovchi va h.k.) buyurtma tarixiga yozib qo'yish
+            let workerName = '';
+            if (freshBatch && freshBatch.employee_id) {
+                const { data: emp } = await supabase.from('employees').select('full_name').eq('id', freshBatch.employee_id).maybeSingle();
+                workerName = emp ? emp.full_name : '';
+            }
+            const historyEntry = {
+                stage, moved_qty: movedQty, worker: workerName || null, at: new Date().toISOString()
+            };
+            if (stage === 'kesish') {
+                historyEntry.profile_used_m = parseFloat(document.getElementById('stageProfileUsed').value) || 0;
+                historyEntry.waste_m = parseFloat(document.getElementById('stageWaste').value) || 0;
+            } else if (stage === 'payvandlash') {
+                historyEntry.joint_count = parseInt(document.getElementById('stageJointCount').value) || 0;
+            } else if (stage === 'yigish_qadoqlash') {
+                historyEntry.assembler_count = parseInt(document.getElementById('stageAssemblerCount').value) || 0;
+                historyEntry.assembler_names = document.getElementById('stageAssemblerNames').value.trim();
+                historyEntry.packer_count = parseInt(document.getElementById('stagePackerCount').value) || 0;
+                historyEntry.packer_names = document.getElementById('stagePackerNames').value.trim();
+                historyEntry.accessories_used = document.getElementById('stageAccessoriesUsed').value.trim();
+            }
+            try {
+                const { data: ord } = await supabase.from('sales_orders').select('production_history').eq('id', orderId).maybeSingle();
+                const history = (ord && Array.isArray(ord.production_history)) ? ord.production_history : [];
+                history.push(historyEntry);
+                await supabase.from('sales_orders').update({ production_history: history }).eq('id', orderId);
+            } catch (histErr) {
+                console.warn("production_history yozishda xatolik (ustun mavjudligini tekshiring):", histErr);
+            }
+
             if (nextStage === 'tayyor') {
                 const { data: order } = await supabase.from('sales_orders').select('quantity').eq('id', orderId).maybeSingle();
                 const { data: tayyorBatches } = await supabase.from('romix_production_batches').select('quantity').eq('order_id', orderId).eq('stage', 'tayyor');
@@ -254,6 +295,46 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('batchCompleteModal').classList.add('hidden');
         loadProductionPipeline();
     };
+
+    // Buyurtmaning to'liq ishlab chiqarish tarixi (bosqichdan-bosqichga o'tkazilganda kim/qachon/qancha)
+    const STAGE_LABELS_UZ = { kesish: "✂️ Kesish", payvandlash: "🔥 Payvandlash", yigish_qadoqlash: "📦 Yig'ish/Qadoqlash" };
+    async function openProductionHistoryModal(orderId) {
+        const content = document.getElementById('productionHistoryContent');
+        content.innerHTML = '<div style="text-align:center; color:var(--adm-text-sec); padding:20px;">Yuklanmoqda...</div>';
+        document.getElementById('productionHistoryModal').classList.remove('hidden');
+        try {
+            const { data: order } = await supabase.from('sales_orders').select('production_history').eq('id', orderId).maybeSingle();
+            const history = (order && Array.isArray(order.production_history)) ? order.production_history : [];
+            if (history.length === 0) {
+                content.innerHTML = '<div style="text-align:center; color:var(--adm-text-sec); padding:20px;">Hali tarix yo\'q</div>';
+                return;
+            }
+            content.innerHTML = history.slice().reverse().map(h => {
+                const dt = new Date(h.at).toLocaleString('uz-UZ');
+                let details = `<div>Miqdor: <strong style="color:var(--adm-text);">${h.moved_qty}</strong> dona o'tkazildi${h.worker ? ` — <strong style="color:#00d2ff;">${h.worker}</strong>` : ''}</div>`;
+                if (h.stage === 'kesish') {
+                    details += `<div>Profil ishlatildi: <strong style="color:var(--adm-text);">${h.profile_used_m || 0}</strong> metr, Chiqindi: <strong style="color:#ffaa00;">${h.waste_m || 0}</strong> metr</div>`;
+                } else if (h.stage === 'payvandlash') {
+                    details += `<div>Payvandlangan joylar: <strong style="color:var(--adm-text);">${h.joint_count || 0}</strong></div>`;
+                } else if (h.stage === 'yigish_qadoqlash') {
+                    details += `<div>Yig'uvchilar: <strong style="color:var(--adm-text);">${h.assembler_count || 0}</strong> kishi${h.assembler_names ? ' (' + h.assembler_names + ')' : ''}</div>`;
+                    details += `<div>Qadoqlovchilar: <strong style="color:var(--adm-text);">${h.packer_count || 0}</strong> kishi${h.packer_names ? ' (' + h.packer_names + ')' : ''}</div>`;
+                    if (h.accessories_used) details += `<div>Aksessuar: <strong style="color:var(--adm-text);">${h.accessories_used}</strong></div>`;
+                }
+                return `<div style="background:rgba(255,255,255,0.02); border:1px solid var(--adm-border); border-radius:12px; padding:12px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                        <strong style="color:var(--adm-text);">${STAGE_LABELS_UZ[h.stage] || h.stage}</strong>
+                        <span style="font-size:0.72rem; color:var(--adm-text-sec);">${dt}</span>
+                    </div>
+                    <div style="font-size:0.8rem; color:var(--adm-text-sec); display:flex; flex-direction:column; gap:3px;">${details}</div>
+                </div>`;
+            }).join('');
+        } catch (err) {
+            content.innerHTML = '<div style="text-align:center; color:#ef4444; padding:20px;">Xatolik: tarixni yuklab bo\'lmadi (production_history ustuni mavjudligini tekshiring)</div>';
+        }
+    }
+    const prodHistCloseBtn = document.getElementById('productionHistoryCloseBtn');
+    if (prodHistCloseBtn) prodHistCloseBtn.onclick = () => document.getElementById('productionHistoryModal').classList.add('hidden');
 
     async function loadProductionPipeline() {
         let orders = [];
@@ -323,10 +404,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         Object.values(cols).forEach(c => { if (c) c.innerHTML = ''; });
 
         const emptyMsg = '<div style="text-align:center; color:var(--adm-text-sec); font-size:0.78rem; padding:16px 0;">Bo\'sh</div>';
+        // Sanasi eng oldin bo'lgan buyurtma tepada tursin (qat'iy nazorat: eski buyurtmalar birinchi bajarilsin)
+        const byDeadlineAsc = (a, b) => {
+            const da = a.production_deadline || a.created_at || '';
+            const db = b.production_deadline || b.created_at || '';
+            return da.localeCompare(db);
+        };
         // tayyor_omborda bosqichidagilar bu boardda ko'rsatilmaydi (ular Tayyor Mahsulotga o'tgan)
         const buckets = {
-            awaiting: orders.filter(o => o.status === 'Kutilmoqda'),
-            new: orders.filter(o => o.status === 'Jarayonda' && !o.production_stage)
+            awaiting: orders.filter(o => o.status === 'Kutilmoqda').sort(byDeadlineAsc),
+            new: orders.filter(o => o.status === 'Jarayonda' && !o.production_stage).sort(byDeadlineAsc)
         };
 
         // Qat'iy muddat nazorati: jonli teskari sanoq (har soniya yangilanadi, window.tickCountdowns orqali)
@@ -346,20 +433,33 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>`;
         }
 
+        // Sotuvda kiritilgan material ehtiyoji (avtomatik hisoblangan) + Ombor holati
+        function materialSummaryHtml(o) {
+            const est = o.material_estimate;
+            if (!est || (!est.profiles?.length && !est.accessories?.length)) return '';
+            const profLines = (est.profiles || []).map(p => `<div>📏 ${p.material_name}: <strong style="color:var(--adm-text);">${p.meters} m</strong></div>`).join('');
+            const accLines = (est.accessories || []).map(a => `<div>🔩 ${a.name}: <strong style="color:var(--adm-text);">${a.qty} dona</strong></div>`).join('');
+            return `<div style="font-size:0.68rem; color:var(--adm-text-sec); background:rgba(255,255,255,0.02); border-radius:8px; padding:8px; display:flex; flex-direction:column; gap:2px;">${profLines}${accLines}</div>`;
+        }
+
         if (cols.awaiting) {
             cols.awaiting.innerHTML = buckets.awaiting.length === 0 ? emptyMsg : buckets.awaiting.map(o => card(o,
-                `<div style="text-align:center; background:rgba(139,92,246,0.08); color:#8b5cf6; padding:8px; border-radius:8px; font-weight:600; font-size:0.7rem;">Sotuv guruh/material belgilashini kutmoqda</div>`
+                materialSummaryHtml(o) +
+                `<div style="text-align:center; background:rgba(239,68,68,0.08); color:#ef4444; padding:8px; border-radius:8px; font-weight:600; font-size:0.7rem;">⏳ Ombor tasdig'ini kutmoqda</div>`
             )).join('');
         }
+        function omborConfirmedHtml(o) {
+            if (!o.ombor_confirmed_at) return '';
+            const dt = new Date(o.ombor_confirmed_at).toLocaleString('uz-UZ');
+            return `<div style="font-size:0.7rem; color:#00ff88; background:rgba(0,255,136,0.08); border-radius:8px; padding:6px 8px;">✅ Ombor tasdiqladi: <strong>${o.ombor_confirmed_by || '—'}</strong> (${dt})</div>`;
+        }
+
         if (cols.new) {
-            cols.new.innerHTML = buckets.new.length === 0 ? emptyMsg : buckets.new.map(o => {
-                const reqStatus = reqStatusByOrder[o.id];
-                const approved = reqStatus === 'Tasdiqlandi';
-                const actionHtml = approved
-                    ? `<button class="accept-order-btn" data-id="${o.id}" data-deadline="${o.production_deadline || ''}" style="background:#ffaa00; color:#000; border:none; padding:8px; border-radius:8px; font-weight:700; font-size:0.74rem; cursor:pointer;">✅ Qabul Qilish</button>`
-                    : `<div style="text-align:center; background:rgba(239,68,68,0.08); color:#ef4444; padding:8px; border-radius:8px; font-weight:600; font-size:0.7rem;">⏳ Ombor tasdiqlashini kutmoqda</div>`;
-                return card(o, actionHtml);
-            }).join('');
+            cols.new.innerHTML = buckets.new.length === 0 ? emptyMsg : buckets.new.map(o => card(o,
+                omborConfirmedHtml(o) +
+                materialSummaryHtml(o) +
+                `<button class="accept-order-btn" data-id="${o.id}" data-deadline="${o.production_deadline || ''}" style="background:#ffaa00; color:#000; border:none; padding:8px; border-radius:8px; font-weight:700; font-size:0.74rem; cursor:pointer;">✅ Qabul Qilish</button>`
+            )).join('');
         }
 
         // Kesish / Payvandlash / Yig'ish-Qadoqlash — endi BATCH bo'yicha (miqdor-asosli, partial-transfer)
@@ -378,7 +478,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     ${empOptionsHtml}
                 </select>
                 <div class="batch-stopwatch" data-started="${b.started_at}" style="font-size:0.7rem; font-weight:700; color:#00d2ff;"></div>
-                <button class="batch-complete-btn" data-batch-id="${b.id}" data-stage="${b.stage}" data-qty="${b.quantity}" data-order-id="${b.order_id}" style="background:${stageAccent[b.stage]}; color:#fff; border:none; padding:8px; border-radius:8px; font-weight:700; font-size:0.72rem; cursor:pointer;">${stageNextLabel[b.stage]}</button>
+                <div style="display:flex; gap:6px;">
+                    <button class="batch-complete-btn" data-batch-id="${b.id}" data-stage="${b.stage}" data-qty="${b.quantity}" data-order-id="${b.order_id}" style="flex:1; background:${stageAccent[b.stage]}; color:#fff; border:none; padding:8px; border-radius:8px; font-weight:700; font-size:0.72rem; cursor:pointer;">${stageNextLabel[b.stage]}</button>
+                    <button class="batch-history-btn" data-order-id="${b.order_id}" title="Ishlab chiqarish tarixi" style="background:rgba(255,255,255,0.05); border:1px solid var(--adm-border); color:var(--adm-text); border-radius:8px; padding:0 10px; cursor:pointer;">📜</button>
+                </div>
             </div>`;
         }
 
@@ -412,6 +515,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         document.querySelectorAll('.batch-complete-btn').forEach(btn => {
             btn.onclick = () => openBatchCompleteModal(btn.dataset.batchId, btn.dataset.stage, parseInt(btn.dataset.qty), btn.dataset.orderId);
+        });
+
+        document.querySelectorAll('.batch-history-btn').forEach(btn => {
+            btn.onclick = () => openProductionHistoryModal(btn.dataset.orderId);
         });
 
         // Qabul Qilish: ishlab chiqarish o'zi "chiqish sanasi"ni belgilaydi (standart = sotuv muddati),

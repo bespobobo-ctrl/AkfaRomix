@@ -72,6 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (tabId === 'staff') loadStaff();
         if (tabId === 'history') loadHistory();
         if (tabId === 'settings') loadSettings();
+        if (tabId === 'orders') loadOrdersConfirmation();
     }
 
     navButtons.forEach(btn => {
@@ -1169,6 +1170,197 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderCategoryTabs();
             renderCatalogGrid();
         };
+    }
+
+    // ========================================================
+    // ======== OLINGAN BUYURTMALAR (Ombor tasdiqlash oqimi) ===
+    // Sotuv olgan (kamida 50% avans to'langan) buyurtmalarni
+    // ko'rsatadi — profil/aksessuar yetarli bo'lsa, ombordan
+    // ajratib/minus qilib, Ishlab Chiqarishga o'tkazadi.
+    // ========================================================
+    async function loadOrdersConfirmation() {
+        const grid = document.getElementById('omborOrdersGrid');
+        if (!grid) return;
+        grid.innerHTML = '<div style="text-align:center; color:var(--adm-text-sec); padding:20px; grid-column:1/-1;">Yuklanmoqda...</div>';
+
+        let orders = [];
+        try {
+            const { data, error } = await supabase.from('sales_orders').select('*').eq('status', 'Kutilmoqda').is('ombor_confirmed_at', null).order('production_deadline', { ascending: true });
+            if (error) throw error;
+            orders = (data || []).filter(o => {
+                const total = Number(o.total_price) || 0;
+                const paid = Number(o.paid_amount) || 0;
+                return total > 0 && (paid / total) >= 0.5;
+            });
+        } catch (err) {
+            grid.innerHTML = '<div style="text-align:center; color:#ef4444; padding:20px; grid-column:1/-1;">Xatolik: buyurtmalarni yuklab bo\'lmadi (production_deadline_tracking/ombor_confirmation_flow SQL ustunlari mavjudligini tekshiring)</div>';
+            console.warn('loadOrdersConfirmation fetch failed:', err);
+            return;
+        }
+
+        if (orders.length === 0) {
+            grid.innerHTML = '<div style="text-align:center; color:var(--adm-text-sec); padding:30px; grid-column:1/-1;">Hozircha tasdiq kutayotgan buyurtma yo\'q (kamida 50% avans to\'langan buyurtmalar shu yerda chiqadi)</div>';
+            return;
+        }
+
+        let profileStock = [];
+        try {
+            const { data } = await supabase.from('romix_inventory').select('id, product_name, stock_quantity, unit');
+            profileStock = data || [];
+        } catch (err) { console.warn('profile stock fetch failed:', err); }
+        const accStock = JSON.parse(localStorage.getItem('romix_accessories_inventory')) || [];
+
+        const findProfileStock = (name) => profileStock.find(p => (p.product_name || '').toLowerCase() === (name || '').toLowerCase());
+        const findAccStock = (name) => accStock.find(a => (a.name || '').toLowerCase() === (name || '').toLowerCase());
+
+        grid.innerHTML = orders.map(o => {
+            const est = o.material_estimate || {};
+            const profiles = est.profiles || [];
+            const accessories = est.accessories || [];
+            let allSufficient = true;
+
+            const profRows = profiles.map(p => {
+                const stock = findProfileStock(p.material_name);
+                const have = stock ? Number(stock.stock_quantity) || 0 : 0;
+                const ok = have >= p.meters;
+                if (!ok) allSufficient = false;
+                return `<div style="display:flex; justify-content:space-between; font-size:0.78rem; padding:4px 0;">
+                    <span>📏 ${p.material_name}</span>
+                    <span style="color:${ok ? '#00ff88' : '#ef4444'}; font-weight:700;">${p.meters}m kerak / ${have.toFixed(1)}m bor ${ok ? '✅' : '❌'}</span>
+                </div>`;
+            }).join('');
+            const accRows = accessories.map(a => {
+                const stock = findAccStock(a.name);
+                const have = stock ? Number(stock.qty) || 0 : 0;
+                const ok = have >= a.qty;
+                if (!ok) allSufficient = false;
+                return `<div style="display:flex; justify-content:space-between; font-size:0.78rem; padding:4px 0;">
+                    <span>🔩 ${a.name}</span>
+                    <span style="color:${ok ? '#00ff88' : '#ef4444'}; font-weight:700;">${a.qty} kerak / ${have} bor ${ok ? '✅' : '❌'}</span>
+                </div>`;
+            }).join('');
+
+            return `<div style="background:var(--adm-surface); border:1px solid var(--adm-border); border-top:3px solid ${allSufficient ? '#00ff88' : '#ef4444'}; border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:8px; box-shadow:var(--adm-shadow);">
+                <div style="font-weight:700; color:var(--adm-text); font-size:0.95rem;">${o.customer_name || 'Noma\'lum'}</div>
+                <div style="font-size:0.76rem; color:var(--adm-text-sec);">${o.prod_type || ''} — Muddat: ${o.production_deadline ? new Date(o.production_deadline).toLocaleDateString('uz-UZ') : '—'}</div>
+                <div style="border-top:1px dashed var(--adm-border); padding-top:8px;">
+                    ${profRows || '<div style="color:var(--adm-text-sec); font-size:0.76rem;">Profil kerak emas</div>'}
+                    ${accRows}
+                </div>
+                <button class="ombor-confirm-btn" data-id="${o.id}" ${allSufficient ? '' : 'disabled'} style="margin-top:8px; background:${allSufficient ? '#00ff88' : 'rgba(255,255,255,0.08)'}; color:${allSufficient ? '#000' : 'var(--adm-text-sec)'}; border:none; padding:10px; border-radius:10px; font-weight:700; cursor:${allSufficient ? 'pointer' : 'not-allowed'};">${allSufficient ? '✅ Tasdiqlash va Ishlab Chiqarishga O\'tkazish' : '❌ Yetarli emas'}</button>
+            </div>`;
+        }).join('');
+
+        document.querySelectorAll('.ombor-confirm-btn').forEach(btn => {
+            if (btn.disabled) return;
+            btn.onclick = () => confirmOrderMaterials(btn.dataset.id);
+        });
+    }
+
+    async function confirmOrderMaterials(orderId) {
+        if (!confirm("Buyurtma uchun profil/aksessuar ombordan ajratilib, Ishlab Chiqarishga o'tkazilsinmi?")) return;
+        try {
+            const { data: order } = await supabase.from('sales_orders').select('*').eq('id', orderId).maybeSingle();
+            if (!order) return alert('Buyurtma topilmadi!');
+            const est = order.material_estimate || {};
+            const profiles = est.profiles || [];
+            const accessories = est.accessories || [];
+
+            // Qayta tekshirish (real vaqtda, boshqa buyurtma bir vaqtda tasdiqlangan bo'lishi mumkin)
+            for (const p of profiles) {
+                const { data: stock } = await supabase.from('romix_inventory').select('id, stock_quantity').eq('product_name', p.material_name).maybeSingle();
+                const have = stock ? Number(stock.stock_quantity) || 0 : 0;
+                if (have < p.meters) {
+                    alert(`"${p.material_name}" yetarli emas (${have}m bor, ${p.meters}m kerak). Avval kirim qiling.`);
+                    loadOrdersConfirmation();
+                    return;
+                }
+            }
+            let accInventory = JSON.parse(localStorage.getItem('romix_accessories_inventory')) || [];
+            for (const a of accessories) {
+                const item = accInventory.find(x => (x.name || '').toLowerCase() === a.name.toLowerCase());
+                const have = item ? Number(item.qty) || 0 : 0;
+                if (have < a.qty) {
+                    alert(`"${a.name}" yetarli emas (${have} bor, ${a.qty} kerak). Avval kirim qiling.`);
+                    loadOrdersConfirmation();
+                    return;
+                }
+            }
+
+            // Hammasi yetarli — endi haqiqatan ombordan ayiramiz
+            for (const p of profiles) {
+                const { data: stock } = await supabase.from('romix_inventory').select('id, stock_quantity').eq('product_name', p.material_name).maybeSingle();
+                if (stock) {
+                    await supabase.from('romix_inventory').update({ stock_quantity: (Number(stock.stock_quantity) || 0) - p.meters }).eq('id', stock.id);
+                    await supabase.from('romix_transactions').insert([{ product_id: stock.id, type: 'OUT', quantity: p.meters, note: `Buyurtma uchun ajratildi: ${order.customer_name} (#${orderId.slice(0, 8)})` }]);
+                }
+            }
+            accessories.forEach(a => {
+                const item = accInventory.find(x => (x.name || '').toLowerCase() === a.name.toLowerCase());
+                if (item) item.qty = (Number(item.qty) || 0) - a.qty;
+            });
+            localStorage.setItem('romix_accessories_inventory', JSON.stringify(accInventory));
+
+            const curUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const operatorName = curUser.full_name || curUser.username || 'Ombor';
+            if (accessories.length > 0) {
+                let logs = JSON.parse(localStorage.getItem('romix_accessories_history_log')) || [];
+                accessories.forEach(a => {
+                    logs.unshift({
+                        timestamp: new Date().toLocaleDateString('uz-UZ') + ' ' + new Date().toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' }),
+                        action: 'Buyurtma Chiqim 📤',
+                        details: `"${a.name}" dan ${a.qty} dona buyurtma uchun ajratildi (${order.customer_name}).`,
+                        operator: operatorName.toUpperCase()
+                    });
+                });
+                if (logs.length > 100) logs = logs.slice(0, 100);
+                localStorage.setItem('romix_accessories_history_log', JSON.stringify(logs));
+            }
+
+            await supabase.from('sales_orders').update({
+                status: 'Jarayonda',
+                ombor_confirmed_at: new Date().toISOString(),
+                ombor_confirmed_by: operatorName
+            }).eq('id', orderId);
+
+            generateOrderConfirmationPdf(order, profiles, accessories);
+
+            window.showPremiumToast ? window.showPremiumToast('Tasdiqlandi', "Buyurtma Ishlab Chiqarishga o'tkazildi.", true) : alert("Buyurtma tasdiqlandi va Ishlab Chiqarishga o'tkazildi!");
+            loadOrdersConfirmation();
+        } catch (err) {
+            alert('Xatolik: ' + err.message);
+            console.error('confirmOrderMaterials failed:', err);
+        }
+    }
+
+    function generateOrderConfirmationPdf(order, profiles, accessories) {
+        if (!window.jspdf || !window.jspdf.jsPDF) {
+            console.warn('jsPDF yuklanmagan, PDF chiqarilmadi');
+            return;
+        }
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+        doc.setFontSize(16);
+        doc.text('Ombor Tasdiqnomasi', 105, 20, { align: 'center' });
+        doc.setFontSize(11);
+        doc.text(`Mijoz: ${order.customer_name || '---'}`, 15, 35);
+        doc.text(`Buyurtma: ${order.prod_type || '---'}`, 15, 42);
+        doc.text(`Sana: ${new Date().toLocaleDateString('uz-UZ')}`, 15, 49);
+        let y = 62;
+        doc.setFontSize(13);
+        doc.text('Profil Ehtiyoji:', 15, y);
+        y += 8;
+        doc.setFontSize(10);
+        if (profiles.length === 0) { doc.text("- Yo'q", 20, y); y += 7; }
+        profiles.forEach(p => { doc.text(`- ${p.material_name}: ${p.meters} metr`, 20, y); y += 7; });
+        y += 5;
+        doc.setFontSize(13);
+        doc.text("Aksessuar Ro'yxati:", 15, y);
+        y += 8;
+        doc.setFontSize(10);
+        if (accessories.length === 0) { doc.text("- Yo'q", 20, y); y += 7; }
+        accessories.forEach(a => { doc.text(`- ${a.name}: ${a.qty} dona`, 20, y); y += 7; });
+        doc.save(`Tasdiqnoma_${(order.customer_name || 'order').replace(/\s+/g, '_')}.pdf`);
     }
 
     loadInventory();

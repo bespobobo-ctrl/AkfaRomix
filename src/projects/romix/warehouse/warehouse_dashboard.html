@@ -210,6 +210,7 @@
             <div class="logo-icon-v2" style="font-size: 1.5rem; color: #007c52; margin-bottom: 40px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(0, 124, 82, 0.1); width: 45px; height: 45px; border-radius: 12px;" onclick="window.location.href='../romix_dashboard.html'" title="Asosiy Panelga Qaytish">
                 ↩️</div>
             <div class="nav-icon active" data-tab="inventory" title="Ombor Qoldig'i">📦</div>
+            <div class="nav-icon" data-tab="orders" title="Olingan Buyurtmalar">📋</div>
             <div class="nav-icon" data-tab="staff" title="Xodimlar">👥</div>
             <div class="nav-icon" data-tab="history" title="Amallar Tarixi">📑</div>
             <div class="nav-icon" id="logoutBtn">🚪</div>
@@ -223,6 +224,7 @@
                         ⬅️ Panelga Qaytish
                     </button>
                     <button class="tab-btn active" data-tab="inventory">Ombor Holati</button>
+                    <button class="tab-btn" data-tab="orders">📋 Olingan Buyurtmalar</button>
                     <button class="tab-btn" data-tab="staff">Xodimlar (Romix)</button>
                     <button class="tab-btn" data-tab="history">Hujjatlar Tarixi</button>
                 </div>
@@ -345,6 +347,15 @@
                         </table>
                     </div>
                 </div>
+            </section>
+
+            <!-- Section: Olingan Buyurtmalar (Ombor tasdiqlash oqimi) -->
+            <section id="orders-view" class="warehouse-section hidden">
+                <div style="margin-bottom: 25px;">
+                    <h1 style="font-size: 2.2rem; font-weight: 600;">📋 Olingan Buyurtmalar</h1>
+                    <p style="color: var(--adm-text-sec);">Sotuv olgan buyurtmalar (kamida 50% avans to'langan) — profil/aksessuar yetarli bo'lsa tasdiqlab, Ishlab Chiqarishga o'tkazing</p>
+                </div>
+                <div id="omborOrdersGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:16px;"></div>
             </section>
 
             <section id="staff-view" class="warehouse-section hidden">
@@ -736,6 +747,7 @@
         }
     </script>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script type="module" src="/src/projects/romix/warehouse/warehouse.js"></script>
 </body>
 

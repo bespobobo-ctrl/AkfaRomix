@@ -211,10 +211,52 @@
             <p id="batchCompleteInfo" style="color:var(--adm-text-sec); font-size:0.85rem; margin-bottom:15px;"></p>
             <label class="form-label">Nechta birlik tayyor / o'tkazilsin?</label>
             <input type="number" id="batchCompleteQty" class="form-input-v2" min="1" step="1">
+
+            <!-- Kesish bosqichi tafsiloti -->
+            <div id="stageFieldsKesish" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed var(--adm-border);">
+                <label class="form-label">Ishlatilgan profil (metr)</label>
+                <input type="number" id="stageProfileUsed" class="form-input-v2" min="0" step="0.1" placeholder="0">
+                <label class="form-label">Chiqindi (metr)</label>
+                <input type="number" id="stageWaste" class="form-input-v2" min="0" step="0.1" placeholder="0">
+            </div>
+
+            <!-- Payvandlash bosqichi tafsiloti -->
+            <div id="stageFieldsPayvandlash" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed var(--adm-border);">
+                <label class="form-label">Nechta joy payvandlangan</label>
+                <input type="number" id="stageJointCount" class="form-input-v2" min="0" step="1" placeholder="0">
+            </div>
+
+            <!-- Yig'ish/Qadoqlash bosqichi tafsiloti -->
+            <div id="stageFieldsYigishQadoqlash" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed var(--adm-border);">
+                <label class="form-label">Nechta yig'uvchi ishlagan</label>
+                <input type="number" id="stageAssemblerCount" class="form-input-v2" min="0" step="1" placeholder="0">
+                <label class="form-label">Yig'uvchilar ismi (vergul bilan)</label>
+                <input type="text" id="stageAssemblerNames" class="form-input-v2" placeholder="Masalan: Ali, Vali">
+                <label class="form-label">Nechta qadoqlovchi ishlagan</label>
+                <input type="number" id="stagePackerCount" class="form-input-v2" min="0" step="1" placeholder="0">
+                <label class="form-label">Qadoqlovchilar ismi (vergul bilan)</label>
+                <input type="text" id="stagePackerNames" class="form-input-v2" placeholder="Masalan: Botir">
+                <label class="form-label">Ishlatilgan aksessuar</label>
+                <input type="text" id="stageAccessoriesUsed" class="form-input-v2" placeholder="Masalan: Zamok 4 dona, Skotch 1 dona">
+            </div>
+
             <div style="display:flex; gap:10px; margin-top:20px;">
                 <button id="batchCompleteSaveBtn" style="flex:1; background:#00d2ff; color:#000; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">O'tkazish</button>
                 <button id="batchCompleteCloseBtn" style="flex:1; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; border-radius:12px; cursor:pointer;">Bekor qilish</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal: Buyurtma Ishlab Chiqarish Tarixi -->
+    <div id="productionHistoryModal" class="hidden"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:2100; display:flex; align-items:center; justify-content:center; padding:20px;">
+        <div class="user-form-modal" style="width: 560px; max-height:80vh; overflow-y:auto; background:var(--adm-surface);">
+            <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+                <span style="font-size: 1.5rem;">📜</span>
+                <h2 style="color:var(--adm-text);">Ishlab Chiqarish Tarixi</h2>
+            </div>
+            <div id="productionHistoryContent" style="display:flex; flex-direction:column; gap:10px;"></div>
+            <button id="productionHistoryCloseBtn" style="width:100%; margin-top:20px; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; padding:12px; border-radius:12px; cursor:pointer;">Yopish</button>
         </div>
     </div>
 
