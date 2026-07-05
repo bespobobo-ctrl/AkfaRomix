@@ -13,10 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Modals
     const orderModal = document.getElementById('orderModal');
-    const assignModal = document.getElementById('assignModal');
     const editModal = document.getElementById('editOrderModal');
-    const aMatSel = document.getElementById('aMatSel');
-    const reqMatList = document.getElementById('reqMatList');
 
     const mainApp = document.getElementById('mainApp');
     const printArea = document.getElementById('printArea');
@@ -113,15 +110,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     let orderItems = [];
 
     // Load warehouse materials for the BOM Request
-    async function loadWarehouseMaterials() {
-        let data = [];
+    // Buyurtma saqlangan zahoti avtomatik BOM hisoblab, Ombor uchun material
+    // so'rovini yaratadi — endi Sotuv hech qanday ishlab chiqarish guruhini
+    // tanlamaydi, shuning uchun bu yerda worker_group yo'q.
+    async function calculateAndCreateMaterialRequest(orderId, items) {
+        let totalPerimeter = 0;
+        let totalArea = 0;
+        let mainModel = '';
+
+        (items || []).forEach(it => {
+            if (it.type === 'rom' || it.type === 'rom_fortochka' || it.type === 'eshik') {
+                const perimeter = ((it.width * 2) + (it.height * 2)) * it.quantity;
+                totalPerimeter += perimeter;
+                totalArea += (it.width * it.height * it.quantity);
+                if (!mainModel) mainModel = it.materialName;
+            }
+        });
+
+        let whMats = [];
         try {
             const res = await supabase.from('romix_inventory').select('id, product_name, unit');
             if (res.error) throw res.error;
-            data = (res.data || []).map(p => ({ id: p.id, name: p.product_name, unit: p.unit }));
+            whMats = (res.data || []).map(p => ({ id: p.id, name: p.product_name, unit: p.unit }));
         } catch (err) {
-            console.warn("Supabase loadWarehouseMaterials failed, using local default materials:", err);
-            data = [
+            console.warn("Supabase warehouse fetch for BOM failed, using local fallback:", err);
+            whMats = [
                 { id: "prof-60", name: "Akfa 60 Series Profil", unit: "m" },
                 { id: "prof-70", name: "Akfa 70 Series Profil", unit: "m" },
                 { id: "prof-thermo", name: "Thermo 65 Insulation Profil", unit: "m" },
@@ -131,18 +144,32 @@ document.addEventListener('DOMContentLoaded', async () => {
                 { id: "oyna-2", name: "Ikki Qavatli Shisha-Paket", unit: "kv.m" }
             ];
         }
-        if (aMatSel) {
-            aMatSel.innerHTML = '';
-            if (data) {
-                data.forEach(p => {
-                    const opt = document.createElement('option');
-                    opt.value = p.id;
-                    opt.textContent = `${p.name} (${p.unit})`;
-                    opt.dataset.unit = p.unit;
-                    opt.dataset.name = p.name;
-                    aMatSel.appendChild(opt);
-                });
-            }
+
+        const materials = [];
+        if (whMats && whMats.length && mainModel) {
+            const prof = whMats.find(m => m.name.toLowerCase().includes(mainModel.toLowerCase()) || mainModel.toLowerCase().includes(m.name.toLowerCase()) || m.name.toLowerCase().includes('profil'));
+            if (prof && totalPerimeter > 0) materials.push({ product_id: prof.id, name: prof.name, qty: (totalPerimeter * 1.1).toFixed(1), unit: prof.unit });
+
+            const rez = whMats.find(m => m.name.toLowerCase().includes('rezin'));
+            if (rez && totalPerimeter > 0) materials.push({ product_id: rez.id, name: rez.name, qty: (totalPerimeter * 2).toFixed(1), unit: rez.unit });
+
+            const oyna = whMats.find(m => m.name.toLowerCase().includes('oyna') || m.name.toLowerCase().includes('shisha'));
+            if (oyna && totalArea > 0) materials.push({ product_id: oyna.id, name: oyna.name, qty: (totalArea).toFixed(2), unit: oyna.unit });
+        }
+
+        if (materials.length === 0) return null;
+
+        try {
+            const res = await supabase.from('material_requests').insert([{
+                order_id: orderId,
+                materials_json: materials,
+                status: 'Kutilmoqda'
+            }]).select().single();
+            if (res.error) throw res.error;
+            return res.data;
+        } catch (err) {
+            console.warn("Avtomatik material_requests yaratishda xatolik:", err);
+            return null;
         }
     }
 
@@ -442,44 +469,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         profitInput.addEventListener('input', calculateTotal);
     }
 
-    window.reqMaterials = [];
-    document.getElementById('addMatBtn').onclick = () => {
-        const sel = aMatSel.options[aMatSel.selectedIndex];
-        const qty = parseFloat(document.getElementById('aMatQty').value);
-        if (!sel || !qty || qty <= 0) return alert('Material va to\'g\'ri miqdorni kiriting!');
-
-        window.reqMaterials.push({
-            product_id: sel.value,
-            name: sel.dataset.name,
-            qty: qty,
-            unit: sel.dataset.unit
-        });
-
-        renderReqMaterials();
-        document.getElementById('aMatQty').value = '';
-    };
-
-    window.removeReqMaterial = (index) => {
-        window.reqMaterials.splice(index, 1);
-        renderReqMaterials();
-    };
-
-    function renderReqMaterials() {
-        reqMatList.innerHTML = '';
-        window.reqMaterials.forEach((m, idx) => {
-            const li = document.createElement('li');
-            li.style.display = 'flex';
-            li.style.justifyContent = 'space-between';
-            li.style.padding = '5px 0';
-            li.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
-            li.innerHTML = `
-                <span>${m.name}</span>
-                <span><strong>${m.qty}</strong> ${m.unit} <button onclick="removeReqMaterial(${idx})" style="background:transparent; border:none; color:red; cursor:pointer;" title="Olib tashlash">✖</button></span>
-            `;
-            reqMatList.appendChild(li);
-        });
-    }
-
     async function loadOrders() {
         let orders = [];
         try {
@@ -581,11 +570,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const s = STAGE_LABELS[o.production_stage];
                 return `<span style="background:${s.color}1a; color:${s.color}; padding:3px 10px; border-radius:12px; font-size:0.66rem; font-weight:700; white-space:nowrap;">${s.text}</span>`;
             }
-            if (o.worker_group) {
+            if (reqStatusByOrder[o.id]) {
                 const approved = reqStatusByOrder[o.id] === 'Tasdiqlandi';
                 return approved
                     ? `<span style="background:rgba(0,210,255,0.1); color:#00d2ff; padding:3px 10px; border-radius:12px; font-size:0.66rem; font-weight:700; white-space:nowrap;">✅ Ishlab chiqarish qabul qilishi kutilmoqda</span>`
-                    : `<span style="background:rgba(239,68,68,0.1); color:#ef4444; padding:3px 10px; border-radius:12px; font-size:0.66rem; font-weight:700; white-space:nowrap;">⏳ Ombor tasdiqlashini kutmoqda</span>`;
+                    : `<span style="background:rgba(239,68,68,0.1); color:#ef4444; padding:3px 10px; border-radius:12px; font-size:0.66rem; font-weight:700; white-space:nowrap;">⏳ Ombor tayyorlashini kutmoqda</span>`;
             }
             return null;
         }
@@ -716,12 +705,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                             </div>
                             ${statusHtml}
                         </div>
-                        <div style="font-size:0.76rem; color:var(--adm-text-sec); border-top:1px dashed var(--adm-border); padding-top:8px;">Ishchi guruh: <strong style="color:#00d2ff;">${o.worker_group || "Tayinlanmagan"}</strong></div>
+                        <div style="font-size:0.76rem; color:var(--adm-text-sec); border-top:1px dashed var(--adm-border); padding-top:8px;">Material so'rovi: <strong style="color:${reqStatusByOrder[o.id] === 'Tasdiqlandi' ? '#00d2ff' : '#ef4444'};">${reqStatusByOrder[o.id] === 'Tasdiqlandi' ? "✅ Ombor tayyorladi" : (reqStatusByOrder[o.id] ? "⏳ Ombor tayyorlashini kutmoqda" : "—")}</strong></div>
                         ${deadlineBadge}
                         ${advanceBadgeHtml(o)}
                         <div style="display:flex; gap:8px;">
-                            <button class="assign-btn" data-id="${o.id}" data-order='${JSON.stringify(o).replace(/'/g, '&#39;')}' style="flex:1; background:#00d2ff; color:#000; border:none; padding:9px 12px; border-radius:10px; font-weight:600; font-size:0.78rem; cursor:pointer;">${o.worker_group ? "O'zgartirish" : "Guruh Tayinlash"}</button>
-                            ${o.worker_group ? `<button class="complete-btn" data-id="${o.id}" style="flex:1; background:#00ff88; color:#000; border:none; padding:9px 12px; border-radius:10px; font-weight:600; font-size:0.78rem; cursor:pointer;">✓ Bitirish</button>` : ''}
+                            <button class="complete-btn" data-id="${o.id}" style="flex:1; background:#00ff88; color:#000; border:none; padding:9px 12px; border-radius:10px; font-weight:600; font-size:0.78rem; cursor:pointer;">✓ Bitirish</button>
                         </div>
                     `;
                     procTable.appendChild(ocard);
@@ -738,7 +726,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <span style="color:var(--adm-text-sec);">Tugatilgan: ${new Date().toLocaleDateString()}</span>
                             <strong style="color:#00ff88; font-family:monospace;">${Number(o.total_price).toLocaleString()} UZS</strong>
                         </div>
-                        <div style="font-size:0.74rem; color:var(--adm-text-sec);">Guruh: <strong style="color:#00ff88;">${o.worker_group || "Noma'lum"}</strong></div>
                     `;
                     compTable.appendChild(ccard);
                 }
@@ -947,72 +934,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        document.querySelectorAll('.assign-btn').forEach(b => {
-            b.onclick = async () => {
-                const o = JSON.parse(b.dataset.order);
-                window.assignOrderId = o.id;
-                window.reqMaterials = []; // reset bom
-
-                // --- Auto Calculate BOM based on Formula (Aggregate all basket items) ---
-                let totalPerimeter = 0;
-                let totalArea = 0;
-                let mainModel = '';
-
-                try {
-                    const parsedItems = JSON.parse(o.model_name);
-                    parsedItems.forEach(it => {
-                        if (it.type === 'rom' || it.type === 'rom_fortochka' || it.type === 'eshik') {
-                            const perimeter = ((it.width * 2) + (it.height * 2)) * it.quantity;
-                            totalPerimeter += perimeter;
-                            totalArea += (it.width * it.height * it.quantity);
-                            if (!mainModel) mainModel = it.materialName;
-                        }
-                    });
-                } catch(e) {
-                    const qty = parseInt(o.quantity) || 1;
-                    totalPerimeter = ((parseFloat(o.width) * 2) + (parseFloat(o.height) * 2)) * qty;
-                    totalArea = parseFloat(o.sq_meter);
-                    mainModel = o.model_name;
-                }
-
-                // Get all materials to match
-                let whMats = [];
-                try {
-                    const res = await supabase.from('romix_inventory').select('id, product_name, unit');
-                    if (res.error) throw res.error;
-                    whMats = (res.data || []).map(p => ({ id: p.id, name: p.product_name, unit: p.unit }));
-                } catch(err) {
-                    console.warn("Supabase warehouse fetch for BOM failed, using local fallback:", err);
-                    whMats = [
-                        { id: "prof-60", name: "Akfa 60 Series Profil", unit: "m" },
-                        { id: "prof-70", name: "Akfa 70 Series Profil", unit: "m" },
-                        { id: "prof-thermo", name: "Thermo 65 Insulation Profil", unit: "m" },
-                        { id: "prof-eng", name: "Engelberg 76 Premium Profil", unit: "m" },
-                        { id: "rez-1", name: "Kauchuk Zichlagich (Rezinka)", unit: "m" },
-                        { id: "oyna-1", name: "Oddiy Oyna (Glass)", unit: "kv.m" },
-                        { id: "oyna-2", name: "Ikki Qavatli Shisha-Paket", unit: "kv.m" }
-                    ];
-                }
-
-                if (whMats && whMats.length) {
-                    // Try to find matching profile
-                    const prof = whMats.find(m => m.name.toLowerCase().includes(mainModel.toLowerCase()) || mainModel.toLowerCase().includes(m.name.toLowerCase()) || m.name.toLowerCase().includes('profil'));
-                    if (prof && totalPerimeter > 0) window.reqMaterials.push({ product_id: prof.id, name: prof.name, qty: (totalPerimeter * 1.1).toFixed(1), unit: prof.unit });
-
-                    // Try to find rezinka
-                    const rez = whMats.find(m => m.name.toLowerCase().includes('rezin'));
-                    if (rez && totalPerimeter > 0) window.reqMaterials.push({ product_id: rez.id, name: rez.name, qty: (totalPerimeter * 2).toFixed(1), unit: rez.unit });
-
-                    // Try to find oyna
-                    const oyna = whMats.find(m => m.name.toLowerCase().includes('oyna') || m.name.toLowerCase().includes('shisha'));
-                    if (oyna && totalArea > 0) window.reqMaterials.push({ product_id: oyna.id, name: oyna.name, qty: (totalArea).toFixed(2), unit: oyna.unit });
-                }
-
-                renderReqMaterials();
-                assignModal.classList.remove('hidden');
-            };
-        });
-
         document.querySelectorAll('.complete-btn').forEach(b => {
             b.onclick = async () => {
                 if (confirm("Haqiqatdan bu ish to'liq topshirildimi?")) {
@@ -1087,6 +1008,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const res = await supabase.from('sales_orders').insert([newOrder]).select().single();
             if (res.error) throw res.error;
+            // Sotuv guruh tanlamaydi — material so'rovi shu yerda avtomatik yaratiladi,
+            // Ombor buni o'zining "Yangi Zakaz" ro'yxatida ko'radi.
+            await calculateAndCreateMaterialRequest(res.data.id, orderItems);
         } catch(err) {
             console.warn("Supabase insert order failed, writing to local storage:", err);
             const localRaw = localStorage.getItem('romix_orders_local');
@@ -1148,152 +1072,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // Assignments & Print Material Requisition
-    document.getElementById('saveAssignBtn').onclick = async () => {
-        const grp = document.getElementById('aGroup').value;
-        const oId = window.assignOrderId;
-
-        if (window.reqMaterials.length === 0) {
-            return alert("Ombordan olinishi kerak bo'lgan xom-ashyolarni kiritmadingiz!");
-        }
-
-        const assignBtn = document.getElementById('saveAssignBtn');
-        if (assignBtn.disabled) return;
-        assignBtn.disabled = true;
-        const assignBtnOrigText = assignBtn.textContent;
-        assignBtn.textContent = 'Saqlanmoqda...';
-
-        // 1. Update order
-        try {
-            const { error } = await supabase.from('sales_orders').update({
-                worker_group: grp,
-                status: 'Jarayonda'
-            }).eq('id', oId);
-            if (error) throw error;
-        } catch (err) {
-            console.warn("Supabase assign group failed, applying to local storage:", err);
-        }
-
-        const localRaw = localStorage.getItem('romix_orders_local');
-        if (localRaw) {
-            const localOrders = JSON.parse(localRaw);
-            const ord = localOrders.find(x => x.id === oId);
-            if (ord) {
-                ord.worker_group = grp;
-                ord.status = 'Jarayonda';
-                localStorage.setItem('romix_orders_local', JSON.stringify(localOrders));
-            }
-        }
-
-        // 2. Insert to material_requests
-        let reqData = null;
-        try {
-            const res = await supabase.from('material_requests').insert([{
-                order_id: oId,
-                worker_group: grp,
-                materials_json: window.reqMaterials,
-                status: 'Kutilmoqda'
-            }]).select().single();
-            if (res.error) throw res.error;
-            reqData = res.data;
-        } catch (err) {
-            console.warn("Supabase material request failed, using local mock:", err);
-            reqData = {
-                id: 'req-' + Date.now().toString().slice(-6),
-                order_id: oId,
-                worker_group: grp,
-                materials_json: window.reqMaterials,
-                status: 'Kutilmoqda'
-            };
-        }
-
-        assignBtn.disabled = false;
-        assignBtn.textContent = assignBtnOrigText;
-        assignModal.classList.add('hidden');
-        loadOrders();
-
-        if (reqData) {
-            // Print the slip for the warehouse
-            const rId = reqData.id.slice(0, 8).toUpperCase();
-            const createdDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-
-            let matHtmlRows = '';
-            window.reqMaterials.forEach((m, idx) => {
-                matHtmlRows += `
-                    <tr>
-                        <td style="text-align:center;">${(idx + 1).toString().padStart(2, '0')}.</td>
-                        <td><b style="color:#222;">${m.name}</b></td>
-                        <td style="text-align:center; font-weight:bold;">${m.qty}</td>
-                        <td style="color:#45c4b0; font-weight:700;">${m.unit}</td>
-                    </tr>
-                `;
-            });
-
-            document.getElementById('invPaperContent').innerHTML = `
-                <div class="inv-header" style="background: #3b82f6;">
-                    <div class="inv-top">
-                        <div>
-                            <h1 class="inv-title">Requisition.</h1>
-                            <div class="inv-id">REQ-${rId}</div>
-                        </div>
-                        <div class="inv-date-box">
-                            <div style="font-size:0.9rem; opacity:0.8; text-transform:uppercase; letter-spacing:1px;">Req Date:</div>
-                            <div style="font-size:1.1rem; font-weight:600;">${createdDate}</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="inv-cards-row">
-                    <div class="inv-box" style="border-top: 4px solid #3b82f6;">
-                        <h3 style="color:#3b82f6">Target Group:</h3>
-                        <p style="font-size:1.4rem; color:#222; font-weight:800; margin-top:10px;">${grp}</p>
-                        <p>Authorized personnel only.</p>
-                    </div>
-                    <div class="inv-box">
-                        <h3 style="color:#3b82f6">Transfer Status:</h3>
-                        <div class="amount-badge" style="background:#f59e0b; font-size:1rem;">Pending Verification</div>
-                        <p style="margin-top:10px; font-size:0.85rem;">Scan QR to trigger auto-deduction.</p>
-                    </div>
-                </div>
-
-                <div class="qr-absolute">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${reqData.id}" style="width:120px; height:120px;">
-                </div>
-
-                <div class="inv-body">
-                    <h2 style="margin-top:0; color:#444; font-size:1.3rem;">Requested Materials / BOM</h2>
-                    <table class="inv-table">
-                        <thead>
-                            <tr>
-                                <th style="width:10%; background:#3b82f6; text-align:center;">No.</th>
-                                <th style="width:60%;">Material Name</th>
-                                <th style="text-align:center;">Quantity</th>
-                                <th style="background:#555;">Unit</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${matHtmlRows}
-                        </tbody>
-                    </table>
-
-                    <div class="inv-footer-row">
-                        <div class="terms-box" style="background:#3b82f6;">
-                            <h4>Warehouse Instructions:</h4>
-                            <p>Ushbu ruxsatnoma orqali ko'rsatilgan miqdordagi xom-ashyolar ombordan chiqarib beriladi. Ombor menejeri QR kodni skayner qilgandan keyingina bazadan avtomatik hisobdan yechiladi.</p>
-                        </div>
-                        <div class="sign-box">
-                            <div class="sign-line"></div>
-                            <div style="font-size:0.85rem; font-weight:600;">Guruh Bashlig'i Imzosi (Olib ketuvchi)</div>
-                            <div style="margin-top:40px;" class="sign-line"></div>
-                            <div style="font-size:0.85rem; font-weight:600;">Omborchi Imzosi (Beruvchi)</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            mainApp.classList.add('hidden');
-            printArea.classList.remove('hidden');
-        }
-    };
 
     // Close buttons
     const cOrder = document.getElementById('closeOrderModal');
@@ -1305,8 +1083,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     const cEdit = document.getElementById('closeEditOrderModal');
     if (cEdit) cEdit.onclick = () => editModal.classList.add('hidden');
-    const cAss = document.getElementById('closeAssignModal');
-    if (cAss) cAss.onclick = () => assignModal.classList.add('hidden');
 
     document.getElementById('openOrderModal').onclick = () => {
         // Reset basket on each new order
@@ -1385,6 +1161,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('logoutBtn').onclick = () => { localStorage.removeItem('currentUser'); window.location.href = '/'; };
 
     syncMaterialPrices();
-    loadWarehouseMaterials();
     loadOrders();
 });

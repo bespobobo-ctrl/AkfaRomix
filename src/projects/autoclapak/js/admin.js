@@ -449,7 +449,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const ROMIX_BUH_KEYS = {
         production: 'romix_production_log_v1',
         expenses: 'romix_expenses_v1',
-        debts: 'romix_debts_v1'
+        debts: 'romix_debts_v1',
+        payments: 'romix_payment_log_v1'
     };
 
     function _buhToday() { return new Date().toISOString().slice(0, 10); }
@@ -760,6 +761,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         return { totalEmp, monthlyPayrollFund };
     }
 
+    // Aksesuar zaxirasi faqat brauzer localStorage'da saqlanadi (romix_ombor_aksesuvar.html
+    // shu kalitni boshqaradi). Bir xil origin bo'lgani uchun shu yerdan ham o'qiy olamiz.
+    function _buhGetAccessories() {
+        try { return JSON.parse(localStorage.getItem('romix_accessories_inventory')) || []; } catch { return []; }
+    }
+    function _buhSaveAccessories(list) {
+        localStorage.setItem('romix_accessories_inventory', JSON.stringify(list));
+    }
+    function _buhAccessoriesValue() {
+        return _buhGetAccessories().reduce((s, a) => s + ((Number(a.price) || 0) * (Number(a.qty) || 0)), 0);
+    }
+
     async function renderRomixBuhOmbor() {
         const statsEl = document.getElementById('buh-ombor-stats');
         const gridEl = document.getElementById('buh-ombor-grid');
@@ -770,60 +783,94 @@ document.addEventListener('DOMContentLoaded', async () => {
             const { data } = await supabase.from('romix_inventory').select('*').order('product_name', { ascending: true });
             items = data || [];
         } catch (e) { console.warn('Buh Ombor fetch error:', e); }
+        const accessories = _buhGetAccessories();
 
         const totalItems = items.length;
         const lowStock = items.filter(p => (Number(p.stock_quantity) || 0) < 10).length;
         const totalValue = items.reduce((s, p) => s + ((Number(p.price) || 0) * (Number(p.stock_quantity) || 0)), 0);
+        const accValue = _buhAccessoriesValue();
 
         if (statsEl) {
             statsEl.innerHTML = `
                 <div class="buh-mini-stat"><span class="buh-mini-label">Mahsulot Turlari</span><span class="buh-mini-value">${totalItems}</span></div>
                 <div class="buh-mini-stat"><span class="buh-mini-label">Kam Qolgan (&lt;10)</span><span class="buh-mini-value" style="color:#ff4d4f;">${lowStock}</span></div>
                 <div class="buh-mini-stat"><span class="buh-mini-label">Jami Qiymat</span><span class="buh-mini-value" style="color:#00ff88;">${_buhFmt(totalValue)}</span></div>
+                <div class="buh-mini-stat"><span class="buh-mini-label">Aksesuar Qiymati</span><span class="buh-mini-value" style="color:#BA68C8;">${_buhFmt(accValue)}</span></div>
             `;
         }
 
         if (gridEl) {
-            if (items.length === 0) {
-                gridEl.innerHTML = '<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Ombor bo\'sh</div>';
-            } else {
-                gridEl.innerHTML = items.map(p => {
-                    const qty = Number(p.stock_quantity) || 0;
-                    const val = (Number(p.price) || 0) * qty;
-                    const isLow = qty < 10;
-                    const accentColor = isLow ? '#ff4d4f' : '#00baff';
-                    const nameEsc = (p.product_name || '').replace(/'/g, "\\'");
-                    const unitEsc = (p.unit || '').replace(/'/g, "\\'");
-                    const lowBadge = isLow ? `<span style="background:rgba(255,77,79,0.1); color:#ff4d4f; padding:2px 8px; border-radius:10px; font-size:0.62rem; font-weight:700; margin-left:6px;">⚠️ Kam qolgan</span>` : '';
-                    return `<div class="buh-ombor-card" data-search="${(p.product_name || '').toLowerCase().replace(/"/g, '')}" style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-top:3px solid ${accentColor}; border-radius:18px; padding:16px; display:flex; flex-direction:column; gap:10px; transition:all 0.25s;">
-                        <div style="display:flex; align-items:center; gap:12px;">
-                            <div style="width:44px; height:44px; border-radius:14px; background:linear-gradient(135deg,#00baff,#0072ff); display:flex; align-items:center; justify-content:center; font-size:1.15rem; flex-shrink:0;">📦</div>
-                            <div style="min-width:0; flex:1;">
-                                <div style="font-weight:700; color:#fff; font-size:0.88rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${p.product_name || ''}">${p.product_name || 'Noma\'lum'}</div>
-                                <div style="font-size:0.7rem; color:${isLow ? '#ff4d4f' : 'rgba(255,255,255,0.4)'}; font-weight:${isLow ? '700' : '500'}; margin-top:2px;">${qty} ${p.unit || ''}${lowBadge}</div>
-                            </div>
+            const invCardsHtml = items.map(p => {
+                const qty = Number(p.stock_quantity) || 0;
+                const val = (Number(p.price) || 0) * qty;
+                const isLow = qty < 10;
+                const accentColor = isLow ? '#ff4d4f' : '#00baff';
+                const nameEsc = (p.product_name || '').replace(/'/g, "\\'");
+                const unitEsc = (p.unit || '').replace(/'/g, "\\'");
+                const lowBadge = isLow ? `<span style="background:rgba(255,77,79,0.1); color:#ff4d4f; padding:2px 8px; border-radius:10px; font-size:0.62rem; font-weight:700; margin-left:6px;">⚠️ Kam qolgan</span>` : '';
+                return `<div class="buh-ombor-card" data-search="${(p.product_name || '').toLowerCase().replace(/"/g, '')}" style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-top:3px solid ${accentColor}; border-radius:18px; padding:16px; display:flex; flex-direction:column; gap:10px; transition:all 0.25s;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div style="width:44px; height:44px; border-radius:14px; background:linear-gradient(135deg,#00baff,#0072ff); display:flex; align-items:center; justify-content:center; font-size:1.15rem; flex-shrink:0;">📦</div>
+                        <div style="min-width:0; flex:1;">
+                            <div style="font-weight:700; color:#fff; font-size:0.88rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${p.product_name || ''}">${p.product_name || 'Noma\'lum'}</div>
+                            <div style="font-size:0.7rem; color:${isLow ? '#ff4d4f' : 'rgba(255,255,255,0.4)'}; font-weight:${isLow ? '700' : '500'}; margin-top:2px;">${qty} ${p.unit || ''}${lowBadge}</div>
                         </div>
-                        <div style="border-top:1px dashed rgba(255,255,255,0.06); padding-top:10px; display:flex; justify-content:space-between; font-size:0.76rem; color:rgba(255,255,255,0.5);">
-                            <span>Narx (birlik)</span><strong style="color:#00ff88; font-family:monospace;">${_buhFmt(p.price)}</strong>
+                    </div>
+                    <div style="border-top:1px dashed rgba(255,255,255,0.06); padding-top:10px; display:flex; justify-content:space-between; font-size:0.76rem; color:rgba(255,255,255,0.5);">
+                        <span>Narx (birlik)</span><strong style="color:#00ff88; font-family:monospace;">${_buhFmt(p.price)}</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.76rem; color:rgba(255,255,255,0.5);">
+                        <span>Jami qiymat</span><strong style="color:#00d2ff; font-family:monospace;">${_buhFmt(val)}</strong>
+                    </div>
+                    <button onclick="window.openRomixPriceModal('inventory', '${p.id}', '${nameEsc}', ${p.price || 0}, ${qty}, '${unitEsc}')"
+                        style="display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(0,186,255,0.1); border:1px solid rgba(0,186,255,0.25); color:#00baff; padding:9px; border-radius:10px; font-size:0.76rem; font-weight:700; cursor:pointer; transition:all 0.2s; width:100%; margin-top:2px;"
+                        onmouseenter="this.style.background='rgba(0,186,255,0.2)'; this.style.transform='translateY(-1px)';"
+                        onmouseleave="this.style.background='rgba(0,186,255,0.1)'; this.style.transform='translateY(0)';">
+                        💲 Narx belgilash
+                    </button>
+                </div>`;
+            }).join('');
+
+            const accCardsHtml = accessories.map((a, idx) => {
+                const qty = Number(a.qty) || 0;
+                const price = Number(a.price) || 0;
+                const val = price * qty;
+                const hasNoPrice = price <= 0;
+                const accentColor = hasNoPrice ? '#ffaa00' : '#BA68C8';
+                const nameEsc = (a.name || '').replace(/'/g, "\\'");
+                const unitEsc = (a.unit || '').replace(/'/g, "\\'");
+                const noPriceBadge = hasNoPrice ? `<span style="background:rgba(255,170,0,0.1); color:#ffaa00; padding:2px 8px; border-radius:10px; font-size:0.62rem; font-weight:700; margin-left:6px;">⚠️ Narx yo'q</span>` : '';
+                return `<div class="buh-ombor-card" data-search="${(a.name || '').toLowerCase().replace(/"/g, '')}" style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-top:3px solid ${accentColor}; border-radius:18px; padding:16px; display:flex; flex-direction:column; gap:10px; transition:all 0.25s;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div style="width:44px; height:44px; border-radius:14px; background:linear-gradient(135deg,#BA68C8,#7B1FA2); display:flex; align-items:center; justify-content:center; font-size:1.15rem; flex-shrink:0;">🔩</div>
+                        <div style="min-width:0; flex:1;">
+                            <div style="font-weight:700; color:#fff; font-size:0.88rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${a.name || ''}">${a.name || 'Noma\'lum'} <span style="font-size:0.6rem; color:rgba(255,255,255,0.3); font-weight:500;">(Aksesuar)</span></div>
+                            <div style="font-size:0.7rem; color:rgba(255,255,255,0.4); margin-top:2px;">${qty} ${a.unit || ''}${noPriceBadge}</div>
                         </div>
-                        <div style="display:flex; justify-content:space-between; font-size:0.76rem; color:rgba(255,255,255,0.5);">
-                            <span>Jami qiymat</span><strong style="color:#00d2ff; font-family:monospace;">${_buhFmt(val)}</strong>
-                        </div>
-                        <button onclick="window.openRomixPriceModal('${p.id}', '${nameEsc}', ${p.price || 0}, ${qty}, '${unitEsc}')"
-                            style="display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(0,186,255,0.1); border:1px solid rgba(0,186,255,0.25); color:#00baff; padding:9px; border-radius:10px; font-size:0.76rem; font-weight:700; cursor:pointer; transition:all 0.2s; width:100%; margin-top:2px;"
-                            onmouseenter="this.style.background='rgba(0,186,255,0.2)'; this.style.transform='translateY(-1px)';"
-                            onmouseleave="this.style.background='rgba(0,186,255,0.1)'; this.style.transform='translateY(0)';">
-                            💲 Narx belgilash
-                        </button>
-                    </div>`;
-                }).join('');
-            }
+                    </div>
+                    <div style="border-top:1px dashed rgba(255,255,255,0.06); padding-top:10px; display:flex; justify-content:space-between; font-size:0.76rem; color:rgba(255,255,255,0.5);">
+                        <span>Narx (birlik)</span><strong style="color:#00ff88; font-family:monospace;">${_buhFmt(price)}</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.76rem; color:rgba(255,255,255,0.5);">
+                        <span>Jami qiymat</span><strong style="color:#00d2ff; font-family:monospace;">${_buhFmt(val)}</strong>
+                    </div>
+                    <button onclick="window.openRomixPriceModal('accessory', '${idx}', '${nameEsc}', ${price}, ${qty}, '${unitEsc}')"
+                        style="display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(186,104,200,0.1); border:1px solid rgba(186,104,200,0.25); color:#BA68C8; padding:9px; border-radius:10px; font-size:0.76rem; font-weight:700; cursor:pointer; transition:all 0.2s; width:100%; margin-top:2px;"
+                        onmouseenter="this.style.background='rgba(186,104,200,0.2)'; this.style.transform='translateY(-1px)';"
+                        onmouseleave="this.style.background='rgba(186,104,200,0.1)'; this.style.transform='translateY(0)';">
+                        💲 Narx belgilash
+                    </button>
+                </div>`;
+            }).join('');
+
+            const combinedHtml = invCardsHtml + accCardsHtml;
+            gridEl.innerHTML = combinedHtml || '<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Ombor bo\'sh</div>';
         }
-        return { totalValue };
+        return { totalValue, accValue };
     }
 
-    window.openRomixPriceModal = (id, name, currentPrice, qty, unit) => {
-        window._romixPriceModalState = { id, qty: Number(qty) || 0, unit: unit || '' };
+    window.openRomixPriceModal = (source, id, name, currentPrice, qty, unit) => {
+        window._romixPriceModalState = { source: source || 'inventory', id, qty: Number(qty) || 0, unit: unit || '' };
         const modal = document.getElementById('romix-price-modal');
         const nameEl = document.getElementById('romix-price-modal-product');
         const input = document.getElementById('romix-price-modal-input');
@@ -856,12 +903,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!state || !input) return;
         const val = parseFloat(input.value);
         if (isNaN(val) || val < 0) { alert("Iltimos, to'g'ri narx kiriting."); return; }
+
+        if (state.source === 'accessory') {
+            const list = _buhGetAccessories();
+            const idx = Number(state.id);
+            if (!list[idx]) { alert("Aksesuar topilmadi. Ro'yxatni yangilab ko'ring."); return; }
+            list[idx].price = val;
+            _buhSaveAccessories(list);
+            window.showPremiumToast('Muvaffaqiyatli', 'Aksesuar narxi yangilandi.', true);
+            window.closeRomixPriceModal();
+            await renderRomixBuhOmbor();
+            await renderBuhOverview();
+            return;
+        }
+
         try {
             const { error } = await supabase.from('romix_inventory').update({ price: val }).eq('id', state.id);
             if (error) throw error;
             window.showPremiumToast('Muvaffaqiyatli', 'Tan narx yangilandi.', true);
             window.closeRomixPriceModal();
             await renderRomixBuhOmbor();
+            await renderBuhOverview();
         } catch (err) {
             alert('Xatolik: ' + err.message);
         }
@@ -1748,10 +1810,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         const val = parseFloat(prompt(`"${debt.creditor}" uchun to'lov summasini kiriting (qoldiq: ${remaining.toLocaleString()} UZS):`, remaining));
         if (!val || val <= 0) return;
         if (val > remaining) return alert(`Qoldiqdan ortiq summa kiritdingiz! Qoldiq: ${remaining.toLocaleString()} UZS`);
+        const note = prompt("Izoh (ixtiyoriy):", "") || "";
         const newPaid = (Number(debt.paid_amount) || 0) + val;
         await romixBuhUpdate('romix_debts', ROMIX_BUH_KEYS.debts, id, { paid_amount: newPaid });
+        const paymentRecord = {
+            id: 'PAY-' + Date.now(),
+            debt_id: debt.id,
+            creditor: debt.creditor,
+            amount: val,
+            note,
+            date: _buhToday(),
+            created_at: new Date().toISOString()
+        };
+        await romixBuhInsert('romix_payment_log', ROMIX_BUH_KEYS.payments, paymentRecord);
         await renderBuhTashqiQarz();
         await updateBuhHeroKPIs();
+        await renderBuhOverview();
     };
 
     window.deleteRomixDebt = async (id) => {
@@ -1817,6 +1891,234 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="buh-mini-stat"><span class="buh-mini-label">7 Kunlik Ishlab Chiqarish</span><span class="buh-mini-value" style="color:#ffaa00;">${totalProd7} dona</span></div>
             `;
         }
+
+        await renderBuhUmumiyCards();
+    }
+
+    // ============================================================
+    // ==== BUXGALTERIYA: UMUMIY — TO'LIQ MOLIYAVIY KO'RINISH ====
+    // (Ombor/Profil/Aksesuar qiymati, oylik kirim/harajat/to'lovlar/
+    //  xodimlar/zakazlar — har biri bosilganda tafsilot ochiladi)
+    // ============================================================
+    function _buhMonthKey() { return _buhToday().slice(0, 7); }
+
+    function _buhOmborProfilSplit(items) {
+        const ombor = items.filter(p => (p.category || '').toLowerCase() !== 'profil');
+        const profil = items.filter(p => (p.category || '').toLowerCase() === 'profil');
+        const val = list => list.reduce((s, p) => s + ((Number(p.price) || 0) * (Number(p.stock_quantity) || 0)), 0);
+        return { ombor: { items: ombor, value: val(ombor) }, profil: { items: profil, value: val(profil) } };
+    }
+
+    function _buhInventoryTableRows(items, qtyKey) {
+        qtyKey = qtyKey || 'stock_quantity';
+        if (!items.length) return `<tr><td colspan="4" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Mahsulot topilmadi</td></tr>`;
+        return items.slice()
+            .sort((a, b) => ((Number(b.price) || 0) * (Number(b[qtyKey]) || 0)) - ((Number(a.price) || 0) * (Number(a[qtyKey]) || 0)))
+            .map(p => {
+                const qty = Number(p[qtyKey]) || 0;
+                const val = (Number(p.price) || 0) * qty;
+                return `<tr><td>${p.product_name || p.name}</td><td style="text-align:right;">${qty} ${p.unit || ''}</td><td style="text-align:right;">${_buhFmt(p.price)}</td><td style="text-align:right;">${_buhFmt(val)}</td></tr>`;
+            }).join('');
+    }
+
+    async function _buhComputeUmumiyData() {
+        const monthKey = _buhMonthKey();
+
+        let invItems = [];
+        try {
+            const { data } = await supabase.from('romix_inventory').select('*');
+            invItems = data || [];
+        } catch (e) { console.warn('Buh Umumiy ombor fetch error:', e); }
+        const { ombor, profil } = _buhOmborProfilSplit(invItems);
+
+        const accessories = _buhGetAccessories();
+        const accValue = accessories.reduce((s, a) => s + ((Number(a.price) || 0) * (Number(a.qty) || 0)), 0);
+
+        let orders = [];
+        try {
+            const { data } = await supabase.from('sales_orders').select('*');
+            orders = data || [];
+        } catch (e) { console.warn('Buh Umumiy orders fetch error:', e); }
+        const monthOrders = orders.filter(o => (o.created_at || '').startsWith(monthKey));
+        const monthlyIncome = monthOrders.reduce((s, o) => s + (Number(o.total_price) || 0), 0);
+        const monthlyCollected = monthOrders.reduce((s, o) => s + _buhOrderPaymentInfo(o).paidAmount, 0);
+        const installedUnpaid = orders.filter(o => o.install_status === 'Bajarildi' && _buhOrderPaymentInfo(o).remaining > 0);
+        const installedUnpaidTotal = installedUnpaid.reduce((s, o) => s + _buhOrderPaymentInfo(o).remaining, 0);
+        const notInstalledUnpaid = orders.filter(o => o.install_status !== 'Bajarildi' && _buhOrderPaymentInfo(o).remaining > 0);
+        const notInstalledUnpaidTotal = notInstalledUnpaid.reduce((s, o) => s + _buhOrderPaymentInfo(o).remaining, 0);
+
+        const expenses = await romixBuhSelect('romix_expenses', ROMIX_BUH_KEYS.expenses);
+        const monthExpenses = expenses.filter(e => (e.date || '').startsWith(monthKey));
+        const monthlyExpenseTotal = monthExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+        const expenseByCategory = {};
+        monthExpenses.forEach(e => {
+            const cat = e.category || 'Boshqa';
+            expenseByCategory[cat] = (expenseByCategory[cat] || 0) + (Number(e.amount) || 0);
+        });
+
+        const payments = await romixBuhSelect('romix_payment_log', ROMIX_BUH_KEYS.payments);
+        const monthPayments = payments.filter(p => (p.date || '').startsWith(monthKey));
+        const monthlyPaymentsTotal = monthPayments.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+        const paymentsByCreditor = {};
+        monthPayments.forEach(p => {
+            const c = p.creditor || "Noma'lum";
+            if (!paymentsByCreditor[c]) paymentsByCreditor[c] = { total: 0, list: [] };
+            paymentsByCreditor[c].total += (Number(p.amount) || 0);
+            paymentsByCreditor[c].list.push(p);
+        });
+
+        let employees = [], attendance = [];
+        try {
+            const { data: eData } = await supabase.from('employees').select('id, full_name, role, salary_info');
+            employees = eData || [];
+            const { data: aData } = await supabase.from('attendance').select('employee_id, date, check_in, check_out');
+            attendance = (aData || []).filter(a => (a.date || '').startsWith(monthKey));
+        } catch (e) { console.warn('Buh Umumiy xodimlar fetch error:', e); }
+        const monthlyPayrollFund = employees.reduce((s, e) => s + (parseFloat((e.salary_info || '').toString().replace(/[^0-9]/g, '')) || 0), 0);
+
+        const attByEmp = {};
+        attendance.forEach(a => { if (!attByEmp[a.employee_id]) attByEmp[a.employee_id] = []; attByEmp[a.employee_id].push(a); });
+        const employeeMonthlyEarnings = employees.map(e => {
+            const sal = parseFloat((e.salary_info || '').toString().replace(/[^0-9]/g, '')) || 0;
+            const hourlyRate = sal / 26 / 8;
+            const days = attByEmp[e.id] || [];
+            let earned = 0, workedDays = 0;
+            days.forEach(a => {
+                if (!a.check_in || !a.check_out) return;
+                const ip = a.check_in.split(':').map(Number);
+                const op = a.check_out.split(':').map(Number);
+                const inSec = (ip[0] || 0) * 3600 + (ip[1] || 0) * 60 + (ip[2] || 0);
+                const outSec = (op[0] || 0) * 3600 + (op[1] || 0) * 60 + (op[2] || 0);
+                const hours = Math.max(0, (outSec - inSec) / 3600);
+                earned += hours * hourlyRate;
+                workedDays++;
+            });
+            return { id: e.id, name: e.full_name, role: e.role, salary: sal, workedDays, earned };
+        }).sort((a, b) => b.earned - a.earned);
+
+        return {
+            monthKey, ombor, profil, accValue, accessories,
+            monthlyIncome, monthOrders, monthOrdersCount: monthOrders.length, monthlyCollected,
+            monthlyExpenseTotal, expenseByCategory, monthExpenses,
+            monthlyPaymentsTotal, paymentsByCreditor,
+            monthlyPayrollFund, employeeMonthlyEarnings,
+            installedUnpaid, installedUnpaidTotal, notInstalledUnpaid, notInstalledUnpaidTotal
+        };
+    }
+
+    function _buhUmumiyCard(key, icon, label, valueHtml, color) {
+        return `<div class="buh-mini-stat buh-umumiy-card" data-key="${key}" onclick="window.toggleBuhUmumiyDrill('${key}')" style="cursor:pointer;">
+            <span class="buh-mini-label">${icon} ${label}</span>
+            <span class="buh-mini-value" style="color:${color};">${valueHtml}</span>
+        </div>`;
+    }
+
+    window.toggleBuhUmumiyDrill = (key) => {
+        const panel = document.getElementById('buh-umumiy-drill-panel');
+        if (!panel) return;
+        if (window._buhUmumiyActiveKey === key) {
+            window._buhUmumiyActiveKey = null;
+            panel.style.display = 'none';
+            panel.innerHTML = '';
+        } else {
+            window._buhUmumiyActiveKey = key;
+            panel.innerHTML = (window._buhUmumiyDrills && window._buhUmumiyDrills[key]) || '';
+            panel.style.display = 'block';
+        }
+        document.querySelectorAll('#buh-umumiy-cards .buh-umumiy-card').forEach(c => {
+            c.classList.toggle('active', c.dataset.key === window._buhUmumiyActiveKey);
+        });
+    };
+
+    window.toggleBuhPaymentCreditor = (safeKey) => {
+        const row = document.getElementById(`buh-pay-cred-${safeKey}`);
+        if (row) row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+    };
+
+    async function renderBuhUmumiyCards() {
+        const cardsEl = document.getElementById('buh-umumiy-cards');
+        const panel = document.getElementById('buh-umumiy-drill-panel');
+        if (!cardsEl) return;
+
+        const d = await _buhComputeUmumiyData();
+        window._buhUmumiyDrills = {};
+
+        window._buhUmumiyDrills['ombor'] = `<h4 style="color:#fff; margin-bottom:10px;">🏬 Ombor Tarkibi (${d.ombor.items.length} tur)</h4>
+            <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Mahsulot</th><th style="text-align:right;">Qoldiq</th><th style="text-align:right;">Narx</th><th style="text-align:right;">Qiymat</th></tr></thead>
+            <tbody>${_buhInventoryTableRows(d.ombor.items)}</tbody></table></div>`;
+
+        window._buhUmumiyDrills['profil'] = `<h4 style="color:#fff; margin-bottom:10px;">📦 Profil Tarkibi (${d.profil.items.length} tur)</h4>
+            <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Mahsulot</th><th style="text-align:right;">Qoldiq</th><th style="text-align:right;">Narx</th><th style="text-align:right;">Qiymat</th></tr></thead>
+            <tbody>${_buhInventoryTableRows(d.profil.items)}</tbody></table></div>`;
+
+        window._buhUmumiyDrills['aksesuar'] = `<h4 style="color:#fff; margin-bottom:10px;">🔩 Aksesuar Tarkibi (${d.accessories.length} tur)</h4>
+            <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Nomi</th><th style="text-align:right;">Soni</th><th style="text-align:right;">Narx</th><th style="text-align:right;">Qiymat</th></tr></thead>
+            <tbody>${_buhInventoryTableRows(d.accessories, 'qty')}</tbody></table></div>`;
+
+        const incomeRows = d.monthOrders.length
+            ? d.monthOrders.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).map(o =>
+                `<tr><td>${o.created_at ? new Date(o.created_at).toLocaleDateString('uz-UZ') : '-'}</td><td>${o.customer_name || "Noma'lum"}</td><td>${o.prod_type || ''}</td><td style="text-align:right; color:#00ff88;">${_buhFmt(o.total_price)}</td></tr>`).join('')
+            : `<tr><td colspan="4" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Shu oy buyurtma yo'q</td></tr>`;
+        window._buhUmumiyDrills['kirim'] = `<h4 style="color:#fff; margin-bottom:10px;">📈 Shu Oy Kirim Manbalari (${d.monthOrders.length} buyurtma)</h4>
+            <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Sana</th><th>Mijoz</th><th>Mahsulot</th><th style="text-align:right;">Summa</th></tr></thead>
+            <tbody>${incomeRows}</tbody></table></div>`;
+
+        const expCats = Object.entries(d.expenseByCategory).sort((a, b) => b[1] - a[1]);
+        const expRows = expCats.length
+            ? expCats.map(([cat, sum]) => `<tr><td>${cat}</td><td style="text-align:right; color:#ff4d4f;">-${_buhFmt(sum)}</td></tr>`).join('')
+            : `<tr><td colspan="2" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Shu oy harajat yo'q</td></tr>`;
+        window._buhUmumiyDrills['harajat'] = `<h4 style="color:#fff; margin-bottom:10px;">📉 Shu Oy Harajat Kategoriyalari</h4>
+            <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Kategoriya</th><th style="text-align:right;">Summa</th></tr></thead>
+            <tbody>${expRows}</tbody></table></div>`;
+
+        const creditorEntries = Object.entries(d.paymentsByCreditor).sort((a, b) => b[1].total - a[1].total);
+        const paymentsRows = creditorEntries.length ? creditorEntries.map(([creditor, info]) => {
+            const safeKey = creditor.replace(/[^a-zA-Z0-9]/g, '_');
+            const historyRows = info.list.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).map(p =>
+                `<tr><td style="padding-left:24px; color:rgba(255,255,255,0.5);">${p.date}</td><td style="color:rgba(255,255,255,0.5);">${p.note || '-'}</td><td style="text-align:right; color:#00ff88;">${_buhFmt(p.amount)}</td></tr>`).join('');
+            return `<tr style="cursor:pointer;" onclick="window.toggleBuhPaymentCreditor('${safeKey}')"><td>▸ ${creditor}</td><td></td><td style="text-align:right; font-weight:700;">${_buhFmt(info.total)}</td></tr>
+                <tr id="buh-pay-cred-${safeKey}" style="display:none; background:rgba(255,255,255,0.02);"><td colspan="3" style="padding:0;"><table class="v2-table" style="width:100%;"><tbody>${historyRows}</tbody></table></td></tr>`;
+        }).join('') : `<tr><td colspan="3" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Shu oy to'lov qilinmagan</td></tr>`;
+        window._buhUmumiyDrills['tolovlar'] = `<h4 style="color:#fff; margin-bottom:10px;">🧾 Shu Oy To'lovlar — Kimga Qancha (bosib tarixni ko'ring)</h4>
+            <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Kreditor</th><th></th><th style="text-align:right;">Jami</th></tr></thead>
+            <tbody>${paymentsRows}</tbody></table></div>`;
+
+        const empRows = d.employeeMonthlyEarnings.length ? d.employeeMonthlyEarnings.map(e =>
+            `<tr><td>${e.name}</td><td>${e.role || '-'}</td><td style="text-align:right;">${e.workedDays}</td><td style="text-align:right; color:#ffaa00;">${_buhFmt(e.earned)}</td><td style="text-align:right; color:#ba00ff;">${_buhFmt(e.salary)}</td></tr>`).join('')
+            : `<tr><td colspan="5" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Xodim topilmadi</td></tr>`;
+        window._buhUmumiyDrills['xodimlar'] = `<h4 style="color:#fff; margin-bottom:10px;">👥 Shu Oy Xodimlar — Kim Qancha Ishlagani</h4>
+            <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Ism</th><th>Lavozim</th><th style="text-align:right;">Ish Kunlari</th><th style="text-align:right;">Hisoblangan Ish Haqi</th><th style="text-align:right;">Oylik Maosh</th></tr></thead>
+            <tbody>${empRows}</tbody></table></div>`;
+
+        const installedRows = d.installedUnpaid.length ? d.installedUnpaid.slice()
+            .sort((a, b) => _buhOrderPaymentInfo(b).remaining - _buhOrderPaymentInfo(a).remaining).map(o => {
+                const pay = _buhOrderPaymentInfo(o);
+                return `<tr><td>${o.customer_name || "Noma'lum"}</td><td style="text-align:right;">${_buhFmt(pay.total)}</td><td style="text-align:right; color:#00ff88;">${_buhFmt(pay.paidAmount)}</td><td style="text-align:right; color:#ff4d4f; font-weight:700;">${_buhFmt(pay.remaining)}</td></tr>`;
+            }).join('') : `<tr><td colspan="4" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Hammasi to'liq to'langan</td></tr>`;
+        window._buhUmumiyDrills['zakaz'] = `<h4 style="color:#fff; margin-bottom:10px;">🛒 Shu Oy Buyurtmalar: ${d.monthOrdersCount} ta — ${_buhFmt(d.monthlyIncome)}</h4>
+            <div class="buh-mini-row" style="margin-bottom:16px;">
+                <div class="buh-mini-stat"><span class="buh-mini-label">Shu Oy Yig'ilgan</span><span class="buh-mini-value" style="color:#00ff88;">${_buhFmt(d.monthlyCollected)}</span></div>
+                <div class="buh-mini-stat"><span class="buh-mini-label">Hali Ishlanmagan Qoldiq</span><span class="buh-mini-value" style="color:#ffaa00;">${_buhFmt(d.notInstalledUnpaidTotal)}</span></div>
+                <div class="buh-mini-stat"><span class="buh-mini-label">O'tgan Mijozlardan Kutilmoqda</span><span class="buh-mini-value" style="color:#ff4d4f;">${_buhFmt(d.installedUnpaidTotal)}</span></div>
+            </div>
+            <h4 style="color:#fff; margin-bottom:10px;">⏳ O'rnatilgan, Lekin To'liq To'lanmagan Mijozlar</h4>
+            <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Mijoz</th><th style="text-align:right;">Jami</th><th style="text-align:right;">To'langan</th><th style="text-align:right;">Qoldiq</th></tr></thead>
+            <tbody>${installedRows}</tbody></table></div>`;
+
+        cardsEl.innerHTML = [
+            _buhUmumiyCard('ombor', '🏬', 'Ombor Qiymati', _buhFmt(d.ombor.value), '#00baff'),
+            _buhUmumiyCard('profil', '📦', 'Profil Qiymati', _buhFmt(d.profil.value), '#00d2ff'),
+            _buhUmumiyCard('aksesuar', '🔩', 'Aksesuar Qiymati', _buhFmt(d.accValue), '#BA68C8'),
+            _buhUmumiyCard('kirim', '📈', 'Oylik Kirim', _buhFmt(d.monthlyIncome), '#00ff88'),
+            _buhUmumiyCard('harajat', '📉', 'Oylik Harajat', _buhFmt(d.monthlyExpenseTotal), '#ff4d4f'),
+            _buhUmumiyCard('tolovlar', '🧾', "To'lovlar (shu oy)", _buhFmt(d.monthlyPaymentsTotal), '#fabb18'),
+            _buhUmumiyCard('xodimlar', '👥', 'Xodimlar Oyligi', _buhFmt(d.monthlyPayrollFund), '#ba00ff'),
+            _buhUmumiyCard('zakaz', '🛒', 'Buyurtmalar (shu oy)', `${d.monthOrdersCount} ta — ${_buhFmt(d.monthlyIncome)}`, '#00ff88')
+        ].join('');
+
+        if (panel && window._buhUmumiyActiveKey) {
+            panel.innerHTML = window._buhUmumiyDrills[window._buhUmumiyActiveKey] || '';
+        }
     }
 
     async function updateBuhHeroKPIs() {
@@ -1876,7 +2178,18 @@ CREATE TABLE IF NOT EXISTS romix_debts (
 
 -- Sotuv buyurtmalarida to'lov holatini kuzatish uchun (Buhgalteriya > Kunlik Sotuv)
 ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS paid_amount NUMERIC DEFAULT 0;
-ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS payment_date TIMESTAMPTZ;`;
+ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS payment_date TIMESTAMPTZ;
+
+-- Tashqi qarz to'lovlari tarixi (Buhgalteriya > Umumiy > To'lovlar)
+CREATE TABLE IF NOT EXISTS romix_payment_log (
+    id TEXT PRIMARY KEY,
+    debt_id TEXT,
+    creditor TEXT NOT NULL,
+    amount NUMERIC DEFAULT 0,
+    note TEXT,
+    date TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+);`;
 
     window.openRomixBuhDbSetupModal = () => {
         const ta = document.getElementById('romix-buh-sql-text');

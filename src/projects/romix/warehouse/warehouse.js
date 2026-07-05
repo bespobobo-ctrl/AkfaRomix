@@ -814,7 +814,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (error || !req) return alert("Bunday ruxsatnoma topilmadi! Qaytadan tekshiring.");
         if (req.status === 'Tasdiqlandi') return alert("Diqqat! Bu ruxsatnomaga oldin material berilgan (Status: Tasdiqlandi).");
 
-        document.getElementById('reqGroupName').textContent = `Maxsus Guruh: ${req.worker_group}`;
+        document.getElementById('reqGroupName').textContent = req.worker_group ? `Maxsus Guruh: ${req.worker_group}` : 'Sotuvdan avtomatik so\'rov';
         reqMatList.innerHTML = '';
         window.currentReqData = req; // save for approval
 
@@ -878,12 +878,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                     product_id: m.product_id,
                     type: 'OUT',
                     quantity: m.qty,
-                    note: `Romix Sotuv (Buyurtma/Guruh: ${req.worker_group})`
+                    note: req.worker_group ? `Romix Sotuv (Buyurtma/Guruh: ${req.worker_group})` : `Romix Sotuv (Buyurtma: ${req.order_id})`
                 }]);
             }
 
             // Change request status
             await supabase.from('material_requests').update({ status: 'Tasdiqlandi' }).eq('id', req.id);
+
+            // Ombor tayyorlab bo'lgach, buyurtma Ishlab Chiqarish uchun "Jarayonda" bo'ladi
+            if (req.order_id) {
+                await supabase.from('sales_orders').update({ status: 'Jarayonda' }).eq('id', req.order_id);
+            }
 
             alert(`✅ Ruxsatnoma tasdiqlandi. Barcha mahsulotlar Ombordan muvaffaqiyatli chiqim qilingan!`);
             qrScanModal.classList.add('hidden');
