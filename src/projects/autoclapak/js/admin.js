@@ -1902,13 +1902,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ============================================================
     function _buhMonthKey() { return _buhToday().slice(0, 7); }
 
-    function _buhOmborProfilSplit(items) {
-        const ombor = items.filter(p => (p.category || '').toLowerCase() !== 'profil');
-        const profil = items.filter(p => (p.category || '').toLowerCase() === 'profil');
-        const val = list => list.reduce((s, p) => s + ((Number(p.price) || 0) * (Number(p.stock_quantity) || 0)), 0);
-        return { ombor: { items: ombor, value: val(ombor) }, profil: { items: profil, value: val(profil) } };
-    }
-
     function _buhInventoryTableRows(items, qtyKey) {
         qtyKey = qtyKey || 'stock_quantity';
         if (!items.length) return `<tr><td colspan="4" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Mahsulot topilmadi</td></tr>`;
@@ -1921,18 +1914,42 @@ document.addEventListener('DOMContentLoaded', async () => {
             }).join('');
     }
 
+    // Qoldiq profillar — kesimdan qolgan alohida zaxira (romix_qoldiq_inventory, faqat localStorage)
+    function _buhGetQoldiqProfillar() {
+        try { return JSON.parse(localStorage.getItem('romix_qoldiq_inventory')) || []; } catch { return []; }
+    }
+    function _buhQoldiqValue(items) {
+        return items.reduce((s, q) => s + ((Number(q.length) || 0) * (Number(q.stock_quantity) || 0) * 25), 0);
+    }
+    function _buhQoldiqTableRows(items) {
+        if (!items.length) return `<tr><td colspan="4" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Qoldiq profil topilmadi</td></tr>`;
+        return items.slice()
+            .sort((a, b) => ((Number(b.length) || 0) * (Number(b.stock_quantity) || 0)) - ((Number(a.length) || 0) * (Number(a.stock_quantity) || 0)))
+            .map(q => {
+                const qty = Number(q.stock_quantity) || 0;
+                const len = Number(q.length) || 0;
+                const val = len * qty * 25;
+                return `<tr><td>${q.product_name || "Noma'lum"}</td><td style="text-align:right;">${len} mm</td><td style="text-align:right;">${qty} dona</td><td style="text-align:right;">${_buhFmt(val)}</td></tr>`;
+            }).join('');
+    }
+
     async function _buhComputeUmumiyData() {
         const monthKey = _buhMonthKey();
 
-        let invItems = [];
+        let profilItems = [];
         try {
             const { data } = await supabase.from('romix_inventory').select('*');
-            invItems = data || [];
+            profilItems = data || [];
         } catch (e) { console.warn('Buh Umumiy ombor fetch error:', e); }
-        const { ombor, profil } = _buhOmborProfilSplit(invItems);
+        const profilValue = profilItems.reduce((s, p) => s + ((Number(p.price) || 0) * (Number(p.stock_quantity) || 0)), 0);
 
         const accessories = _buhGetAccessories();
         const accValue = accessories.reduce((s, a) => s + ((Number(a.price) || 0) * (Number(a.qty) || 0)), 0);
+
+        const qoldiqItems = _buhGetQoldiqProfillar();
+        const qoldiqValue = _buhQoldiqValue(qoldiqItems);
+
+        const omborTotal = profilValue + accValue + qoldiqValue;
 
         let orders = [];
         try {
@@ -1997,7 +2014,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }).sort((a, b) => b.earned - a.earned);
 
         return {
-            monthKey, ombor, profil, accValue, accessories,
+            monthKey, profilItems, profilValue, accValue, accessories, qoldiqItems, qoldiqValue, omborTotal,
             monthlyIncome, monthOrders, monthOrdersCount: monthOrders.length, monthlyCollected,
             monthlyExpenseTotal, expenseByCategory, monthExpenses,
             monthlyPaymentsTotal, paymentsByCreditor,
@@ -2043,17 +2060,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         const d = await _buhComputeUmumiyData();
         window._buhUmumiyDrills = {};
 
-        window._buhUmumiyDrills['ombor'] = `<h4 style="color:var(--adm-text); margin-bottom:10px;">🏬 Ombor Tarkibi (${d.ombor.items.length} tur)</h4>
-            <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Mahsulot</th><th style="text-align:right;">Qoldiq</th><th style="text-align:right;">Narx</th><th style="text-align:right;">Qiymat</th></tr></thead>
-            <tbody>${_buhInventoryTableRows(d.ombor.items)}</tbody></table></div>`;
+        window._buhUmumiyDrills['ombor'] = `
+            <div class="buh-mini-row" style="margin-bottom:18px;">
+                <div class="buh-mini-stat"><span class="buh-mini-label">📦 Profil</span><span class="buh-mini-value" style="color:#00d2ff;">${_buhFmt(d.profilValue)}</span></div>
+                <div class="buh-mini-stat"><span class="buh-mini-label">🔩 Aksesuvar</span><span class="buh-mini-value" style="color:#BA68C8;">${_buhFmt(d.accValue)}</span></div>
+                <div class="buh-mini-stat"><span class="buh-mini-label">✂️ Qoldiq Profillar</span><span class="buh-mini-value" style="color:#ffaa00;">${_buhFmt(d.qoldiqValue)}</span></div>
+            </div>
+            <h4 style="color:var(--adm-text); margin-bottom:10px;">📦 Profil Tarkibi (${d.profilItems.length} tur)</h4>
+            <div style="overflow-x:auto; margin-bottom:20px;"><table class="v2-table"><thead><tr><th>Mahsulot</th><th style="text-align:right;">Qoldiq</th><th style="text-align:right;">Narx</th><th style="text-align:right;">Qiymat</th></tr></thead>
+            <tbody>${_buhInventoryTableRows(d.profilItems)}</tbody></table></div>
 
-        window._buhUmumiyDrills['profil'] = `<h4 style="color:var(--adm-text); margin-bottom:10px;">📦 Profil Tarkibi (${d.profil.items.length} tur)</h4>
-            <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Mahsulot</th><th style="text-align:right;">Qoldiq</th><th style="text-align:right;">Narx</th><th style="text-align:right;">Qiymat</th></tr></thead>
-            <tbody>${_buhInventoryTableRows(d.profil.items)}</tbody></table></div>`;
+            <h4 style="color:var(--adm-text); margin-bottom:10px;">🔩 Aksesuvar Tarkibi (${d.accessories.length} tur)</h4>
+            <div style="overflow-x:auto; margin-bottom:20px;"><table class="v2-table"><thead><tr><th>Nomi</th><th style="text-align:right;">Soni</th><th style="text-align:right;">Narx</th><th style="text-align:right;">Qiymat</th></tr></thead>
+            <tbody>${_buhInventoryTableRows(d.accessories, 'qty')}</tbody></table></div>
 
-        window._buhUmumiyDrills['aksesuar'] = `<h4 style="color:var(--adm-text); margin-bottom:10px;">🔩 Aksesuar Tarkibi (${d.accessories.length} tur)</h4>
-            <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Nomi</th><th style="text-align:right;">Soni</th><th style="text-align:right;">Narx</th><th style="text-align:right;">Qiymat</th></tr></thead>
-            <tbody>${_buhInventoryTableRows(d.accessories, 'qty')}</tbody></table></div>`;
+            <h4 style="color:var(--adm-text); margin-bottom:10px;">✂️ Qoldiq Profillar — Kesim Qoldiqlari (${d.qoldiqItems.length} tur)</h4>
+            <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Mahsulot</th><th style="text-align:right;">Uzunligi</th><th style="text-align:right;">Soni</th><th style="text-align:right;">Taxminiy Qiymat</th></tr></thead>
+            <tbody>${_buhQoldiqTableRows(d.qoldiqItems)}</tbody></table></div>`;
 
         const incomeRows = d.monthOrders.length
             ? d.monthOrders.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).map(o =>
@@ -2106,9 +2129,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <tbody>${installedRows}</tbody></table></div>`;
 
         cardsEl.innerHTML = [
-            _buhUmumiyCard('ombor', '🏬', 'Ombor Qiymati', _buhFmt(d.ombor.value), '#00baff'),
-            _buhUmumiyCard('profil', '📦', 'Profil Qiymati', _buhFmt(d.profil.value), '#00d2ff'),
-            _buhUmumiyCard('aksesuar', '🔩', 'Aksesuar Qiymati', _buhFmt(d.accValue), '#BA68C8'),
+            _buhUmumiyCard('ombor', '🏬', 'Ombor Qiymati', _buhFmt(d.omborTotal), '#00baff'),
             _buhUmumiyCard('kirim', '📈', 'Oylik Kirim', _buhFmt(d.monthlyIncome), '#00ff88'),
             _buhUmumiyCard('harajat', '📉', 'Oylik Harajat', _buhFmt(d.monthlyExpenseTotal), '#ff4d4f'),
             _buhUmumiyCard('tolovlar', '🧾', "To'lovlar (shu oy)", _buhFmt(d.monthlyPaymentsTotal), '#fabb18'),
