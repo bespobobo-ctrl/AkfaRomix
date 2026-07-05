@@ -1972,12 +1972,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 rows: d.qoldiqItems.map(q => [q.product_name || "Noma'lum", `${q.length || 0} mm`, `${(Number(q.stock_quantity) || 0).toLocaleString('uz-UZ')} dona`, _buhFmt((Number(q.length) || 0) * (Number(q.stock_quantity) || 0) * 25)])
             };
         }
-        if (filter === 'kirim' || filter === 'chiqim') {
-            const txs = filter === 'kirim' ? d.kirimTx : d.chiqimTx;
+        if (filter === 'chiqim') {
+            const txs = d.chiqimTx;
             const value = txs.reduce((s, t) => s + (Number(t.quantity) || 0) * (Number(t.price || (t.romix_inventory && t.romix_inventory.price)) || 0), 0);
             const qtyText = _buhQtyBreakdown(txs.map(t => ({ q: t.quantity, u: (t.romix_inventory && t.romix_inventory.unit) || '' })), 'q', 'u');
             return {
-                title: filter === 'kirim' ? '📥 Ombor Kirim (shu oy)' : '📤 Ombor Chiqim (shu oy)', value, qtyText,
+                title: '📤 Ombor Chiqim (shu oy, 50% avans + Ombor tasdig\'idan keyin)', value, qtyText,
                 columns: ['Sana', 'Mahsulot', 'Miqdor', 'Narx', 'Qiymat', 'Izoh'], alignRight: [false, false, true, true, true, false],
                 rows: txs.map(t => {
                     const unitPrice = Number(t.price || (t.romix_inventory && t.romix_inventory.price)) || 0;
@@ -1986,9 +1986,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                         t.created_at ? new Date(t.created_at).toLocaleDateString('uz-UZ') : '-',
                         (t.romix_inventory && t.romix_inventory.product_name) || "O'chirilgan mahsulot",
                         `${qty.toLocaleString('uz-UZ')} ${(t.romix_inventory && t.romix_inventory.unit) || ''}`,
-                        _buhFmt(unitPrice), _buhFmt(qty * unitPrice), t.note || t.supplier_name || '-'
+                        _buhFmt(unitPrice), _buhFmt(qty * unitPrice), t.note || '-'
                     ];
                 })
+            };
+        }
+        if (filter === 'kirim') {
+            const invRows = d.kirimTx.map(t => ({
+                dateLabel: t.created_at ? new Date(t.created_at).toLocaleDateString('uz-UZ') : '-',
+                product_name: (t.romix_inventory && t.romix_inventory.product_name) || "O'chirilgan mahsulot",
+                qty: Number(t.quantity) || 0, unit: (t.romix_inventory && t.romix_inventory.unit) || '',
+                price: Number(t.price || (t.romix_inventory && t.romix_inventory.price)) || 0, note: t.note || '-'
+            }));
+            const merged = [...invRows, ...d.kirimAccessoryLog];
+            const value = merged.reduce((s, r) => s + (r.qty * r.price), 0);
+            const qtyText = _buhQtyBreakdown(merged.map(r => ({ q: r.qty, u: r.unit })), 'q', 'u');
+            return {
+                title: "📥 Ombor Kirim (shu oy, Buxgalteriya orqali kiritilgan)", value, qtyText,
+                columns: ['Sana', 'Mahsulot', 'Miqdor', 'Narx', 'Qiymat', 'Izoh'], alignRight: [false, false, true, true, true, false],
+                rows: merged.map(r => [r.dateLabel, r.product_name, `${r.qty.toLocaleString('uz-UZ')} ${r.unit}`, _buhFmt(r.price), _buhFmt(r.qty * r.price), r.note])
             };
         }
         // barchasi
@@ -2094,8 +2110,33 @@ document.addEventListener('DOMContentLoaded', async () => {
                 .gte('created_at', monthKey + '-01').order('created_at', { ascending: false });
             omborTx = data || [];
         } catch (e) { console.warn('Buh Umumiy ombor tranzaksiyalari fetch error:', e); }
-        const kirimTx = omborTx.filter(t => t.type === 'IN');
-        const chiqimTx = omborTx.filter(t => t.type === 'OUT');
+        // Kirim — faqat Buxgalteriya Ombor panelidan (qo'lda/Profil Kirim/Rasmdan Kirim AI) kiritilgan, narx qo'yiladigan yozuvlar
+        const kirimTx = omborTx.filter(t => t.type === 'IN' && (t.note || '').includes('Buxgalteriya'));
+        // Chiqim — faqat 50% avans to'langan va Ombor bo'limi tasdiqlagan buyurtmalar uchun ajratilgan chiqim (confirmOrderMaterials oqimi)
+        const chiqimTx = omborTx.filter(t => t.type === 'OUT' && (t.note || '').startsWith("Buyurtma uchun ajratildi"));
+
+        // Aksesuvar Kirim — Buxgalteriya orqali (romix_accessories_history_log, faqat "(Buxgalteriya)" belgili, shu oy)
+        let kirimAccessoryLog = [];
+        try {
+            const logs = JSON.parse(localStorage.getItem('romix_accessories_history_log')) || [];
+            const accessoriesNow = _buhGetAccessories();
+            kirimAccessoryLog = logs.filter(l => {
+                if (!/kirim/i.test(l.action || '')) return false;
+                if (!(l.details || '').includes('(Buxgalteriya)')) return false;
+                const datePart = (l.timestamp || '').split(' ')[0];
+                const parts = datePart.split('.');
+                if (parts.length !== 3) return false;
+                return `${parts[2]}-${parts[1]}` === monthKey;
+            }).map(l => {
+                const nameMatch = (l.details || '').match(/^"([^"]+)"/);
+                const qtyMatch = (l.details || '').match(/mahsulotidan\s+([\d.,\s]+)\s+(\S+)/);
+                const name = nameMatch ? nameMatch[1] : "Noma'lum";
+                const qty = qtyMatch ? parseFloat(qtyMatch[1].replace(/[,\s]/g, '')) || 0 : 0;
+                const unit = qtyMatch ? qtyMatch[2] : '';
+                const acc = accessoriesNow.find(a => (a.name || '').toLowerCase() === name.toLowerCase());
+                return { dateLabel: (l.timestamp || '').split(' ')[0], product_name: name, qty, unit, price: acc ? (Number(acc.price) || 0) : 0, note: l.details };
+            });
+        } catch (e) { console.warn('Buh Umumiy aksesuvar tarixi fetch error:', e); }
 
         let orders = [];
         try {
@@ -2160,7 +2201,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }).sort((a, b) => b.earned - a.earned);
 
         return {
-            monthKey, profilItems, profilValue, accValue, accessories, qoldiqItems, qoldiqValue, omborTotal, kirimTx, chiqimTx,
+            monthKey, profilItems, profilValue, accValue, accessories, qoldiqItems, qoldiqValue, omborTotal, kirimTx, chiqimTx, kirimAccessoryLog,
             monthlyIncome, monthOrders, monthOrdersCount: monthOrders.length, monthlyCollected,
             monthlyExpenseTotal, expenseByCategory, monthExpenses,
             monthlyPaymentsTotal, paymentsByCreditor,
