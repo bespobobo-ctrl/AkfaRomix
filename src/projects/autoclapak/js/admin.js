@@ -1974,11 +1974,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!d) return { title: 'Ombor', value: 0, qtyText: '0', columns: [], alignRight: [], rows: [] };
 
         if (filter === 'profil') {
-            const grouped = _buhGroupProfilByName(d.profilItems);
+            const allCategories = Array.from(new Set(d.profilItems.map(p => p.category || 'Boshqa'))).sort();
+            const catFilter = window._buhProfilCategoryFilter || 'barchasi';
+            let scopedItems = catFilter === 'barchasi' ? d.profilItems : d.profilItems.filter(p => (p.category || 'Boshqa') === catFilter);
+            const searchTerm = (window._buhProfilSearchTerm || '').trim().toLowerCase();
+            if (searchTerm) scopedItems = scopedItems.filter(p => (p.product_name || '').toLowerCase().includes(searchTerm));
+            const grouped = _buhGroupProfilByName(scopedItems);
+            const value = grouped.reduce((s, g) => s + g.value, 0);
             return {
-                title: '📦 Profil (brend/seriya bo\'yicha guruhlangan)', value: d.profilValue, qtyText: _buhQtyBreakdown(d.profilItems, 'stock_quantity', 'unit'),
+                title: catFilter === 'barchasi' ? '📦 Profil (brend/seriya bo\'yicha guruhlangan)' : `📦 Profil — ${catFilter}`,
+                value, qtyText: _buhQtyBreakdown(scopedItems, 'stock_quantity', 'unit'),
                 columns: ['Profil (Brend/Seriya)', 'Jami Miqdor', "O'rtacha Narx", 'Jami Qiymat', 'Variantlar'], alignRight: [false, true, true, true, true],
-                rows: grouped.map(g => [g.name, `${g.qty.toLocaleString('uz-UZ')} ${g.unit}`, _buhFmt(g.qty > 0 ? g.value / g.qty : 0), _buhFmt(g.value), g.variants])
+                rows: grouped.map(g => [g.name, `${g.qty.toLocaleString('uz-UZ')} ${g.unit}`, _buhFmt(g.qty > 0 ? g.value / g.qty : 0), _buhFmt(g.value), g.variants]),
+                profilCategories: allCategories, profilActiveCategory: catFilter
             };
         }
         if (filter === 'aksesuvar') {
@@ -2062,6 +2070,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.querySelectorAll('#buhOmborFilterPills .pill').forEach(p => p.classList.toggle('active', p.dataset.omborFilter === filter));
 
         const data = _buhOmborFilterDataset(filter);
+
+        const subfilterEl = document.getElementById('buh-profil-subfilter');
+        if (subfilterEl) {
+            if (filter === 'profil') {
+                const chips = data.profilCategories && data.profilCategories.length > 1 ? ['barchasi', ...data.profilCategories] : null;
+                const chipsHtml = chips ? `<div class="pills-container" style="margin-bottom:10px;">${chips.map(c => `
+                    <div class="pill ${data.profilActiveCategory === c ? 'active' : ''}" style="font-size:0.74rem; padding:6px 14px;" onclick="window._buhSelectProfilCategory('${c.replace(/'/g, "\\'")}')">${c === 'barchasi' ? 'Barchasi' : c}</div>
+                `).join('')}</div>` : '';
+                const wasFocused = document.activeElement && document.activeElement.id === 'buhProfilSearch';
+                const selStart = wasFocused ? document.activeElement.selectionStart : null;
+                subfilterEl.innerHTML = `${chipsHtml}<input type="text" id="buhProfilSearch" class="buh-input" placeholder="🔍 Brend, seriya yoki nomi bo'yicha qidirish..." style="max-width:320px; width:100%;" value="${(window._buhProfilSearchTerm || '').replace(/"/g, '&quot;')}" oninput="window._buhOnProfilSearchInput(this.value)">`;
+                if (wasFocused) {
+                    const inp = document.getElementById('buhProfilSearch');
+                    inp.focus();
+                    if (selStart !== null) inp.setSelectionRange(selStart, selStart);
+                }
+            } else {
+                subfilterEl.innerHTML = '';
+            }
+        }
+
         const statsEl = document.getElementById('buh-ombor-filter-stats');
         if (statsEl) {
             statsEl.innerHTML = `
@@ -2128,6 +2157,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         window._buhUmumiyData.oynakValue = _buhOynakValue(list);
         _buhRefreshOmborCardTotal();
         window._buhRenderOmborFilterView('oynak');
+    };
+
+    window._buhSelectProfilCategory = (cat) => {
+        window._buhProfilCategoryFilter = cat;
+        window._buhRenderOmborFilterView('profil');
+    };
+
+    window._buhOnProfilSearchInput = (val) => {
+        window._buhProfilSearchTerm = val;
+        window._buhRenderOmborFilterView('profil');
     };
 
     window._buhInitOmborFilter = () => {
@@ -2345,6 +2384,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="pill" data-ombor-filter="kirim">📥 Ombor Kirim</div>
                 <div class="pill" data-ombor-filter="chiqim">📤 Ombor Chiqim</div>
             </div>
+            <div id="buh-profil-subfilter" style="margin-bottom:14px;"></div>
             <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
                 <div class="buh-mini-row" id="buh-ombor-filter-stats" style="margin:0; flex:1; min-width:260px;"></div>
                 <div style="display:flex; gap:8px;">
