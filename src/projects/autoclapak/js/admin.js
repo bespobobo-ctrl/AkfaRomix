@@ -1944,22 +1944,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         return parts.length ? parts.join(', ') : '0';
     }
 
+    // Umumiy shakl: { title, value, qtyText, columns: [ustun nomlari], alignRight: [bool...], rows: [[katak,...], ...] }
     function _buhOmborFilterDataset(filter) {
         const d = window._buhUmumiyData;
-        if (!d) return { title: 'Ombor', value: 0, qtyText: '0', rows: [], isAll: false };
+        if (!d) return { title: 'Ombor', value: 0, qtyText: '0', columns: [], alignRight: [], rows: [] };
 
         if (filter === 'profil') {
             return {
                 title: '📦 Profil', value: d.profilValue, qtyText: _buhQtyBreakdown(d.profilItems, 'stock_quantity', 'unit'),
-                rows: d.profilItems.map(p => ({ nomi: p.product_name, miqdor: `${(Number(p.stock_quantity) || 0).toLocaleString('uz-UZ')} ${p.unit || ''}`, narx: Number(p.price) || 0, qiymat: (Number(p.price) || 0) * (Number(p.stock_quantity) || 0) })),
-                isAll: false
+                columns: ['Nomi', 'Miqdor', 'Tan Narxi', 'Qiymat'], alignRight: [false, true, true, true],
+                rows: d.profilItems.map(p => [p.product_name || "Noma'lum", `${(Number(p.stock_quantity) || 0).toLocaleString('uz-UZ')} ${p.unit || ''}`, _buhFmt(p.price), _buhFmt((Number(p.price) || 0) * (Number(p.stock_quantity) || 0))])
             };
         }
         if (filter === 'aksesuvar') {
             return {
                 title: '🔩 Aksesuvar', value: d.accValue, qtyText: _buhQtyBreakdown(d.accessories, 'qty', 'unit'),
-                rows: d.accessories.map(a => ({ nomi: a.name, miqdor: `${(Number(a.qty) || 0).toLocaleString('uz-UZ')} ${a.unit || ''}`, narx: Number(a.price) || 0, qiymat: (Number(a.price) || 0) * (Number(a.qty) || 0) })),
-                isAll: false
+                columns: ['Nomi', 'Miqdor', 'Tan Narxi', 'Qiymat'], alignRight: [false, true, true, true],
+                rows: d.accessories.map(a => [a.name || "Noma'lum", `${(Number(a.qty) || 0).toLocaleString('uz-UZ')} ${a.unit || ''}`, _buhFmt(a.price), _buhFmt((Number(a.price) || 0) * (Number(a.qty) || 0))])
             };
         }
         if (filter === 'qoldiq') {
@@ -1967,21 +1968,41 @@ document.addEventListener('DOMContentLoaded', async () => {
             const totalMetr = d.qoldiqItems.reduce((s, q) => s + ((Number(q.length) || 0) * (Number(q.stock_quantity) || 0)), 0) / 1000;
             return {
                 title: '✂️ Qoldiq Profillar', value: d.qoldiqValue, qtyText: `${totalDona.toLocaleString('uz-UZ')} dona (${totalMetr.toFixed(1)} metr)`,
-                rows: d.qoldiqItems.map(q => ({ nomi: q.product_name, miqdor: `${(Number(q.stock_quantity) || 0).toLocaleString('uz-UZ')} dona (${q.length || 0} mm)`, narx: 25, qiymat: (Number(q.length) || 0) * (Number(q.stock_quantity) || 0) * 25 })),
-                isAll: false
+                columns: ['Nomi', 'Uzunligi', 'Soni', 'Qiymat'], alignRight: [false, true, true, true],
+                rows: d.qoldiqItems.map(q => [q.product_name || "Noma'lum", `${q.length || 0} mm`, `${(Number(q.stock_quantity) || 0).toLocaleString('uz-UZ')} dona`, _buhFmt((Number(q.length) || 0) * (Number(q.stock_quantity) || 0) * 25)])
+            };
+        }
+        if (filter === 'kirim' || filter === 'chiqim') {
+            const txs = filter === 'kirim' ? d.kirimTx : d.chiqimTx;
+            const value = txs.reduce((s, t) => s + (Number(t.quantity) || 0) * (Number(t.price || (t.romix_inventory && t.romix_inventory.price)) || 0), 0);
+            const qtyText = _buhQtyBreakdown(txs.map(t => ({ q: t.quantity, u: (t.romix_inventory && t.romix_inventory.unit) || '' })), 'q', 'u');
+            return {
+                title: filter === 'kirim' ? '📥 Ombor Kirim (shu oy)' : '📤 Ombor Chiqim (shu oy)', value, qtyText,
+                columns: ['Sana', 'Mahsulot', 'Miqdor', 'Narx', 'Qiymat', 'Izoh'], alignRight: [false, false, true, true, true, false],
+                rows: txs.map(t => {
+                    const unitPrice = Number(t.price || (t.romix_inventory && t.romix_inventory.price)) || 0;
+                    const qty = Number(t.quantity) || 0;
+                    return [
+                        t.created_at ? new Date(t.created_at).toLocaleDateString('uz-UZ') : '-',
+                        (t.romix_inventory && t.romix_inventory.product_name) || "O'chirilgan mahsulot",
+                        `${qty.toLocaleString('uz-UZ')} ${(t.romix_inventory && t.romix_inventory.unit) || ''}`,
+                        _buhFmt(unitPrice), _buhFmt(qty * unitPrice), t.note || t.supplier_name || '-'
+                    ];
+                })
             };
         }
         // barchasi
         const qoldiqDona = d.qoldiqItems.reduce((s, q) => s + (Number(q.stock_quantity) || 0), 0);
         const rows = [
-            ...d.profilItems.map(p => ({ boLim: 'Profil', nomi: p.product_name, miqdor: `${(Number(p.stock_quantity) || 0).toLocaleString('uz-UZ')} ${p.unit || ''}`, narx: Number(p.price) || 0, qiymat: (Number(p.price) || 0) * (Number(p.stock_quantity) || 0) })),
-            ...d.accessories.map(a => ({ boLim: 'Aksesuvar', nomi: a.name, miqdor: `${(Number(a.qty) || 0).toLocaleString('uz-UZ')} ${a.unit || ''}`, narx: Number(a.price) || 0, qiymat: (Number(a.price) || 0) * (Number(a.qty) || 0) })),
-            ...d.qoldiqItems.map(q => ({ boLim: 'Qoldiq Profil', nomi: q.product_name, miqdor: `${(Number(q.stock_quantity) || 0).toLocaleString('uz-UZ')} dona (${q.length || 0} mm)`, narx: 25, qiymat: (Number(q.length) || 0) * (Number(q.stock_quantity) || 0) * 25 }))
+            ...d.profilItems.map(p => ['Profil', p.product_name || "Noma'lum", `${(Number(p.stock_quantity) || 0).toLocaleString('uz-UZ')} ${p.unit || ''}`, _buhFmt(p.price), _buhFmt((Number(p.price) || 0) * (Number(p.stock_quantity) || 0))]),
+            ...d.accessories.map(a => ['Aksesuvar', a.name || "Noma'lum", `${(Number(a.qty) || 0).toLocaleString('uz-UZ')} ${a.unit || ''}`, _buhFmt(a.price), _buhFmt((Number(a.price) || 0) * (Number(a.qty) || 0))]),
+            ...d.qoldiqItems.map(q => ['Qoldiq Profil', q.product_name || "Noma'lum", `${(Number(q.stock_quantity) || 0).toLocaleString('uz-UZ')} dona (${q.length || 0} mm)`, _buhFmt(25), _buhFmt((Number(q.length) || 0) * (Number(q.stock_quantity) || 0) * 25)])
         ];
         return {
             title: '🏬 Barcha Ombor', value: d.omborTotal,
             qtyText: `Profil: ${_buhQtyBreakdown(d.profilItems, 'stock_quantity', 'unit')} | Aksesuvar: ${_buhQtyBreakdown(d.accessories, 'qty', 'unit')} | Qoldiq: ${qoldiqDona.toLocaleString('uz-UZ')} dona`,
-            rows, isAll: true
+            columns: ["Bo'lim", 'Nomi', 'Miqdor', 'Tan Narxi', 'Qiymat'], alignRight: [false, false, true, true, true],
+            rows
         };
     }
 
@@ -1996,16 +2017,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             statsEl.innerHTML = `
                 <div class="buh-mini-stat"><span class="buh-mini-label">${data.title}</span><span class="buh-mini-value" style="color:#00d2ff;">${_buhFmt(data.value)}</span></div>
                 <div class="buh-mini-stat"><span class="buh-mini-label">Miqdori</span><span class="buh-mini-value" style="font-size:0.8rem; color:var(--adm-text);">${data.qtyText}</span></div>
-                <div class="buh-mini-stat"><span class="buh-mini-label">Mahsulot Turlari</span><span class="buh-mini-value">${data.rows.length}</span></div>
+                <div class="buh-mini-stat"><span class="buh-mini-label">Yozuvlar Soni</span><span class="buh-mini-value">${data.rows.length}</span></div>
             `;
         }
         const tableEl = document.getElementById('buh-ombor-filter-table');
         if (tableEl) {
-            const colCount = data.isAll ? 5 : 4;
+            const headHtml = data.columns.map((c, i) => `<th ${data.alignRight[i] ? 'style="text-align:right;"' : ''}>${c}</th>`).join('');
             const rowsHtml = data.rows.length
-                ? data.rows.map(r => `<tr>${data.isAll ? `<td>${r.boLim}</td>` : ''}<td>${r.nomi || "Noma'lum"}</td><td style="text-align:right;">${r.miqdor}</td><td style="text-align:right;">${_buhFmt(r.narx)}</td><td style="text-align:right;">${_buhFmt(r.qiymat)}</td></tr>`).join('')
-                : `<tr><td colspan="${colCount}" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Mahsulot topilmadi</td></tr>`;
-            tableEl.innerHTML = `<div style="overflow-x:auto;"><table class="v2-table"><thead><tr>${data.isAll ? '<th>Bo\'lim</th>' : ''}<th>Nomi</th><th style="text-align:right;">Miqdor</th><th style="text-align:right;">Tan Narxi</th><th style="text-align:right;">Qiymat</th></tr></thead>
+                ? data.rows.map(r => `<tr>${r.map((cell, i) => `<td ${data.alignRight[i] ? 'style="text-align:right;"' : ''}>${cell}</td>`).join('')}</tr>`).join('')
+                : `<tr><td colspan="${data.columns.length}" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Ma'lumot topilmadi</td></tr>`;
+            tableEl.innerHTML = `<div style="overflow-x:auto;"><table class="v2-table"><thead><tr>${headHtml}</tr></thead>
                 <tbody>${rowsHtml}</tbody></table></div>`;
         }
     };
@@ -2027,11 +2048,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (typeof XLSX === 'undefined') { alert('Excel kutubxonasi yuklanmagan.'); return; }
             const sheetData = data.rows.map(r => {
                 const row = {};
-                if (data.isAll) row["Bo'lim"] = r.boLim;
-                row["Nomi"] = r.nomi || "Noma'lum";
-                row["Miqdor"] = r.miqdor;
-                row["Tan Narxi (UZS)"] = r.narx;
-                row["Qiymat (UZS)"] = r.qiymat;
+                data.columns.forEach((c, i) => { row[c] = r[i]; });
                 return row;
             });
             const ws = XLSX.utils.json_to_sheet(sheetData);
@@ -2048,11 +2065,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             doc.text(`Jami Qiymat: ${_buhFmt(data.value)}`, 14, 26);
             doc.text(`Miqdori: ${data.qtyText}`, 14, 32);
             doc.text(`Sana: ${new Date().toLocaleDateString('uz-UZ')}`, 14, 38);
-            const head = data.isAll ? [["Bo'lim", "Nomi", "Miqdor", "Tan Narxi", "Qiymat"]] : [["Nomi", "Miqdor", "Tan Narxi", "Qiymat"]];
-            const body = data.rows.map(r => data.isAll
-                ? [r.boLim, r.nomi || "Noma'lum", r.miqdor, _buhFmt(r.narx), _buhFmt(r.qiymat)]
-                : [r.nomi || "Noma'lum", r.miqdor, _buhFmt(r.narx), _buhFmt(r.qiymat)]);
-            doc.autoTable({ startY: 44, head, body, theme: 'grid', headStyles: { fillColor: [0, 186, 255] } });
+            doc.autoTable({ startY: 44, head: [data.columns], body: data.rows, theme: 'grid', headStyles: { fillColor: [0, 186, 255] } });
             doc.save(`${fileBase}.pdf`);
         }
     };
@@ -2074,6 +2087,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         const qoldiqValue = _buhQoldiqValue(qoldiqItems);
 
         const omborTotal = profilValue + accValue + qoldiqValue;
+
+        let omborTx = [];
+        try {
+            const { data } = await supabase.from('romix_transactions').select('*, romix_inventory(product_name, unit, price)')
+                .gte('created_at', monthKey + '-01').order('created_at', { ascending: false });
+            omborTx = data || [];
+        } catch (e) { console.warn('Buh Umumiy ombor tranzaksiyalari fetch error:', e); }
+        const kirimTx = omborTx.filter(t => t.type === 'IN');
+        const chiqimTx = omborTx.filter(t => t.type === 'OUT');
 
         let orders = [];
         try {
@@ -2138,7 +2160,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }).sort((a, b) => b.earned - a.earned);
 
         return {
-            monthKey, profilItems, profilValue, accValue, accessories, qoldiqItems, qoldiqValue, omborTotal,
+            monthKey, profilItems, profilValue, accValue, accessories, qoldiqItems, qoldiqValue, omborTotal, kirimTx, chiqimTx,
             monthlyIncome, monthOrders, monthOrdersCount: monthOrders.length, monthlyCollected,
             monthlyExpenseTotal, expenseByCategory, monthExpenses,
             monthlyPaymentsTotal, paymentsByCreditor,
@@ -2192,6 +2214,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="pill" data-ombor-filter="profil">📦 Profil</div>
                 <div class="pill" data-ombor-filter="aksesuvar">🔩 Aksesuvar</div>
                 <div class="pill" data-ombor-filter="qoldiq">✂️ Qoldiq Profillar</div>
+                <div class="pill" data-ombor-filter="kirim">📥 Ombor Kirim</div>
+                <div class="pill" data-ombor-filter="chiqim">📤 Ombor Chiqim</div>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
                 <div class="buh-mini-row" id="buh-ombor-filter-stats" style="margin:0; flex:1; min-width:260px;"></div>
