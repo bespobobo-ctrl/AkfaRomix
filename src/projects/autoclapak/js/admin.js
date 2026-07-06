@@ -2008,6 +2008,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         return Object.values(groups).map(g => ({ ...g, variants: g.items.length })).sort((a, b) => b.value - a.value);
     }
 
+    // Oynak elementlarini turi/brend bo'yicha guruhlash (faqat chip badge uchun, jadval baribir tekis qoladi)
+    function _buhGroupOynakByBrand(items) {
+        const groups = {};
+        items.forEach(o => {
+            const key = o.brand || "Noma'lum";
+            if (!groups[key]) groups[key] = { name: key, qty: 0, value: 0, unit: o.unit || 'dona', items: [] };
+            groups[key].qty += Number(o.stock_quantity) || 0;
+            groups[key].value += (Number(o.price) || 0) * (Number(o.stock_quantity) || 0);
+            groups[key].items.push(o);
+        });
+        return Object.values(groups).map(g => ({ ...g, variants: g.items.length })).sort((a, b) => b.value - a.value);
+    }
+
     // Ombor bo'limlari filtri (Barchasi/Profil/Aksesuvar/Qoldiq) — Umumiy > Ombor Qiymati tafsilotida
     function _buhQtyBreakdown(items, qtyKey, unitKey) {
         const byUnit = {};
@@ -2124,11 +2137,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
         }
         if (filter === 'oynak') {
+            const searchTerm = (window._buhOynakSearchTerm || '').trim().toLowerCase();
+            const brandFilter = window._buhOynakBrandFilter || 'barchasi';
+            const brands = _buhGroupOynakByBrand(d.oynakItems);
+
+            let indexed = d.oynakItems.map((o, idx) => ({ o, idx }));
+            if (brandFilter !== 'barchasi') indexed = indexed.filter(({ o }) => _buhSafeKey(o.brand || "Noma'lum") === brandFilter);
+            if (searchTerm) indexed = indexed.filter(({ o }) => (o.product_name || '').toLowerCase().includes(searchTerm) || (o.size || '').toLowerCase().includes(searchTerm));
+
+            const value = indexed.reduce((s, { o }) => s + (Number(o.price) || 0) * (Number(o.stock_quantity) || 0), 0);
             return {
-                title: '🪟 Oynak (Oyna)', value: d.oynakValue, qtyText: _buhQtyBreakdown(d.oynakItems, 'stock_quantity', 'unit'),
-                columns: ['Nomi', "O'lcham", 'Soni', 'Narx', 'Qiymat'], alignRight: [false, false, true, true, true],
-                rows: d.oynakItems.map((o, idx) => [o.product_name || "Noma'lum", o.size || '-', `${(Number(o.stock_quantity) || 0).toLocaleString('uz-UZ')} ${o.unit || 'dona'}`, _buhFmt(o.price), _buhFmt((Number(o.price) || 0) * (Number(o.stock_quantity) || 0))]),
-                isOynak: true
+                title: brandFilter === 'barchasi' ? '🪟 Oynak (barcha turlar)' : `🪟 Oynak — ${indexed[0] ? (indexed[0].o.brand || "Noma'lum") : brandFilter}`,
+                value, qtyText: _buhQtyBreakdown(indexed.map(({ o }) => o), 'stock_quantity', 'unit'),
+                columns: ['Turi/Brend', 'Nomi', "O'lcham", 'Soni', 'Narx', 'Qiymat'], alignRight: [false, false, false, true, true, true],
+                rows: indexed.map(({ o, idx }) => [o.brand || "Noma'lum", o.product_name || "Noma'lum", o.size || '-', `${(Number(o.stock_quantity) || 0).toLocaleString('uz-UZ')} ${o.unit || 'dona'}`, _buhFmt(o.price), _buhFmt((Number(o.price) || 0) * (Number(o.stock_quantity) || 0))]),
+                rowIndexes: indexed.map(({ idx }) => idx),
+                oynakBrands: brands, oynakActiveBrand: brandFilter, isOynak: true
             };
         }
         if (filter === 'chiqim') {
@@ -2285,6 +2309,37 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
+        const oynakSubfilterEl = document.getElementById('buh-oynak-subfilter');
+        if (oynakSubfilterEl) {
+            if (filter === 'oynak') {
+                const brands = data.oynakBrands || [];
+                const activeBrand = data.oynakActiveBrand || 'barchasi';
+                const totalValue = brands.reduce((s, b) => s + b.value, 0);
+                const chipsHtml = `<div class="buh-brand-filter-row">
+                    <div class="buh-brand-chip ${activeBrand === 'barchasi' ? 'active' : ''}" onclick="window._buhSelectOynakBrand('barchasi')">
+                        <span class="chip-name">🗂️ Barchasi</span>
+                        <span class="chip-meta">${brands.length} turi · ${_buhCompactFmt(totalValue)}</span>
+                    </div>
+                    ${brands.map(b => {
+                        const key = _buhSafeKey(b.name);
+                        return `<div class="buh-brand-chip ${activeBrand === key ? 'active' : ''}" onclick="window._buhSelectOynakBrand('${key}')" title="${b.name.replace(/"/g, '&quot;')}">
+                            <span class="chip-name">${b.name}</span>
+                            <span class="chip-meta">${b.qty.toLocaleString('uz-UZ')} dona · ${_buhCompactFmt(b.value)}</span>
+                        </div>`;
+                    }).join('')}
+                </div>`;
+                const wasFocused = document.activeElement && document.activeElement.id === 'buhOynakSearch';
+                const selStart = wasFocused ? document.activeElement.selectionStart : null;
+                oynakSubfilterEl.innerHTML = brands.length ? `${chipsHtml}<input type="text" id="buhOynakSearch" class="buh-input" placeholder="🔍 ${activeBrand === 'barchasi' ? 'Turi/brend' : 'Nomi yoki o\'lchami'} bo'yicha qidirish..." style="width:100%; margin-top:12px;" value="${(window._buhOynakSearchTerm || '').replace(/"/g, '&quot;')}" oninput="window._buhOnOynakSearchInput(this.value)">` : '';
+                if (wasFocused) {
+                    const inp = document.getElementById('buhOynakSearch');
+                    if (inp) { inp.focus(); if (selStart !== null) inp.setSelectionRange(selStart, selStart); }
+                }
+            } else {
+                oynakSubfilterEl.innerHTML = '';
+            }
+        }
+
         const statsEl = document.getElementById('buh-ombor-filter-stats');
         if (statsEl) {
             statsEl.innerHTML = `
@@ -2297,7 +2352,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (formEl) {
             formEl.innerHTML = filter === 'oynak' ? `
                 <form onsubmit="window.addBuhOynakItem(event)" class="buh-form-row" style="margin-bottom:14px;">
-                    <div class="buh-form-group"><label>Nomi</label><input type="text" id="buhOynakName" class="buh-input" placeholder="Masalan: Ikki Qavatli Shisha" required></div>
+                    <div class="buh-form-group"><label>Turi / Brend</label><input type="text" id="buhOynakBrand" class="buh-input" placeholder="Masalan: Ikki Qavatli Shisha-Paket" required></div>
+                    <div class="buh-form-group"><label>Nomi</label><input type="text" id="buhOynakName" class="buh-input" placeholder="Masalan: Tinted Bronza 4mm"></div>
                     <div class="buh-form-group"><label>O'lcham</label><input type="text" id="buhOynakSize" class="buh-input" placeholder="Masalan: 1200x1500mm"></div>
                     <div class="buh-form-group"><label>Soni</label><input type="number" id="buhOynakQty" class="buh-input" min="0" step="1" required></div>
                     <div class="buh-form-group"><label>Narxi (birlik)</label><input type="number" id="buhOynakPrice" class="buh-input" min="0" required></div>
@@ -2310,7 +2366,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const extraCol = data.isOynak ? ['Amal'] : [];
             const headHtml = [...data.columns, ...extraCol].map((c, i) => `<th ${data.alignRight[i] ? 'style="text-align:right;"' : ''}>${c}</th>`).join('');
             const rowsHtml = data.rows.length
-                ? data.rows.map((r, idx) => `<tr>${r.map((cell, i) => `<td ${data.alignRight[i] ? 'style="text-align:right;"' : ''}>${cell}</td>`).join('')}${data.isOynak ? `<td><button class="buh-row-action-btn" style="background:rgba(255,77,79,0.15); color:#ff4d4f;" onclick="window.deleteBuhOynakItem(${idx})">O'chirish</button></td>` : ''}</tr>`).join('')
+                ? data.rows.map((r, idx) => `<tr>${r.map((cell, i) => `<td ${data.alignRight[i] ? 'style="text-align:right;"' : ''}>${cell}</td>`).join('')}${data.isOynak ? `<td><button class="buh-row-action-btn" style="background:rgba(255,77,79,0.15); color:#ff4d4f;" onclick="window.deleteBuhOynakItem(${data.rowIndexes ? data.rowIndexes[idx] : idx})">O'chirish</button></td>` : ''}</tr>`).join('')
                 : `<tr><td colspan="${data.columns.length + extraCol.length}" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Ma'lumot topilmadi</td></tr>`;
             tableEl.innerHTML = `<div style="overflow-x:auto;"><table class="v2-table"><thead><tr>${headHtml}</tr></thead>
                 <tbody>${rowsHtml}</tbody></table></div>`;
@@ -2327,19 +2383,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     window.addBuhOynakItem = (e) => {
         e.preventDefault();
+        const brand = document.getElementById('buhOynakBrand').value.trim();
         const name = document.getElementById('buhOynakName').value.trim();
         const size = document.getElementById('buhOynakSize').value.trim();
         const qty = parseFloat(document.getElementById('buhOynakQty').value) || 0;
         const price = parseFloat(document.getElementById('buhOynakPrice').value) || 0;
-        if (!name || qty <= 0) return;
+        if (!brand || qty <= 0) return;
         const list = _buhGetOynak();
-        list.push({ product_name: name, size, stock_quantity: qty, unit: 'dona', price });
+        list.push({ brand, product_name: name || brand, size, stock_quantity: qty, unit: 'dona', price });
         _buhSaveOynak(list);
         window._buhUmumiyData.oynakItems = list;
         window._buhUmumiyData.oynakValue = _buhOynakValue(list);
         _buhRefreshOmborCardTotal();
         window._buhRenderOmborFilterView('oynak');
-        window.showPremiumToast && window.showPremiumToast('Saqlandi', `${name} qo'shildi.`, true);
+        window.showPremiumToast && window.showPremiumToast('Saqlandi', `${brand} qo'shildi.`, true);
     };
 
     window.deleteBuhOynakItem = (idx) => {
@@ -2384,6 +2441,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     window._buhOnQoldiqSearchInput = (val) => {
         window._buhQoldiqSearchTerm = val;
         window._buhRenderOmborFilterView('qoldiq');
+    };
+
+    window._buhSelectOynakBrand = (brandKey) => {
+        window._buhOynakBrandFilter = brandKey;
+        window._buhOynakSearchTerm = '';
+        window._buhRenderOmborFilterView('oynak');
+    };
+
+    window._buhOnOynakSearchInput = (val) => {
+        window._buhOynakSearchTerm = val;
+        window._buhRenderOmborFilterView('oynak');
     };
 
     window._buhInitOmborFilter = () => {
@@ -2604,6 +2672,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div id="buh-profil-subfilter" style="margin-bottom:14px;"></div>
             <div id="buh-aksesuvar-subfilter" style="margin-bottom:14px;"></div>
             <div id="buh-qoldiq-subfilter" style="margin-bottom:14px;"></div>
+            <div id="buh-oynak-subfilter" style="margin-bottom:14px;"></div>
             <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
                 <div class="buh-mini-row" id="buh-ombor-filter-stats" style="margin:0; flex:1; min-width:260px;"></div>
                 <div style="display:flex; gap:8px;">
