@@ -2232,7 +2232,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window._buhRenderOmborFilterView = (filter) => {
         filter = filter || window._buhOmborActiveFilter || 'barchasi';
         window._buhOmborActiveFilter = filter;
-        document.querySelectorAll('#buhOmborFilterPills .pill').forEach(p => p.classList.toggle('active', p.dataset.omborFilter === filter));
+        document.querySelectorAll('#buhOmborFilterPills .buh-brand-chip').forEach(p => p.classList.toggle('active', p.dataset.omborFilter === filter));
 
         const data = _buhOmborFilterDataset(filter);
 
@@ -2452,6 +2452,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (isSvet) window._buhUpdateSvetPreview();
     };
 
+    window._buhSelectExpenseCategory = (cat) => {
+        const input = document.getElementById('buhUmExpCategory');
+        if (input) input.value = cat;
+        document.querySelectorAll('#buhUmExpCategoryChips .buh-cat-chip').forEach(c => {
+            c.classList.toggle('active', c.dataset.cat === cat);
+        });
+        window._buhToggleSvetFields(cat);
+    };
+
     window._buhUpdateSvetPreview = () => {
         const asosiy = parseFloat(document.getElementById('buhUmExpAsosiy').value) || 0;
         const avto = parseFloat(document.getElementById('buhUmExpAvto').value) || 0;
@@ -2601,7 +2610,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     window._buhInitOmborFilter = () => {
-        document.querySelectorAll('#buhOmborFilterPills .pill').forEach(p => {
+        document.querySelectorAll('#buhOmborFilterPills .buh-brand-chip').forEach(p => {
             p.onclick = () => window._buhRenderOmborFilterView(p.dataset.omborFilter);
         });
         window._buhRenderOmborFilterView(window._buhOmborActiveFilter || 'barchasi');
@@ -2813,14 +2822,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         window._buhUmumiyDrills = {};
 
         window._buhUmumiyDrills['ombor'] = `
-            <div class="pills-container" id="buhOmborFilterPills" style="margin-bottom:16px;">
-                <div class="pill active" data-ombor-filter="barchasi">Barchasi</div>
-                <div class="pill" data-ombor-filter="profil">📦 Profil</div>
-                <div class="pill" data-ombor-filter="aksesuvar">🔩 Aksesuvar</div>
-                <div class="pill" data-ombor-filter="qoldiq">✂️ Qoldiq Profillar</div>
-                <div class="pill" data-ombor-filter="oynak">🪟 Oynak</div>
-                <div class="pill" data-ombor-filter="kirim">📥 Ombor Kirim</div>
-                <div class="pill" data-ombor-filter="chiqim">📤 Ombor Chiqim</div>
+            <div class="buh-brand-filter-row" id="buhOmborFilterPills" style="margin-bottom:16px;">
+                <div class="buh-brand-chip active" data-ombor-filter="barchasi"><span class="chip-name">🗂️ Barchasi</span></div>
+                <div class="buh-brand-chip" data-ombor-filter="profil"><span class="chip-name">📦 Profil</span></div>
+                <div class="buh-brand-chip" data-ombor-filter="aksesuvar"><span class="chip-name">🔩 Aksesuvar</span></div>
+                <div class="buh-brand-chip" data-ombor-filter="qoldiq"><span class="chip-name">✂️ Qoldiq Profillar</span></div>
+                <div class="buh-brand-chip" data-ombor-filter="oynak"><span class="chip-name">🪟 Oynak</span></div>
+                <div class="buh-brand-chip" data-ombor-filter="kirim"><span class="chip-name">📥 Ombor Kirim</span></div>
+                <div class="buh-brand-chip" data-ombor-filter="chiqim"><span class="chip-name">📤 Ombor Chiqim</span></div>
             </div>
             <div id="buh-profil-subfilter" style="margin-bottom:14px;"></div>
             <div id="buh-aksesuvar-subfilter" style="margin-bottom:14px;"></div>
@@ -2886,19 +2895,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
             <div id="buh-harajat-panel-content" style="margin-bottom:20px;"></div>
             <h4 style="color:var(--adm-text); margin-bottom:12px;">➕ Yangi Harajat Kiritish</h4>
-            <form onsubmit="window.addBuhUmumiyExpense(event)" class="buh-form-row">
-                <div class="buh-form-group"><label>Sana</label><input type="date" id="buhUmExpDate" class="buh-input" value="${_buhToday()}" required></div>
-                <div class="buh-form-group"><label>Kategoriya</label>
-                    <select id="buhUmExpCategory" class="buh-input" onchange="window._buhToggleSvetFields(this.value)">
-                        ${_BUH_EXPENSE_CATEGORIES.map(c => `<option value="${c}">${_buhExpenseCatIcon(c)} ${c}</option>`).join('')}
-                    </select>
+            <form onsubmit="window.addBuhUmumiyExpense(event)">
+                <div class="buh-form-group" style="margin-bottom:14px;">
+                    <label>Kategoriya</label>
+                    <div class="buh-cat-chip-row" id="buhUmExpCategoryChips">
+                        ${_BUH_EXPENSE_CATEGORIES.map((c, i) => `<div class="buh-cat-chip ${i === 0 ? 'active' : ''}" data-cat="${c.replace(/"/g, '&quot;')}" onclick="window._buhSelectExpenseCategory('${c.replace(/'/g, "\\'")}')">
+                            <span class="chip-ico">${_buhExpenseCatIcon(c)}</span><span class="chip-label">${c}</span>
+                        </div>`).join('')}
+                    </div>
+                    <input type="hidden" id="buhUmExpCategory" value="${_BUH_EXPENSE_CATEGORIES[0]}">
                 </div>
+                <div class="buh-form-row">
+                <div class="buh-form-group"><label>Sana</label><input type="date" id="buhUmExpDate" class="buh-input" value="${_buhToday()}" required></div>
                 <div class="buh-form-group" id="buhUmExpAmountGroup"><label>Summa (UZS)</label><input type="number" id="buhUmExpAmount" class="buh-input" min="0" required></div>
                 <div class="buh-form-group" id="buhUmExpAsosiyGroup" style="display:none;"><label>Asosiy Hisob (jami, UZS)</label><input type="number" id="buhUmExpAsosiy" class="buh-input" min="0" oninput="window._buhUpdateSvetPreview()"></div>
                 <div class="buh-form-group" id="buhUmExpAvtoGroup" style="display:none;"><label>AvtoClapak Sarfi (UZS)</label><input type="number" id="buhUmExpAvto" class="buh-input" min="0" oninput="window._buhUpdateSvetPreview()"></div>
                 <div class="buh-form-group" id="buhUmExpRomixShareGroup" style="display:none;"><label>Romix Ulushi</label><input type="text" id="buhUmExpRomixShare" class="buh-input" readonly style="font-weight:800; color:#00d2ff;"></div>
                 <div class="buh-form-group"><label>Izoh</label><input type="text" id="buhUmExpNote" class="buh-input" placeholder="Nimaga ketgani (ixtiyoriy)"></div>
                 <button type="submit" class="buh-save-btn">💾 Saqlash</button>
+                </div>
             </form>
             <p style="font-size:0.68rem; color:var(--adm-text-sec); margin-top:8px;">💡 "Kommunal - Svet" tanlansa: asosiy litsevoy hisobning jami summasini va AvtoClapak sarflagan qismini kiriting — Romix ulushi (asosiy − avtoclapak) avtomatik hisoblanadi.</p>`;
 

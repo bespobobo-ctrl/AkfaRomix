@@ -1480,8 +1480,6 @@
                             .buh-umumiy-card.active { border-color: rgba(0,210,255,0.4); background: rgba(0,210,255,0.05); }
                             .buh-umumiy-card:hover { border-color: rgba(255,255,255,0.12); }
                             .buh-drill-panel { display:none; margin-top:16px; background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.05); border-radius:16px; padding:18px; animation: fadeIn 0.3s ease; }
-                            #buhOmborFilterPills .pill { color: var(--adm-text-sec); }
-                            #buhOmborFilterPills .pill.active { color: #fff; }
                             .buh-export-btn { border: none; border-radius: 10px; padding: 9px 16px; font-weight: 700; font-size: 0.78rem; cursor: pointer; color: #fff; display:inline-flex; align-items:center; gap:6px; }
                             .buh-brand-filter-row { display:flex; gap:10px; flex-wrap:wrap; }
                             .buh-brand-chip {
@@ -1532,6 +1530,16 @@
                             .buh-expense-card .cat-sum { font-size:1.05rem; font-weight:800; font-family:monospace; color:#ff4d4f; }
                             .buh-expense-bar { height:5px; border-radius:4px; background:rgba(255,77,79,0.1); overflow:hidden; }
                             .buh-expense-bar .fill { height:100%; border-radius:4px; background:#ff4d4f; }
+
+                            .buh-cat-chip-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+                            .buh-cat-chip {
+                                display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:20px; cursor:pointer;
+                                background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.07);
+                                font-size:0.74rem; font-weight:600; color:var(--adm-text-sec); white-space:nowrap; transition:all 0.2s ease;
+                            }
+                            .buh-cat-chip:hover { border-color:rgba(0,210,255,0.3); background:rgba(0,210,255,0.05); color:var(--adm-text); }
+                            .buh-cat-chip.active { background:rgba(0,210,255,0.12); border-color:#00d2ff; color:#00d2ff; font-weight:700; box-shadow:0 3px 12px rgba(0,210,255,0.15); }
+                            .buh-cat-chip .chip-ico { font-size:0.95rem; }
                         </style>
                         <div class="buh-mini-row" id="buh-umumiy-cards"></div>
                         <div id="buh-umumiy-drill-panel" class="buh-drill-panel"></div>
