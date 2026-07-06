@@ -1763,6 +1763,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await romixBuhDelete('romix_expenses', ROMIX_BUH_KEYS.expenses, id);
         await renderRomixBuhHarajatlar();
         await updateBuhHeroKPIs();
+        await renderBuhOverview();
     };
 
     async function renderBuhTashqiQarz() {
@@ -1980,14 +1981,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         return (str || '').replace(/[^a-zA-Z0-9]/g, '_');
     }
 
-    const _BUH_EXPENSE_CATEGORIES = ["Xo'jalik Harajat", 'Kommunal - Svet', 'Kommunal - Suv', 'Kommunal - Gaz', 'Avto Harajat', 'Ofis Harajat', 'Ijara', 'Transport', 'Maosh', 'Boshqa'];
+    const _BUH_EXPENSE_CATEGORIES = ["Xo'jalik Harajat", 'Oziq-ovqat Harajat', 'Kommunal - Svet', 'Kommunal - Suv', 'Kommunal - Gaz', 'Avto Harajat', 'Ofis Harajat', 'Ijara', 'Transport', 'Maosh', 'Boshqa'];
     function _buhExpenseCatIcon(cat) {
         const map = {
-            "Xo'jalik Harajat": '🧹', 'Kommunal - Svet': '💡', 'Kommunal - Suv': '🚰', 'Kommunal - Gaz': '🔥',
+            "Xo'jalik Harajat": '🧹', 'Oziq-ovqat Harajat': '🍽️', 'Kommunal - Svet': '💡', 'Kommunal - Suv': '🚰', 'Kommunal - Gaz': '🔥',
             'Avto Harajat': '🚗', 'Ofis Harajat': '🖥️', 'Ijara': '🏠', 'Transport': '🚚', 'Maosh': '👥', 'Boshqa': '📦'
         };
         return map[cat] || '📦';
     }
+
+    // Harajat panellari — bir nechta kategoriya bitta panelga jamlanadi (masalan Kommunal - Svet/Suv/Gaz)
+    const _BUH_EXPENSE_PANELS = [
+        { key: 'xojalik', label: "Xo'jalik Harajat", icon: '🧹', categories: ["Xo'jalik Harajat"] },
+        { key: 'oziqovqat', label: 'Oziq-ovqat Harajat', icon: '🍽️', categories: ['Oziq-ovqat Harajat'] },
+        { key: 'kommunal', label: 'Kommunal Harajat', icon: '💡', categories: ['Kommunal - Svet', 'Kommunal - Suv', 'Kommunal - Gaz'] },
+        { key: 'avto', label: 'Avto Xarajat Bo\'limi', icon: '🚗', categories: ['Avto Harajat'] },
+        { key: 'ofis', label: 'Ofis Harajat', icon: '🖥️', categories: ['Ofis Harajat'] },
+        { key: 'ijara', label: 'Ijara', icon: '🏠', categories: ['Ijara'] },
+        { key: 'transport', label: 'Transport', icon: '🚚', categories: ['Transport'] },
+        { key: 'maosh', label: 'Maosh', icon: '👥', categories: ['Maosh'] },
+        { key: 'boshqa', label: 'Boshqa', icon: '📦', categories: ['Boshqa'] }
+    ];
 
     // Aksesuvarlarni kategoriya bo'yicha guruhlash (Zamoklar, Ruchkalar, Qistirmalar va h.k.)
     function _buhGroupAccessoriesByCategory(items) {
@@ -2478,6 +2492,70 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.showPremiumToast && window.showPremiumToast('Saqlandi', `${category} — ${_buhFmt(amount)} xarajat qo'shildi.`, true);
     };
 
+    window._buhSelectHarajatPanel = (panelKey) => {
+        window._buhHarajatPanelFilter = panelKey;
+        window._buhRenderHarajatPanel(panelKey);
+    };
+
+    window._buhRenderHarajatPanel = (panelKey) => {
+        panelKey = panelKey || window._buhHarajatPanelFilter || 'barchasi';
+        window._buhHarajatPanelFilter = panelKey;
+        const d = window._buhUmumiyData;
+        const contentEl = document.getElementById('buh-harajat-panel-content');
+        if (!d || !contentEl) return;
+
+        document.querySelectorAll('#buhHarajatPanelPills .buh-brand-chip').forEach(c => {
+            c.classList.toggle('active', c.dataset.harajatPanel === panelKey);
+        });
+
+        if (panelKey === 'barchasi') {
+            const cards = _BUH_EXPENSE_PANELS.map(p => {
+                const total = d.monthExpenses.filter(e => p.categories.includes(e.category || 'Boshqa')).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+                return { p, total };
+            }).filter(x => x.total > 0);
+            const pct = t => d.monthlyExpenseTotal > 0 ? (t / d.monthlyExpenseTotal) * 100 : 0;
+            contentEl.innerHTML = cards.length ? `<div class="buh-expense-grid">${cards.map(({ p, total }) => `
+                <div class="buh-expense-card" style="cursor:pointer;" onclick="window._buhSelectHarajatPanel('${p.key}')">
+                    <div class="buh-expense-top">
+                        <span class="cat-icon">${p.icon}</span>
+                        <div class="cat-info"><div class="cat-name">${p.label}</div><div class="cat-pct">${pct(total).toFixed(0)}% jami harajatdan</div></div>
+                    </div>
+                    <div class="cat-sum">-${_buhFmt(total)}</div>
+                    <div class="buh-expense-bar"><div class="fill" style="width:${pct(total)}%;"></div></div>
+                </div>`).join('')}</div>`
+                : `<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px;">Shu oy harajat yo'q</div>`;
+            return;
+        }
+
+        const panel = _BUH_EXPENSE_PANELS.find(p => p.key === panelKey);
+        if (!panel) { contentEl.innerHTML = ''; return; }
+        const entries = d.monthExpenses.filter(e => panel.categories.includes(e.category || 'Boshqa')).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        const total = entries.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+        const showSubType = panel.categories.length > 1;
+
+        const subStatsHtml = showSubType ? `<div class="buh-mini-row" style="margin-bottom:14px;">
+            ${panel.categories.map(cat => {
+                const catTotal = entries.filter(e => (e.category || 'Boshqa') === cat).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+                return `<div class="buh-mini-stat"><span class="buh-mini-label">${_buhExpenseCatIcon(cat)} ${cat.replace('Kommunal - ', '')}</span><span class="buh-mini-value" style="color:#ff4d4f;">-${_buhFmt(catTotal)}</span></div>`;
+            }).join('')}
+        </div>` : `<div class="buh-mini-row" style="margin-bottom:14px;">
+            <div class="buh-mini-stat"><span class="buh-mini-label">Jami (shu oy)</span><span class="buh-mini-value" style="color:#ff4d4f;">-${_buhFmt(total)}</span></div>
+            <div class="buh-mini-stat"><span class="buh-mini-label">Yozuvlar Soni</span><span class="buh-mini-value">${entries.length}</span></div>
+        </div>`;
+
+        const rowsHtml = entries.length ? entries.map(e => `<tr>
+                <td>${e.date || '-'}</td>
+                ${showSubType ? `<td>${_buhExpenseCatIcon(e.category)} ${(e.category || '').replace('Kommunal - ', '')}</td>` : ''}
+                <td style="text-align:right; color:#ff4d4f;">-${_buhFmt(e.amount)}</td>
+                <td>${e.note || '-'}</td>
+                <td><button class="buh-row-action-btn" style="background:rgba(255,77,79,0.15); color:#ff4d4f;" onclick="window.deleteRomixExpense('${e.id}')">O'chirish</button></td>
+            </tr>`).join('') : `<tr><td colspan="${showSubType ? 5 : 4}" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Shu oy "${panel.label}" bo'yicha xarajat yo'q</td></tr>`;
+
+        contentEl.innerHTML = `${subStatsHtml}
+            <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Sana</th>${showSubType ? '<th>Turi</th>' : ''}<th style="text-align:right;">Summa</th><th>Izoh</th><th></th></tr></thead>
+            <tbody>${rowsHtml}</tbody></table></div>`;
+    };
+
     window._buhSelectProfilBrand = (brandKey) => {
         window._buhProfilBrandFilter = brandKey;
         window._buhProfilSearchTerm = '';
@@ -2713,6 +2791,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             panel.innerHTML = (window._buhUmumiyDrills && window._buhUmumiyDrills[key]) || '';
             panel.style.display = 'block';
             if (key === 'ombor') window._buhInitOmborFilter();
+            if (key === 'harajat') window._buhRenderHarajatPanel(window._buhHarajatPanelFilter || 'barchasi');
         }
         document.querySelectorAll('#buh-umumiy-cards .buh-umumiy-card').forEach(c => {
             c.classList.toggle('active', c.dataset.key === window._buhUmumiyActiveKey);
@@ -2793,22 +2872,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         window._buhUmumiyDrills['kirim'] = `<h4 style="color:var(--adm-text); margin-bottom:14px;">📈 Shu Oy Buyurtmalardan Tushgan To'lovlar (${d.monthOrders.length} buyurtma)</h4>
             <div class="buh-income-grid">${incomeCards}</div>`;
 
-        const expCats = Object.entries(d.expenseByCategory).sort((a, b) => b[1] - a[1]);
-        const expCards = expCats.length
-            ? expCats.map(([cat, sum]) => {
-                const pct = d.monthlyExpenseTotal > 0 ? (sum / d.monthlyExpenseTotal) * 100 : 0;
-                return `<div class="buh-expense-card">
-                    <div class="buh-expense-top">
-                        <span class="cat-icon">${_buhExpenseCatIcon(cat)}</span>
-                        <div class="cat-info"><div class="cat-name">${cat}</div><div class="cat-pct">${pct.toFixed(0)}% jami harajatdan</div></div>
-                    </div>
-                    <div class="cat-sum">-${_buhFmt(sum)}</div>
-                    <div class="buh-expense-bar"><div class="fill" style="width:${pct}%;"></div></div>
-                </div>`;
-            }).join('')
-            : `<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Shu oy harajat yo'q</div>`;
-        window._buhUmumiyDrills['harajat'] = `<h4 style="color:var(--adm-text); margin-bottom:14px;">📉 Shu Oy Harajat Kategoriyalari (${_buhFmt(d.monthlyExpenseTotal)})</h4>
-            <div class="buh-expense-grid" style="margin-bottom:20px;">${expCards}</div>
+        window._buhUmumiyDrills['harajat'] = `
+            <div class="buh-brand-filter-row" id="buhHarajatPanelPills" style="margin-bottom:16px;">
+                <div class="buh-brand-chip active" data-harajat-panel="barchasi" onclick="window._buhSelectHarajatPanel('barchasi')">
+                    <span class="chip-name">🗂️ Barchasi</span><span class="chip-meta">${_buhFmt(d.monthlyExpenseTotal)}</span>
+                </div>
+                ${_BUH_EXPENSE_PANELS.map(p => {
+                    const total = d.monthExpenses.filter(e => p.categories.includes(e.category || 'Boshqa')).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+                    return `<div class="buh-brand-chip" data-harajat-panel="${p.key}" onclick="window._buhSelectHarajatPanel('${p.key}')">
+                        <span class="chip-name">${p.icon} ${p.label}</span><span class="chip-meta">${_buhFmt(total)}</span>
+                    </div>`;
+                }).join('')}
+            </div>
+            <div id="buh-harajat-panel-content" style="margin-bottom:20px;"></div>
             <h4 style="color:var(--adm-text); margin-bottom:12px;">➕ Yangi Harajat Kiritish</h4>
             <form onsubmit="window.addBuhUmumiyExpense(event)" class="buh-form-row">
                 <div class="buh-form-group"><label>Sana</label><input type="date" id="buhUmExpDate" class="buh-input" value="${_buhToday()}" required></div>
@@ -2872,6 +2948,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (panel && window._buhUmumiyActiveKey) {
             panel.innerHTML = window._buhUmumiyDrills[window._buhUmumiyActiveKey] || '';
             if (window._buhUmumiyActiveKey === 'ombor') window._buhInitOmborFilter();
+            if (window._buhUmumiyActiveKey === 'harajat') window._buhRenderHarajatPanel(window._buhHarajatPanelFilter || 'barchasi');
         }
     }
 
