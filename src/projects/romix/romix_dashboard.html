@@ -1483,6 +1483,18 @@
                             #buhOmborFilterPills .pill { color: var(--adm-text-sec); }
                             #buhOmborFilterPills .pill.active { color: #fff; }
                             .buh-export-btn { border: none; border-radius: 10px; padding: 9px 16px; font-weight: 700; font-size: 0.78rem; cursor: pointer; color: #fff; display:inline-flex; align-items:center; gap:6px; }
+                            .buh-brand-filter-row { display:flex; gap:10px; flex-wrap:wrap; }
+                            .buh-brand-chip {
+                                display:flex; flex-direction:column; gap:3px; min-width:130px;
+                                padding:10px 16px; border-radius:14px; cursor:pointer;
+                                background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06);
+                                transition:all 0.2s ease;
+                            }
+                            .buh-brand-chip:hover { border-color:rgba(0,210,255,0.35); background:rgba(0,210,255,0.05); transform:translateY(-1px); }
+                            .buh-brand-chip.active { background:rgba(0,210,255,0.1); border-color:#00d2ff; box-shadow:0 4px 14px rgba(0,210,255,0.18); }
+                            .buh-brand-chip .chip-name { font-size:0.8rem; font-weight:700; color:var(--adm-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px; }
+                            .buh-brand-chip .chip-meta { font-size:0.68rem; font-weight:600; color:var(--adm-text-sec); }
+                            .buh-brand-chip.active .chip-meta { color:#00d2ff; }
                         </style>
                         <div class="buh-mini-row" id="buh-umumiy-cards"></div>
                         <div id="buh-umumiy-drill-panel" class="buh-drill-panel"></div>

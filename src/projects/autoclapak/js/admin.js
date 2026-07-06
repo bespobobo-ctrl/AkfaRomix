@@ -1969,34 +1969,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         return p.description || '-';
     }
 
-    // Ikki qavatli jadval: brend qatori bosilganda o'lcham/variant qatorlari ochiladi
-    function _buhProfilNestedTableHtml(groups) {
-        if (!groups.length) return `<div style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Profil topilmadi</div>`;
-        const bodyRows = groups.map(g => {
-            const safeKey = g.name.replace(/[^a-zA-Z0-9]/g, '_');
-            const variantRows = g.items.slice().sort((a, b) => (Number(b.stock_quantity) * Number(b.price) || 0) - (Number(a.stock_quantity) * Number(a.price) || 0)).map(p => {
-                const qty = Number(p.stock_quantity) || 0;
-                const val = (Number(p.price) || 0) * qty;
-                return `<tr><td style="padding-left:28px; color:var(--adm-text-sec);">↳ ${_buhProfilSizeLabel(p)}</td><td style="text-align:right;">${qty.toLocaleString('uz-UZ')} ${p.unit || ''}</td><td style="text-align:right;">${_buhFmt(p.price)}</td><td style="text-align:right;">${_buhFmt(val)}</td></tr>`;
-            }).join('');
-            return `<tr style="cursor:pointer; font-weight:700;" onclick="window.toggleBuhProfilBrand('${safeKey}')">
-                        <td>▸ ${g.name} <span style="font-weight:500; color:var(--adm-text-sec); font-size:0.72rem;">(${g.variants} variant)</span></td>
-                        <td style="text-align:right;">${g.qty.toLocaleString('uz-UZ')} ${g.unit}</td>
-                        <td style="text-align:right;">${_buhFmt(g.qty > 0 ? g.value / g.qty : 0)}</td>
-                        <td style="text-align:right;">${_buhFmt(g.value)}</td>
-                    </tr>
-                    <tr id="buh-profil-brand-${safeKey}" style="display:none; background:rgba(255,255,255,0.02);">
-                        <td colspan="4" style="padding:0;"><table class="v2-table" style="width:100%;"><tbody>${variantRows}</tbody></table></td>
-                    </tr>`;
-        }).join('');
-        return `<div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Profil (Brend/Seriya) — bosib variantlarni ko'ring</th><th style="text-align:right;">Jami Miqdor</th><th style="text-align:right;">O'rtacha Narx</th><th style="text-align:right;">Jami Qiymat</th></tr></thead>
-            <tbody>${bodyRows}</tbody></table></div>`;
+    function _buhCompactFmt(n) {
+        n = Number(n) || 0;
+        if (n >= 1e9) return (n / 1e9).toFixed(1).replace(/\.0$/, '') + 'mlrd';
+        if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'mln';
+        if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'ming';
+        return n.toLocaleString('uz-UZ');
     }
-
-    window.toggleBuhProfilBrand = (safeKey) => {
-        const row = document.getElementById(`buh-profil-brand-${safeKey}`);
-        if (row) row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
-    };
+    function _buhSafeKey(str) {
+        return (str || '').replace(/[^a-zA-Z0-9]/g, '_');
+    }
 
     // Ombor bo'limlari filtri (Barchasi/Profil/Aksesuvar/Qoldiq) — Umumiy > Ombor Qiymati tafsilotida
     function _buhQtyBreakdown(items, qtyKey, unitKey) {
@@ -2015,19 +1997,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!d) return { title: 'Ombor', value: 0, qtyText: '0', columns: [], alignRight: [], rows: [] };
 
         if (filter === 'profil') {
-            const allCategories = Array.from(new Set(d.profilItems.map(p => p.category || 'Boshqa'))).sort();
-            const catFilter = window._buhProfilCategoryFilter || 'barchasi';
-            let scopedItems = catFilter === 'barchasi' ? d.profilItems : d.profilItems.filter(p => (p.category || 'Boshqa') === catFilter);
             const searchTerm = (window._buhProfilSearchTerm || '').trim().toLowerCase();
-            if (searchTerm) scopedItems = scopedItems.filter(p => (p.product_name || '').toLowerCase().includes(searchTerm));
-            const grouped = _buhGroupProfilByName(scopedItems);
-            const value = grouped.reduce((s, g) => s + g.value, 0);
+            const allGrouped = _buhGroupProfilByName(d.profilItems);
+            const brandFilter = window._buhProfilBrandFilter || 'barchasi';
+
+            if (brandFilter === 'barchasi') {
+                let grouped = allGrouped;
+                if (searchTerm) grouped = grouped.filter(g => g.name.toLowerCase().includes(searchTerm));
+                const value = grouped.reduce((s, g) => s + g.value, 0);
+                return {
+                    title: '📦 Profil (barcha brendlar)', value,
+                    qtyText: _buhQtyBreakdown(grouped.flatMap(g => g.items), 'stock_quantity', 'unit'),
+                    columns: ['Brend / Seriya', 'Jami Miqdor', "O'rtacha Narx", 'Jami Qiymat', 'Variantlar'], alignRight: [false, true, true, true, true],
+                    rows: grouped.map(g => [g.name, `${g.qty.toLocaleString('uz-UZ')} ${g.unit}`, _buhFmt(g.qty > 0 ? g.value / g.qty : 0), _buhFmt(g.value), g.variants]),
+                    profilBrands: allGrouped, profilActiveBrand: 'barchasi'
+                };
+            }
+
+            const activeGroup = allGrouped.find(g => _buhSafeKey(g.name) === brandFilter);
+            let items = activeGroup ? activeGroup.items : [];
+            if (searchTerm) items = items.filter(p => (_buhProfilSizeLabel(p) || '').toLowerCase().includes(searchTerm) || (p.product_name || '').toLowerCase().includes(searchTerm));
+            const sortedItems = items.slice().sort((a, b) => ((Number(b.price) || 0) * (Number(b.stock_quantity) || 0)) - ((Number(a.price) || 0) * (Number(a.stock_quantity) || 0)));
+            const value = sortedItems.reduce((s, p) => s + (Number(p.price) || 0) * (Number(p.stock_quantity) || 0), 0);
             return {
-                title: catFilter === 'barchasi' ? '📦 Profil (brend/seriya bo\'yicha guruhlangan)' : `📦 Profil — ${catFilter}`,
-                value, qtyText: _buhQtyBreakdown(scopedItems, 'stock_quantity', 'unit'),
-                columns: ['Profil (Brend/Seriya)', 'Jami Miqdor', "O'rtacha Narx", 'Jami Qiymat', 'Variantlar'], alignRight: [false, true, true, true, true],
-                rows: grouped.map(g => [g.name, `${g.qty.toLocaleString('uz-UZ')} ${g.unit}`, _buhFmt(g.qty > 0 ? g.value / g.qty : 0), _buhFmt(g.value), g.variants]),
-                profilCategories: allCategories, profilActiveCategory: catFilter, profilGroups: grouped, isProfilNested: true
+                title: `📦 ${activeGroup ? activeGroup.name : brandFilter}`, value,
+                qtyText: _buhQtyBreakdown(sortedItems, 'stock_quantity', 'unit'),
+                columns: ["O'lcham / Variant", 'Miqdor', 'Narx', 'Qiymat'], alignRight: [false, true, true, true],
+                rows: sortedItems.map(p => [_buhProfilSizeLabel(p), `${(Number(p.stock_quantity) || 0).toLocaleString('uz-UZ')} ${p.unit || ''}`, _buhFmt(p.price), _buhFmt((Number(p.price) || 0) * (Number(p.stock_quantity) || 0))]),
+                profilBrands: allGrouped, profilActiveBrand: brandFilter
             };
         }
         if (filter === 'aksesuvar') {
@@ -2115,13 +2112,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         const subfilterEl = document.getElementById('buh-profil-subfilter');
         if (subfilterEl) {
             if (filter === 'profil') {
-                const chips = data.profilCategories && data.profilCategories.length > 1 ? ['barchasi', ...data.profilCategories] : null;
-                const chipsHtml = chips ? `<div class="pills-container" style="margin-bottom:10px;">${chips.map(c => `
-                    <div class="pill ${data.profilActiveCategory === c ? 'active' : ''}" style="font-size:0.74rem; padding:6px 14px;" onclick="window._buhSelectProfilCategory('${c.replace(/'/g, "\\'")}')">${c === 'barchasi' ? 'Barchasi' : c}</div>
-                `).join('')}</div>` : '';
+                const brands = data.profilBrands || [];
+                const activeBrand = data.profilActiveBrand || 'barchasi';
+                const totalValue = brands.reduce((s, b) => s + b.value, 0);
+                const chipsHtml = `<div class="buh-brand-filter-row">
+                    <div class="buh-brand-chip ${activeBrand === 'barchasi' ? 'active' : ''}" onclick="window._buhSelectProfilBrand('barchasi')">
+                        <span class="chip-name">🗂️ Barchasi</span>
+                        <span class="chip-meta">${brands.length} brend · ${_buhCompactFmt(totalValue)}</span>
+                    </div>
+                    ${brands.map(b => {
+                        const key = _buhSafeKey(b.name);
+                        return `<div class="buh-brand-chip ${activeBrand === key ? 'active' : ''}" onclick="window._buhSelectProfilBrand('${key}')" title="${b.name.replace(/"/g, '&quot;')}">
+                            <span class="chip-name">${b.name}</span>
+                            <span class="chip-meta">${b.qty.toLocaleString('uz-UZ')} ${b.unit} · ${_buhCompactFmt(b.value)}</span>
+                        </div>`;
+                    }).join('')}
+                </div>`;
                 const wasFocused = document.activeElement && document.activeElement.id === 'buhProfilSearch';
                 const selStart = wasFocused ? document.activeElement.selectionStart : null;
-                subfilterEl.innerHTML = `${chipsHtml}<input type="text" id="buhProfilSearch" class="buh-input" placeholder="🔍 Brend, seriya yoki nomi bo'yicha qidirish..." style="max-width:320px; width:100%;" value="${(window._buhProfilSearchTerm || '').replace(/"/g, '&quot;')}" oninput="window._buhOnProfilSearchInput(this.value)">`;
+                subfilterEl.innerHTML = `${chipsHtml}<input type="text" id="buhProfilSearch" class="buh-input" placeholder="🔍 ${activeBrand === 'barchasi' ? 'Brend yoki seriya' : "O'lcham yoki variant"} bo'yicha qidirish..." style="width:100%; margin-top:12px;" value="${(window._buhProfilSearchTerm || '').replace(/"/g, '&quot;')}" oninput="window._buhOnProfilSearchInput(this.value)">`;
                 if (wasFocused) {
                     const inp = document.getElementById('buhProfilSearch');
                     inp.focus();
@@ -2154,17 +2163,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const tableEl = document.getElementById('buh-ombor-filter-table');
         if (tableEl) {
-            if (data.isProfilNested) {
-                tableEl.innerHTML = _buhProfilNestedTableHtml(data.profilGroups);
-            } else {
-                const extraCol = data.isOynak ? ['Amal'] : [];
-                const headHtml = [...data.columns, ...extraCol].map((c, i) => `<th ${data.alignRight[i] ? 'style="text-align:right;"' : ''}>${c}</th>`).join('');
-                const rowsHtml = data.rows.length
-                    ? data.rows.map((r, idx) => `<tr>${r.map((cell, i) => `<td ${data.alignRight[i] ? 'style="text-align:right;"' : ''}>${cell}</td>`).join('')}${data.isOynak ? `<td><button class="buh-row-action-btn" style="background:rgba(255,77,79,0.15); color:#ff4d4f;" onclick="window.deleteBuhOynakItem(${idx})">O'chirish</button></td>` : ''}</tr>`).join('')
-                    : `<tr><td colspan="${data.columns.length + extraCol.length}" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Ma'lumot topilmadi</td></tr>`;
-                tableEl.innerHTML = `<div style="overflow-x:auto;"><table class="v2-table"><thead><tr>${headHtml}</tr></thead>
-                    <tbody>${rowsHtml}</tbody></table></div>`;
-            }
+            const extraCol = data.isOynak ? ['Amal'] : [];
+            const headHtml = [...data.columns, ...extraCol].map((c, i) => `<th ${data.alignRight[i] ? 'style="text-align:right;"' : ''}>${c}</th>`).join('');
+            const rowsHtml = data.rows.length
+                ? data.rows.map((r, idx) => `<tr>${r.map((cell, i) => `<td ${data.alignRight[i] ? 'style="text-align:right;"' : ''}>${cell}</td>`).join('')}${data.isOynak ? `<td><button class="buh-row-action-btn" style="background:rgba(255,77,79,0.15); color:#ff4d4f;" onclick="window.deleteBuhOynakItem(${idx})">O'chirish</button></td>` : ''}</tr>`).join('')
+                : `<tr><td colspan="${data.columns.length + extraCol.length}" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Ma'lumot topilmadi</td></tr>`;
+            tableEl.innerHTML = `<div style="overflow-x:auto;"><table class="v2-table"><thead><tr>${headHtml}</tr></thead>
+                <tbody>${rowsHtml}</tbody></table></div>`;
         }
     };
 
@@ -2204,8 +2209,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         window._buhRenderOmborFilterView('oynak');
     };
 
-    window._buhSelectProfilCategory = (cat) => {
-        window._buhProfilCategoryFilter = cat;
+    window._buhSelectProfilBrand = (brandKey) => {
+        window._buhProfilBrandFilter = brandKey;
+        window._buhProfilSearchTerm = '';
         window._buhRenderOmborFilterView('profil');
     };
 
