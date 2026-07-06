@@ -1980,6 +1980,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         return (str || '').replace(/[^a-zA-Z0-9]/g, '_');
     }
 
+    const _BUH_EXPENSE_CATEGORIES = ["Xo'jalik Harajat", 'Kommunal', 'Avto Harajat', 'Ofis Harajat', 'Ijara', 'Transport', 'Maosh', 'Boshqa'];
+    function _buhExpenseCatIcon(cat) {
+        const map = {
+            "Xo'jalik Harajat": '🧹', 'Kommunal': '💡', 'Avto Harajat': '🚗', 'Ofis Harajat': '🖥️',
+            'Ijara': '🏠', 'Transport': '🚚', 'Maosh': '👥', 'Boshqa': '📦'
+        };
+        return map[cat] || '📦';
+    }
+
     // Aksesuvarlarni kategoriya bo'yicha guruhlash (Zamoklar, Ruchkalar, Qistirmalar va h.k.)
     function _buhGroupAccessoriesByCategory(items) {
         const groups = {};
@@ -2410,6 +2419,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         window._buhRenderOmborFilterView('oynak');
     };
 
+    window.addBuhUmumiyExpense = async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn && submitBtn.disabled) return;
+        const date = document.getElementById('buhUmExpDate').value || _buhToday();
+        const category = document.getElementById('buhUmExpCategory').value;
+        const amount = parseFloat(document.getElementById('buhUmExpAmount').value) || 0;
+        const note = document.getElementById('buhUmExpNote').value.trim();
+        if (amount <= 0) return;
+        if (submitBtn) submitBtn.disabled = true;
+        const record = { id: 'EXP-' + Date.now(), date, category, amount, note, created_at: new Date().toISOString() };
+        await romixBuhInsert('romix_expenses', ROMIX_BUH_KEYS.expenses, record);
+        await renderRomixBuhHarajatlar();
+        await updateBuhHeroKPIs();
+        await renderBuhOverview();
+        if (submitBtn) submitBtn.disabled = false;
+        window.showPremiumToast && window.showPremiumToast('Saqlandi', `${category} — ${amount.toLocaleString('uz-UZ')} UZS xarajat qo'shildi.`, true);
+    };
+
     window._buhSelectProfilBrand = (brandKey) => {
         window._buhProfilBrandFilter = brandKey;
         window._buhProfilSearchTerm = '';
@@ -2726,12 +2755,33 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="buh-income-grid">${incomeCards}</div>`;
 
         const expCats = Object.entries(d.expenseByCategory).sort((a, b) => b[1] - a[1]);
-        const expRows = expCats.length
-            ? expCats.map(([cat, sum]) => `<tr><td>${cat}</td><td style="text-align:right; color:#ff4d4f;">-${_buhFmt(sum)}</td></tr>`).join('')
-            : `<tr><td colspan="2" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Shu oy harajat yo'q</td></tr>`;
-        window._buhUmumiyDrills['harajat'] = `<h4 style="color:var(--adm-text); margin-bottom:10px;">📉 Shu Oy Harajat Kategoriyalari</h4>
-            <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Kategoriya</th><th style="text-align:right;">Summa</th></tr></thead>
-            <tbody>${expRows}</tbody></table></div>`;
+        const expCards = expCats.length
+            ? expCats.map(([cat, sum]) => {
+                const pct = d.monthlyExpenseTotal > 0 ? (sum / d.monthlyExpenseTotal) * 100 : 0;
+                return `<div class="buh-expense-card">
+                    <div class="buh-expense-top">
+                        <span class="cat-icon">${_buhExpenseCatIcon(cat)}</span>
+                        <div class="cat-info"><div class="cat-name">${cat}</div><div class="cat-pct">${pct.toFixed(0)}% jami harajatdan</div></div>
+                    </div>
+                    <div class="cat-sum">-${_buhFmt(sum)}</div>
+                    <div class="buh-expense-bar"><div class="fill" style="width:${pct}%;"></div></div>
+                </div>`;
+            }).join('')
+            : `<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Shu oy harajat yo'q</div>`;
+        window._buhUmumiyDrills['harajat'] = `<h4 style="color:var(--adm-text); margin-bottom:14px;">📉 Shu Oy Harajat Kategoriyalari (${_buhFmt(d.monthlyExpenseTotal)})</h4>
+            <div class="buh-expense-grid" style="margin-bottom:20px;">${expCards}</div>
+            <h4 style="color:var(--adm-text); margin-bottom:12px;">➕ Yangi Harajat Kiritish</h4>
+            <form onsubmit="window.addBuhUmumiyExpense(event)" class="buh-form-row">
+                <div class="buh-form-group"><label>Sana</label><input type="date" id="buhUmExpDate" class="buh-input" value="${_buhToday()}" required></div>
+                <div class="buh-form-group"><label>Kategoriya</label>
+                    <select id="buhUmExpCategory" class="buh-input">
+                        ${_BUH_EXPENSE_CATEGORIES.map(c => `<option value="${c}">${_buhExpenseCatIcon(c)} ${c}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="buh-form-group"><label>Summa (UZS)</label><input type="number" id="buhUmExpAmount" class="buh-input" min="0" required></div>
+                <div class="buh-form-group"><label>Izoh</label><input type="text" id="buhUmExpNote" class="buh-input" placeholder="Nimaga ketgani (ixtiyoriy)"></div>
+                <button type="submit" class="buh-save-btn">💾 Saqlash</button>
+            </form>`;
 
         const creditorEntries = Object.entries(d.paymentsByCreditor).sort((a, b) => b[1].total - a[1].total);
         const paymentsRows = creditorEntries.length ? creditorEntries.map(([creditor, info]) => {

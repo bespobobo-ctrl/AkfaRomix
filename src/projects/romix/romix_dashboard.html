@@ -1518,6 +1518,20 @@
                             .buh-income-pay-bar { height:5px; border-radius:4px; background:rgba(255,255,255,0.06); overflow:hidden; }
                             .buh-income-pay-bar .fill { height:100%; border-radius:4px; transition:width 0.3s ease; }
                             .buh-income-pay-row { display:flex; justify-content:space-between; font-size:0.72rem; color:var(--adm-text-sec); }
+
+                            .buh-expense-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:14px; }
+                            .buh-expense-card {
+                                background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:16px;
+                                padding:14px 16px; display:flex; flex-direction:column; gap:10px; transition:all 0.2s ease;
+                            }
+                            .buh-expense-card:hover { border-color:rgba(255,77,79,0.25); transform:translateY(-1px); }
+                            .buh-expense-top { display:flex; align-items:center; gap:10px; }
+                            .buh-expense-top .cat-icon { font-size:1.3rem; }
+                            .buh-expense-top .cat-name { font-weight:700; color:var(--adm-text); font-size:0.85rem; }
+                            .buh-expense-top .cat-pct { font-size:0.65rem; color:var(--adm-text-sec); margin-top:1px; }
+                            .buh-expense-card .cat-sum { font-size:1.05rem; font-weight:800; font-family:monospace; color:#ff4d4f; }
+                            .buh-expense-bar { height:5px; border-radius:4px; background:rgba(255,77,79,0.1); overflow:hidden; }
+                            .buh-expense-bar .fill { height:100%; border-radius:4px; background:#ff4d4f; }
                         </style>
                         <div class="buh-mini-row" id="buh-umumiy-cards"></div>
                         <div id="buh-umumiy-drill-panel" class="buh-drill-panel"></div>
@@ -1605,8 +1619,11 @@
                             <div class="buh-form-group">
                                 <label>Kategoriya</label>
                                 <select id="buh-exp-category" class="buh-input">
-                                    <option value="Ijara">Ijara</option>
+                                    <option value="Xo'jalik Harajat">Xo'jalik Harajat</option>
                                     <option value="Kommunal">Kommunal (svet/gaz/suv)</option>
+                                    <option value="Avto Harajat">Avto Harajat</option>
+                                    <option value="Ofis Harajat">Ofis Harajat</option>
+                                    <option value="Ijara">Ijara</option>
                                     <option value="Transport">Transport</option>
                                     <option value="Maosh">Maosh</option>
                                     <option value="Boshqa">Boshqa</option>
