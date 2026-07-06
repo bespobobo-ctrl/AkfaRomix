@@ -2435,21 +2435,41 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     window._buhToggleSvetFields = (cat) => {
         const isSvet = cat === 'Kommunal - Svet';
+        const isMeterUtil = cat === 'Kommunal - Suv' || cat === 'Kommunal - Gaz';
         const amountGroup = document.getElementById('buhUmExpAmountGroup');
         const asosiyGroup = document.getElementById('buhUmExpAsosiyGroup');
         const avtoGroup = document.getElementById('buhUmExpAvtoGroup');
         const shareGroup = document.getElementById('buhUmExpRomixShareGroup');
+        const meterStartGroup = document.getElementById('buhUmExpMeterStartGroup');
+        const meterEndGroup = document.getElementById('buhUmExpMeterEndGroup');
+        const meterUsageGroup = document.getElementById('buhUmExpMeterUsageGroup');
         const amountInput = document.getElementById('buhUmExpAmount');
         const asosiyInput = document.getElementById('buhUmExpAsosiy');
         const avtoInput = document.getElementById('buhUmExpAvto');
+        const meterStartInput = document.getElementById('buhUmExpMeterStart');
+        const meterEndInput = document.getElementById('buhUmExpMeterEnd');
         if (amountGroup) amountGroup.style.display = isSvet ? 'none' : '';
         if (asosiyGroup) asosiyGroup.style.display = isSvet ? '' : 'none';
         if (avtoGroup) avtoGroup.style.display = isSvet ? '' : 'none';
         if (shareGroup) shareGroup.style.display = isSvet ? '' : 'none';
+        if (meterStartGroup) meterStartGroup.style.display = isMeterUtil ? '' : 'none';
+        if (meterEndGroup) meterEndGroup.style.display = isMeterUtil ? '' : 'none';
+        if (meterUsageGroup) meterUsageGroup.style.display = isMeterUtil ? '' : 'none';
         if (amountInput) amountInput.required = !isSvet;
         if (asosiyInput) asosiyInput.required = isSvet;
         if (avtoInput) avtoInput.required = isSvet;
+        if (meterStartInput) meterStartInput.required = isMeterUtil;
+        if (meterEndInput) meterEndInput.required = isMeterUtil;
         if (isSvet) window._buhUpdateSvetPreview();
+        if (isMeterUtil) window._buhUpdateMeterPreview();
+    };
+
+    window._buhUpdateMeterPreview = () => {
+        const start = parseFloat(document.getElementById('buhUmExpMeterStart').value) || 0;
+        const end = parseFloat(document.getElementById('buhUmExpMeterEnd').value) || 0;
+        const usage = Math.max(0, end - start);
+        const el = document.getElementById('buhUmExpMeterUsage');
+        if (el) el.value = usage.toLocaleString('uz-UZ');
     };
 
     window._buhToggleExpenseCategoryMenu = (e) => {
@@ -2512,6 +2532,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (asosiy <= 0) return;
             amount = Math.max(0, asosiy - avto);
             note = `Asosiy hisob: ${_buhFmt(asosiy)} | AvtoClapak sarfi: ${_buhFmt(avto)} | Romix ulushi: ${_buhFmt(amount)}${userNote ? ' | ' + userNote : ''}`;
+        } else if (category === 'Kommunal - Suv' || category === 'Kommunal - Gaz') {
+            amount = parseFloat(document.getElementById('buhUmExpAmount').value) || 0;
+            if (amount <= 0) return;
+            const meterStart = parseFloat(document.getElementById('buhUmExpMeterStart').value) || 0;
+            const meterEnd = parseFloat(document.getElementById('buhUmExpMeterEnd').value) || 0;
+            const usage = Math.max(0, meterEnd - meterStart);
+            const meterNote = (meterStart || meterEnd) ? `Oy boshi ko'rsatkichi: ${meterStart} | Oy oxiri ko'rsatkichi: ${meterEnd} | Iste'mol: ${usage}` : '';
+            note = [meterNote, userNote].filter(Boolean).join(' | ');
         } else {
             amount = parseFloat(document.getElementById('buhUmExpAmount').value) || 0;
             if (amount <= 0) return;
@@ -2943,11 +2971,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="buh-form-group" id="buhUmExpAsosiyGroup" style="display:none;"><label>Asosiy Hisob (jami, UZS)</label><input type="number" id="buhUmExpAsosiy" class="buh-input" min="0" oninput="window._buhUpdateSvetPreview()"></div>
                 <div class="buh-form-group" id="buhUmExpAvtoGroup" style="display:none;"><label>AvtoClapak Sarfi (UZS)</label><input type="number" id="buhUmExpAvto" class="buh-input" min="0" oninput="window._buhUpdateSvetPreview()"></div>
                 <div class="buh-form-group" id="buhUmExpRomixShareGroup" style="display:none;"><label>Romix Ulushi</label><input type="text" id="buhUmExpRomixShare" class="buh-input" readonly style="font-weight:800; color:#00d2ff;"></div>
+                <div class="buh-form-group" id="buhUmExpMeterStartGroup" style="display:none;"><label>Oy Boshi Ko'rsatkichi</label><input type="number" id="buhUmExpMeterStart" class="buh-input" min="0" step="0.01" oninput="window._buhUpdateMeterPreview()"></div>
+                <div class="buh-form-group" id="buhUmExpMeterEndGroup" style="display:none;"><label>Oy Oxiri Ko'rsatkichi</label><input type="number" id="buhUmExpMeterEnd" class="buh-input" min="0" step="0.01" oninput="window._buhUpdateMeterPreview()"></div>
+                <div class="buh-form-group" id="buhUmExpMeterUsageGroup" style="display:none;"><label>Iste'mol (oxiri − boshi)</label><input type="text" id="buhUmExpMeterUsage" class="buh-input" readonly style="font-weight:800; color:#00d2ff;"></div>
                 <div class="buh-form-group"><label>Izoh</label><input type="text" id="buhUmExpNote" class="buh-input" placeholder="Nimaga ketgani (ixtiyoriy)"></div>
                 <button type="submit" class="buh-save-btn">💾 Saqlash</button>
                 </div>
             </form>
-            <p style="font-size:0.68rem; color:var(--adm-text-sec); margin-top:8px;">💡 "Kommunal - Svet" tanlansa: asosiy litsevoy hisobning jami summasini va AvtoClapak sarflagan qismini kiriting — Romix ulushi (asosiy − avtoclapak) avtomatik hisoblanadi.</p>
+            <p style="font-size:0.68rem; color:var(--adm-text-sec); margin-top:8px;">💡 "Kommunal - Svet" tanlansa: asosiy litsevoy hisobning jami summasini va AvtoClapak sarflagan qismini kiriting — Romix ulushi (asosiy − avtoclapak) avtomatik hisoblanadi. "Kommunal - Suv/Gaz" tanlansa: oy boshi va oy oxiri ko'rsatkichini kiriting — iste'mol avtomatik hisoblanib, summa bilan birga tarixga saqlanadi.</p>
             </div>`;
 
         const creditorEntries = Object.entries(d.paymentsByCreditor).sort((a, b) => b[1].total - a[1].total);
