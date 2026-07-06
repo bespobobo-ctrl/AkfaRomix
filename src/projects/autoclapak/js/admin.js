@@ -1980,6 +1980,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         return (str || '').replace(/[^a-zA-Z0-9]/g, '_');
     }
 
+    // Aksesuvarlarni kategoriya bo'yicha guruhlash (Zamoklar, Ruchkalar, Qistirmalar va h.k.)
+    function _buhGroupAccessoriesByCategory(items) {
+        const groups = {};
+        items.forEach(a => {
+            const key = a.category || 'Boshqa';
+            if (!groups[key]) groups[key] = { name: key, qty: 0, value: 0, unit: a.unit || '', items: [] };
+            groups[key].qty += Number(a.qty) || 0;
+            groups[key].value += (Number(a.price) || 0) * (Number(a.qty) || 0);
+            if (!groups[key].unit) groups[key].unit = a.unit || '';
+            groups[key].items.push(a);
+        });
+        return Object.values(groups).map(g => ({ ...g, variants: g.items.length })).sort((a, b) => b.value - a.value);
+    }
+
     // Ombor bo'limlari filtri (Barchasi/Profil/Aksesuvar/Qoldiq) — Umumiy > Ombor Qiymati tafsilotida
     function _buhQtyBreakdown(items, qtyKey, unitKey) {
         const byUnit = {};
@@ -2028,10 +2042,34 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
         }
         if (filter === 'aksesuvar') {
+            const searchTerm = (window._buhAccSearchTerm || '').trim().toLowerCase();
+            const allGrouped = _buhGroupAccessoriesByCategory(d.accessories);
+            const catFilter = window._buhAccCategoryFilter || 'barchasi';
+
+            if (catFilter === 'barchasi') {
+                let grouped = allGrouped;
+                if (searchTerm) grouped = grouped.filter(g => g.name.toLowerCase().includes(searchTerm));
+                const value = grouped.reduce((s, g) => s + g.value, 0);
+                return {
+                    title: '🔩 Aksesuvar (barcha kategoriyalar)', value,
+                    qtyText: _buhQtyBreakdown(grouped.flatMap(g => g.items), 'qty', 'unit'),
+                    columns: ['Kategoriya', 'Jami Miqdor', "O'rtacha Narx", 'Jami Qiymat', 'Mahsulotlar'], alignRight: [false, true, true, true, true],
+                    rows: grouped.map(g => [g.name, `${g.qty.toLocaleString('uz-UZ')} ${g.unit}`, _buhFmt(g.qty > 0 ? g.value / g.qty : 0), _buhFmt(g.value), g.variants]),
+                    accCategories: allGrouped, accActiveCategory: 'barchasi'
+                };
+            }
+
+            const activeGroup = allGrouped.find(g => _buhSafeKey(g.name) === catFilter);
+            let items = activeGroup ? activeGroup.items : [];
+            if (searchTerm) items = items.filter(a => (a.name || '').toLowerCase().includes(searchTerm) || (a.spec || '').toLowerCase().includes(searchTerm));
+            const sortedItems = items.slice().sort((a, b) => ((Number(b.price) || 0) * (Number(b.qty) || 0)) - ((Number(a.price) || 0) * (Number(a.qty) || 0)));
+            const value = sortedItems.reduce((s, a) => s + (Number(a.price) || 0) * (Number(a.qty) || 0), 0);
             return {
-                title: '🔩 Aksesuvar', value: d.accValue, qtyText: _buhQtyBreakdown(d.accessories, 'qty', 'unit'),
-                columns: ['Nomi', 'Miqdor', 'Tan Narxi', 'Qiymat'], alignRight: [false, true, true, true],
-                rows: d.accessories.map(a => [a.name || "Noma'lum", `${(Number(a.qty) || 0).toLocaleString('uz-UZ')} ${a.unit || ''}`, _buhFmt(a.price), _buhFmt((Number(a.price) || 0) * (Number(a.qty) || 0))])
+                title: `🔩 ${activeGroup ? activeGroup.name : catFilter}`, value,
+                qtyText: _buhQtyBreakdown(sortedItems, 'qty', 'unit'),
+                columns: ['Nomi', 'Xususiyati', 'Miqdor', 'Narx', 'Qiymat'], alignRight: [false, false, true, true, true],
+                rows: sortedItems.map(a => [a.name || "Noma'lum", a.spec || '-', `${(Number(a.qty) || 0).toLocaleString('uz-UZ')} ${a.unit || ''}`, _buhFmt(a.price), _buhFmt((Number(a.price) || 0) * (Number(a.qty) || 0))]),
+                accCategories: allGrouped, accActiveCategory: catFilter
             };
         }
         if (filter === 'qoldiq') {
@@ -2141,6 +2179,38 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
+        const accSubfilterEl = document.getElementById('buh-aksesuvar-subfilter');
+        if (accSubfilterEl) {
+            if (filter === 'aksesuvar') {
+                const cats = data.accCategories || [];
+                const activeCat = data.accActiveCategory || 'barchasi';
+                const totalValue = cats.reduce((s, c) => s + c.value, 0);
+                const chipsHtml = `<div class="buh-brand-filter-row">
+                    <div class="buh-brand-chip ${activeCat === 'barchasi' ? 'active' : ''}" onclick="window._buhSelectAccCategory('barchasi')">
+                        <span class="chip-name">🗂️ Barchasi</span>
+                        <span class="chip-meta">${cats.length} kategoriya · ${_buhCompactFmt(totalValue)}</span>
+                    </div>
+                    ${cats.map(c => {
+                        const key = _buhSafeKey(c.name);
+                        return `<div class="buh-brand-chip ${activeCat === key ? 'active' : ''}" onclick="window._buhSelectAccCategory('${key}')" title="${c.name.replace(/"/g, '&quot;')}">
+                            <span class="chip-name">${c.name}</span>
+                            <span class="chip-meta">${c.qty.toLocaleString('uz-UZ')} ${c.unit} · ${_buhCompactFmt(c.value)}</span>
+                        </div>`;
+                    }).join('')}
+                </div>`;
+                const wasFocused = document.activeElement && document.activeElement.id === 'buhAccSearch';
+                const selStart = wasFocused ? document.activeElement.selectionStart : null;
+                accSubfilterEl.innerHTML = `${chipsHtml}<input type="text" id="buhAccSearch" class="buh-input" placeholder="🔍 ${activeCat === 'barchasi' ? 'Kategoriya' : 'Nomi yoki xususiyati'} bo'yicha qidirish..." style="width:100%; margin-top:12px;" value="${(window._buhAccSearchTerm || '').replace(/"/g, '&quot;')}" oninput="window._buhOnAccSearchInput(this.value)">`;
+                if (wasFocused) {
+                    const inp = document.getElementById('buhAccSearch');
+                    inp.focus();
+                    if (selStart !== null) inp.setSelectionRange(selStart, selStart);
+                }
+            } else {
+                accSubfilterEl.innerHTML = '';
+            }
+        }
+
         const statsEl = document.getElementById('buh-ombor-filter-stats');
         if (statsEl) {
             statsEl.innerHTML = `
@@ -2218,6 +2288,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     window._buhOnProfilSearchInput = (val) => {
         window._buhProfilSearchTerm = val;
         window._buhRenderOmborFilterView('profil');
+    };
+
+    window._buhSelectAccCategory = (catKey) => {
+        window._buhAccCategoryFilter = catKey;
+        window._buhAccSearchTerm = '';
+        window._buhRenderOmborFilterView('aksesuvar');
+    };
+
+    window._buhOnAccSearchInput = (val) => {
+        window._buhAccSearchTerm = val;
+        window._buhRenderOmborFilterView('aksesuvar');
     };
 
     window._buhInitOmborFilter = () => {
@@ -2436,6 +2517,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="pill" data-ombor-filter="chiqim">📤 Ombor Chiqim</div>
             </div>
             <div id="buh-profil-subfilter" style="margin-bottom:14px;"></div>
+            <div id="buh-aksesuvar-subfilter" style="margin-bottom:14px;"></div>
             <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
                 <div class="buh-mini-row" id="buh-ombor-filter-stats" style="margin:0; flex:1; min-width:260px;"></div>
                 <div style="display:flex; gap:8px;">
