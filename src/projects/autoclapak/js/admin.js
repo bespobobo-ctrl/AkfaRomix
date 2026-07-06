@@ -2452,12 +2452,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (isSvet) window._buhUpdateSvetPreview();
     };
 
+    window._buhToggleExpenseCategoryMenu = (e) => {
+        if (e) e.stopPropagation();
+        const menu = document.getElementById('buhUmExpCategoryMenu');
+        const btn = document.getElementById('buhUmExpCategoryBtn');
+        if (!menu) return;
+        const willOpen = menu.style.display === 'none';
+        menu.style.display = willOpen ? 'block' : 'none';
+        if (btn) btn.classList.toggle('open', willOpen);
+    };
+
+    // Menyudan tashqariga bosilganda kategoriya dropdown'ini yopish
+    document.addEventListener('click', (e) => {
+        const menu = document.getElementById('buhUmExpCategoryMenu');
+        const btn = document.getElementById('buhUmExpCategoryBtn');
+        if (!menu || menu.style.display === 'none') return;
+        if (!menu.contains(e.target) && e.target !== btn && !(btn && btn.contains(e.target))) {
+            menu.style.display = 'none';
+            if (btn) btn.classList.remove('open');
+        }
+    });
+
     window._buhSelectExpenseCategory = (cat) => {
         const input = document.getElementById('buhUmExpCategory');
         if (input) input.value = cat;
-        document.querySelectorAll('#buhUmExpCategoryChips .buh-cat-chip').forEach(c => {
-            c.classList.toggle('active', c.dataset.cat === cat);
+        const label = document.getElementById('buhUmExpCategoryBtnLabel');
+        if (label) label.textContent = `${_buhExpenseCatIcon(cat)} ${cat}`;
+        document.querySelectorAll('#buhUmExpCategoryMenu .buh-cat-dropdown-item').forEach(item => {
+            item.classList.toggle('active', item.dataset.cat === cat);
         });
+        const menu = document.getElementById('buhUmExpCategoryMenu');
+        const btn = document.getElementById('buhUmExpCategoryBtn');
+        if (menu) menu.style.display = 'none';
+        if (btn) btn.classList.remove('open');
         window._buhToggleSvetFields(cat);
     };
 
@@ -2894,18 +2921,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }).join('')}
             </div>
             <div id="buh-harajat-panel-content" style="margin-bottom:20px;"></div>
+            <div class="hr-card" style="background:rgba(255,255,255,0.015); padding:18px;">
             <h4 style="color:var(--adm-text); margin-bottom:12px;">➕ Yangi Harajat Kiritish</h4>
             <form onsubmit="window.addBuhUmumiyExpense(event)">
-                <div class="buh-form-group" style="margin-bottom:14px;">
+                <div class="buh-form-row">
+                <div class="buh-form-group" style="position:relative;">
                     <label>Kategoriya</label>
-                    <div class="buh-cat-chip-row" id="buhUmExpCategoryChips">
-                        ${_BUH_EXPENSE_CATEGORIES.map((c, i) => `<div class="buh-cat-chip ${i === 0 ? 'active' : ''}" data-cat="${c.replace(/"/g, '&quot;')}" onclick="window._buhSelectExpenseCategory('${c.replace(/'/g, "\\'")}')">
-                            <span class="chip-ico">${_buhExpenseCatIcon(c)}</span><span class="chip-label">${c}</span>
+                    <button type="button" class="buh-cat-dropdown-btn" id="buhUmExpCategoryBtn" onclick="window._buhToggleExpenseCategoryMenu(event)">
+                        <span id="buhUmExpCategoryBtnLabel">${_buhExpenseCatIcon(_BUH_EXPENSE_CATEGORIES[0])} ${_BUH_EXPENSE_CATEGORIES[0]}</span>
+                        <span class="dd-arrow">▾</span>
+                    </button>
+                    <div class="buh-cat-dropdown-menu" id="buhUmExpCategoryMenu" style="display:none;">
+                        ${_BUH_EXPENSE_CATEGORIES.map((c, i) => `<div class="buh-cat-dropdown-item ${i === 0 ? 'active' : ''}" data-cat="${c.replace(/"/g, '&quot;')}" onclick="window._buhSelectExpenseCategory('${c.replace(/'/g, "\\'")}')">
+                            <span class="ico">${_buhExpenseCatIcon(c)}</span><span>${c}</span>
                         </div>`).join('')}
                     </div>
                     <input type="hidden" id="buhUmExpCategory" value="${_BUH_EXPENSE_CATEGORIES[0]}">
                 </div>
-                <div class="buh-form-row">
                 <div class="buh-form-group"><label>Sana</label><input type="date" id="buhUmExpDate" class="buh-input" value="${_buhToday()}" required></div>
                 <div class="buh-form-group" id="buhUmExpAmountGroup"><label>Summa (UZS)</label><input type="number" id="buhUmExpAmount" class="buh-input" min="0" required></div>
                 <div class="buh-form-group" id="buhUmExpAsosiyGroup" style="display:none;"><label>Asosiy Hisob (jami, UZS)</label><input type="number" id="buhUmExpAsosiy" class="buh-input" min="0" oninput="window._buhUpdateSvetPreview()"></div>
@@ -2915,7 +2947,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <button type="submit" class="buh-save-btn">💾 Saqlash</button>
                 </div>
             </form>
-            <p style="font-size:0.68rem; color:var(--adm-text-sec); margin-top:8px;">💡 "Kommunal - Svet" tanlansa: asosiy litsevoy hisobning jami summasini va AvtoClapak sarflagan qismini kiriting — Romix ulushi (asosiy − avtoclapak) avtomatik hisoblanadi.</p>`;
+            <p style="font-size:0.68rem; color:var(--adm-text-sec); margin-top:8px;">💡 "Kommunal - Svet" tanlansa: asosiy litsevoy hisobning jami summasini va AvtoClapak sarflagan qismini kiriting — Romix ulushi (asosiy − avtoclapak) avtomatik hisoblanadi.</p>
+            </div>`;
 
         const creditorEntries = Object.entries(d.paymentsByCreditor).sort((a, b) => b[1].total - a[1].total);
         const paymentsRows = creditorEntries.length ? creditorEntries.map(([creditor, info]) => {
