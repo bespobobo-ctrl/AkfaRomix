@@ -1495,6 +1495,29 @@
                             .buh-brand-chip .chip-name { font-size:0.8rem; font-weight:700; color:var(--adm-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px; }
                             .buh-brand-chip .chip-meta { font-size:0.68rem; font-weight:600; color:var(--adm-text-sec); }
                             .buh-brand-chip.active .chip-meta { color:#00d2ff; }
+
+                            .buh-income-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:14px; }
+                            .buh-income-card {
+                                background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:16px;
+                                padding:16px; display:flex; flex-direction:column; gap:12px; transition:all 0.2s ease;
+                            }
+                            .buh-income-card:hover { border-color:rgba(0,255,136,0.25); transform:translateY(-1px); }
+                            .buh-income-top { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+                            .buh-income-cust .name { font-weight:700; color:var(--adm-text); font-size:0.9rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:170px; }
+                            .buh-income-cust .meta { font-size:0.7rem; color:var(--adm-text-sec); margin-top:2px; }
+                            .buh-income-badge { font-size:0.62rem; font-weight:700; padding:3px 9px; border-radius:12px; white-space:nowrap; }
+                            .buh-income-badge.paid { background:rgba(0,255,136,0.12); color:#00ff88; }
+                            .buh-income-badge.partial { background:rgba(255,170,0,0.12); color:#ffaa00; }
+                            .buh-income-badge.unpaid { background:rgba(255,77,79,0.12); color:#ff4d4f; }
+                            .buh-income-money-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; background:rgba(255,255,255,0.02); border-radius:12px; padding:10px 4px; }
+                            .buh-income-money-grid .m-item { display:flex; flex-direction:column; gap:3px; text-align:center; padding:0 4px; }
+                            .buh-income-money-grid .m-item:not(:last-child) { border-right:1px dashed rgba(255,255,255,0.07); }
+                            .buh-income-money-grid .m-label { font-size:0.58rem; font-weight:700; color:var(--adm-text-sec); text-transform:uppercase; letter-spacing:0.3px; }
+                            .buh-income-money-grid .m-value { font-size:0.8rem; font-weight:800; font-family:monospace; }
+                            .buh-income-money-grid .m-value small { font-weight:600; opacity:0.75; }
+                            .buh-income-pay-bar { height:5px; border-radius:4px; background:rgba(255,255,255,0.06); overflow:hidden; }
+                            .buh-income-pay-bar .fill { height:100%; border-radius:4px; transition:width 0.3s ease; }
+                            .buh-income-pay-row { display:flex; justify-content:space-between; font-size:0.72rem; color:var(--adm-text-sec); }
                         </style>
                         <div class="buh-mini-row" id="buh-umumiy-cards"></div>
                         <div id="buh-umumiy-drill-panel" class="buh-drill-panel"></div>

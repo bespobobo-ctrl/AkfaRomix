@@ -2689,18 +2689,41 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div id="buh-oynak-add-form"></div>
             <div id="buh-ombor-filter-table"></div>`;
 
-        const incomeRows = d.monthOrders.length
+        const incomeCards = d.monthOrders.length
             ? d.monthOrders.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).map(o => {
                 const pay = _buhOrderPaymentInfo(o);
-                return `<tr><td>${o.created_at ? new Date(o.created_at).toLocaleDateString('uz-UZ') : '-'}</td><td>${o.customer_name || "Noma'lum"}</td><td>${o.prod_type || ''}</td>
-                    <td style="text-align:right;">${_buhFmt(pay.total)}</td>
-                    <td style="text-align:right; color:#00ff88;">${_buhFmt(pay.paidAmount)}</td>
-                    <td style="text-align:right; color:${pay.remaining > 0 ? '#ff4d4f' : 'rgba(255,255,255,0.3)'};">${_buhFmt(pay.remaining)}</td></tr>`;
+                const cost = (Number(o.production_cost) || 0) + (Number(o.installation_cost) || 0);
+                const profit = pay.total - cost;
+                const margin = pay.total > 0 ? (profit / pay.total) * 100 : 0;
+                const profitColor = profit >= 0 ? '#00ff88' : '#ff4d4f';
+                const payBadge = pay.fullyPaid
+                    ? `<span class="buh-income-badge paid">✓ To'liq to'langan</span>`
+                    : (pay.paidAmount > 0 ? `<span class="buh-income-badge partial">◐ Qisman to'langan</span>` : `<span class="buh-income-badge unpaid">✕ To'lanmagan</span>`);
+                const dateStr = o.created_at ? new Date(o.created_at).toLocaleDateString('uz-UZ') : '-';
+                const paidPct = pay.total > 0 ? Math.min(100, (pay.paidAmount / pay.total) * 100) : 0;
+                return `<div class="buh-income-card">
+                    <div class="buh-income-top">
+                        <div class="buh-income-cust">
+                            <div class="name">${o.customer_name || "Noma'lum"}</div>
+                            <div class="meta">${o.prod_type || 'Mahsulot'} • ${dateStr}</div>
+                        </div>
+                        ${payBadge}
+                    </div>
+                    <div class="buh-income-money-grid">
+                        <div class="m-item"><span class="m-label">Buyurtma Qiymati</span><span class="m-value" style="color:var(--adm-text);">${_buhFmt(pay.total)}</span></div>
+                        <div class="m-item"><span class="m-label">Tan Narx (Ombordan)</span><span class="m-value" style="color:#ffaa00;">${_buhFmt(cost)}</span></div>
+                        <div class="m-item"><span class="m-label">Foyda</span><span class="m-value" style="color:${profitColor};">${_buhFmt(profit)} <small>(${margin.toFixed(0)}%)</small></span></div>
+                    </div>
+                    <div class="buh-income-pay-bar"><div class="fill" style="width:${paidPct}%; background:${pay.fullyPaid ? '#00ff88' : '#ffaa00'};"></div></div>
+                    <div class="buh-income-pay-row">
+                        <span>Olingan: <b style="color:#00ff88;">${_buhFmt(pay.paidAmount)}</b></span>
+                        <span>Qolgan: <b style="color:${pay.remaining > 0 ? '#ff4d4f' : 'var(--adm-text-sec)'};">${_buhFmt(pay.remaining)}</b></span>
+                    </div>
+                </div>`;
             }).join('')
-            : `<tr><td colspan="6" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Shu oy buyurtma yo'q</td></tr>`;
-        window._buhUmumiyDrills['kirim'] = `<h4 style="color:var(--adm-text); margin-bottom:10px;">📈 Shu Oy Buyurtmalardan Tushgan To'lovlar (${d.monthOrders.length} buyurtma)</h4>
-            <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Sana</th><th>Mijoz</th><th>Mahsulot</th><th style="text-align:right;">Buyurtma Qiymati</th><th style="text-align:right;">Olingan To'lov</th><th style="text-align:right;">Qolgan Qarz</th></tr></thead>
-            <tbody>${incomeRows}</tbody></table></div>`;
+            : `<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Shu oy buyurtma yo'q</div>`;
+        window._buhUmumiyDrills['kirim'] = `<h4 style="color:var(--adm-text); margin-bottom:14px;">📈 Shu Oy Buyurtmalardan Tushgan To'lovlar (${d.monthOrders.length} buyurtma)</h4>
+            <div class="buh-income-grid">${incomeCards}</div>`;
 
         const expCats = Object.entries(d.expenseByCategory).sort((a, b) => b[1] - a[1]);
         const expRows = expCats.length
