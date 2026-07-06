@@ -1837,63 +1837,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await updateBuhHeroKPIs();
     };
 
-    let _buhOverviewChart = null;
     async function renderBuhOverview() {
-        const chartCanvas = document.getElementById('buh-overview-chart');
-        const statsEl = document.getElementById('buh-umumiy-stats');
-        if (!chartCanvas && !statsEl) return;
-
-        let orders = [];
-        try {
-            const { data } = await supabase.from('sales_orders').select('total_price, created_at');
-            orders = data || [];
-        } catch (e) { /* offline */ }
-        const logs = await romixBuhSelect('romix_production_log', ROMIX_BUH_KEYS.production);
-
-        const salesByDate = {};
-        orders.forEach(o => { if (o.created_at) { const d = o.created_at.slice(0, 10); salesByDate[d] = (salesByDate[d] || 0) + (Number(o.total_price) || 0); } });
-        const prodByDate = {};
-        logs.forEach(l => { prodByDate[l.date] = (prodByDate[l.date] || 0) + (Number(l.quantity) || 0); });
-
-        const last7 = [];
-        const now = new Date();
-        for (let i = 6; i >= 0; i--) {
-            const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
-            const key = d.toISOString().slice(0, 10);
-            last7.push({ label: key.slice(5), sales: salesByDate[key] || 0, prod: prodByDate[key] || 0 });
-        }
-
-        if (chartCanvas && typeof Chart !== 'undefined') {
-            if (_buhOverviewChart) _buhOverviewChart.destroy();
-            _buhOverviewChart = new Chart(chartCanvas, {
-                data: {
-                    labels: last7.map(d => d.label),
-                    datasets: [
-                        { type: 'bar', label: 'Savdo (UZS)', data: last7.map(d => d.sales), backgroundColor: 'rgba(0,255,136,0.5)', yAxisID: 'y', borderRadius: 6 },
-                        { type: 'line', label: 'Ishlab chiqarilgan (dona)', data: last7.map(d => d.prod), borderColor: '#ffaa00', backgroundColor: 'rgba(255,170,0,0.15)', yAxisID: 'y1', tension: 0.35, pointRadius: 3 }
-                    ]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { labels: { color: 'rgba(255,255,255,0.6)' } } },
-                    scales: {
-                        x: { ticks: { color: 'rgba(255,255,255,0.5)' }, grid: { display: false } },
-                        y: { position: 'left', ticks: { color: 'rgba(255,255,255,0.5)' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                        y1: { position: 'right', ticks: { color: 'rgba(255,255,255,0.5)' }, grid: { display: false } }
-                    }
-                }
-            });
-        }
-
-        if (statsEl) {
-            const totalSales7 = last7.reduce((s, d) => s + d.sales, 0);
-            const totalProd7 = last7.reduce((s, d) => s + d.prod, 0);
-            statsEl.innerHTML = `
-                <div class="buh-mini-stat"><span class="buh-mini-label">7 Kunlik Savdo</span><span class="buh-mini-value" style="color:#00ff88;">${_buhFmt(totalSales7)}</span></div>
-                <div class="buh-mini-stat"><span class="buh-mini-label">7 Kunlik Ishlab Chiqarish</span><span class="buh-mini-value" style="color:#ffaa00;">${totalProd7} dona</span></div>
-            `;
-        }
-
         await renderBuhUmumiyCards();
     }
 
@@ -2577,35 +2521,45 @@ document.addEventListener('DOMContentLoaded', async () => {
         const cardsHtml = _BUH_UTILITY_TYPES.map(u => {
             const r = readings.find(x => x.category === u.cat && x.month_key === monthKey);
             const safeKey = _buhUtilSafeKey(u.cat);
-            let bodyHtml;
+            let status, badgeText, bodyHtml;
             if (!r || r.meter_start === null || r.meter_start === undefined) {
-                bodyHtml = `<p style="font-size:0.7rem; color:var(--adm-text-sec); margin:8px 0;">Bu oy uchun hali "oy boshi" ko'rsatkichi kiritilmagan.</p>
-                    <div style="display:flex; gap:8px; align-items:flex-end;">
-                        <div style="flex:1;"><label style="font-size:0.68rem; color:var(--adm-text-sec);">Oy Boshi Ko'rsatkichi (so'm)</label><input type="number" id="buhUtilStart_${safeKey}" class="buh-input" min="0" step="0.01"></div>
-                        <button class="buh-save-btn" style="padding:9px 14px;" onclick="window._buhSaveUtilStart('${u.cat}')">💾 Saqlash</button>
+                status = 'pending'; badgeText = 'Kutilmoqda';
+                bodyHtml = `<p class="buh-util-hint">Bu oy uchun hali "oy boshi" ko'rsatkichi kiritilmagan.</p>
+                    <div class="buh-util-input-row">
+                        <div class="buh-form-group" style="flex:1; margin:0;"><label>Oy Boshi Ko'rsatkichi (so'm)</label><input type="number" id="buhUtilStart_${safeKey}" class="buh-input" min="0" step="0.01"></div>
+                        <button class="buh-save-btn" onclick="window._buhSaveUtilStart('${u.cat}')">💾 Saqlash</button>
                     </div>
-                    <p style="font-size:0.65rem; color:var(--adm-text-sec); margin:6px 0 0;">💡 Hisobingizda (litsevoy/schyot) ko'rsatilgan joriy summani (so'm) kiriting — kelgusi oyning boshi shu bilan solishtiriladi.</p>`;
+                    <p class="buh-util-hint" style="margin-top:8px;">💡 Hisobingizda (litsevoy/schyot) ko'rsatilgan joriy summani (so'm) kiriting — kelgusi oyning boshi shu bilan solishtiriladi.</p>`;
             } else if (r.meter_end === null || r.meter_end === undefined) {
-                bodyHtml = `<p style="font-size:0.7rem; color:var(--adm-text-sec); margin:8px 0;">Oy boshi ko'rsatkichi: <b style="color:var(--adm-text);">${_buhFmt(r.meter_start)}</b> (saqlangan). Oy oxirida ko'rsatkichni kiriting.</p>
-                    <div style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
-                        <div style="flex:1; min-width:130px;"><label style="font-size:0.68rem; color:var(--adm-text-sec);">Oy Oxiri Ko'rsatkichi (so'm)</label><input type="number" id="buhUtilEnd_${safeKey}" class="buh-input" min="0" step="0.01"></div>
-                        ${u.needsAvto ? `<div style="flex:1; min-width:130px;"><label style="font-size:0.68rem; color:var(--adm-text-sec);">AvtoClapak Sarfi (so'm)</label><input type="number" id="buhUtilAvto_${safeKey}" class="buh-input" min="0" step="0.01"></div>` : ''}
-                        <button class="buh-save-btn" style="padding:9px 14px;" onclick="window._buhFinalizeUtilEnd('${u.cat}')">✅ Yakunlash</button>
+                status = 'progress'; badgeText = 'Jarayonda';
+                bodyHtml = `<p class="buh-util-hint">Oy boshi ko'rsatkichi: <b style="color:var(--adm-text);">${_buhFmt(r.meter_start)}</b> (saqlangan). Oy oxirida ko'rsatkichni kiriting.</p>
+                    <div class="buh-util-input-row">
+                        <div class="buh-form-group" style="flex:1; min-width:130px; margin:0;"><label>Oy Oxiri Ko'rsatkichi (so'm)</label><input type="number" id="buhUtilEnd_${safeKey}" class="buh-input" min="0" step="0.01"></div>
+                        ${u.needsAvto ? `<div class="buh-form-group" style="flex:1; min-width:130px; margin:0;"><label>AvtoClapak Sarfi (so'm)</label><input type="number" id="buhUtilAvto_${safeKey}" class="buh-input" min="0" step="0.01"></div>` : ''}
+                        <button class="buh-save-btn" onclick="window._buhFinalizeUtilEnd('${u.cat}')">✅ Yakunlash</button>
                     </div>
-                    ${u.needsAvto ? `<p style="font-size:0.65rem; color:var(--adm-text-sec); margin:6px 0 0;">💡 Oy oxirida hisobda ko'rsatilgan yangi summani va AvtoClapak shu oy sarflagan summani (so'm) kiriting — Romix ulushi (oxiri − boshi − AvtoClapak) avtomatik hisoblanadi.</p>` : ''}`;
+                    ${u.needsAvto ? `<p class="buh-util-hint" style="margin-top:8px;">💡 Oy oxirida hisobda ko'rsatilgan yangi summani va AvtoClapak shu oy sarflagan summani (so'm) kiriting — Romix ulushi (oxiri − boshi − AvtoClapak) avtomatik hisoblanadi.</p>` : ''}`;
             } else {
+                status = 'done'; badgeText = 'Yakunlandi';
                 const usage = Math.max(0, (Number(r.meter_end) || 0) - (Number(r.meter_start) || 0));
                 const finalAmount = u.needsAvto ? Math.max(0, usage - (Number(r.avto_sarfi) || 0)) : usage;
-                bodyHtml = `<div class="buh-mini-row" style="margin-top:8px;">
+                bodyHtml = `<div class="buh-mini-row" style="margin:2px 0 12px;">
                         <div class="buh-mini-stat"><span class="buh-mini-label">Oy Boshi</span><span class="buh-mini-value">${_buhFmt(r.meter_start)}</span></div>
                         <div class="buh-mini-stat"><span class="buh-mini-label">Oy Oxiri</span><span class="buh-mini-value">${_buhFmt(r.meter_end)}</span></div>
                         ${u.needsAvto ? `<div class="buh-mini-stat"><span class="buh-mini-label">AvtoClapak</span><span class="buh-mini-value">${_buhFmt(r.avto_sarfi || 0)}</span></div>` : ''}
                     </div>
-                    <p style="margin:10px 0 6px; font-size:0.85rem; color:#00ff88;">✅ Bu oy yakunlandi — Xarajat: <b>${_buhFmt(finalAmount)}</b></p>
-                    <button class="buh-row-action-btn" style="background:rgba(255,170,0,0.12); color:#ffaa00;" onclick="window._buhResetUtilReading('${u.cat}')">↺ Qayta kiritish</button>`;
+                    <div class="buh-util-final">
+                        <span>Bu oy uchun xarajat</span>
+                        <b>${_buhFmt(finalAmount)}</b>
+                    </div>
+                    <button class="buh-row-action-btn buh-util-reset-btn" onclick="window._buhResetUtilReading('${u.cat}')">↺ Qayta kiritish</button>`;
             }
-            return `<div class="hr-card" style="background:rgba(255,255,255,0.02); padding:14px;">
-                <h5 style="margin:0 0 4px; color:var(--adm-text);">${u.icon} ${u.label}</h5>
+            return `<div class="buh-util-card status-${status}">
+                <div class="buh-util-head">
+                    <span class="buh-util-icon">${u.icon}</span>
+                    <span class="buh-util-title">${u.label}</span>
+                    <span class="buh-util-badge ${status}">${badgeText}</span>
+                </div>
                 ${bodyHtml}
             </div>`;
         }).join('');
@@ -2619,8 +2573,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <td><button class="buh-row-action-btn" style="background:rgba(255,77,79,0.15); color:#ff4d4f;" onclick="window.deleteRomixExpense('${e.id}')">O'chirish</button></td>
             </tr>`).join('') : `<tr><td colspan="5" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Shu oy Kommunal harajat yo'q</td></tr>`;
 
-        contentEl.innerHTML = `<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:14px; margin-bottom:20px;">${cardsHtml}</div>
-            <h5 style="color:var(--adm-text); margin-bottom:10px;">📜 Tarix</h5>
+        contentEl.innerHTML = `<div class="buh-util-grid">${cardsHtml}</div>
+            <h5 class="buh-section-subtitle">📜 Tarix</h5>
             <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Sana</th><th>Turi</th><th style="text-align:right;">Summa</th><th>Izoh</th><th></th></tr></thead>
             <tbody>${rowsHtml}</tbody></table></div>`;
     };
