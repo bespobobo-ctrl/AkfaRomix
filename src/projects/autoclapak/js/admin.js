@@ -1980,11 +1980,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         return (str || '').replace(/[^a-zA-Z0-9]/g, '_');
     }
 
-    const _BUH_EXPENSE_CATEGORIES = ["Xo'jalik Harajat", 'Kommunal', 'Avto Harajat', 'Ofis Harajat', 'Ijara', 'Transport', 'Maosh', 'Boshqa'];
+    const _BUH_EXPENSE_CATEGORIES = ["Xo'jalik Harajat", 'Kommunal - Svet', 'Kommunal - Suv', 'Kommunal - Gaz', 'Avto Harajat', 'Ofis Harajat', 'Ijara', 'Transport', 'Maosh', 'Boshqa'];
     function _buhExpenseCatIcon(cat) {
         const map = {
-            "Xo'jalik Harajat": '🧹', 'Kommunal': '💡', 'Avto Harajat': '🚗', 'Ofis Harajat': '🖥️',
-            'Ijara': '🏠', 'Transport': '🚚', 'Maosh': '👥', 'Boshqa': '📦'
+            "Xo'jalik Harajat": '🧹', 'Kommunal - Svet': '💡', 'Kommunal - Suv': '🚰', 'Kommunal - Gaz': '🔥',
+            'Avto Harajat': '🚗', 'Ofis Harajat': '🖥️', 'Ijara': '🏠', 'Transport': '🚚', 'Maosh': '👥', 'Boshqa': '📦'
         };
         return map[cat] || '📦';
     }
@@ -2419,6 +2419,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         window._buhRenderOmborFilterView('oynak');
     };
 
+    window._buhToggleSvetFields = (cat) => {
+        const isSvet = cat === 'Kommunal - Svet';
+        const amountGroup = document.getElementById('buhUmExpAmountGroup');
+        const asosiyGroup = document.getElementById('buhUmExpAsosiyGroup');
+        const avtoGroup = document.getElementById('buhUmExpAvtoGroup');
+        const shareGroup = document.getElementById('buhUmExpRomixShareGroup');
+        const amountInput = document.getElementById('buhUmExpAmount');
+        const asosiyInput = document.getElementById('buhUmExpAsosiy');
+        const avtoInput = document.getElementById('buhUmExpAvto');
+        if (amountGroup) amountGroup.style.display = isSvet ? 'none' : '';
+        if (asosiyGroup) asosiyGroup.style.display = isSvet ? '' : 'none';
+        if (avtoGroup) avtoGroup.style.display = isSvet ? '' : 'none';
+        if (shareGroup) shareGroup.style.display = isSvet ? '' : 'none';
+        if (amountInput) amountInput.required = !isSvet;
+        if (asosiyInput) asosiyInput.required = isSvet;
+        if (avtoInput) avtoInput.required = isSvet;
+        if (isSvet) window._buhUpdateSvetPreview();
+    };
+
+    window._buhUpdateSvetPreview = () => {
+        const asosiy = parseFloat(document.getElementById('buhUmExpAsosiy').value) || 0;
+        const avto = parseFloat(document.getElementById('buhUmExpAvto').value) || 0;
+        const share = Math.max(0, asosiy - avto);
+        const el = document.getElementById('buhUmExpRomixShare');
+        if (el) el.value = share.toLocaleString('uz-UZ') + " so'm";
+    };
+
     window.addBuhUmumiyExpense = async (e) => {
         e.preventDefault();
         const form = e.target;
@@ -2426,9 +2453,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (submitBtn && submitBtn.disabled) return;
         const date = document.getElementById('buhUmExpDate').value || _buhToday();
         const category = document.getElementById('buhUmExpCategory').value;
-        const amount = parseFloat(document.getElementById('buhUmExpAmount').value) || 0;
-        const note = document.getElementById('buhUmExpNote').value.trim();
-        if (amount <= 0) return;
+        const userNote = document.getElementById('buhUmExpNote').value.trim();
+
+        let amount, note;
+        if (category === 'Kommunal - Svet') {
+            const asosiy = parseFloat(document.getElementById('buhUmExpAsosiy').value) || 0;
+            const avto = parseFloat(document.getElementById('buhUmExpAvto').value) || 0;
+            if (asosiy <= 0) return;
+            amount = Math.max(0, asosiy - avto);
+            note = `Asosiy hisob: ${_buhFmt(asosiy)} | AvtoClapak sarfi: ${_buhFmt(avto)} | Romix ulushi: ${_buhFmt(amount)}${userNote ? ' | ' + userNote : ''}`;
+        } else {
+            amount = parseFloat(document.getElementById('buhUmExpAmount').value) || 0;
+            if (amount <= 0) return;
+            note = userNote;
+        }
+
         if (submitBtn) submitBtn.disabled = true;
         const record = { id: 'EXP-' + Date.now(), date, category, amount, note, created_at: new Date().toISOString() };
         await romixBuhInsert('romix_expenses', ROMIX_BUH_KEYS.expenses, record);
@@ -2436,7 +2475,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await updateBuhHeroKPIs();
         await renderBuhOverview();
         if (submitBtn) submitBtn.disabled = false;
-        window.showPremiumToast && window.showPremiumToast('Saqlandi', `${category} — ${amount.toLocaleString('uz-UZ')} UZS xarajat qo'shildi.`, true);
+        window.showPremiumToast && window.showPremiumToast('Saqlandi', `${category} — ${_buhFmt(amount)} xarajat qo'shildi.`, true);
     };
 
     window._buhSelectProfilBrand = (brandKey) => {
@@ -2774,14 +2813,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             <form onsubmit="window.addBuhUmumiyExpense(event)" class="buh-form-row">
                 <div class="buh-form-group"><label>Sana</label><input type="date" id="buhUmExpDate" class="buh-input" value="${_buhToday()}" required></div>
                 <div class="buh-form-group"><label>Kategoriya</label>
-                    <select id="buhUmExpCategory" class="buh-input">
+                    <select id="buhUmExpCategory" class="buh-input" onchange="window._buhToggleSvetFields(this.value)">
                         ${_BUH_EXPENSE_CATEGORIES.map(c => `<option value="${c}">${_buhExpenseCatIcon(c)} ${c}</option>`).join('')}
                     </select>
                 </div>
-                <div class="buh-form-group"><label>Summa (UZS)</label><input type="number" id="buhUmExpAmount" class="buh-input" min="0" required></div>
+                <div class="buh-form-group" id="buhUmExpAmountGroup"><label>Summa (UZS)</label><input type="number" id="buhUmExpAmount" class="buh-input" min="0" required></div>
+                <div class="buh-form-group" id="buhUmExpAsosiyGroup" style="display:none;"><label>Asosiy Hisob (jami, UZS)</label><input type="number" id="buhUmExpAsosiy" class="buh-input" min="0" oninput="window._buhUpdateSvetPreview()"></div>
+                <div class="buh-form-group" id="buhUmExpAvtoGroup" style="display:none;"><label>AvtoClapak Sarfi (UZS)</label><input type="number" id="buhUmExpAvto" class="buh-input" min="0" oninput="window._buhUpdateSvetPreview()"></div>
+                <div class="buh-form-group" id="buhUmExpRomixShareGroup" style="display:none;"><label>Romix Ulushi</label><input type="text" id="buhUmExpRomixShare" class="buh-input" readonly style="font-weight:800; color:#00d2ff;"></div>
                 <div class="buh-form-group"><label>Izoh</label><input type="text" id="buhUmExpNote" class="buh-input" placeholder="Nimaga ketgani (ixtiyoriy)"></div>
                 <button type="submit" class="buh-save-btn">💾 Saqlash</button>
-            </form>`;
+            </form>
+            <p style="font-size:0.68rem; color:var(--adm-text-sec); margin-top:8px;">💡 "Kommunal - Svet" tanlansa: asosiy litsevoy hisobning jami summasini va AvtoClapak sarflagan qismini kiriting — Romix ulushi (asosiy − avtoclapak) avtomatik hisoblanadi.</p>`;
 
         const creditorEntries = Object.entries(d.paymentsByCreditor).sort((a, b) => b[1].total - a[1].total);
         const paymentsRows = creditorEntries.length ? creditorEntries.map(([creditor, info]) => {
