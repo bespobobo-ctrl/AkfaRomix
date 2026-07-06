@@ -2690,11 +2690,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div id="buh-ombor-filter-table"></div>`;
 
         const incomeRows = d.monthOrders.length
-            ? d.monthOrders.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).map(o =>
-                `<tr><td>${o.created_at ? new Date(o.created_at).toLocaleDateString('uz-UZ') : '-'}</td><td>${o.customer_name || "Noma'lum"}</td><td>${o.prod_type || ''}</td><td style="text-align:right; color:#00ff88;">${_buhFmt(o.total_price)}</td></tr>`).join('')
-            : `<tr><td colspan="4" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Shu oy buyurtma yo'q</td></tr>`;
-        window._buhUmumiyDrills['kirim'] = `<h4 style="color:var(--adm-text); margin-bottom:10px;">📈 Shu Oy Kirim Manbalari (${d.monthOrders.length} buyurtma)</h4>
-            <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Sana</th><th>Mijoz</th><th>Mahsulot</th><th style="text-align:right;">Summa</th></tr></thead>
+            ? d.monthOrders.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).map(o => {
+                const pay = _buhOrderPaymentInfo(o);
+                return `<tr><td>${o.created_at ? new Date(o.created_at).toLocaleDateString('uz-UZ') : '-'}</td><td>${o.customer_name || "Noma'lum"}</td><td>${o.prod_type || ''}</td>
+                    <td style="text-align:right;">${_buhFmt(pay.total)}</td>
+                    <td style="text-align:right; color:#00ff88;">${_buhFmt(pay.paidAmount)}</td>
+                    <td style="text-align:right; color:${pay.remaining > 0 ? '#ff4d4f' : 'rgba(255,255,255,0.3)'};">${_buhFmt(pay.remaining)}</td></tr>`;
+            }).join('')
+            : `<tr><td colspan="6" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Shu oy buyurtma yo'q</td></tr>`;
+        window._buhUmumiyDrills['kirim'] = `<h4 style="color:var(--adm-text); margin-bottom:10px;">📈 Shu Oy Buyurtmalardan Tushgan To'lovlar (${d.monthOrders.length} buyurtma)</h4>
+            <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Sana</th><th>Mijoz</th><th>Mahsulot</th><th style="text-align:right;">Buyurtma Qiymati</th><th style="text-align:right;">Olingan To'lov</th><th style="text-align:right;">Qolgan Qarz</th></tr></thead>
             <tbody>${incomeRows}</tbody></table></div>`;
 
         const expCats = Object.entries(d.expenseByCategory).sort((a, b) => b[1] - a[1]);
@@ -2741,7 +2746,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         cardsEl.innerHTML = [
             _buhUmumiyCard('ombor', '🏬', 'Ombor Qiymati', _buhFmt(d.omborTotal), '#00baff'),
-            _buhUmumiyCard('kirim', '📈', 'Oylik Kirim', _buhFmt(d.monthlyIncome), '#00ff88'),
+            _buhUmumiyCard('kirim', '📈', 'Oylik Kirim (Olingan To\'lov)', _buhFmt(d.monthlyCollected), '#00ff88'),
             _buhUmumiyCard('harajat', '📉', 'Oylik Harajat', _buhFmt(d.monthlyExpenseTotal), '#ff4d4f'),
             _buhUmumiyCard('tolovlar', '🧾', "To'lovlar (shu oy)", _buhFmt(d.monthlyPaymentsTotal), '#fabb18'),
             _buhUmumiyCard('xodimlar', '👥', 'Xodimlar Oyligi', _buhFmt(d.monthlyPayrollFund), '#ba00ff'),
