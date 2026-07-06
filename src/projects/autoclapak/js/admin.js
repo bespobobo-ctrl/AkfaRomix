@@ -450,7 +450,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         production: 'romix_production_log_v1',
         expenses: 'romix_expenses_v1',
         debts: 'romix_debts_v1',
-        payments: 'romix_payment_log_v1'
+        payments: 'romix_payment_log_v1',
+        utilityReadings: 'romix_utility_readings_v1'
     };
 
     function _buhToday() { return new Date().toISOString().slice(0, 10); }
@@ -1982,6 +1983,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const _BUH_EXPENSE_CATEGORIES = ["Xo'jalik Harajat", 'Oziq-ovqat Harajat', 'Kommunal - Svet', 'Kommunal - Suv', 'Kommunal - Gaz', 'Avto Harajat', 'Ofis Harajat', 'Ijara', 'Transport', 'Maosh', 'Boshqa'];
+    // Kommunal - Svet/Suv/Gaz alohida "ko'rsatkich" mexanizmi orqali kiritiladi (Kommunal panelida), shuning uchun umumiy formada ko'rinmaydi
+    const _BUH_GENERIC_FORM_CATEGORIES = _BUH_EXPENSE_CATEGORIES.filter(c => !c.startsWith('Kommunal - '));
     function _buhExpenseCatIcon(cat) {
         const map = {
             "Xo'jalik Harajat": '🧹', 'Oziq-ovqat Harajat': '🍽️', 'Kommunal - Svet': '💡', 'Kommunal - Suv': '🚰', 'Kommunal - Gaz': '🔥',
@@ -2433,45 +2436,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         window._buhRenderOmborFilterView('oynak');
     };
 
-    window._buhToggleSvetFields = (cat) => {
-        const isSvet = cat === 'Kommunal - Svet';
-        const isMeterUtil = cat === 'Kommunal - Suv' || cat === 'Kommunal - Gaz';
-        const amountGroup = document.getElementById('buhUmExpAmountGroup');
-        const asosiyGroup = document.getElementById('buhUmExpAsosiyGroup');
-        const avtoGroup = document.getElementById('buhUmExpAvtoGroup');
-        const shareGroup = document.getElementById('buhUmExpRomixShareGroup');
-        const meterStartGroup = document.getElementById('buhUmExpMeterStartGroup');
-        const meterEndGroup = document.getElementById('buhUmExpMeterEndGroup');
-        const meterUsageGroup = document.getElementById('buhUmExpMeterUsageGroup');
-        const amountInput = document.getElementById('buhUmExpAmount');
-        const asosiyInput = document.getElementById('buhUmExpAsosiy');
-        const avtoInput = document.getElementById('buhUmExpAvto');
-        const meterStartInput = document.getElementById('buhUmExpMeterStart');
-        const meterEndInput = document.getElementById('buhUmExpMeterEnd');
-        if (amountGroup) amountGroup.style.display = isSvet ? 'none' : '';
-        if (asosiyGroup) asosiyGroup.style.display = isSvet ? '' : 'none';
-        if (avtoGroup) avtoGroup.style.display = isSvet ? '' : 'none';
-        if (shareGroup) shareGroup.style.display = isSvet ? '' : 'none';
-        if (meterStartGroup) meterStartGroup.style.display = isMeterUtil ? '' : 'none';
-        if (meterEndGroup) meterEndGroup.style.display = isMeterUtil ? '' : 'none';
-        if (meterUsageGroup) meterUsageGroup.style.display = isMeterUtil ? '' : 'none';
-        if (amountInput) amountInput.required = !isSvet;
-        if (asosiyInput) asosiyInput.required = isSvet;
-        if (avtoInput) avtoInput.required = isSvet;
-        if (meterStartInput) meterStartInput.required = isMeterUtil;
-        if (meterEndInput) meterEndInput.required = isMeterUtil;
-        if (isSvet) window._buhUpdateSvetPreview();
-        if (isMeterUtil) window._buhUpdateMeterPreview();
-    };
-
-    window._buhUpdateMeterPreview = () => {
-        const start = parseFloat(document.getElementById('buhUmExpMeterStart').value) || 0;
-        const end = parseFloat(document.getElementById('buhUmExpMeterEnd').value) || 0;
-        const usage = Math.max(0, end - start);
-        const el = document.getElementById('buhUmExpMeterUsage');
-        if (el) el.value = usage.toLocaleString('uz-UZ');
-    };
-
     window._buhToggleExpenseCategoryMenu = (e) => {
         if (e) e.stopPropagation();
         const menu = document.getElementById('buhUmExpCategoryMenu');
@@ -2505,15 +2469,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const btn = document.getElementById('buhUmExpCategoryBtn');
         if (menu) menu.style.display = 'none';
         if (btn) btn.classList.remove('open');
-        window._buhToggleSvetFields(cat);
-    };
-
-    window._buhUpdateSvetPreview = () => {
-        const asosiy = parseFloat(document.getElementById('buhUmExpAsosiy').value) || 0;
-        const avto = parseFloat(document.getElementById('buhUmExpAvto').value) || 0;
-        const share = Math.max(0, asosiy - avto);
-        const el = document.getElementById('buhUmExpRomixShare');
-        if (el) el.value = share.toLocaleString('uz-UZ') + " so'm";
     };
 
     window.addBuhUmumiyExpense = async (e) => {
@@ -2523,28 +2478,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (submitBtn && submitBtn.disabled) return;
         const date = document.getElementById('buhUmExpDate').value || _buhToday();
         const category = document.getElementById('buhUmExpCategory').value;
-        const userNote = document.getElementById('buhUmExpNote').value.trim();
-
-        let amount, note;
-        if (category === 'Kommunal - Svet') {
-            const asosiy = parseFloat(document.getElementById('buhUmExpAsosiy').value) || 0;
-            const avto = parseFloat(document.getElementById('buhUmExpAvto').value) || 0;
-            if (asosiy <= 0) return;
-            amount = Math.max(0, asosiy - avto);
-            note = `Asosiy hisob: ${_buhFmt(asosiy)} | AvtoClapak sarfi: ${_buhFmt(avto)} | Romix ulushi: ${_buhFmt(amount)}${userNote ? ' | ' + userNote : ''}`;
-        } else if (category === 'Kommunal - Suv' || category === 'Kommunal - Gaz') {
-            amount = parseFloat(document.getElementById('buhUmExpAmount').value) || 0;
-            if (amount <= 0) return;
-            const meterStart = parseFloat(document.getElementById('buhUmExpMeterStart').value) || 0;
-            const meterEnd = parseFloat(document.getElementById('buhUmExpMeterEnd').value) || 0;
-            const usage = Math.max(0, meterEnd - meterStart);
-            const meterNote = (meterStart || meterEnd) ? `Oy boshi ko'rsatkichi: ${meterStart} | Oy oxiri ko'rsatkichi: ${meterEnd} | Iste'mol: ${usage}` : '';
-            note = [meterNote, userNote].filter(Boolean).join(' | ');
-        } else {
-            amount = parseFloat(document.getElementById('buhUmExpAmount').value) || 0;
-            if (amount <= 0) return;
-            note = userNote;
-        }
+        const note = document.getElementById('buhUmExpNote').value.trim();
+        const amount = parseFloat(document.getElementById('buhUmExpAmount').value) || 0;
+        if (amount <= 0) return;
 
         if (submitBtn) submitBtn.disabled = true;
         const record = { id: 'EXP-' + Date.now(), date, category, amount, note, created_at: new Date().toISOString() };
@@ -2572,6 +2508,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             c.classList.toggle('active', c.dataset.harajatPanel === panelKey);
         });
 
+        if (panelKey === 'kommunal') {
+            window._buhRenderKommunalPanel();
+            return;
+        }
+
         if (panelKey === 'barchasi') {
             const cards = _BUH_EXPENSE_PANELS.map(p => {
                 const total = d.monthExpenses.filter(e => p.categories.includes(e.category || 'Boshqa')).reduce((s, e) => s + (Number(e.amount) || 0), 0);
@@ -2595,29 +2536,143 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!panel) { contentEl.innerHTML = ''; return; }
         const entries = d.monthExpenses.filter(e => panel.categories.includes(e.category || 'Boshqa')).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         const total = entries.reduce((s, e) => s + (Number(e.amount) || 0), 0);
-        const showSubType = panel.categories.length > 1;
 
-        const subStatsHtml = showSubType ? `<div class="buh-mini-row" style="margin-bottom:14px;">
-            ${panel.categories.map(cat => {
-                const catTotal = entries.filter(e => (e.category || 'Boshqa') === cat).reduce((s, e) => s + (Number(e.amount) || 0), 0);
-                return `<div class="buh-mini-stat"><span class="buh-mini-label">${_buhExpenseCatIcon(cat)} ${cat.replace('Kommunal - ', '')}</span><span class="buh-mini-value" style="color:#ff4d4f;">-${_buhFmt(catTotal)}</span></div>`;
-            }).join('')}
-        </div>` : `<div class="buh-mini-row" style="margin-bottom:14px;">
+        const subStatsHtml = `<div class="buh-mini-row" style="margin-bottom:14px;">
             <div class="buh-mini-stat"><span class="buh-mini-label">Jami (shu oy)</span><span class="buh-mini-value" style="color:#ff4d4f;">-${_buhFmt(total)}</span></div>
             <div class="buh-mini-stat"><span class="buh-mini-label">Yozuvlar Soni</span><span class="buh-mini-value">${entries.length}</span></div>
         </div>`;
 
         const rowsHtml = entries.length ? entries.map(e => `<tr>
                 <td>${e.date || '-'}</td>
-                ${showSubType ? `<td>${_buhExpenseCatIcon(e.category)} ${(e.category || '').replace('Kommunal - ', '')}</td>` : ''}
                 <td style="text-align:right; color:#ff4d4f;">-${_buhFmt(e.amount)}</td>
                 <td>${e.note || '-'}</td>
                 <td><button class="buh-row-action-btn" style="background:rgba(255,77,79,0.15); color:#ff4d4f;" onclick="window.deleteRomixExpense('${e.id}')">O'chirish</button></td>
-            </tr>`).join('') : `<tr><td colspan="${showSubType ? 5 : 4}" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Shu oy "${panel.label}" bo'yicha xarajat yo'q</td></tr>`;
+            </tr>`).join('') : `<tr><td colspan="4" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Shu oy "${panel.label}" bo'yicha xarajat yo'q</td></tr>`;
 
         contentEl.innerHTML = `${subStatsHtml}
-            <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Sana</th>${showSubType ? '<th>Turi</th>' : ''}<th style="text-align:right;">Summa</th><th>Izoh</th><th></th></tr></thead>
+            <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Sana</th><th style="text-align:right;">Summa</th><th>Izoh</th><th></th></tr></thead>
             <tbody>${rowsHtml}</tbody></table></div>`;
+    };
+
+    const _BUH_UTILITY_TYPES = [
+        { cat: 'Kommunal - Svet', label: 'Svet (Elektr-energiya)', icon: '💡', needsAvto: true },
+        { cat: 'Kommunal - Suv', label: 'Suv', icon: '🚰', needsAvto: false },
+        { cat: 'Kommunal - Gaz', label: 'Gaz', icon: '🔥', needsAvto: false }
+    ];
+    function _buhUtilSafeKey(cat) { return cat.replace(/[^a-zA-Z0-9]/g, '_'); }
+    function _buhCurrentMonthKey() { return _buhToday().slice(0, 7); }
+    function _buhUtilReadingId(cat, monthKey) { return 'UTILREAD-' + _buhUtilSafeKey(cat) + '-' + monthKey; }
+
+    window._buhRenderKommunalPanel = async () => {
+        const d = window._buhUmumiyData;
+        const contentEl = document.getElementById('buh-harajat-panel-content');
+        if (!d || !contentEl) return;
+        if (window._buhHarajatPanelFilter !== 'kommunal') return;
+        contentEl.innerHTML = `<div style="text-align:center; padding:20px; color:rgba(255,255,255,0.3);">Yuklanmoqda...</div>`;
+
+        const monthKey = _buhCurrentMonthKey();
+        const readings = await romixBuhSelect('romix_utility_readings', ROMIX_BUH_KEYS.utilityReadings);
+        if (window._buhHarajatPanelFilter !== 'kommunal') return;
+
+        const cardsHtml = _BUH_UTILITY_TYPES.map(u => {
+            const r = readings.find(x => x.category === u.cat && x.month_key === monthKey);
+            const safeKey = _buhUtilSafeKey(u.cat);
+            let bodyHtml;
+            if (!r || r.meter_start === null || r.meter_start === undefined) {
+                bodyHtml = `<p style="font-size:0.7rem; color:var(--adm-text-sec); margin:8px 0;">Bu oy uchun hali "oy boshi" ko'rsatkichi kiritilmagan.</p>
+                    <div style="display:flex; gap:8px; align-items:flex-end;">
+                        <div style="flex:1;"><label style="font-size:0.68rem; color:var(--adm-text-sec);">Oy Boshi Ko'rsatkichi (so'm)</label><input type="number" id="buhUtilStart_${safeKey}" class="buh-input" min="0" step="0.01"></div>
+                        <button class="buh-save-btn" style="padding:9px 14px;" onclick="window._buhSaveUtilStart('${u.cat}')">💾 Saqlash</button>
+                    </div>
+                    <p style="font-size:0.65rem; color:var(--adm-text-sec); margin:6px 0 0;">💡 Hisobingizda (litsevoy/schyot) ko'rsatilgan joriy summani (so'm) kiriting — kelgusi oyning boshi shu bilan solishtiriladi.</p>`;
+            } else if (r.meter_end === null || r.meter_end === undefined) {
+                bodyHtml = `<p style="font-size:0.7rem; color:var(--adm-text-sec); margin:8px 0;">Oy boshi ko'rsatkichi: <b style="color:var(--adm-text);">${_buhFmt(r.meter_start)}</b> (saqlangan). Oy oxirida ko'rsatkichni kiriting.</p>
+                    <div style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
+                        <div style="flex:1; min-width:130px;"><label style="font-size:0.68rem; color:var(--adm-text-sec);">Oy Oxiri Ko'rsatkichi (so'm)</label><input type="number" id="buhUtilEnd_${safeKey}" class="buh-input" min="0" step="0.01"></div>
+                        ${u.needsAvto ? `<div style="flex:1; min-width:130px;"><label style="font-size:0.68rem; color:var(--adm-text-sec);">AvtoClapak Sarfi (so'm)</label><input type="number" id="buhUtilAvto_${safeKey}" class="buh-input" min="0" step="0.01"></div>` : ''}
+                        <button class="buh-save-btn" style="padding:9px 14px;" onclick="window._buhFinalizeUtilEnd('${u.cat}')">✅ Yakunlash</button>
+                    </div>
+                    ${u.needsAvto ? `<p style="font-size:0.65rem; color:var(--adm-text-sec); margin:6px 0 0;">💡 Oy oxirida hisobda ko'rsatilgan yangi summani va AvtoClapak shu oy sarflagan summani (so'm) kiriting — Romix ulushi (oxiri − boshi − AvtoClapak) avtomatik hisoblanadi.</p>` : ''}`;
+            } else {
+                const usage = Math.max(0, (Number(r.meter_end) || 0) - (Number(r.meter_start) || 0));
+                const finalAmount = u.needsAvto ? Math.max(0, usage - (Number(r.avto_sarfi) || 0)) : usage;
+                bodyHtml = `<div class="buh-mini-row" style="margin-top:8px;">
+                        <div class="buh-mini-stat"><span class="buh-mini-label">Oy Boshi</span><span class="buh-mini-value">${_buhFmt(r.meter_start)}</span></div>
+                        <div class="buh-mini-stat"><span class="buh-mini-label">Oy Oxiri</span><span class="buh-mini-value">${_buhFmt(r.meter_end)}</span></div>
+                        ${u.needsAvto ? `<div class="buh-mini-stat"><span class="buh-mini-label">AvtoClapak</span><span class="buh-mini-value">${_buhFmt(r.avto_sarfi || 0)}</span></div>` : ''}
+                    </div>
+                    <p style="margin:10px 0 6px; font-size:0.85rem; color:#00ff88;">✅ Bu oy yakunlandi — Xarajat: <b>${_buhFmt(finalAmount)}</b></p>
+                    <button class="buh-row-action-btn" style="background:rgba(255,170,0,0.12); color:#ffaa00;" onclick="window._buhResetUtilReading('${u.cat}')">↺ Qayta kiritish</button>`;
+            }
+            return `<div class="hr-card" style="background:rgba(255,255,255,0.02); padding:14px;">
+                <h5 style="margin:0 0 4px; color:var(--adm-text);">${u.icon} ${u.label}</h5>
+                ${bodyHtml}
+            </div>`;
+        }).join('');
+
+        const entries = d.monthExpenses.filter(e => _BUH_UTILITY_TYPES.some(u => u.cat === e.category)).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        const rowsHtml = entries.length ? entries.map(e => `<tr>
+                <td>${e.date || '-'}</td>
+                <td>${_buhExpenseCatIcon(e.category)} ${(e.category || '').replace('Kommunal - ', '')}</td>
+                <td style="text-align:right; color:#ff4d4f;">-${_buhFmt(e.amount)}</td>
+                <td>${e.note || '-'}</td>
+                <td><button class="buh-row-action-btn" style="background:rgba(255,77,79,0.15); color:#ff4d4f;" onclick="window.deleteRomixExpense('${e.id}')">O'chirish</button></td>
+            </tr>`).join('') : `<tr><td colspan="5" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Shu oy Kommunal harajat yo'q</td></tr>`;
+
+        contentEl.innerHTML = `<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:14px; margin-bottom:20px;">${cardsHtml}</div>
+            <h5 style="color:var(--adm-text); margin-bottom:10px;">📜 Tarix</h5>
+            <div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Sana</th><th>Turi</th><th style="text-align:right;">Summa</th><th>Izoh</th><th></th></tr></thead>
+            <tbody>${rowsHtml}</tbody></table></div>`;
+    };
+
+    window._buhSaveUtilStart = async (cat) => {
+        const safeKey = _buhUtilSafeKey(cat);
+        const input = document.getElementById('buhUtilStart_' + safeKey);
+        const val = parseFloat(input && input.value);
+        if (isNaN(val) || val < 0) { window.showPremiumToast && window.showPremiumToast('Xato', "Oy boshi ko'rsatkichini kiriting.", false); return; }
+        const monthKey = _buhCurrentMonthKey();
+        const record = { id: _buhUtilReadingId(cat, monthKey), category: cat, month_key: monthKey, meter_start: val, meter_end: null, avto_sarfi: null, expense_id: null, created_at: new Date().toISOString() };
+        await romixBuhInsert('romix_utility_readings', ROMIX_BUH_KEYS.utilityReadings, record);
+        window.showPremiumToast && window.showPremiumToast('Saqlandi', "Oy boshi ko'rsatkichi saqlandi.", true);
+        await window._buhRenderKommunalPanel();
+    };
+
+    window._buhFinalizeUtilEnd = async (cat) => {
+        const safeKey = _buhUtilSafeKey(cat);
+        const endInput = document.getElementById('buhUtilEnd_' + safeKey);
+        const end = parseFloat(endInput && endInput.value);
+        if (isNaN(end) || end < 0) { window.showPremiumToast && window.showPremiumToast('Xato', "Oy oxiri ko'rsatkichini kiriting.", false); return; }
+        const isSvet = cat === 'Kommunal - Svet';
+        let avto = 0;
+        if (isSvet) {
+            const avtoInput = document.getElementById('buhUtilAvto_' + safeKey);
+            avto = parseFloat(avtoInput && avtoInput.value) || 0;
+        }
+        const monthKey = _buhCurrentMonthKey();
+        const readings = await romixBuhSelect('romix_utility_readings', ROMIX_BUH_KEYS.utilityReadings);
+        const existing = readings.find(r => r.category === cat && r.month_key === monthKey);
+        if (!existing) return;
+        const usage = Math.max(0, end - (Number(existing.meter_start) || 0));
+        const finalAmount = isSvet ? Math.max(0, usage - avto) : usage;
+
+        const note = isSvet
+            ? `Oy boshi: ${_buhFmt(existing.meter_start)} | Oy oxiri: ${_buhFmt(end)} | Jami: ${_buhFmt(usage)} | AvtoClapak sarfi: ${_buhFmt(avto)} | Romix ulushi: ${_buhFmt(finalAmount)}`
+            : `Oy boshi ko'rsatkichi: ${_buhFmt(existing.meter_start)} | Oy oxiri ko'rsatkichi: ${_buhFmt(end)} | Xarajat: ${_buhFmt(usage)}`;
+        const expenseRecord = { id: 'EXP-' + Date.now(), date: _buhToday(), category: cat, amount: finalAmount, note, created_at: new Date().toISOString() };
+        await romixBuhInsert('romix_expenses', ROMIX_BUH_KEYS.expenses, expenseRecord);
+        await romixBuhUpdate('romix_utility_readings', ROMIX_BUH_KEYS.utilityReadings, existing.id, { meter_end: end, avto_sarfi: avto, expense_id: expenseRecord.id });
+
+        await renderRomixBuhHarajatlar();
+        await updateBuhHeroKPIs();
+        await renderBuhOverview();
+        window.showPremiumToast && window.showPremiumToast('Yakunlandi', `${cat} — ${_buhFmt(finalAmount)} xarajat sifatida qo'shildi.`, true);
+    };
+
+    window._buhResetUtilReading = async (cat) => {
+        if (!confirm("Bu oy uchun ko'rsatkichlarni qayta kiritmoqchimisiz? Avval hisoblangan xarajat yozuvi o'chirilmaydi, faqat ko'rsatkich formasi tozalanadi.")) return;
+        const monthKey = _buhCurrentMonthKey();
+        await romixBuhDelete('romix_utility_readings', ROMIX_BUH_KEYS.utilityReadings, _buhUtilReadingId(cat, monthKey));
+        await window._buhRenderKommunalPanel();
     };
 
     window._buhSelectProfilBrand = (brandKey) => {
@@ -2956,29 +3011,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="buh-form-group" style="position:relative;">
                     <label>Kategoriya</label>
                     <button type="button" class="buh-cat-dropdown-btn" id="buhUmExpCategoryBtn" onclick="window._buhToggleExpenseCategoryMenu(event)">
-                        <span id="buhUmExpCategoryBtnLabel">${_buhExpenseCatIcon(_BUH_EXPENSE_CATEGORIES[0])} ${_BUH_EXPENSE_CATEGORIES[0]}</span>
+                        <span id="buhUmExpCategoryBtnLabel">${_buhExpenseCatIcon(_BUH_GENERIC_FORM_CATEGORIES[0])} ${_BUH_GENERIC_FORM_CATEGORIES[0]}</span>
                         <span class="dd-arrow">▾</span>
                     </button>
                     <div class="buh-cat-dropdown-menu" id="buhUmExpCategoryMenu" style="display:none;">
-                        ${_BUH_EXPENSE_CATEGORIES.map((c, i) => `<div class="buh-cat-dropdown-item ${i === 0 ? 'active' : ''}" data-cat="${c.replace(/"/g, '&quot;')}" onclick="window._buhSelectExpenseCategory('${c.replace(/'/g, "\\'")}')">
+                        ${_BUH_GENERIC_FORM_CATEGORIES.map((c, i) => `<div class="buh-cat-dropdown-item ${i === 0 ? 'active' : ''}" data-cat="${c.replace(/"/g, '&quot;')}" onclick="window._buhSelectExpenseCategory('${c.replace(/'/g, "\\'")}')">
                             <span class="ico">${_buhExpenseCatIcon(c)}</span><span>${c}</span>
                         </div>`).join('')}
                     </div>
-                    <input type="hidden" id="buhUmExpCategory" value="${_BUH_EXPENSE_CATEGORIES[0]}">
+                    <input type="hidden" id="buhUmExpCategory" value="${_BUH_GENERIC_FORM_CATEGORIES[0]}">
                 </div>
                 <div class="buh-form-group"><label>Sana</label><input type="date" id="buhUmExpDate" class="buh-input" value="${_buhToday()}" required></div>
                 <div class="buh-form-group" id="buhUmExpAmountGroup"><label>Summa (UZS)</label><input type="number" id="buhUmExpAmount" class="buh-input" min="0" required></div>
-                <div class="buh-form-group" id="buhUmExpAsosiyGroup" style="display:none;"><label>Asosiy Hisob (jami, UZS)</label><input type="number" id="buhUmExpAsosiy" class="buh-input" min="0" oninput="window._buhUpdateSvetPreview()"></div>
-                <div class="buh-form-group" id="buhUmExpAvtoGroup" style="display:none;"><label>AvtoClapak Sarfi (UZS)</label><input type="number" id="buhUmExpAvto" class="buh-input" min="0" oninput="window._buhUpdateSvetPreview()"></div>
-                <div class="buh-form-group" id="buhUmExpRomixShareGroup" style="display:none;"><label>Romix Ulushi</label><input type="text" id="buhUmExpRomixShare" class="buh-input" readonly style="font-weight:800; color:#00d2ff;"></div>
-                <div class="buh-form-group" id="buhUmExpMeterStartGroup" style="display:none;"><label>Oy Boshi Ko'rsatkichi</label><input type="number" id="buhUmExpMeterStart" class="buh-input" min="0" step="0.01" oninput="window._buhUpdateMeterPreview()"></div>
-                <div class="buh-form-group" id="buhUmExpMeterEndGroup" style="display:none;"><label>Oy Oxiri Ko'rsatkichi</label><input type="number" id="buhUmExpMeterEnd" class="buh-input" min="0" step="0.01" oninput="window._buhUpdateMeterPreview()"></div>
-                <div class="buh-form-group" id="buhUmExpMeterUsageGroup" style="display:none;"><label>Iste'mol (oxiri − boshi)</label><input type="text" id="buhUmExpMeterUsage" class="buh-input" readonly style="font-weight:800; color:#00d2ff;"></div>
                 <div class="buh-form-group"><label>Izoh</label><input type="text" id="buhUmExpNote" class="buh-input" placeholder="Nimaga ketgani (ixtiyoriy)"></div>
                 <button type="submit" class="buh-save-btn">💾 Saqlash</button>
                 </div>
             </form>
-            <p style="font-size:0.68rem; color:var(--adm-text-sec); margin-top:8px;">💡 "Kommunal - Svet" tanlansa: asosiy litsevoy hisobning jami summasini va AvtoClapak sarflagan qismini kiriting — Romix ulushi (asosiy − avtoclapak) avtomatik hisoblanadi. "Kommunal - Suv/Gaz" tanlansa: oy boshi va oy oxiri ko'rsatkichini kiriting — iste'mol avtomatik hisoblanib, summa bilan birga tarixga saqlanadi.</p>
+            <p style="font-size:0.68rem; color:var(--adm-text-sec); margin-top:8px;">💡 Kommunal (Svet/Suv/Gaz) harajatlari bu yerdan emas — yuqorida "Kommunal Harajat" panelini ochib, har bir turini bosib, oy boshi/oxiri ko'rsatkichini kiritish orqali qo'shiladi.</p>
             </div>`;
 
         const creditorEntries = Object.entries(d.paymentsByCreditor).sort((a, b) => b[1].total - a[1].total);
@@ -3098,6 +3147,18 @@ CREATE TABLE IF NOT EXISTS romix_payment_log (
     amount NUMERIC DEFAULT 0,
     note TEXT,
     date TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Kommunal (Svet/Suv/Gaz) oy boshi/oxiri ko'rsatkichlari (Buhgalteriya > Umumiy > Harajat > Kommunal)
+CREATE TABLE IF NOT EXISTS romix_utility_readings (
+    id TEXT PRIMARY KEY,
+    category TEXT NOT NULL,
+    month_key TEXT NOT NULL,
+    meter_start NUMERIC,
+    meter_end NUMERIC,
+    avto_sarfi NUMERIC,
+    expense_id TEXT,
     created_at TIMESTAMPTZ DEFAULT now()
 );`;
 
