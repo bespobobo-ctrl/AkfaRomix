@@ -2496,11 +2496,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function _buhComputeUmumiyData() {
         const monthKey = _buhMonthKey();
 
-        let profilItems = [];
-        try {
-            const { data } = await supabase.from('romix_inventory').select('*');
-            profilItems = data || [];
-        } catch (e) { console.warn('Buh Umumiy ombor fetch error:', e); }
+        // Bir-biriga bog'liq bo'lmagan barcha so'rovlarni PARALLEL yuboramiz —
+        // ketma-ket (await...await...) yuklash "Umumiy" panelini bir necha
+        // soniya kutdirar edi, endi eng sekin so'rov vaqticha cheklanadi.
+        const [profilItems, omborTx, orders, expenses, payments, employees, attendanceRaw] = await Promise.all([
+            (async () => {
+                try { const { data } = await supabase.from('romix_inventory').select('*'); return data || []; }
+                catch (e) { console.warn('Buh Umumiy ombor fetch error:', e); return []; }
+            })(),
+            (async () => {
+                try {
+                    const { data } = await supabase.from('romix_transactions').select('*, romix_inventory(product_name, unit, price)')
+                        .gte('created_at', monthKey + '-01').order('created_at', { ascending: false });
+                    return data || [];
+                } catch (e) { console.warn('Buh Umumiy ombor tranzaksiyalari fetch error:', e); return []; }
+            })(),
+            (async () => {
+                try { const { data } = await supabase.from('sales_orders').select('*'); return data || []; }
+                catch (e) { console.warn('Buh Umumiy orders fetch error:', e); return []; }
+            })(),
+            romixBuhSelect('romix_expenses', ROMIX_BUH_KEYS.expenses),
+            romixBuhSelect('romix_payment_log', ROMIX_BUH_KEYS.payments),
+            (async () => {
+                try { const { data } = await supabase.from('employees').select('id, full_name, role, salary_info'); return data || []; }
+                catch (e) { console.warn('Buh Umumiy xodimlar fetch error:', e); return []; }
+            })(),
+            (async () => {
+                try { const { data } = await supabase.from('attendance').select('employee_id, date, check_in, check_out'); return data || []; }
+                catch (e) { console.warn('Buh Umumiy davomat fetch error:', e); return []; }
+            })()
+        ]);
+
         const profilValue = profilItems.reduce((s, p) => s + ((Number(p.price) || 0) * (Number(p.stock_quantity) || 0)), 0);
 
         const accessories = _buhGetAccessories();
@@ -2514,12 +2540,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const omborTotal = profilValue + accValue + qoldiqValue + oynakValue;
 
-        let omborTx = [];
-        try {
-            const { data } = await supabase.from('romix_transactions').select('*, romix_inventory(product_name, unit, price)')
-                .gte('created_at', monthKey + '-01').order('created_at', { ascending: false });
-            omborTx = data || [];
-        } catch (e) { console.warn('Buh Umumiy ombor tranzaksiyalari fetch error:', e); }
         // Kirim — faqat Buxgalteriya Ombor panelidan (qo'lda/Profil Kirim/Rasmdan Kirim AI) kiritilgan, narx qo'yiladigan yozuvlar
         const kirimTx = omborTx.filter(t => t.type === 'IN' && (t.note || '').includes('Buxgalteriya'));
         // Chiqim — faqat 50% avans to'langan va Ombor bo'limi tasdiqlagan buyurtmalar uchun ajratilgan chiqim (confirmOrderMaterials oqimi)
@@ -2529,7 +2549,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         let kirimAccessoryLog = [];
         try {
             const logs = JSON.parse(localStorage.getItem('romix_accessories_history_log')) || [];
-            const accessoriesNow = _buhGetAccessories();
             kirimAccessoryLog = logs.filter(l => {
                 if (!/kirim/i.test(l.action || '')) return false;
                 if (!(l.details || '').includes('(Buxgalteriya)')) return false;
@@ -2543,16 +2562,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const name = nameMatch ? nameMatch[1] : "Noma'lum";
                 const qty = qtyMatch ? parseFloat(qtyMatch[1].replace(/[,\s]/g, '')) || 0 : 0;
                 const unit = qtyMatch ? qtyMatch[2] : '';
-                const acc = accessoriesNow.find(a => (a.name || '').toLowerCase() === name.toLowerCase());
+                const acc = accessories.find(a => (a.name || '').toLowerCase() === name.toLowerCase());
                 return { dateLabel: (l.timestamp || '').split(' ')[0], product_name: name, qty, unit, price: acc ? (Number(acc.price) || 0) : 0, note: l.details };
             });
         } catch (e) { console.warn('Buh Umumiy aksesuvar tarixi fetch error:', e); }
 
-        let orders = [];
-        try {
-            const { data } = await supabase.from('sales_orders').select('*');
-            orders = data || [];
-        } catch (e) { console.warn('Buh Umumiy orders fetch error:', e); }
         const monthOrders = orders.filter(o => (o.created_at || '').startsWith(monthKey));
         const monthlyIncome = monthOrders.reduce((s, o) => s + (Number(o.total_price) || 0), 0);
         const monthlyCollected = monthOrders.reduce((s, o) => s + _buhOrderPaymentInfo(o).paidAmount, 0);
@@ -2561,7 +2575,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const notInstalledUnpaid = orders.filter(o => o.install_status !== 'Bajarildi' && _buhOrderPaymentInfo(o).remaining > 0);
         const notInstalledUnpaidTotal = notInstalledUnpaid.reduce((s, o) => s + _buhOrderPaymentInfo(o).remaining, 0);
 
-        const expenses = await romixBuhSelect('romix_expenses', ROMIX_BUH_KEYS.expenses);
         const monthExpenses = expenses.filter(e => (e.date || '').startsWith(monthKey));
         const monthlyExpenseTotal = monthExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
         const expenseByCategory = {};
@@ -2570,7 +2583,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             expenseByCategory[cat] = (expenseByCategory[cat] || 0) + (Number(e.amount) || 0);
         });
 
-        const payments = await romixBuhSelect('romix_payment_log', ROMIX_BUH_KEYS.payments);
         const monthPayments = payments.filter(p => (p.date || '').startsWith(monthKey));
         const monthlyPaymentsTotal = monthPayments.reduce((s, p) => s + (Number(p.amount) || 0), 0);
         const paymentsByCreditor = {};
@@ -2581,13 +2593,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             paymentsByCreditor[c].list.push(p);
         });
 
-        let employees = [], attendance = [];
-        try {
-            const { data: eData } = await supabase.from('employees').select('id, full_name, role, salary_info');
-            employees = eData || [];
-            const { data: aData } = await supabase.from('attendance').select('employee_id, date, check_in, check_out');
-            attendance = (aData || []).filter(a => (a.date || '').startsWith(monthKey));
-        } catch (e) { console.warn('Buh Umumiy xodimlar fetch error:', e); }
+        const attendance = attendanceRaw.filter(a => (a.date || '').startsWith(monthKey));
         const monthlyPayrollFund = employees.reduce((s, e) => s + (parseFloat((e.salary_info || '').toString().replace(/[^0-9]/g, '')) || 0), 0);
 
         const attByEmp = {};
@@ -2840,16 +2846,19 @@ CREATE TABLE IF NOT EXISTS romix_payment_log (
         bindRomixBuhPillTabs();
         bindRomixBuhForms();
 
+        // "Umumiy" paneli sahifada birinchi (eng yuqori) ko'rinadi, shuning uchun uning
+        // ma'lumotlari ham birinchi bo'lib yuklanadi — qolgan bo'limlar ortidan navbatda
+        // kutib, foydalanuvchini bir necha soniya bekorga kutdirmasin.
         const steps = [
+            ['updateBuhHeroKPIs', updateBuhHeroKPIs],
+            ['renderBuhOverview', renderBuhOverview],
             ['renderBuhXodimlar', renderBuhXodimlar],
             ['renderBuhKunlikSotuv', () => renderBuhKunlikSotuv('today')],
             ['renderRomixBuhIshlabChiqarish', renderRomixBuhIshlabChiqarish],
             ['renderBuhTayyorMahsulot', renderBuhTayyorMahsulot],
             ['renderRomixBuhHarajatlar', renderRomixBuhHarajatlar],
             ['renderRomixBuhOmbor', renderRomixBuhOmbor],
-            ['renderBuhTashqiQarz', renderBuhTashqiQarz],
-            ['renderBuhOverview', renderBuhOverview],
-            ['updateBuhHeroKPIs', updateBuhHeroKPIs]
+            ['renderBuhTashqiQarz', renderBuhTashqiQarz]
         ];
         for (const [name, fn] of steps) {
             try {
