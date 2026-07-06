@@ -1945,17 +1945,58 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Profillarni brend/seriya bo'yicha guruhlash (rang/o'lcham variantlari bitta qatorga jamlanadi)
+    // Brend (metadata.brend+seriya bo'lsa, aks holda product_name) bo'yicha guruhlash;
+    // har bir guruh o'z ichida o'lcham/rang variantlarini (items) saqlaydi
     function _buhGroupProfilByName(items) {
         const groups = {};
         items.forEach(p => {
-            const key = p.product_name || "Noma'lum";
-            if (!groups[key]) groups[key] = { name: key, qty: 0, value: 0, unit: p.unit || '', variants: 0 };
+            const meta = p.metadata || {};
+            const key = meta.brend ? `${meta.brend}${meta.seriya ? ' ' + meta.seriya : ''}` : (p.product_name || "Noma'lum");
+            if (!groups[key]) groups[key] = { name: key, qty: 0, value: 0, unit: p.unit || '', items: [] };
             groups[key].qty += Number(p.stock_quantity) || 0;
             groups[key].value += (Number(p.price) || 0) * (Number(p.stock_quantity) || 0);
-            groups[key].variants += 1;
+            if (!groups[key].unit) groups[key].unit = p.unit || '';
+            groups[key].items.push(p);
         });
-        return Object.values(groups).sort((a, b) => b.value - a.value);
+        return Object.values(groups).map(g => ({ ...g, variants: g.items.length })).sort((a, b) => b.value - a.value);
     }
+
+    function _buhProfilSizeLabel(p) {
+        const meta = p.metadata || {};
+        if (meta.uzunligi || meta.shakli || meta.rangi) {
+            return [meta.uzunligi ? `${meta.uzunligi}mm` : null, meta.shakli, meta.rangi ? `${meta.rangi}${meta.rangTuri ? ' (' + meta.rangTuri + ')' : ''}` : null].filter(Boolean).join(' | ');
+        }
+        return p.description || '-';
+    }
+
+    // Ikki qavatli jadval: brend qatori bosilganda o'lcham/variant qatorlari ochiladi
+    function _buhProfilNestedTableHtml(groups) {
+        if (!groups.length) return `<div style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Profil topilmadi</div>`;
+        const bodyRows = groups.map(g => {
+            const safeKey = g.name.replace(/[^a-zA-Z0-9]/g, '_');
+            const variantRows = g.items.slice().sort((a, b) => (Number(b.stock_quantity) * Number(b.price) || 0) - (Number(a.stock_quantity) * Number(a.price) || 0)).map(p => {
+                const qty = Number(p.stock_quantity) || 0;
+                const val = (Number(p.price) || 0) * qty;
+                return `<tr><td style="padding-left:28px; color:var(--adm-text-sec);">↳ ${_buhProfilSizeLabel(p)}</td><td style="text-align:right;">${qty.toLocaleString('uz-UZ')} ${p.unit || ''}</td><td style="text-align:right;">${_buhFmt(p.price)}</td><td style="text-align:right;">${_buhFmt(val)}</td></tr>`;
+            }).join('');
+            return `<tr style="cursor:pointer; font-weight:700;" onclick="window.toggleBuhProfilBrand('${safeKey}')">
+                        <td>▸ ${g.name} <span style="font-weight:500; color:var(--adm-text-sec); font-size:0.72rem;">(${g.variants} variant)</span></td>
+                        <td style="text-align:right;">${g.qty.toLocaleString('uz-UZ')} ${g.unit}</td>
+                        <td style="text-align:right;">${_buhFmt(g.qty > 0 ? g.value / g.qty : 0)}</td>
+                        <td style="text-align:right;">${_buhFmt(g.value)}</td>
+                    </tr>
+                    <tr id="buh-profil-brand-${safeKey}" style="display:none; background:rgba(255,255,255,0.02);">
+                        <td colspan="4" style="padding:0;"><table class="v2-table" style="width:100%;"><tbody>${variantRows}</tbody></table></td>
+                    </tr>`;
+        }).join('');
+        return `<div style="overflow-x:auto;"><table class="v2-table"><thead><tr><th>Profil (Brend/Seriya) — bosib variantlarni ko'ring</th><th style="text-align:right;">Jami Miqdor</th><th style="text-align:right;">O'rtacha Narx</th><th style="text-align:right;">Jami Qiymat</th></tr></thead>
+            <tbody>${bodyRows}</tbody></table></div>`;
+    }
+
+    window.toggleBuhProfilBrand = (safeKey) => {
+        const row = document.getElementById(`buh-profil-brand-${safeKey}`);
+        if (row) row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+    };
 
     // Ombor bo'limlari filtri (Barchasi/Profil/Aksesuvar/Qoldiq) — Umumiy > Ombor Qiymati tafsilotida
     function _buhQtyBreakdown(items, qtyKey, unitKey) {
@@ -1986,7 +2027,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 value, qtyText: _buhQtyBreakdown(scopedItems, 'stock_quantity', 'unit'),
                 columns: ['Profil (Brend/Seriya)', 'Jami Miqdor', "O'rtacha Narx", 'Jami Qiymat', 'Variantlar'], alignRight: [false, true, true, true, true],
                 rows: grouped.map(g => [g.name, `${g.qty.toLocaleString('uz-UZ')} ${g.unit}`, _buhFmt(g.qty > 0 ? g.value / g.qty : 0), _buhFmt(g.value), g.variants]),
-                profilCategories: allCategories, profilActiveCategory: catFilter
+                profilCategories: allCategories, profilActiveCategory: catFilter, profilGroups: grouped, isProfilNested: true
             };
         }
         if (filter === 'aksesuvar') {
@@ -2113,13 +2154,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const tableEl = document.getElementById('buh-ombor-filter-table');
         if (tableEl) {
-            const extraCol = data.isOynak ? ['Amal'] : [];
-            const headHtml = [...data.columns, ...extraCol].map((c, i) => `<th ${data.alignRight[i] ? 'style="text-align:right;"' : ''}>${c}</th>`).join('');
-            const rowsHtml = data.rows.length
-                ? data.rows.map((r, idx) => `<tr>${r.map((cell, i) => `<td ${data.alignRight[i] ? 'style="text-align:right;"' : ''}>${cell}</td>`).join('')}${data.isOynak ? `<td><button class="buh-row-action-btn" style="background:rgba(255,77,79,0.15); color:#ff4d4f;" onclick="window.deleteBuhOynakItem(${idx})">O'chirish</button></td>` : ''}</tr>`).join('')
-                : `<tr><td colspan="${data.columns.length + extraCol.length}" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Ma'lumot topilmadi</td></tr>`;
-            tableEl.innerHTML = `<div style="overflow-x:auto;"><table class="v2-table"><thead><tr>${headHtml}</tr></thead>
-                <tbody>${rowsHtml}</tbody></table></div>`;
+            if (data.isProfilNested) {
+                tableEl.innerHTML = _buhProfilNestedTableHtml(data.profilGroups);
+            } else {
+                const extraCol = data.isOynak ? ['Amal'] : [];
+                const headHtml = [...data.columns, ...extraCol].map((c, i) => `<th ${data.alignRight[i] ? 'style="text-align:right;"' : ''}>${c}</th>`).join('');
+                const rowsHtml = data.rows.length
+                    ? data.rows.map((r, idx) => `<tr>${r.map((cell, i) => `<td ${data.alignRight[i] ? 'style="text-align:right;"' : ''}>${cell}</td>`).join('')}${data.isOynak ? `<td><button class="buh-row-action-btn" style="background:rgba(255,77,79,0.15); color:#ff4d4f;" onclick="window.deleteBuhOynakItem(${idx})">O'chirish</button></td>` : ''}</tr>`).join('')
+                    : `<tr><td colspan="${data.columns.length + extraCol.length}" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Ma'lumot topilmadi</td></tr>`;
+                tableEl.innerHTML = `<div style="overflow-x:auto;"><table class="v2-table"><thead><tr>${headHtml}</tr></thead>
+                    <tbody>${rowsHtml}</tbody></table></div>`;
+            }
         }
     };
 
