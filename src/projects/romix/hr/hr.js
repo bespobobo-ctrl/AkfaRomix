@@ -12,6 +12,8 @@ let activeDept = 'all';
 let activeAnaDept = 'all';
 let tempPhotoData = null;
 let html5QrCode = null;
+let hwScannerBound = false;
+let hwScannerRefocusTimer = null;
 let workInterval = null;
 let lunchInterval = null;
 let currentTab = 'dashboard';
@@ -2328,15 +2330,52 @@ function startScanner() {
         { facingMode: "environment" },
         { fps: 10, qrbox: { width: 250, height: 250 } },
         onScanSuccess
-    );
+    ).catch(err => {
+        console.warn("Kamera skaneri ishga tushmadi (kamera yo'q bo'lishi mumkin) — USB/Bluetooth skaner baribir ishlayveradi:", err);
+    });
+    initHwScanner();
 }
 
 function stopScanner() {
     if (html5QrCode) {
-        html5QrCode.stop().then(() => {
-            html5QrCode = null;
-        }).catch(err => console.error("Scanner stop error:", err));
+        try {
+            const result = html5QrCode.stop();
+            if (result && typeof result.then === 'function') {
+                result.catch(err => console.warn("Scanner stop error (ignored — camera may not have been running):", err));
+            }
+        } catch (err) {
+            console.warn("Scanner stop error (ignored — camera may not have been running):", err);
+        }
+        html5QrCode = null;
     }
+    clearInterval(hwScannerRefocusTimer);
+    hwScannerRefocusTimer = null;
+}
+
+// USB/Bluetooth "klaviatura" tipidagi skanerlar (Netum va h.k.) kamera ishlatmaydi —
+// ular skanerlagan matnni fokusda turgan inputga to'g'ridan-to'g'ri "teradi" va Enter yuboradi.
+function initHwScanner() {
+    const input = document.getElementById('hwScannerInput');
+    if (!input) return;
+
+    if (!hwScannerBound) {
+        hwScannerBound = true;
+        input.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            const val = input.value.trim();
+            input.value = '';
+            if (val) onScanSuccess(val);
+        });
+    }
+
+    input.focus();
+    clearInterval(hwScannerRefocusTimer);
+    hwScannerRefocusTimer = setInterval(() => {
+        const section = document.getElementById('scannerSection');
+        if (!section || section.style.display === 'none') { clearInterval(hwScannerRefocusTimer); return; }
+        if (document.activeElement !== input) input.focus();
+    }, 800);
 }
 
 async function onScanSuccess(decodedText) {
