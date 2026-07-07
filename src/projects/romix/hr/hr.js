@@ -193,6 +193,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     await loadInitialData();
+    bindGlobalHwScanner(); // Netum kabi USB/Bluetooth skaner butun panelda (bo'limdan qat'i nazar) darhol ishlaydi
 
     // Fight aggressive browser autofill by clearing "hr" or "admin" from search bar programmatically if not focused
     const cleanAutofill = () => {
@@ -2353,13 +2354,20 @@ function stopScanner() {
 }
 
 // USB/Bluetooth "klaviatura" tipidagi skanerlar (Netum va h.k.) kamera ishlatmaydi —
-// ular skanerlagan matnni "teradi". Bitta inputning fokusiga tayanish beqaror
-// (skaner tez terganda fokus boshqa joyga o'tib ketishi mumkin) — shuning uchun
-// klaviatura bosilishlarini INPUT fokusidan qat'i nazar, butun hujjat (document)
-// darajasida ushlaymiz: skaner ekrani ochiq bo'lgan payt harflar/raqamlar bufferga
-// yig'iladi, Enter/Tab kelsa (yoki terish to'xtab ~250ms o'tsa) avtomatik qayta ishlanadi.
+// ular skanerlagan matnni "teradi". Bu ushlagich butun HR panelida GLOBAL ishlaydi —
+// "QR Davomat" bo'limiga kirmasdan ham, istalgan bo'limda (Dashboard, Hisobotlar va h.k.)
+// turgan holda skanerlansa, xodim avtomatik topilib holat belgilash oynasi ochiladi.
+// Faqat foydalanuvchi biror matn maydoniga (input/textarea) qo'lda yozayotgan bo'lsa,
+// bunday holatlarni bo'zilib qo'ymaslik uchun aralashmaymiz.
 let hwScanBuffer = '';
 let hwScanDebounceTimer = null;
+
+function _hwScanIsEditableFocus() {
+    const el = document.activeElement;
+    if (!el || el.id === 'hwScannerInput') return false; // o'zimizning skaner maydoni — bo'gamaymiz
+    const tag = el.tagName;
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
+}
 
 function flushHwScanBuffer() {
     clearTimeout(hwScanDebounceTimer);
@@ -2370,33 +2378,37 @@ function flushHwScanBuffer() {
     if (val) onScanSuccess(val);
 }
 
+function bindGlobalHwScanner() {
+    if (hwScannerBound) return;
+    hwScannerBound = true;
+    document.addEventListener('keydown', (e) => {
+        if (_hwScanIsEditableFocus()) return; // foydalanuvchi qo'lda boshqa maydonga yozayapti — aralashmaymiz
+
+        if (e.key === 'Enter' || e.key === 'Tab') {
+            if (!hwScanBuffer) return; // bufer bo'sh bo'lsa — bu skaner emas, oddiy tugma bosilishi
+            e.preventDefault();
+            flushHwScanBuffer();
+            return;
+        }
+        if (e.key.length === 1) { // faqat bitta belgili tugmalar (harf/raqam/tire va h.k.), Shift/Ctrl/Arrow kabi emas
+            // Brauzerning o'ziga tabiiy terishga yo'l qo'ymaymiz — aks holda fokusda turgan
+            // maydon o'zi ham belgini qo'shib, bizning bufferimiz bilan to'qnashib qolar edi.
+            e.preventDefault();
+            hwScanBuffer += e.key;
+            const inp = document.getElementById('hwScannerInput');
+            if (inp) inp.value = hwScanBuffer;
+            clearTimeout(hwScanDebounceTimer);
+            hwScanDebounceTimer = setTimeout(flushHwScanBuffer, 250);
+        }
+    });
+}
+
+// "QR Davomat" bo'limiga kirilganda faqat vizual input (ko'rinadigan maydon) fokuslanadi —
+// haqiqiy skaner ushlash yuqoridagi global listener orqali (bo'limdan qat'i nazar) ishlaydi.
 function initHwScanner() {
+    bindGlobalHwScanner();
     const input = document.getElementById('hwScannerInput');
     if (!input) return;
-
-    if (!hwScannerBound) {
-        hwScannerBound = true;
-        document.addEventListener('keydown', (e) => {
-            const section = document.getElementById('scannerSection');
-            if (!section || section.style.display === 'none') return; // faqat skaner ekrani ochiq bo'lganda ishlaydi
-
-            if (e.key === 'Enter' || e.key === 'Tab') {
-                e.preventDefault();
-                flushHwScanBuffer();
-                return;
-            }
-            if (e.key.length === 1) { // faqat bitta belgili tugmalar (harf/raqam/tire va h.k.), Shift/Ctrl/Arrow kabi emas
-                // Brauzerning o'ziga tabiiy terishga yo'l qo'ymaymiz — aks holda input o'zi ham
-                // belgini qo'shib, bizning bufferimiz bilan to'qnashib, belgi ikki marta tushib qolardi.
-                e.preventDefault();
-                hwScanBuffer += e.key;
-                const inp = document.getElementById('hwScannerInput');
-                if (inp) inp.value = hwScanBuffer;
-                clearTimeout(hwScanDebounceTimer);
-                hwScanDebounceTimer = setTimeout(flushHwScanBuffer, 250);
-            }
-        });
-    }
 
     hwScanBuffer = '';
     clearTimeout(hwScanDebounceTimer);
