@@ -1134,7 +1134,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             return `<div style="background:var(--adm-surface); border:1px solid var(--adm-border); border-top:3px solid ${allSufficient ? '#00ff88' : '#ef4444'}; border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:8px; box-shadow:var(--adm-shadow);">
                 <div style="font-weight:700; color:var(--adm-text); font-size:0.95rem;">${o.customer_name || 'Noma\'lum'}</div>
-                <div style="font-size:0.76rem; color:var(--adm-text-sec);">${o.prod_type || ''} — Muddat: ${o.production_deadline ? new Date(o.production_deadline).toLocaleDateString('uz-UZ') : '—'}</div>
+                <div style="font-size:0.76rem; color:var(--adm-text-sec);">${o.customer_phone ? '📞 ' + o.customer_phone + ' — ' : ''}${o.prod_type || ''} — Muddat: ${o.production_deadline ? new Date(o.production_deadline).toLocaleDateString('uz-UZ') : '—'}</div>
                 <div style="border-top:1px dashed var(--adm-border); padding-top:8px;">
                     ${profRows || '<div style="color:var(--adm-text-sec); font-size:0.76rem;">Profil kerak emas</div>'}
                     ${accRows}
@@ -1183,7 +1183,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         window._ordConfirmQoldiqPicks = [];
         window._ordConfirmOynakPicks = [];
 
-        document.getElementById('ordConfirmCustomer').textContent = `${order.customer_name || 'Noma\'lum'} — ${order.prod_type || ''}`;
+        document.getElementById('ordConfirmCustomer').textContent = `${order.customer_name || 'Noma\'lum'}${order.customer_phone ? ' — 📞 ' + order.customer_phone : ''} — ${order.prod_type || ''}`;
 
         const est = order.material_estimate || {};
         const profiles = est.profiles || [];
@@ -1375,28 +1375,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         doc.text(`№ ${String(order.id || '').slice(0, 8).toUpperCase()}`, pageW - 15, 14, { align: 'right' });
         doc.text(new Date().toLocaleDateString('uz-UZ'), pageW - 15, 22, { align: 'right' });
 
-        // --- Ma'lumot bloki ---
+        // --- Ma'lumot bloki (2x2: Buyurtmachi/Telefon, Sana/Turi) ---
         let y = 40;
         doc.setFillColor(...lightGray);
-        doc.roundedRect(15, y, pageW - 30, 26, 2, 2, 'F');
+        doc.roundedRect(15, y, pageW - 30, 34, 2, 2, 'F');
         doc.setTextColor(...textDark);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
         doc.text('BUYURTMACHI', 20, y + 8);
-        doc.text('BUYURTMA SANASI', 110, y + 8);
+        doc.text('TELEFON RAQAMI', 110, y + 8);
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(11);
         doc.text(order.customer_name || '---', 20, y + 15);
-        doc.text(order.created_at ? new Date(order.created_at).toLocaleDateString('uz-UZ') : '---', 110, y + 15);
+        doc.text(order.customer_phone || '---', 110, y + 15);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
-        doc.text('BUYURTMA TURI', 20, y + 21.5);
+        doc.text('BUYURTMA SANASI', 20, y + 23.5);
+        doc.text('BUYURTMA TURI', 110, y + 23.5);
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
-        doc.text(order.prod_type || '---', 55, y + 21.5);
+        doc.setFontSize(10.5);
+        doc.text(order.created_at ? new Date(order.created_at).toLocaleDateString('uz-UZ') : '---', 20, y + 30);
+        doc.text(order.prod_type || '---', 110, y + 30);
 
         // --- Mahsulotlar jadvali ---
-        y += 36;
+        y += 44;
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(12);
         doc.setTextColor(...textDark);
