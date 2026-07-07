@@ -914,11 +914,11 @@ function showActionModal(cfg) {
     const inputBox = document.getElementById('actionInputBox');
     const inputField = document.getElementById('actionInput');
     const mainBtn = document.getElementById('actionMainBtn');
+    const defaultGrid = document.getElementById('actionDefaultGrid');
 
     title.textContent = cfg.title;
     desc.textContent = cfg.desc;
     iconInner.setAttribute('data-lucide', cfg.icon || 'check-circle');
-    mainBtn.textContent = cfg.confirmText || 'TASDIQLASH';
     lucide.createIcons();
 
     if (cfg.input) {
@@ -928,22 +928,42 @@ function showActionModal(cfg) {
         inputBox.style.display = 'none';
     }
 
-    // Handle Custom HTML content if needed
+    // Eski qo'shimcha kontentlarni tozalash (custom HTML yoki oldingi status-tugmalar to'plami)
     const oldContent = overlay.querySelector('.custom-modal-content');
     if (oldContent) oldContent.remove();
-    if (cfg.customContent) {
-        const div = document.createElement('div');
-        div.className = 'custom-modal-content';
-        div.innerHTML = cfg.customContent;
-        desc.after(div);
+    const oldStack = overlay.querySelector('.hr-status-btn-stack');
+    if (oldStack) oldStack.remove();
+
+    if (cfg.stackedActions) {
+        // Bir nechta teng darajadagi harakat (masalan davomat holatini belgilash) —
+        // premium vertikal tugmalar qatori sifatida, standart 2 ustunli grid o'rniga
+        defaultGrid.style.display = 'none';
+        const stack = document.createElement('div');
+        stack.className = 'hr-status-btn-stack';
+        stack.innerHTML = cfg.stackedActions.map((a, i) =>
+            `<button class="hr-status-btn hr-status-btn-${a.variant || 'primary'}" data-idx="${i}">${a.label}</button>`
+        ).join('') + `<button class="hr-status-btn hr-status-btn-ghost" data-cancel="1">Bekor qilish</button>`;
+        desc.after(stack);
+        cfg.stackedActions.forEach((a, i) => {
+            stack.querySelector(`[data-idx="${i}"]`).onclick = a.onClick;
+        });
+        stack.querySelector('[data-cancel]').onclick = () => closeActionModal();
+    } else {
+        defaultGrid.style.display = 'grid';
+        mainBtn.textContent = cfg.confirmText || 'TASDIQLASH';
+        mainBtn.onclick = () => {
+            if (cfg.onConfirm) cfg.onConfirm(inputField.value);
+        };
+        if (cfg.customContent) {
+            const div = document.createElement('div');
+            div.className = 'custom-modal-content';
+            div.innerHTML = cfg.customContent;
+            desc.after(div);
+        }
     }
 
     overlay.style.display = 'flex';
     gsap.fromTo(overlay.querySelector('.modal-content'), { y: -100, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "back.out(1.7)" });
-
-    mainBtn.onclick = () => {
-        if (cfg.onConfirm) cfg.onConfirm(inputField.value);
-    };
 
     lucide.createIcons();
 }
@@ -2460,8 +2480,9 @@ async function onScanSuccess(rawText) {
             title: emp.full_name,
             desc: "DAVOMATNI BELGILANG:",
             icon: "clock",
-            confirmText: "✅ ISHGA KELDI",
-            onConfirm: () => processAttendance(emp, 'in')
+            stackedActions: [
+                { label: "✅ ISHGA KELDI", variant: 'primary', onClick: () => processAttendance(emp, 'in') }
+            ]
         });
     } else if (!att.lunch_start && !att.check_out) {
         // Checked in, still working, hasn't gone to lunch yet
@@ -2469,13 +2490,10 @@ async function onScanSuccess(rawText) {
             title: emp.full_name,
             desc: "DAVOMATNI BELGILANG:",
             icon: "clock",
-            confirmText: "🍔 TUSHLIKKA CHIQDI",
-            onConfirm: () => processAttendance(emp, 'lunch_out'),
-            customContent: `
-                <div style="display:grid; grid-template-columns:1fr; gap:10px; margin-top:20px;">
-                    <button onclick="window.processAttendanceExternal('${emp.id}', 'out')" class="mgmt-btn" style="background:#ff4d4f; color:#fff;">🚪 ISHDAN KETDI</button>
-                </div>
-            `
+            stackedActions: [
+                { label: "🍔 TUSHLIKKA CHIQDI", variant: 'primary', onClick: () => processAttendance(emp, 'lunch_out') },
+                { label: "🚪 ISHDAN KETDI", variant: 'danger', onClick: () => processAttendance(emp, 'out') }
+            ]
         });
     } else if (att.lunch_start && !att.lunch_end) {
         // Currently on lunch break
@@ -2483,8 +2501,9 @@ async function onScanSuccess(rawText) {
             title: emp.full_name,
             desc: "DAVOMATNI BELGILANG:",
             icon: "clock",
-            confirmText: "🔙 TUSHLIKDAN QAYTDI",
-            onConfirm: () => processAttendance(emp, 'lunch_in')
+            stackedActions: [
+                { label: "🔙 TUSHLIKDAN QAYTDI", variant: 'primary', onClick: () => processAttendance(emp, 'lunch_in') }
+            ]
         });
     } else if (!att.check_out) {
         // Back from lunch, still working
@@ -2492,8 +2511,9 @@ async function onScanSuccess(rawText) {
             title: emp.full_name,
             desc: "DAVOMATNI BELGILANG:",
             icon: "clock",
-            confirmText: "🚪 ISHDAN KETDI",
-            onConfirm: () => processAttendance(emp, 'out')
+            stackedActions: [
+                { label: "🚪 ISHDAN KETDI", variant: 'primary', onClick: () => processAttendance(emp, 'out') }
+            ]
         });
     } else {
         // Already checked out today — nothing left to do
@@ -2501,12 +2521,6 @@ async function onScanSuccess(rawText) {
         startScanner();
     }
 }
-
-// Global hook for the custom button
-window.processAttendanceExternal = (id, type) => {
-    const emp = employeesData.find(e => e.id === id);
-    processAttendance(emp, type);
-};
 
 async function processAttendance(emp, type) {
     const today = new Date();

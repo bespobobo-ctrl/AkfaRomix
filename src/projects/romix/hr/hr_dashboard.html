@@ -956,6 +956,61 @@
             transition: 0.3s;
         }
 
+        /* 💎 Davomat holatini belgilash — premium vertikal tugmalar qatori */
+        .hr-status-btn-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .hr-status-btn {
+            padding: 18px 22px;
+            border-radius: 18px;
+            font-weight: 800;
+            font-size: 0.88rem;
+            letter-spacing: 0.3px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .hr-status-btn-primary {
+            background: linear-gradient(135deg, #00ff88, #00cc6e);
+            color: #03150c;
+            box-shadow: 0 10px 24px rgba(0, 255, 136, 0.25);
+        }
+
+        .hr-status-btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 14px 30px rgba(0, 255, 136, 0.35);
+        }
+
+        .hr-status-btn-danger {
+            background: rgba(255, 77, 79, 0.1);
+            color: #ff4d4f;
+            border: 1px solid rgba(255, 77, 79, 0.3);
+        }
+
+        .hr-status-btn-danger:hover {
+            background: rgba(255, 77, 79, 0.18);
+            transform: translateY(-3px);
+        }
+
+        .hr-status-btn-ghost {
+            background: rgba(255, 255, 255, 0.04);
+            color: rgba(255, 255, 255, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        .hr-status-btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+
         .qr-card-plate {
             background: rgba(255, 255, 255, 0.03);
             border-radius: 20px;
@@ -2046,7 +2101,7 @@
                 </div>
             </div>
 
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+            <div id="actionDefaultGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
                 <button onclick="window.closeActionModal()" class="action-btn"
                     style="background:rgba(255,255,255,0.05); color:#fff; height:50px; border-radius:15px; border:1px solid var(--border-glass); cursor:pointer;">BEKOR
                     QILISH</button>
