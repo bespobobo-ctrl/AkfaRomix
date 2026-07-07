@@ -488,6 +488,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (e) { console.warn(`Romix Buh insert exception on ${table}:`, e); }
         return record;
     }
+    // Ikkalasi ham { ok, error } qaytaradi — chaqiruvchi xatoni foydalanuvchiga ko'rsatishi mumkin.
+    // Eski chaqiruvchilar qaytish qiymatini o'qimaydi (await ...;), shuning uchun bu backward-compatible.
     async function romixBuhUpdate(table, localKey, id, patch) {
         let localList = [];
         try { localList = JSON.parse(localStorage.getItem(localKey)) || []; } catch {}
@@ -495,8 +497,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         localStorage.setItem(localKey, JSON.stringify(localList));
         try {
             const { error } = await supabase.from(table).update(patch).eq('id', id);
-            if (error) console.warn(`Romix Buh update failed on ${table}:`, error);
-        } catch (e) { console.warn(`Romix Buh update exception on ${table}:`, e); }
+            if (error) { console.warn(`Romix Buh update failed on ${table}:`, error); return { ok: false, error }; }
+            return { ok: true };
+        } catch (e) { console.warn(`Romix Buh update exception on ${table}:`, e); return { ok: false, error: e }; }
     }
     async function romixBuhDelete(table, localKey, id) {
         let localList = [];
@@ -505,8 +508,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         localStorage.setItem(localKey, JSON.stringify(localList));
         try {
             const { error } = await supabase.from(table).delete().eq('id', id);
-            if (error) console.warn(`Romix Buh delete failed on ${table}:`, error);
-        } catch (e) { console.warn(`Romix Buh delete exception on ${table}:`, e); }
+            if (error) { console.warn(`Romix Buh delete failed on ${table}:`, error); return { ok: false, error }; }
+            return { ok: true };
+        } catch (e) { console.warn(`Romix Buh delete exception on ${table}:`, e); return { ok: false, error: e }; }
     }
 
     let _romixBuhPillsBound = false;
@@ -964,7 +968,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             : { product_name: name.trim(), stock_quantity: parseFloat(qty) || 0, price: parseFloat(price) || 0 };
 
         if (source === 'accessory') {
-            await romixBuhUpdate('romix_accessories', ROMIX_BUH_KEYS.accessories, id, patch);
+            const res = await romixBuhUpdate('romix_accessories', ROMIX_BUH_KEYS.accessories, id, patch);
+            if (res && res.ok === false) { alert("Xatolik: bazada yangilab bo'lmadi — " + (res.error && res.error.message || "sabab noma'lum")); return; }
         } else {
             try {
                 const { error } = await supabase.from('romix_inventory').update(patch).eq('id', id);
@@ -979,7 +984,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.deleteRomixOmborItem = async (source, id, name) => {
         if (!confirm(`"${name}" mahsulotini ombordan o'chirmoqchimisiz?`)) return;
         if (source === 'accessory') {
-            await romixBuhDelete('romix_accessories', ROMIX_BUH_KEYS.accessories, id);
+            const res = await romixBuhDelete('romix_accessories', ROMIX_BUH_KEYS.accessories, id);
+            if (res && res.ok === false) { alert("Xatolik: bazadan o'chirib bo'lmadi — " + (res.error && res.error.message || "sabab noma'lum") + ". (Ehtimol bu mahsulot boshqa yozuvlarda ishlatilgan.)"); return; }
         } else {
             try {
                 const { error } = await supabase.from('romix_inventory').delete().eq('id', id);
@@ -2524,7 +2530,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (error) throw error;
             } catch (err) { alert('Xatolik: ' + err.message); return; }
         } else {
-            await romixBuhUpdate(info.table, info.localKey, id, patch);
+            const res = await romixBuhUpdate(info.table, info.localKey, id, patch);
+            if (res && res.ok === false) { alert("Xatolik: bazada yangilab bo'lmadi — " + (res.error && res.error.message || "sabab noma'lum")); return; }
         }
         await _buhOmborRefetchAndRerender(filter);
         window.showPremiumToast && window.showPremiumToast('Yangilandi', "Mahsulot ma'lumotlari yangilandi.", true);
@@ -2539,7 +2546,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (error) throw error;
             } catch (err) { alert('Xatolik: ' + err.message); return; }
         } else {
-            await romixBuhDelete(info.table, info.localKey, id);
+            const res = await romixBuhDelete(info.table, info.localKey, id);
+            if (res && res.ok === false) { alert("Xatolik: bazadan o'chirib bo'lmadi — " + (res.error && res.error.message || "sabab noma'lum") + ". (Ehtimol bu mahsulot boshqa yozuvlarda ishlatilgan.)"); return; }
         }
         await _buhOmborRefetchAndRerender(filter);
         window.showPremiumToast && window.showPremiumToast("O'chirildi", 'Mahsulot ombordan olib tashlandi.', true);
@@ -3320,9 +3328,10 @@ CREATE TABLE IF NOT EXISTS romix_oynak (
         bindRomixBuhPillTabs();
         bindRomixBuhForms();
 
-        // "Umumiy" paneli sahifada birinchi (eng yuqori) ko'rinadi, shuning uchun uning
-        // ma'lumotlari ham birinchi bo'lib yuklanadi — qolgan bo'limlar ortidan navbatda
-        // kutib, foydalanuvchini bir necha soniya bekorga kutdirmasin.
+        // Har bir panel o'z Supabase so'rovlarini qiladi va bir-biriga bog'liq emas —
+        // avval ketma-ket (await...await) yuklanardi, shuning uchun masalan "Ombor" (8-navbat)
+        // undan oldingi 7 ta panel tugagunicha "Yuklanmoqda..." holida qolib ketardi (3-7 soniya).
+        // Parallel yuklash bilan umumiy vaqt eng sekin bitta so'rov vaqtigacha qisqaradi.
         const steps = [
             ['updateBuhHeroKPIs', updateBuhHeroKPIs],
             ['renderBuhOverview', renderBuhOverview],
@@ -3334,13 +3343,9 @@ CREATE TABLE IF NOT EXISTS romix_oynak (
             ['renderRomixBuhOmbor', renderRomixBuhOmbor],
             ['renderBuhTashqiQarz', renderBuhTashqiQarz]
         ];
-        for (const [name, fn] of steps) {
-            try {
-                await fn();
-            } catch (e) {
-                console.error(`[DEBUG loadRomixBuhgalter] ${name} threw:`, e);
-            }
-        }
+        await Promise.allSettled(steps.map(([name, fn]) =>
+            fn().catch(e => console.error(`[DEBUG loadRomixBuhgalter] ${name} threw:`, e))
+        ));
     }
 
     // Auto-detect and set active Auto Clapak tab based on current URL path
