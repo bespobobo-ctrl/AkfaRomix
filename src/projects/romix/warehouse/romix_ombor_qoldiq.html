@@ -480,43 +480,66 @@
         </div>
     </div>
 
-    <!-- Modal: Qoldiqni Ishlatish (Chiqim) -->
-    <div id="useModal" class="hidden"
-        style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:3000; display:flex; align-items:center; justify-content:center; padding:20px;">
-        <div class="user-form-modal" style="width: 400px; background:var(--adm-surface);">
-            <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
-                <span style="font-size: 1.5rem;">✂️</span>
-                <h2 style="color:var(--adm-text); font-size:1.2rem; margin:0;" id="useModalTitle">Qoldiq Ishlatish</h2>
-            </div>
-            
-            <label class="form-label">Ishlatilayotgan dona soni</label>
-            <input type="number" id="useQty" min="1" value="1" class="form-input-v2" style="margin-bottom:20px;">
-
-            <div style="display:flex; gap:10px;">
-                <button id="confirmUseBtn" style="flex:1; background:#ff8800; color:#fff; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">Chiqim Qilish</button>
-                <button id="closeUseModal" style="flex:1; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; padding:12px; border-radius:12px; cursor:pointer;">Yopish</button>
-            </div>
-        </div>
-    </div>
 
     <!-- SCRIPTS -->
-    <script>
+    <script type="module">
+        import { supabase } from '@/core/supabase.js';
+
         // Setup user details from localStorage
         const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
         if (user) {
             document.getElementById('userName').textContent = (user.full_name || user.username || 'RAHBAR').toUpperCase();
         }
 
-        // Default local storage qoldiq inventory initializer
+        // Default seed (faqat Supabase jadvali butunlay bo'sh bo'lganda, birinchi marta ishlatiladi)
         const defaultQoldiq = [
-            { id: "q1", product_name: "AKFA Plastik 6000 QVT Oq", brand: "AKFA Plastik", series: "6000 QVT", color: "Oq", profile_type: "Profil Frame", length: 1500, stock_quantity: 8, created_at: "2026-07-01T10:00:00.000Z" },
-            { id: "q2", product_name: "AKFA Plastik 6000 TRIO Mocha", brand: "AKFA Plastik", series: "6000 TRIO", color: "Mocha", profile_type: "Profil Frame", length: 2200, stock_quantity: 4, created_at: "2026-07-01T11:30:00.000Z" },
-            { id: "q3", product_name: "Ekopen Plastik 5800 TRIO Oq", brand: "Ekopen Plastik", series: "5800 TRIO", color: "Oq", profile_type: "Shtapik", length: 950, stock_quantity: 15, created_at: "2026-06-30T14:15:00.000Z" },
-            { id: "q4", product_name: "AKFA Alyuminiy 5200 QVT Qora", brand: "AKFA Alyuminiy", series: "5200 QVT", color: "Qora", profile_type: "Tokcha", length: 3100, stock_quantity: 3, created_at: "2026-07-01T12:00:00.000Z" }
+            { id: "q1", product_name: "AKFA Plastik 6000 QVT Oq", brand: "AKFA Plastik", series: "6000 QVT", color: "Oq", profile_type: "Profil Frame", length: 1500, stock_quantity: 8 },
+            { id: "q2", product_name: "AKFA Plastik 6000 TRIO Mocha", brand: "AKFA Plastik", series: "6000 TRIO", color: "Mocha", profile_type: "Profil Frame", length: 2200, stock_quantity: 4 },
+            { id: "q3", product_name: "Ekopen Plastik 5800 TRIO Oq", brand: "Ekopen Plastik", series: "5800 TRIO", color: "Oq", profile_type: "Shtapik", length: 950, stock_quantity: 15 },
+            { id: "q4", product_name: "AKFA Alyuminiy 5200 QVT Qora", brand: "AKFA Alyuminiy", series: "5200 QVT", color: "Qora", profile_type: "Tokcha", length: 3100, stock_quantity: 3 }
         ];
 
-        if (!localStorage.getItem('romix_qoldiq_inventory')) {
-            localStorage.setItem('romix_qoldiq_inventory', JSON.stringify(defaultQoldiq));
+        // Qoldiq Profillar endi Supabase'da (romix_qoldiq_profillar) — localStorage faqat
+        // bir martalik migratsiya manbasi. `qoldiqCache` — xotiradagi joriy ro'yxat nusxasi.
+        let qoldiqCache = [];
+
+        async function fetchQoldiqData() {
+            try {
+                const { count, error: cErr } = await supabase.from('romix_qoldiq_profillar').select('id', { count: 'exact', head: true });
+                if (cErr) throw cErr;
+                if (count === 0) {
+                    const local = JSON.parse(localStorage.getItem('romix_qoldiq_inventory')) || defaultQoldiq;
+                    const rows = local.map((q, i) => ({
+                        id: q.id || ('QLD-' + Date.now() + '-' + i), product_name: q.product_name, brand: q.brand,
+                        series: q.series, color: q.color, profile_type: q.profile_type,
+                        length: Number(q.length) || 0, stock_quantity: Number(q.stock_quantity) || 0
+                    }));
+                    if (rows.length) await supabase.from('romix_qoldiq_profillar').insert(rows);
+                }
+                const { data, error } = await supabase.from('romix_qoldiq_profillar').select('*').order('created_at', { ascending: false });
+                if (error) throw error;
+                qoldiqCache = data || [];
+            } catch (e) {
+                console.warn('Qoldiq Supabase fetch xatosi, localStorage fallback:', e);
+                qoldiqCache = JSON.parse(localStorage.getItem('romix_qoldiq_inventory')) || defaultQoldiq;
+            }
+        }
+
+        async function syncQoldiqToSupabase() {
+            try {
+                localStorage.setItem('romix_qoldiq_inventory', JSON.stringify(qoldiqCache));
+                const rows = qoldiqCache.map(q => ({
+                    id: q.id, product_name: q.product_name, brand: q.brand, series: q.series, color: q.color,
+                    profile_type: q.profile_type, length: Number(q.length) || 0, stock_quantity: Number(q.stock_quantity) || 0
+                }));
+                if (rows.length) await supabase.from('romix_qoldiq_profillar').upsert(rows);
+                const { data: existing } = await supabase.from('romix_qoldiq_profillar').select('id');
+                const currentIds = new Set(rows.map(r => r.id));
+                const toDelete = (existing || []).filter(e => !currentIds.has(e.id)).map(e => e.id);
+                if (toDelete.length) await supabase.from('romix_qoldiq_profillar').delete().in('id', toDelete);
+            } catch (e) {
+                console.warn('Qoldiq Supabase sync xatosi:', e);
+            }
         }
 
         // State filters
@@ -565,10 +588,9 @@
         // Load & Filter Data
         function loadQoldiqData(searchQuery = '') {
             const grid = document.getElementById('qoldiqGrid');
-            const data = JSON.parse(localStorage.getItem('romix_qoldiq_inventory') || '[]');
 
-            // Filter data
-            let filtered = data;
+            // Filter data (xotiradagi qoldiqCache'dan — Supabase'dan faqat fetchQoldiqData() orqali yangilanadi)
+            let filtered = qoldiqCache;
 
             // 1. Brand Filter
             filtered = filtered.filter(p => p.brand.toUpperCase().includes(window.activeBrand.toUpperCase()));
@@ -628,7 +650,6 @@
                     <div class="card-footer">
                         <span class="qty-val">${p.stock_quantity} dona</span>
                         <div class="card-actions">
-                            <button class="action-btn use-btn" data-id="${p.id}" title="Chiqim/Ishlatish">✂️</button>
                             <button class="action-btn delete delete-btn" data-id="${p.id}" title="O'chirish" style="color:#ff4d4f;">🗑️</button>
                         </div>
                     </div>
@@ -641,25 +662,9 @@
                 b.onclick = () => {
                     if (confirm("Ushbu qoldiqni o'chirmoqchimisiz?")) {
                         const id = b.dataset.id;
-                        let inventory = JSON.parse(localStorage.getItem('romix_qoldiq_inventory') || '[]');
-                        inventory = inventory.filter(x => x.id !== id);
-                        localStorage.setItem('romix_qoldiq_inventory', JSON.stringify(inventory));
+                        qoldiqCache = qoldiqCache.filter(x => x.id !== id);
+                        syncQoldiqToSupabase();
                         loadQoldiqData(document.getElementById('qoldiqSearch').value);
-                    }
-                };
-            });
-
-            document.querySelectorAll('.use-btn').forEach(b => {
-                b.onclick = () => {
-                    const id = b.dataset.id;
-                    const inventory = JSON.parse(localStorage.getItem('romix_qoldiq_inventory') || '[]');
-                    const p = inventory.find(x => x.id === id);
-                    if (p) {
-                        window.currentUsingId = id;
-                        document.getElementById('useQty').max = p.stock_quantity;
-                        document.getElementById('useQty').value = 1;
-                        document.getElementById('useModalTitle').textContent = `Qoldiq Ishlatish (${p.length} mm)`;
-                        document.getElementById('useModal').classList.remove('hidden');
                     }
                 };
             });
@@ -675,32 +680,6 @@
         document.getElementById('openQoldiqModal').onclick = () => modal.classList.remove('hidden');
         document.getElementById('closeQoldiqModal').onclick = () => modal.classList.add('hidden');
 
-        const useModal = document.getElementById('useModal');
-        document.getElementById('closeUseModal').onclick = () => useModal.classList.add('hidden');
-
-        // Confirm Use
-        document.getElementById('confirmUseBtn').onclick = () => {
-            const qty = parseInt(document.getElementById('useQty').value) || 0;
-            if (qty <= 0) return alert("Dona sonini to'g'ri kiriting!");
-            
-            let inventory = JSON.parse(localStorage.getItem('romix_qoldiq_inventory') || '[]');
-            const p = inventory.find(x => x.id === window.currentUsingId);
-            if (p) {
-                if (qty > p.stock_quantity) {
-                    return alert("Omborda yetarli qoldiq mavjud emas!");
-                }
-                p.stock_quantity -= qty;
-                // If quantity reaches 0, we can keep or delete it. Let's filter out 0 quantities
-                if (p.stock_quantity <= 0) {
-                    inventory = inventory.filter(x => x.id !== window.currentUsingId);
-                }
-                localStorage.setItem('romix_qoldiq_inventory', JSON.stringify(inventory));
-                useModal.classList.add('hidden');
-                loadQoldiqData(document.getElementById('qoldiqSearch').value);
-                alert("Muvaffaqiyatli chiqim qilindi!");
-            }
-        };
-
         // Save New Qoldiq
         document.getElementById('saveQoldiqBtn').onclick = () => {
             const brand = document.getElementById('qkBrend').value;
@@ -714,7 +693,7 @@
                 return alert("Uzunlik va dona sonini to'g'ri kiriting!");
             }
 
-            const newId = 'q-' + Date.now();
+            const newId = 'QLD-' + Date.now();
             const prodName = `${brand} ${series} ${color}`;
 
             const newItem = {
@@ -725,31 +704,28 @@
                 color: color,
                 profile_type: profile,
                 length: length,
-                stock_quantity: qty,
-                created_at: new Date().toISOString()
+                stock_quantity: qty
             };
 
-            const inventory = JSON.parse(localStorage.getItem('romix_qoldiq_inventory') || '[]');
-            
             // Check if exact remnant profile (brand, series, color, length, profile_type) already exists, if so merge quantity
-            const existing = inventory.find(x => 
-                x.brand === brand && 
-                x.series === series && 
-                x.color === color && 
-                x.length === length && 
+            const existing = qoldiqCache.find(x =>
+                x.brand === brand &&
+                x.series === series &&
+                x.color === color &&
+                x.length === length &&
                 x.profile_type === profile
             );
 
             if (existing) {
                 existing.stock_quantity += qty;
             } else {
-                inventory.unshift(newItem);
+                qoldiqCache.unshift(newItem);
             }
 
-            localStorage.setItem('romix_qoldiq_inventory', JSON.stringify(inventory));
+            syncQoldiqToSupabase();
             modal.classList.add('hidden');
             loadQoldiqData();
-            
+
             // Clear inputs
             document.getElementById('qkUzunlik').value = '';
             document.getElementById('qkSoni').value = '';
@@ -758,6 +734,7 @@
         // Run on start
         renderBrands();
         renderCategories();
+        await fetchQoldiqData();
         loadQoldiqData();
     </script>
 </body>
