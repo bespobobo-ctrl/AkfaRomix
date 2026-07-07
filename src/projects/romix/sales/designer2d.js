@@ -21,6 +21,7 @@ export function createDesigner(host, opts = {}) {
     let root = { id: uid(), kind: 'leaf', opening: 'kar' };
     let selected = root.id;
     let out = { cells: [], imposts: [] }; // render()da to'ldiriladi, bindSvg() bo'lim o'lchamini shundan topadi
+    let frameOnly = false; // true bo'lsa — kesim hisobida faqat tashqi ramka (impost/stvorka/shtapiksiz)
     const onChange = opts.onChange || (() => { });
 
     const itemWidthInput = document.getElementById('itemWidth');
@@ -124,6 +125,8 @@ export function createDesigner(host, opts = {}) {
                 <button type="button" class="d2-btn" id="d2-split-double">｜｜<br>2 Tavaqa</button>
                 <div style="height:10px;"></div>
                 <button type="button" class="d2-btn d2-btn-danger" id="d2-delete-btn">🗑️<br>O'chirish</button>
+                <div style="height:10px;"></div>
+                <button type="button" class="d2-btn" id="d2-frame-only" title="Bo'lim/stvorka/oyna hisoblanmaydi — faqat tashqi ramka profili kesiladi">🖼️<br>Faqat Ramka</button>
             </div>
         </div>
 
@@ -182,6 +185,27 @@ export function createDesigner(host, opts = {}) {
     host.querySelector('#d2-split-h').onclick = () => addImpost('h');
     host.querySelector('#d2-split-double').onclick = () => addDoubleSplit('v');
     host.querySelector('#d2-delete-btn').onclick = () => deleteSelected();
+
+    // Faqat Ramka — bo'lim/stvorka/oyna hisobsiz, kesim PDF'da faqat tashqi ramka profili chiqadi
+    const frameOnlyBtn = host.querySelector('#d2-frame-only');
+    frameOnlyBtn.onclick = () => {
+        frameOnly = !frameOnly;
+        if (frameOnly) {
+            root = { id: uid(), kind: 'leaf', opening: 'kar' };
+            selected = root.id;
+        }
+        frameOnlyBtn.classList.toggle('active', frameOnly);
+        host.querySelectorAll('#d2-split-v, #d2-split-h, #d2-split-double').forEach(b => {
+            b.disabled = frameOnly;
+            b.style.opacity = frameOnly ? '0.35' : '';
+            b.style.pointerEvents = frameOnly ? 'none' : '';
+        });
+        leftSidebar.querySelectorAll('[data-op]').forEach(b => {
+            b.disabled = frameOnly;
+            b.style.pointerEvents = frameOnly ? 'none' : '';
+        });
+        render(); onChange();
+    };
 
     leftSidebar.querySelectorAll('[data-op]').forEach(b => {
         b.onclick = () => setOpening(b.getAttribute('data-op'));
@@ -433,7 +457,7 @@ export function createDesigner(host, opts = {}) {
 
         leftSidebar.querySelectorAll('[data-op]').forEach(b => {
             const op = b.getAttribute('data-op');
-            if (isLeaf) {
+            if (isLeaf && !frameOnly) {
                 b.disabled = false;
                 b.style.opacity = '1';
                 if (cur === op) {
@@ -453,7 +477,7 @@ export function createDesigner(host, opts = {}) {
 
     return {
         setSize(w, h) { W = Math.max(300, Math.round(w) || W); H = Math.max(300, Math.round(h) || H); render(); },
-        getModel() { return { W, H, tree: JSON.parse(JSON.stringify(root)) }; },
+        getModel() { return { W, H, tree: JSON.parse(JSON.stringify(root)), frameOnly }; },
         render
     };
 }
