@@ -843,12 +843,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div style="display:flex; justify-content:space-between; font-size:0.76rem; color:rgba(255,255,255,0.5);">
                         <span>Jami qiymat</span><strong style="color:#00d2ff; font-family:monospace;">${_buhFmt(val)}</strong>
                     </div>
-                    <button onclick="window.openRomixPriceModal('inventory', '${p.id}', '${nameEsc}', ${p.price || 0}, ${qty}, '${unitEsc}')"
-                        style="display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(0,186,255,0.1); border:1px solid rgba(0,186,255,0.25); color:#00baff; padding:9px; border-radius:10px; font-size:0.76rem; font-weight:700; cursor:pointer; transition:all 0.2s; width:100%; margin-top:2px;"
-                        onmouseenter="this.style.background='rgba(0,186,255,0.2)'; this.style.transform='translateY(-1px)';"
-                        onmouseleave="this.style.background='rgba(0,186,255,0.1)'; this.style.transform='translateY(0)';">
-                        💲 Narx belgilash
-                    </button>
+                    <div style="display:flex; gap:6px; margin-top:2px;">
+                        <button onclick="window.openRomixPriceModal('inventory', '${p.id}', '${nameEsc}', ${p.price || 0}, ${qty}, '${unitEsc}')"
+                            style="flex:2; display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(0,186,255,0.1); border:1px solid rgba(0,186,255,0.25); color:#00baff; padding:9px; border-radius:10px; font-size:0.74rem; font-weight:700; cursor:pointer;">
+                            💲 Narx
+                        </button>
+                        <button onclick="window.editRomixOmborItem('inventory', '${p.id}', '${nameEsc}', ${qty}, ${p.price || 0}, '${unitEsc}')"
+                            title="Tahrirlash" style="flex:1; background:rgba(0,255,136,0.1); border:1px solid rgba(0,255,136,0.25); color:#00ff88; padding:9px; border-radius:10px; font-size:0.85rem; cursor:pointer;">✏️</button>
+                        <button onclick="window.deleteRomixOmborItem('inventory', '${p.id}', '${nameEsc}')"
+                            title="O'chirish" style="flex:1; background:rgba(255,77,79,0.1); border:1px solid rgba(255,77,79,0.25); color:#ff4d4f; padding:9px; border-radius:10px; font-size:0.85rem; cursor:pointer;">🗑️</button>
+                    </div>
                 </div>`;
             }).join('');
 
@@ -875,12 +879,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div style="display:flex; justify-content:space-between; font-size:0.76rem; color:rgba(255,255,255,0.5);">
                         <span>Jami qiymat</span><strong style="color:#00d2ff; font-family:monospace;">${_buhFmt(val)}</strong>
                     </div>
-                    <button onclick="window.openRomixPriceModal('accessory', '${a.id}', '${nameEsc}', ${price}, ${qty}, '${unitEsc}')"
-                        style="display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(186,104,200,0.1); border:1px solid rgba(186,104,200,0.25); color:#BA68C8; padding:9px; border-radius:10px; font-size:0.76rem; font-weight:700; cursor:pointer; transition:all 0.2s; width:100%; margin-top:2px;"
-                        onmouseenter="this.style.background='rgba(186,104,200,0.2)'; this.style.transform='translateY(-1px)';"
-                        onmouseleave="this.style.background='rgba(186,104,200,0.1)'; this.style.transform='translateY(0)';">
-                        💲 Narx belgilash
-                    </button>
+                    <div style="display:flex; gap:6px; margin-top:2px;">
+                        <button onclick="window.openRomixPriceModal('accessory', '${a.id}', '${nameEsc}', ${price}, ${qty}, '${unitEsc}')"
+                            style="flex:2; display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(186,104,200,0.1); border:1px solid rgba(186,104,200,0.25); color:#BA68C8; padding:9px; border-radius:10px; font-size:0.74rem; font-weight:700; cursor:pointer;">
+                            💲 Narx
+                        </button>
+                        <button onclick="window.editRomixOmborItem('accessory', '${a.id}', '${nameEsc}', ${qty}, ${price}, '${unitEsc}')"
+                            title="Tahrirlash" style="flex:1; background:rgba(0,255,136,0.1); border:1px solid rgba(0,255,136,0.25); color:#00ff88; padding:9px; border-radius:10px; font-size:0.85rem; cursor:pointer;">✏️</button>
+                        <button onclick="window.deleteRomixOmborItem('accessory', '${a.id}', '${nameEsc}')"
+                            title="O'chirish" style="flex:1; background:rgba(255,77,79,0.1); border:1px solid rgba(255,77,79,0.25); color:#ff4d4f; padding:9px; border-radius:10px; font-size:0.85rem; cursor:pointer;">🗑️</button>
+                    </div>
                 </div>`;
             }).join('');
 
@@ -944,6 +952,43 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (err) {
             alert('Xatolik: ' + err.message);
         }
+    };
+
+    // Ombor (Kirim) kartochkalarida — Profil/Aksesuar mahsulotini tahrirlash/o'chirish (Narx belgilashdan tashqari)
+    window.editRomixOmborItem = async (source, id, currentName, currentQty, currentPrice, currentUnit) => {
+        const name = prompt('Nomi:', currentName || ''); if (name === null) return;
+        const qty = prompt('Miqdor:', currentQty || 0); if (qty === null) return;
+        const price = prompt('Narx (1 birlik):', currentPrice || 0); if (price === null) return;
+        const patch = source === 'accessory'
+            ? { name: name.trim(), qty: parseFloat(qty) || 0, price: parseFloat(price) || 0 }
+            : { product_name: name.trim(), stock_quantity: parseFloat(qty) || 0, price: parseFloat(price) || 0 };
+
+        if (source === 'accessory') {
+            await romixBuhUpdate('romix_accessories', ROMIX_BUH_KEYS.accessories, id, patch);
+        } else {
+            try {
+                const { error } = await supabase.from('romix_inventory').update(patch).eq('id', id);
+                if (error) throw error;
+            } catch (err) { alert('Xatolik: ' + err.message); return; }
+        }
+        window.showPremiumToast && window.showPremiumToast('Yangilandi', "Mahsulot ma'lumotlari yangilandi.", true);
+        await renderRomixBuhOmbor();
+        await renderBuhOverview();
+    };
+
+    window.deleteRomixOmborItem = async (source, id, name) => {
+        if (!confirm(`"${name}" mahsulotini ombordan o'chirmoqchimisiz?`)) return;
+        if (source === 'accessory') {
+            await romixBuhDelete('romix_accessories', ROMIX_BUH_KEYS.accessories, id);
+        } else {
+            try {
+                const { error } = await supabase.from('romix_inventory').delete().eq('id', id);
+                if (error) throw error;
+            } catch (err) { alert('Xatolik: ' + err.message); return; }
+        }
+        window.showPremiumToast && window.showPremiumToast("O'chirildi", 'Mahsulot ombordan olib tashlandi.', true);
+        await renderRomixBuhOmbor();
+        await renderBuhOverview();
     };
 
     // ========================================================
