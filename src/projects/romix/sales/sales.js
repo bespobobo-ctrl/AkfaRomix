@@ -961,13 +961,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Buyurtma tarkibi — nechta va qanday mahsulot olingani (model_name'ga yozilgan JSON savatdan)
         let items = [];
         try { items = JSON.parse(o.model_name) || []; } catch (e) { items = []; }
+        // Item.width/height 'metr'da saqlanadi (hisob-kitob uchun), ko'rinishda mm'ga qaytarib beramiz —
+        // aks holda 1500x2000mm o'rniga chalkash "1.5x2mm" ko'rinar edi.
         const itemsHtml = items.length
-            ? items.map(it => `
-                <div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px dashed var(--adm-border); font-size:0.78rem;">
-                    <span style="color:var(--adm-text);">${it.typeName || it.type || ''} — ${it.materialName || ''}${it.width ? ` (${it.width}x${it.height || 0}mm)` : ''}</span>
-                    <strong style="color:var(--adm-text-sec); white-space:nowrap; margin-left:10px;">${it.quantity || 1} ta</strong>
-                </div>
-            `).join('')
+            ? items.map(it => {
+                const wMM = Math.round((Number(it.width) || 0) * 1000);
+                const hMM = Math.round((Number(it.height) || 0) * 1000);
+                let sizeText = '';
+                if (['rom', 'rom_fortochka', 'eshik'].includes(it.type) && wMM > 0 && hMM > 0) {
+                    sizeText = ` (${wMM} x ${hMM} mm)`;
+                } else if (it.type === 'padakonnik' && wMM > 0) {
+                    sizeText = ` (${wMM} mm)`;
+                }
+                return `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px dashed var(--adm-border); font-size:0.78rem;">
+                        <span style="color:var(--adm-text);">${it.typeName || it.type || ''} — ${it.materialName || ''}${sizeText}</span>
+                        <strong style="color:var(--adm-text-sec); white-space:nowrap; margin-left:10px;">${it.quantity || 1} ta</strong>
+                    </div>
+                `;
+            }).join('')
             : `<div style="font-size:0.78rem; color:var(--adm-text-sec);">${o.model_name || o.prod_type || "Ma'lumot yo'q"}</div>`;
         const totalQty = items.length ? items.reduce((s, it) => s + (Number(it.quantity) || 0), 0) : (Number(o.quantity) || 1);
 
