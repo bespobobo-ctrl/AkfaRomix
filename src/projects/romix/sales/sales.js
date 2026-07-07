@@ -5,9 +5,12 @@ import { createDesigner } from './designer2d.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const user = JSON.parse(localStorage.getItem('currentUser'));
-    if (!user || (user.role !== 'sotuv' && user.role !== 'admin')) {
+    if (!user || !['sotuv', 'admin', 'sotuvchi'].includes(user.role)) {
         window.location.href = '/';
     }
+    // "sotuvchi" — Sozlamalarda qo'shilgan yordamchi sotuv xodimi: faqat buyurtma olish oynasini ko'radi,
+    // analitika/harakat grafigi/to'lovlar tarixi/sotuvchilar boshqaruviga kirmaydi.
+    const isLimitedAgent = user.role === 'sotuvchi';
 
     document.getElementById('userName').textContent = user.full_name || "Sotuv Menejeri";
 
@@ -40,6 +43,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('settingsUserName').textContent = user?.full_name || '---';
             document.getElementById('settingsUserLogin').textContent = user?.username || '---';
             document.getElementById('settingsUserRole').textContent = (user?.role || '---').toUpperCase();
+            if (!isLimitedAgent) {
+                document.getElementById('salesAgentsSection').classList.remove('hidden');
+                loadSalesAgents();
+            }
         }
     }
 
@@ -49,6 +56,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (tab) switchTab(tab);
         };
     });
+
+    // "sotuvchi" — faqat buyurtma olish oynasi ko'rinadi: boshqa tablar/analitika/ro'yxat berkitiladi,
+    // buyurtma yaratish oynasi darhol ochiladi.
+    if (isLimitedAgent) {
+        document.querySelectorAll('.nav-icon[data-tab]').forEach(el => {
+            if (el.getAttribute('data-tab') !== 'dashboard') el.style.display = 'none';
+        });
+        const kpiRow = document.getElementById('dashboardKpiRow');
+        const ordersList = document.getElementById('dashboardOrdersList');
+        if (kpiRow) kpiRow.style.display = 'none';
+        if (ordersList) ordersList.style.display = 'none';
+    }
 
     // Multi-item Order Constructor Settings
     const AVAILABLE_MATERIALS = {
@@ -1447,6 +1466,85 @@ document.addEventListener('DOMContentLoaded', async () => {
         loadOrders();
     };
 
+    // ═══════════ Sozlamalar — Sotuvchilar (yordamchi login/parol) boshqaruvi ═══════════
+    async function loadSalesAgents() {
+        const list = document.getElementById('salesAgentsList');
+        if (!list) return;
+        list.innerHTML = '<div style="text-align:center; color:var(--adm-text-sec); padding:14px;">Yuklanmoqda...</div>';
+
+        let agents = [];
+        try {
+            const { data, error } = await supabase.from('system_users').select('*').eq('role', 'sotuvchi').order('full_name', { ascending: true });
+            if (error) throw error;
+            agents = data || [];
+        } catch (err) {
+            console.warn('loadSalesAgents Supabase failed, using local storage:', err);
+            const local = JSON.parse(localStorage.getItem('system_users_local') || '[]');
+            agents = local.filter(u => u.role === 'sotuvchi');
+        }
+
+        if (agents.length === 0) {
+            list.innerHTML = `<div style="text-align:center; color:var(--adm-text-sec); padding:14px; font-size:0.82rem;">Hali sotuvchi qo'shilmagan</div>`;
+            return;
+        }
+        list.innerHTML = agents.map(a => `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:var(--adm-surface); border:1px solid var(--adm-border); border-radius:12px; padding:12px 16px;">
+                <div>
+                    <div style="font-weight:700; color:var(--adm-text); font-size:0.85rem;">${a.full_name}</div>
+                    <div style="font-size:0.72rem; color:var(--adm-text-sec); margin-top:2px;">${a.phone || '---'} — login: <code>${a.username}</code> / <code>${a.password}</code></div>
+                </div>
+                <button class="del-sales-agent-btn" data-id="${a.id}" style="background:rgba(255,77,79,0.1); border:1px solid rgba(255,77,79,0.2); color:#ff4d4f; padding:6px 10px; border-radius:8px; cursor:pointer; font-size:0.78rem;">🗑️</button>
+            </div>
+        `).join('');
+        list.querySelectorAll('.del-sales-agent-btn').forEach(b => {
+            b.onclick = async () => {
+                if (!confirm("Ushbu sotuvchini o'chirmoqchimisiz?")) return;
+                const id = b.dataset.id;
+                try { await supabase.from('system_users').delete().eq('id', id); } catch (e) { console.warn('delete sales agent failed:', e); }
+                const local = JSON.parse(localStorage.getItem('system_users_local') || '[]');
+                localStorage.setItem('system_users_local', JSON.stringify(local.filter(u => u.id !== id)));
+                loadSalesAgents();
+            };
+        });
+    }
+
+    const addSalesAgentModal = document.getElementById('addSalesAgentModal');
+    const openAddSalesAgentBtn = document.getElementById('openAddSalesAgentModal');
+    if (openAddSalesAgentBtn) {
+        openAddSalesAgentBtn.onclick = () => {
+            ['saName', 'saPhone', 'saUsername', 'saPassword'].forEach(id => document.getElementById(id).value = '');
+            addSalesAgentModal.classList.remove('hidden');
+        };
+    }
+    const closeAddSalesAgentBtn = document.getElementById('closeAddSalesAgentModal');
+    if (closeAddSalesAgentBtn) closeAddSalesAgentBtn.onclick = () => addSalesAgentModal.classList.add('hidden');
+
+    const saveSalesAgentBtn = document.getElementById('saveSalesAgentBtn');
+    if (saveSalesAgentBtn) {
+        saveSalesAgentBtn.onclick = async () => {
+            const full_name = document.getElementById('saName').value.trim();
+            const phone = document.getElementById('saPhone').value.trim();
+            const username = document.getElementById('saUsername').value.trim();
+            const password = document.getElementById('saPassword').value.trim();
+            if (!full_name || !username || !password) return alert("Ism, login va parolni to'ldiring!");
+
+            const payload = { full_name, phone, username, password, role: 'sotuvchi' };
+            try {
+                const { error } = await supabase.from('system_users').insert([payload]);
+                if (error) throw error;
+            } catch (err) {
+                console.warn('Supabase insert sales agent failed, saving locally:', err);
+                const local = JSON.parse(localStorage.getItem('system_users_local') || '[]');
+                local.push({ ...payload, id: 'local-' + Date.now() });
+                localStorage.setItem('system_users_local', JSON.stringify(local));
+            }
+
+            addSalesAgentModal.classList.add('hidden');
+            loadSalesAgents();
+            alert(`Sotuvchi qo'shildi! Login: ${username} / Parol: ${password}`);
+        };
+    }
+
     // Assignments & Print Material Requisition
 
     // Close buttons
@@ -1538,4 +1636,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     syncMaterialPrices();
     loadOrders();
+
+    // Yordamchi sotuvchi kirishi bilan darhol buyurtma olish oynasi ochiladi (yagona ko'radigan oynasi)
+    if (isLimitedAgent) document.getElementById('openOrderModal').click();
 });

@@ -152,7 +152,7 @@
                         Yangi Buyurtma Olish</button>
                 </div>
 
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px;">
+                <div id="dashboardKpiRow" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px;">
                     <div class="kpi-card period-kpi-card" data-period="today" style="cursor:pointer;" title="Batafsil ko'rish uchun bosing">
                         <span style="font-size: 0.8rem; color: var(--adm-text-sec);">BUGUN (KUNLIK)</span>
                         <h2 style="font-size: 1.6rem; font-weight: 700;"><span class="kpiPeriodSum" data-period="today">0</span> <small style="font-size: 0.8rem;">UZS</small></h2>
@@ -175,7 +175,7 @@
                     </div>
                 </div>
 
-                <div class="bento-grid">
+                <div id="dashboardOrdersList" class="bento-grid">
                     <div class="bento-card" style="grid-column: span 4;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
                             <h3 style="font-weight: 600;">Oxirgi buyurtmalar</h3>
@@ -232,6 +232,16 @@
                             <strong id="settingsUserRole" style="color:var(--adm-text);">---</strong>
                         </div>
                     </div>
+                </div>
+
+                <div id="salesAgentsSection" class="bento-card hidden" style="max-width:560px; margin-top:20px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+                        <h3 style="font-weight: 600; margin:0;">🧑‍💼 Sotuvchilar</h3>
+                        <button id="openAddSalesAgentModal" class="primary-btn"
+                            style="background:#00d2ff; color:#000; border:none; padding:9px 16px; border-radius:12px; font-weight:700; cursor:pointer; font-size:0.82rem;">+
+                            Yangi Sotuvchi Qo'shish</button>
+                    </div>
+                    <div id="salesAgentsList" style="display:flex; flex-direction:column; gap:10px;"></div>
                 </div>
             </section>
         </main>
@@ -495,6 +505,31 @@
                     style="flex:1; background:#00d2ff; color:#000; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">Saqlash</button>
                 <button id="closeEditOrderModal"
                     style="flex:1; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; border-radius:12px; cursor:pointer;">Yopish</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Yangi Sotuvchi Qo'shish -->
+    <div id="addSalesAgentModal" class="hidden"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center;">
+        <div class="user-form-modal" style="width: 460px; background:var(--adm-surface);">
+            <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+                <span style="font-size: 1.5rem;">🧑‍💼</span>
+                <h2 style="color:var(--adm-text);">Yangi Sotuvchi</h2>
+            </div>
+            <label class="form-label">Ism Familiya</label>
+            <input type="text" id="saName" class="form-input-v2" placeholder="Ism Familiya">
+            <label class="form-label">Telefon Raqami</label>
+            <input type="text" id="saPhone" class="form-input-v2" placeholder="+998">
+            <label class="form-label">Login</label>
+            <input type="text" id="saUsername" class="form-input-v2" placeholder="login">
+            <label class="form-label">Parol</label>
+            <input type="text" id="saPassword" class="form-input-v2" placeholder="parol">
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button id="saveSalesAgentBtn"
+                    style="flex:1; background:#00d2ff; color:#000; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">Saqlash</button>
+                <button id="closeAddSalesAgentModal"
+                    style="flex:1; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; border-radius:12px; cursor:pointer;">Bekor qilish</button>
             </div>
         </div>
     </div>
