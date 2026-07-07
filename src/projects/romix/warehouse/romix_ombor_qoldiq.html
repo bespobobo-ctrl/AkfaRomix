@@ -732,10 +732,12 @@
         };
 
         // Run on start
-        renderBrands();
-        renderCategories();
-        await fetchQoldiqData();
-        loadQoldiqData();
+        (async () => {
+            renderBrands();
+            renderCategories();
+            await fetchQoldiqData();
+            loadQoldiqData();
+        })();
     </script>
 </body>
 
