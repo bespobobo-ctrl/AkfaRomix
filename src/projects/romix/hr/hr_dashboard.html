@@ -585,6 +585,27 @@
             }
         }
 
+        /* Brauzer avtomatik to'ldirishini (masalan login "hr" so'zini qidiruv maydoniga
+           yozib qo'yishi) darhol aniqlash uchun trik — WebKit/Chromium avtomatik
+           to'ldirilgan maydonga maxsus CSS holat qo'llaydi, buni animatsiya orqali ushlaymiz */
+        @keyframes onAutoFillStart {
+            from {}
+            to {}
+        }
+
+        @keyframes onAutoFillCancel {
+            from {}
+            to {}
+        }
+
+        #hrSearchPrimary:-webkit-autofill {
+            animation-name: onAutoFillStart;
+        }
+
+        #hrSearchPrimary:not(:-webkit-autofill) {
+            animation-name: onAutoFillCancel;
+        }
+
         /* MODALS */
         .modal-blur {
             position: fixed;

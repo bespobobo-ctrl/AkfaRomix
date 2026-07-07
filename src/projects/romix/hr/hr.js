@@ -195,12 +195,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadInitialData();
     bindGlobalHwScanner(); // Netum kabi USB/Bluetooth skaner butun panelda (bo'limdan qat'i nazar) darhol ishlaydi
 
-    // Fight aggressive browser autofill by clearing "hr" or "admin" from search bar programmatically if not focused
+    // Fight aggressive browser autofill by clearing "hr"/"admin"/login username from search bar
+    const _hrAutofillJunkValues = new Set(['hr', 'admin', (user.username || '').toLowerCase()]);
     const cleanAutofill = () => {
         const searchInput = document.getElementById('hrSearchPrimary');
         if (searchInput && document.activeElement !== searchInput) {
             const val = searchInput.value.toLowerCase().trim();
-            if (val === 'hr' || val === 'admin') {
+            if (_hrAutofillJunkValues.has(val)) {
                 searchInput.value = '';
                 filterAndRender();
             }
@@ -208,6 +209,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     for (let delay of [100, 300, 500, 1000, 2000]) {
         setTimeout(cleanAutofill, delay);
+    }
+    // Aniqroq usul: WebKit/Chromium avtomatik to'ldirganda maxsus CSS holatga o'tadi —
+    // buni CSS animatsiya orqali darhol (kechikishsiz) ushlab, tozalaymiz.
+    const hrSearchInputEl = document.getElementById('hrSearchPrimary');
+    if (hrSearchInputEl) {
+        hrSearchInputEl.addEventListener('animationstart', (e) => {
+            if (e.animationName === 'onAutoFillStart') cleanAutofill();
+        });
     }
 });
 
