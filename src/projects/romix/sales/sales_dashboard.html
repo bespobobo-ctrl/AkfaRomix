@@ -151,22 +151,25 @@
                 </div>
 
                 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px;">
-                    <div id="kpiTotalCard" class="kpi-card" style="cursor:pointer;" title="Batafsil ko'rish uchun bosing"><span style="font-size: 0.8rem; color: var(--adm-text-sec);">UMUMIY
-                            TUSHUM</span>
-                        <h2 style="font-size: 1.8rem; font-weight: 700;"><span id="kpiTotal">0</span> <small
-                                style="font-size: 0.8rem;">UZS</small></h2>
-                        <small style="font-size: 0.68rem; color: var(--adm-text-sec);">👁️ batafsil</small>
+                    <div class="kpi-card period-kpi-card" data-period="today" style="cursor:pointer;" title="Batafsil ko'rish uchun bosing">
+                        <span style="font-size: 0.8rem; color: var(--adm-text-sec);">BUGUN (KUNLIK)</span>
+                        <h2 style="font-size: 1.6rem; font-weight: 700;"><span class="kpiPeriodSum" data-period="today">0</span> <small style="font-size: 0.8rem;">UZS</small></h2>
+                        <small class="kpiPeriodCount" style="font-size: 0.7rem; color: var(--adm-text-sec);" data-period="today">0 ta buyurtma</small>
                     </div>
-                    <div class="kpi-card"><span
-                            style="font-size: 0.8rem; color: var(--adm-text-sec);">BUYURTMALAR</span>
-                        <h2 style="font-size: 1.8rem; font-weight: 700;" id="kpiCount">0</h2>
+                    <div class="kpi-card period-kpi-card" data-period="week" style="cursor:pointer;" title="Batafsil ko'rish uchun bosing">
+                        <span style="font-size: 0.8rem; color: var(--adm-text-sec);">BU HAFTA (HAFTALIK)</span>
+                        <h2 style="font-size: 1.6rem; font-weight: 700;"><span class="kpiPeriodSum" data-period="week">0</span> <small style="font-size: 0.8rem;">UZS</small></h2>
+                        <small class="kpiPeriodCount" style="font-size: 0.7rem; color: var(--adm-text-sec);" data-period="week">0 ta buyurtma</small>
                     </div>
-                    <div class="kpi-card"><span style="font-size: 0.8rem; color: var(--adm-text-sec);">O'RTACHA
-                            CHEK</span>
-                        <h2 style="font-size: 1.8rem; font-weight: 700;">---</h2>
+                    <div class="kpi-card period-kpi-card" data-period="month" style="cursor:pointer;" title="Batafsil ko'rish uchun bosing">
+                        <span style="font-size: 0.8rem; color: var(--adm-text-sec);">BU OY (OYLIK)</span>
+                        <h2 style="font-size: 1.6rem; font-weight: 700;"><span class="kpiPeriodSum" data-period="month">0</span> <small style="font-size: 0.8rem;">UZS</small></h2>
+                        <small class="kpiPeriodCount" style="font-size: 0.7rem; color: var(--adm-text-sec);" data-period="month">0 ta buyurtma</small>
                     </div>
-                    <div class="kpi-card"><span style="font-size: 0.8rem; color: var(--adm-text-sec);">KONVERSIYA</span>
-                        <h2 style="font-size: 1.8rem; font-weight: 700;">28%</h2>
+                    <div class="kpi-card period-kpi-card" data-period="all" style="cursor:pointer;" title="Batafsil ko'rish uchun bosing">
+                        <span style="font-size: 0.8rem; color: var(--adm-text-sec);">JAMI (BARCHA VAQT)</span>
+                        <h2 style="font-size: 1.6rem; font-weight: 700;"><span class="kpiPeriodSum" data-period="all">0</span> <small style="font-size: 0.8rem;">UZS</small></h2>
+                        <small class="kpiPeriodCount" style="font-size: 0.7rem; color: var(--adm-text-sec);" data-period="all">0 ta buyurtma</small>
                     </div>
                 </div>
 
@@ -467,35 +470,47 @@
     <!-- Modal: Umumiy Tushum bosilganda — buyurtmalar tafsiloti (holat/avans/kim-qachon + oylik jam' + filtr) -->
     <div id="ordersSummaryModal" class="hidden"
         style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:2000; display:flex; justify-content:center; padding:20px; align-items:center;">
-        <div class="user-form-modal" style="width: 1000px; max-height:90vh; overflow-y:auto; background:var(--adm-surface); padding: 30px; border-radius: 24px;">
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+        <div class="user-form-modal" style="width: 1050px; max-height:90vh; overflow-y:auto; background:var(--adm-surface); padding: 30px; border-radius: 24px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:10px;">
                 <div style="display:flex; align-items:center; gap:15px;">
                     <span style="font-size: 1.8rem;">💰</span>
-                    <h2 style="color:var(--adm-text); margin:0;">Buyurtmalar Tafsiloti</h2>
+                    <h2 id="summaryTitle" style="color:var(--adm-text); margin:0;">Buyurtmalar Tafsiloti</h2>
                 </div>
-                <select id="summaryStatusFilter" class="form-input-v2" style="width:220px;">
-                    <option value="all">Barcha holatlar</option>
-                    <option value="Kutilmoqda">Kutilmoqda</option>
-                    <option value="Jarayonda">Jarayonda</option>
-                    <option value="Tayyor / Yetkazildi">Tayyor / Yetkazildi</option>
-                </select>
+                <div id="summaryPeriodTabs" style="display:flex; gap:6px; background:rgba(0,0,0,0.15); padding:5px; border-radius:12px;">
+                    <button class="summary-period-btn" data-period="today" style="border:none; background:transparent; color:var(--adm-text-sec); padding:7px 14px; border-radius:9px; font-size:0.78rem; font-weight:700; cursor:pointer;">Bugun</button>
+                    <button class="summary-period-btn" data-period="week" style="border:none; background:transparent; color:var(--adm-text-sec); padding:7px 14px; border-radius:9px; font-size:0.78rem; font-weight:700; cursor:pointer;">Bu hafta</button>
+                    <button class="summary-period-btn" data-period="month" style="border:none; background:transparent; color:var(--adm-text-sec); padding:7px 14px; border-radius:9px; font-size:0.78rem; font-weight:700; cursor:pointer;">Bu oy</button>
+                    <button class="summary-period-btn" data-period="all" style="border:none; background:transparent; color:var(--adm-text-sec); padding:7px 14px; border-radius:9px; font-size:0.78rem; font-weight:700; cursor:pointer;">Barchasi</button>
+                </div>
             </div>
 
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:20px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:18px;">
                 <div class="kpi-card">
-                    <span style="font-size: 0.75rem; color: var(--adm-text-sec);">BU OY QABUL QILINGAN</span>
-                    <h3 id="summaryMonthReceived" style="font-size: 1.3rem; font-weight: 700; color:#00d2ff;">0 so'm</h3>
+                    <span style="font-size: 0.75rem; color: var(--adm-text-sec);">TANLANGAN DAVRDA QABUL QILINGAN</span>
+                    <h3 id="summaryPeriodReceived" style="font-size: 1.3rem; font-weight: 700; color:#00d2ff;">0 so'm</h3>
                 </div>
                 <div class="kpi-card">
-                    <span style="font-size: 0.75rem; color: var(--adm-text-sec);">BU OY BAJARILGAN</span>
-                    <h3 id="summaryMonthCompleted" style="font-size: 1.3rem; font-weight: 700; color:#00ff88;">0 so'm</h3>
+                    <span style="font-size: 0.75rem; color: var(--adm-text-sec);">TANLANGAN DAVRDA BAJARILGAN</span>
+                    <h3 id="summaryPeriodCompleted" style="font-size: 1.3rem; font-weight: 700; color:#00ff88;">0 so'm</h3>
                 </div>
             </div>
+
+            <div id="summaryStageTabs" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;"></div>
 
             <div id="summaryOrdersGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; margin-bottom:15px;"></div>
 
             <button id="closeOrdersSummaryBtn"
                 style="width:100%; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; padding:12px; border-radius:12px; cursor:pointer; font-weight:600;">Yopish</button>
+        </div>
+    </div>
+
+    <!-- Modal: Buyurtma tafsiloti — shartnoma summasi, to'lov holati va tarixi (premium) -->
+    <div id="orderDetailModal" class="hidden"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:2100; display:flex; justify-content:center; padding:20px; align-items:center;">
+        <div class="user-form-modal" style="width: 560px; max-height:90vh; overflow-y:auto; background:var(--adm-surface); padding: 30px; border-radius: 24px;">
+            <div id="orderDetailContent"></div>
+            <button id="closeOrderDetailBtn"
+                style="width:100%; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; padding:12px; border-radius:12px; cursor:pointer; font-weight:600; margin-top:15px;">Yopish</button>
         </div>
     </div>
 
