@@ -123,6 +123,8 @@
                 S</div>
             <div class="nav-icon active" data-tab="dashboard" title="Asosiy Analitika">📈</div>
             <div class="nav-icon" data-tab="orders" title="Buyurtmalar va O'rnatish">🛒</div>
+            <div class="nav-icon" data-tab="payments" title="To'lovlar Tarixi">💳</div>
+            <div class="nav-icon" data-tab="settings" title="Sozlamalar">⚙️</div>
             <div class="nav-icon" id="logoutBtn" title="Chiqish">🚪</div>
         </aside>
 
@@ -191,6 +193,46 @@
                 </div>
 
                 <div id="kanbanBoard" style="display:flex; flex-direction:column; gap:18px;"></div>
+            </section>
+
+            <!-- Payments Ledger — barcha buyurtmalardagi to'lovlar bitta yig'ilgan tarix sifatida -->
+            <section id="payments-view" class="sales-section hidden">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; flex-wrap:wrap; gap:12px;">
+                    <div>
+                        <h1 style="font-size: 2.2rem; font-weight: 600;">To'lovlar Tarixi</h1>
+                        <p style="color: var(--adm-text-sec);">Barcha buyurtmalar bo'yicha qabul qilingan to'lovlar — kim, qachon, qancha</p>
+                    </div>
+                    <div class="kpi-card" style="padding:14px 22px;">
+                        <span style="font-size: 0.75rem; color: var(--adm-text-sec);">JAMI QABUL QILINGAN</span>
+                        <h2 id="paymentsLedgerTotal" style="font-size: 1.4rem; font-weight: 700; color:#00ff88;">0 so'm</h2>
+                    </div>
+                </div>
+                <div id="paymentsLedgerList" style="display:flex; flex-direction:column; gap:10px;"></div>
+            </section>
+
+            <!-- Sozlamalar -->
+            <section id="settings-view" class="sales-section hidden">
+                <div style="margin-bottom: 25px;">
+                    <h1 style="font-size: 2.2rem; font-weight: 600;">Sozlamalar</h1>
+                    <p style="color: var(--adm-text-sec);">Profil va panel sozlamalari</p>
+                </div>
+                <div class="bento-card" style="max-width:480px;">
+                    <h3 style="font-weight: 600; margin-bottom: 18px;">👤 Profil</h3>
+                    <div style="display:flex; flex-direction:column; gap:12px; font-size:0.88rem;">
+                        <div style="display:flex; justify-content:space-between; border-bottom:1px dashed var(--adm-border); padding-bottom:10px;">
+                            <span style="color:var(--adm-text-sec);">Ism</span>
+                            <strong id="settingsUserName" style="color:var(--adm-text);">---</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; border-bottom:1px dashed var(--adm-border); padding-bottom:10px;">
+                            <span style="color:var(--adm-text-sec);">Login</span>
+                            <strong id="settingsUserLogin" style="color:var(--adm-text);">---</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <span style="color:var(--adm-text-sec);">Rol</span>
+                            <strong id="settingsUserRole" style="color:var(--adm-text);">---</strong>
+                        </div>
+                    </div>
+                </div>
             </section>
         </main>
     </div>

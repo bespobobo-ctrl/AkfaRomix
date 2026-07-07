@@ -35,7 +35,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById(`${tabId}-view`)?.classList.remove('hidden');
         navButtons.forEach(b => b.classList.remove('active'));
         document.querySelector(`[data-tab="${tabId}"]`)?.classList.add('active');
-        if (tabId === 'dashboard' || tabId === 'orders') loadOrders();
+        if (tabId === 'dashboard' || tabId === 'orders' || tabId === 'payments') loadOrders();
+        if (tabId === 'settings') {
+            document.getElementById('settingsUserName').textContent = user?.full_name || '---';
+            document.getElementById('settingsUserLogin').textContent = user?.username || '---';
+            document.getElementById('settingsUserRole').textContent = (user?.role || '---').toUpperCase();
+        }
     }
 
     navButtons.forEach(btn => {
@@ -724,6 +729,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         updatePeriodKpis();
         if (!ordersSummaryModal.classList.contains('hidden')) renderOrdersSummary();
         renderKanbanBoard();
+        renderPaymentsLedger();
 
         tickCountdowns(); // darhol bo'yash, 1 soniya kutmasdan
         bindActionButtons();
@@ -928,23 +934,65 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Buyurtma tafsiloti: shartnoma summasi, progress-bar va to'lovlar tarixi (premium ko'rinish)
-    function openOrderDetail(o) {
-        const total = Number(o.total_price) || 0;
+    // Eski buyurtmalarda (payment_history ustuni qo'shilishidan oldin yaratilgan/yozib bo'lmagan) birinchi
+    // to'lov tarixda bo'lmasligi mumkin — bu farqni advance_received_by/payment_date orqali tiklaymiz,
+    // aks holda birinchi to'lov "kim/qachon" ma'lumotisiz umuman ko'rinmay qolardi. Xronologik tartibda qaytaradi.
+    function getBackfilledPaymentHistory(o) {
         const paid = Number(o.paid_amount) || 0;
-        const remaining = Math.max(0, total - paid);
-        const percent = total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0;
-
-        // Eski buyurtmalarda (payment_history ustuni qo'shilishidan oldin yaratilgan/yozib bo'lmagan) birinchi
-        // to'lov tarixda bo'lmasligi mumkin — bu farqni advance_received_by/payment_date orqali tiklaymiz,
-        // aks holda birinchi to'lov "kim/qachon" ma'lumotisiz umuman ko'rinmay qolardi.
         const history = Array.isArray(o.payment_history) ? [...o.payment_history] : [];
         const historySum = history.reduce((s, p) => s + (Number(p.amount) || 0), 0);
         const missing = paid - historySum;
         if (missing > 0) {
             history.unshift({ amount: missing, by: o.advance_received_by || "Noma'lum", at: o.payment_date || o.created_at });
         }
-        history.reverse(); // eng oxirgi to'lov tepada ko'rinadi
+        return history;
+    }
+
+    // To'lovlar Tarixi — barcha buyurtmalardagi to'lovlarni bitta xronologik ro'yxatga yig'adi
+    function renderPaymentsLedger() {
+        const list = document.getElementById('paymentsLedgerList');
+        if (!list) return;
+
+        const entries = [];
+        allOrders.forEach(o => {
+            getBackfilledPaymentHistory(o).forEach(p => {
+                entries.push({ amount: Number(p.amount) || 0, by: p.by || "Noma'lum", at: p.at, order: o });
+            });
+        });
+        entries.sort((a, b) => new Date(b.at || 0) - new Date(a.at || 0));
+
+        const total = entries.reduce((s, e) => s + e.amount, 0);
+        document.getElementById('paymentsLedgerTotal').textContent = total.toLocaleString() + " so'm";
+
+        if (entries.length === 0) {
+            list.innerHTML = `<div style="text-align:center; padding:30px; color:var(--adm-text-sec);">Hali to'lov qabul qilinmagan</div>`;
+            return;
+        }
+
+        list.innerHTML = entries.map(e => `
+            <div class="ledger-entry" data-id="${e.order.id}" style="display:flex; justify-content:space-between; align-items:center; gap:14px; background:var(--adm-surface); border:1px solid var(--adm-border); border-radius:14px; padding:14px 18px; cursor:pointer; box-shadow:var(--adm-shadow);">
+                <div style="min-width:0;">
+                    <div style="font-weight:700; color:var(--adm-text); font-size:0.88rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${e.order.customer_name}</div>
+                    <div style="font-size:0.72rem; color:var(--adm-text-sec); margin-top:2px;">${e.by} — ${e.at ? new Date(e.at).toLocaleString('uz-UZ') : '---'}</div>
+                </div>
+                <strong style="color:#00ff88; font-family:monospace; white-space:nowrap;">+${e.amount.toLocaleString()} so'm</strong>
+            </div>
+        `).join('');
+        list.querySelectorAll('.ledger-entry').forEach(el => {
+            el.onclick = () => {
+                const o = allOrders.find(x => x.id === el.dataset.id);
+                if (o) openOrderDetail(o);
+            };
+        });
+    }
+
+    // Buyurtma tafsiloti: shartnoma summasi, progress-bar va to'lovlar tarixi (premium ko'rinish)
+    function openOrderDetail(o) {
+        const total = Number(o.total_price) || 0;
+        const paid = Number(o.paid_amount) || 0;
+        const remaining = Math.max(0, total - paid);
+        const percent = total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0;
+        const history = getBackfilledPaymentHistory(o).reverse(); // eng oxirgi to'lov tepada ko'rinadi
 
         const timelineHtml = history.length
             ? history.map(p => `
