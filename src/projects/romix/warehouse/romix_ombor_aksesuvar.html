@@ -1708,6 +1708,13 @@
         </div>
     </div>
 
+    <script type="module">
+        // Bu sahifadagi qolgan katta skript klassik (module bo'lmagan) — ko'plab onclick="..."
+        // handler'lari global funksiyalarga tayanadi. Shuning uchun supabase'ni faqat window
+        // orqali ochamiz, pastdagi kodni butunlay module qilib qayta yozmaymiz.
+        import { supabase } from '@/core/supabase.js';
+        window.supabase = supabase;
+    </script>
     <script>
         // --- State Management ---
         const DEFAULT_ACCESSORIES = [
@@ -1717,10 +1724,51 @@
             { name: "Burchak Biriktiruvchi PVX", category: "Biriktiruvchilar", qty: 1400, unit: "dona", spec: "PVX" }
         ];
 
-        let inventory = JSON.parse(localStorage.getItem('romix_accessories_inventory'));
-        if (!inventory || inventory.length === 0) {
-            inventory = DEFAULT_ACCESSORIES;
-            localStorage.setItem('romix_accessories_inventory', JSON.stringify(inventory));
+        // Aksesuvar endi Supabase'da (romix_accessories) — localStorage faqat bir martalik
+        // migratsiya manbasi sifatida ishlatiladi. `inventory` array shu bilan sinxron turadi;
+        // har bir o'zgarishdan keyin syncInventoryToSupabase() chaqiriladi.
+        let inventory = [];
+
+        async function loadInventoryFromSupabase() {
+            try {
+                const { count, error: cErr } = await supabase.from('romix_accessories').select('id', { count: 'exact', head: true });
+                if (cErr) throw cErr;
+                if (count === 0) {
+                    const local = JSON.parse(localStorage.getItem('romix_accessories_inventory')) || DEFAULT_ACCESSORIES;
+                    const rows = local.map((a, i) => ({
+                        id: a.id || ('ACC-' + Date.now() + '-' + i), name: a.name, category: a.category,
+                        qty: Number(a.qty) || 0, unit: a.unit, spec: a.spec || '', price: Number(a.price) || 0
+                    }));
+                    if (rows.length) await supabase.from('romix_accessories').insert(rows);
+                }
+                const { data, error } = await supabase.from('romix_accessories').select('*').order('created_at', { ascending: false });
+                if (error) throw error;
+                inventory = data || [];
+            } catch (e) {
+                console.warn('Aksesuvar Supabase fetch xatosi, localStorage fallback:', e);
+                inventory = JSON.parse(localStorage.getItem('romix_accessories_inventory')) || DEFAULT_ACCESSORIES;
+            }
+        }
+
+        // Butun `inventory` massivini Supabase'ga yozib qo'yadi (upsert, id bo'yicha).
+        // Fire-and-forget chaqiriladi — UI allaqachon xotiradagi massivdan darhol yangilanadi.
+        async function syncInventoryToSupabase() {
+            try {
+                inventory.forEach((item, i) => { if (!item.id) item.id = 'ACC-' + Date.now() + '-' + i; });
+                localStorage.setItem('romix_accessories_inventory', JSON.stringify(inventory));
+                const rows = inventory.map(a => ({
+                    id: a.id, name: a.name, category: a.category, qty: Number(a.qty) || 0,
+                    unit: a.unit, spec: a.spec || '', price: Number(a.price) || 0
+                }));
+                if (rows.length) await supabase.from('romix_accessories').upsert(rows);
+                // O'chirilgan elementlarni ham Supabase'dan tozalash
+                const { data: existing } = await supabase.from('romix_accessories').select('id');
+                const currentIds = new Set(rows.map(r => r.id));
+                const toDelete = (existing || []).filter(e => !currentIds.has(e.id)).map(e => e.id);
+                if (toDelete.length) await supabase.from('romix_accessories').delete().in('id', toDelete);
+            } catch (e) {
+                console.warn('Aksesuvar Supabase sync xatosi:', e);
+            }
         }
 
         let currentReceiptItems = [];
@@ -2593,7 +2641,7 @@
             }
 
             // Save back to storage and re-render
-            localStorage.setItem('romix_accessories_inventory', JSON.stringify(inventory));
+            syncInventoryToSupabase();
             renderInventory();
 
             // Add history log
@@ -2783,7 +2831,7 @@
             });
 
             // Save to storage & Refresh inventory view
-            localStorage.setItem('romix_accessories_inventory', JSON.stringify(inventory));
+            syncInventoryToSupabase();
             renderInventory();
 
             // Set receipt items
@@ -2896,7 +2944,7 @@
                     qty: qty
                 };
 
-                localStorage.setItem('romix_accessories_inventory', JSON.stringify(inventory));
+                syncInventoryToSupabase();
                 renderInventory();
                 
                 // Add history log
@@ -2922,7 +2970,7 @@
                 const item = inventory[idx];
                 // Splice array, save and refresh
                 inventory.splice(idx, 1);
-                localStorage.setItem('romix_accessories_inventory', JSON.stringify(inventory));
+                syncInventoryToSupabase();
                 renderInventory();
                 
                 // Add history log
@@ -2937,7 +2985,7 @@
         }
 
         // --- Initialize Page ---
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             // Theme init
             if (localStorage.getItem('theme') === 'dark') {
                 document.body.classList.add('dark-mode');
@@ -2960,6 +3008,7 @@
             }
 
             // Render Inventory dynamic views
+            await loadInventoryFromSupabase();
             renderInventory();
             
             // Sync custom category dropdowns

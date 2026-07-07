@@ -112,69 +112,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let orderItems = [];
 
-    // Load warehouse materials for the BOM Request
-    // Buyurtma saqlangan zahoti avtomatik BOM hisoblab, Ombor uchun material
-    // so'rovini yaratadi — endi Sotuv hech qanday ishlab chiqarish guruhini
-    // tanlamaydi, shuning uchun bu yerda worker_group yo'q.
-    async function calculateAndCreateMaterialRequest(orderId, items) {
-        let totalPerimeter = 0;
-        let totalArea = 0;
-        let mainModel = '';
-
-        (items || []).forEach(it => {
-            if (it.type === 'rom' || it.type === 'rom_fortochka' || it.type === 'eshik') {
-                const perimeter = ((it.width * 2) + (it.height * 2)) * it.quantity;
-                totalPerimeter += perimeter;
-                totalArea += (it.width * it.height * it.quantity);
-                if (!mainModel) mainModel = it.materialName;
-            }
-        });
-
-        let whMats = [];
-        try {
-            const res = await supabase.from('romix_inventory').select('id, product_name, unit');
-            if (res.error) throw res.error;
-            whMats = (res.data || []).map(p => ({ id: p.id, name: p.product_name, unit: p.unit }));
-        } catch (err) {
-            console.warn("Supabase warehouse fetch for BOM failed, using local fallback:", err);
-            whMats = [
-                { id: "prof-60", name: "Akfa 60 Series Profil", unit: "m" },
-                { id: "prof-70", name: "Akfa 70 Series Profil", unit: "m" },
-                { id: "prof-thermo", name: "Thermo 65 Insulation Profil", unit: "m" },
-                { id: "prof-eng", name: "Engelberg 76 Premium Profil", unit: "m" },
-                { id: "rez-1", name: "Kauchuk Zichlagich (Rezinka)", unit: "m" },
-                { id: "oyna-1", name: "Oddiy Oyna (Glass)", unit: "kv.m" },
-                { id: "oyna-2", name: "Ikki Qavatli Shisha-Paket", unit: "kv.m" }
-            ];
-        }
-
-        const materials = [];
-        if (whMats && whMats.length && mainModel) {
-            const prof = whMats.find(m => m.name.toLowerCase().includes(mainModel.toLowerCase()) || mainModel.toLowerCase().includes(m.name.toLowerCase()) || m.name.toLowerCase().includes('profil'));
-            if (prof && totalPerimeter > 0) materials.push({ product_id: prof.id, name: prof.name, qty: (totalPerimeter * 1.1).toFixed(1), unit: prof.unit });
-
-            const rez = whMats.find(m => m.name.toLowerCase().includes('rezin'));
-            if (rez && totalPerimeter > 0) materials.push({ product_id: rez.id, name: rez.name, qty: (totalPerimeter * 2).toFixed(1), unit: rez.unit });
-
-            const oyna = whMats.find(m => m.name.toLowerCase().includes('oyna') || m.name.toLowerCase().includes('shisha'));
-            if (oyna && totalArea > 0) materials.push({ product_id: oyna.id, name: oyna.name, qty: (totalArea).toFixed(2), unit: oyna.unit });
-        }
-
-        if (materials.length === 0) return null;
-
-        try {
-            const res = await supabase.from('material_requests').insert([{
-                order_id: orderId,
-                materials_json: materials,
-                status: 'Kutilmoqda'
-            }]).select().single();
-            if (res.error) throw res.error;
-            return res.data;
-        } catch (err) {
-            console.warn("Avtomatik material_requests yaratishda xatolik:", err);
-            return null;
-        }
-    }
+    // Eslatma: eski "material_requests" (Skayner QR Qabul) avtomatik yaratish tizimi olib
+    // tashlandi — endi yagona chiqim yo'li Ombor > "Olingan Buyurtmalar" > confirmOrderMaterials(),
+    // material_estimate (computeMaterialEstimate) asosida ishlaydi.
 
     // Dynamic Constructor Input Fields Toggling
     const itemTypeSel = document.getElementById('itemType');
@@ -578,15 +518,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
-        let reqStatusByOrder = {};
-        try {
-            const { data, error } = await supabase.from('material_requests').select('order_id, status');
-            if (error) throw error;
-            (data || []).forEach(r => { reqStatusByOrder[r.order_id] = r.status; });
-        } catch (err) {
-            console.warn("loadOrders material_requests fetch failed:", err);
-        }
-
         // Ishlab chiqarish bosqichi bo'yicha aniq holat matni (Sotuv'ga ko'rinadigan)
         const STAGE_LABELS = {
             kesish: { text: "✂️ Kesilmoqda", color: '#00d2ff' },
@@ -600,11 +531,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const s = STAGE_LABELS[o.production_stage];
                 return `<span style="background:${s.color}1a; color:${s.color}; padding:3px 10px; border-radius:12px; font-size:0.66rem; font-weight:700; white-space:nowrap;">${s.text}</span>`;
             }
-            if (reqStatusByOrder[o.id]) {
-                const approved = reqStatusByOrder[o.id] === 'Tasdiqlandi';
-                return approved
-                    ? `<span style="background:rgba(0,210,255,0.1); color:#00d2ff; padding:3px 10px; border-radius:12px; font-size:0.66rem; font-weight:700; white-space:nowrap;">✅ Ishlab chiqarish qabul qilishi kutilmoqda</span>`
-                    : `<span style="background:rgba(239,68,68,0.1); color:#ef4444; padding:3px 10px; border-radius:12px; font-size:0.66rem; font-weight:700; white-space:nowrap;">⏳ Ombor tayyorlashini kutmoqda</span>`;
+            if (o.ombor_confirmed_at) {
+                return `<span style="background:rgba(0,210,255,0.1); color:#00d2ff; padding:3px 10px; border-radius:12px; font-size:0.66rem; font-weight:700; white-space:nowrap;">✅ Ishlab chiqarish qabul qilishi kutilmoqda</span>`;
+            }
+            const total = Number(o.total_price) || 0;
+            const paid = Number(o.paid_amount) || 0;
+            const percent = total > 0 ? Math.round((paid / total) * 100) : 0;
+            if (percent >= 50) {
+                return `<span style="background:rgba(239,68,68,0.1); color:#ef4444; padding:3px 10px; border-radius:12px; font-size:0.66rem; font-weight:700; white-space:nowrap;">⏳ Ombor tayyorlashini kutmoqda</span>`;
             }
             return null;
         }
@@ -1236,9 +1170,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const res = await supabase.from('sales_orders').insert([newOrder]).select().single();
             if (res.error) throw res.error;
-            // Sotuv guruh tanlamaydi — material so'rovi shu yerda avtomatik yaratiladi,
-            // Ombor buni o'zining "Yangi Zakaz" ro'yxatida ko'radi.
-            await calculateAndCreateMaterialRequest(res.data.id, orderItems);
         } catch(err) {
             console.warn("Supabase insert order failed, writing to local storage:", err);
             const localRaw = localStorage.getItem('romix_orders_local');

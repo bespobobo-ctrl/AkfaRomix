@@ -793,113 +793,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         loadInventory();
     };
 
-    // QR Scanning Logic
-    const qrScanModal = document.getElementById('qrScanModal');
-    const reqResultArea = document.getElementById('reqResultArea');
-    const reqMatList = document.getElementById('reqMatList');
-
-    document.getElementById('openScanModal').onclick = () => {
-        document.getElementById('qrReqId').value = '';
-        reqResultArea.classList.add('hidden');
-        qrScanModal.classList.remove('hidden');
-    };
-    document.getElementById('closeScanModal').onclick = () => qrScanModal.classList.add('hidden');
-
-    document.getElementById('searchReqBtn').onclick = async () => {
-        let sid = document.getElementById('qrReqId').value.trim();
-        if (!sid) return alert("Kodni kiriting!");
-
-        // Remove 'REQ-' if entered
-        if (sid.startsWith('REQ-')) sid = sid.substring(4);
-
-        const { data: req, error } = await supabase.from('material_requests').select('*').eq('id', sid).maybeSingle();
-        if (error || !req) return alert("Bunday ruxsatnoma topilmadi! Qaytadan tekshiring.");
-        if (req.status === 'Tasdiqlandi') return alert("Diqqat! Bu ruxsatnomaga oldin material berilgan (Status: Tasdiqlandi).");
-
-        document.getElementById('reqGroupName').textContent = req.worker_group ? `Maxsus Guruh: ${req.worker_group}` : 'Sotuvdan avtomatik so\'rov';
-        reqMatList.innerHTML = '';
-        window.currentReqData = req; // save for approval
-
-        req.materials_json.forEach(m => {
-            const li = document.createElement('li');
-            li.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
-            li.style.padding = "5px 0";
-            li.innerHTML = `✅ ${m.name} <br> <b style="color:#00ff88;">+${m.qty} ${m.unit}</b> chiquvchi`;
-            reqMatList.appendChild(li);
-        });
-
-        reqResultArea.classList.remove('hidden');
-    };
-
-    document.getElementById('approveReqBtn').onclick = async () => {
-        const req = window.currentReqData;
-        if (!req) return;
-
-        const approveBtn = document.getElementById('approveReqBtn');
-        if (approveBtn.disabled) return;
-        approveBtn.disabled = true;
-        const approveBtnOrigText = approveBtn.textContent;
-        approveBtn.textContent = 'Tekshirilmoqda...';
-
-        try {
-            // Re-check the request hasn't already been approved (guards against a second
-            // tab/device approving it between search and this click)
-            const { data: freshReq } = await supabase.from('material_requests').select('status').eq('id', req.id).maybeSingle();
-            if (freshReq && freshReq.status === 'Tasdiqlandi') {
-                alert("Diqqat! Bu ruxsatnomaga oldin material berilgan (Status: Tasdiqlandi).");
-                return;
-            }
-
-            // Pre-check: confirm every material has enough stock BEFORE touching anything
-            const stockMap = {};
-            const shortages = [];
-            for (let m of req.materials_json) {
-                const { data: prod } = await supabase.from('romix_inventory').select('stock_quantity').eq('id', m.product_id).maybeSingle();
-                const current = prod ? (parseFloat(prod.stock_quantity) || 0) : 0;
-                stockMap[m.product_id] = current;
-                if (current < m.qty) {
-                    shortages.push(`${m.name}: kerak ${m.qty} ${m.unit}, omborda bor-yo'g'i ${current} ${m.unit}`);
-                }
-            }
-
-            if (shortages.length > 0) {
-                alert(`❌ Omborda yetarli mahsulot yo'q, chiqim qilib bo'lmaydi:\n\n${shortages.join('\n')}`);
-                return;
-            }
-
-            approveBtn.textContent = 'Saqlanmoqda...';
-
-            // Loop and subtract qty
-            for (let m of req.materials_json) {
-                await supabase.from('romix_inventory').update({
-                    stock_quantity: stockMap[m.product_id] - m.qty
-                }).eq('id', m.product_id);
-
-                // Add to transactions as 'OUT'
-                await supabase.from('romix_transactions').insert([{
-                    product_id: m.product_id,
-                    type: 'OUT',
-                    quantity: m.qty,
-                    note: req.worker_group ? `Romix Sotuv (Buyurtma/Guruh: ${req.worker_group})` : `Romix Sotuv (Buyurtma: ${req.order_id})`
-                }]);
-            }
-
-            // Change request status
-            await supabase.from('material_requests').update({ status: 'Tasdiqlandi' }).eq('id', req.id);
-
-            // Ombor tayyorlab bo'lgach, buyurtma Ishlab Chiqarish uchun "Jarayonda" bo'ladi
-            if (req.order_id) {
-                await supabase.from('sales_orders').update({ status: 'Jarayonda' }).eq('id', req.order_id);
-            }
-
-            alert(`✅ Ruxsatnoma tasdiqlandi. Barcha mahsulotlar Ombordan muvaffaqiyatli chiqim qilingan!`);
-            qrScanModal.classList.add('hidden');
-            loadInventory(); // reload
-        } finally {
-            approveBtn.disabled = false;
-            approveBtn.textContent = approveBtnOrigText;
-        }
-    };
+    // "Skayner (QR) Qabul" (material_requests orqali) olib tashlandi — chiqim endi FAQAT
+    // "Olingan Buyurtmalar" > confirmOrderMaterials() orqali, buyurtmaga bog'liq holda bo'ladi.
 
     // Generic
     const openKirimModalBtn = document.getElementById('openKirimModal');
@@ -1209,7 +1104,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const { data } = await supabase.from('romix_inventory').select('id, product_name, stock_quantity, unit');
             profileStock = data || [];
         } catch (err) { console.warn('profile stock fetch failed:', err); }
-        const accStock = JSON.parse(localStorage.getItem('romix_accessories_inventory')) || [];
+        const accStock = await omGetAccessories();
 
         const findProfileStock = (name) => profileStock.find(p => (p.product_name || '').toLowerCase() === (name || '').toLowerCase());
         const findAccStock = (name) => accStock.find(a => (a.name || '').toLowerCase() === (name || '').toLowerCase());
@@ -1254,12 +1149,102 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         document.querySelectorAll('.ombor-confirm-btn').forEach(btn => {
             if (btn.disabled) return;
-            btn.onclick = () => confirmOrderMaterials(btn.dataset.id);
+            btn.onclick = () => openOrderConfirmModal(btn.dataset.id);
         });
     }
 
+    // Buyurtmani tasdiqlash oynasi: Profil/Aksesuvar avtomatik ko'rsatiladi (o'zgartirib bo'lmaydi),
+    // Qoldiq Profillar/Oynak esa ombor xodimi tanlab, ixtiyoriy ravishda shu buyurtmaga biriktiradi —
+    // shu tanlovlar orqaligina ular ayriladi (chiqim doim buyurtmaga bog'liq bo'lishi uchun).
+    window._ordConfirmQoldiqPicks = [];
+    window._ordConfirmOynakPicks = [];
+
+    function _ordRenderPickList(containerId, picks, onRemove) {
+        const el = document.getElementById(containerId);
+        if (!el) return;
+        if (!picks.length) { el.innerHTML = '<div style="font-size:0.74rem; color:var(--adm-text-sec);">Hech narsa qo\'shilmagan</div>'; return; }
+        el.innerHTML = picks.map((p, idx) => `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.04); border-radius:8px; padding:6px 10px; margin-bottom:4px; font-size:0.78rem;">
+                <span>${p.label}</span>
+                <span style="display:flex; align-items:center; gap:8px;">
+                    <b style="color:#00ff88;">${p.qty}</b>
+                    <button data-idx="${idx}" class="ord-pick-remove" style="background:none; border:none; color:#ff4d4f; cursor:pointer;">🗑️</button>
+                </span>
+            </div>`).join('');
+        el.querySelectorAll('.ord-pick-remove').forEach(b => {
+            b.onclick = () => { picks.splice(Number(b.dataset.idx), 1); onRemove(); };
+        });
+    }
+
+    async function openOrderConfirmModal(orderId) {
+        const modal = document.getElementById('ordConfirmModal');
+        if (!modal) return;
+
+        const { data: order } = await supabase.from('sales_orders').select('*').eq('id', orderId).maybeSingle();
+        if (!order) return alert('Buyurtma topilmadi!');
+
+        window._ordConfirmOrderId = orderId;
+        window._ordConfirmQoldiqPicks = [];
+        window._ordConfirmOynakPicks = [];
+
+        document.getElementById('ordConfirmCustomer').textContent = `${order.customer_name || 'Noma\'lum'} — ${order.prod_type || ''}`;
+
+        const est = order.material_estimate || {};
+        const profiles = est.profiles || [];
+        const accessories = est.accessories || [];
+        const autoListEl = document.getElementById('ordConfirmAutoList');
+        const rows = [
+            ...profiles.map(p => `<div style="font-size:0.78rem; padding:3px 0;">📏 ${p.material_name}: <b>${p.meters}m</b></div>`),
+            ...accessories.map(a => `<div style="font-size:0.78rem; padding:3px 0;">🔩 ${a.name}: <b>${a.qty} dona</b></div>`)
+        ];
+        autoListEl.innerHTML = rows.length ? rows.join('') : '<div style="font-size:0.78rem; color:var(--adm-text-sec);">Profil/aksesuvar ehtiyoji yo\'q</div>';
+
+        const qoldiqItems = await omGetQoldiq();
+        const qoldiqSelect = document.getElementById('ordConfirmQoldiqSelect');
+        qoldiqSelect.innerHTML = qoldiqItems.length
+            ? qoldiqItems.map(q => `<option value="${q.id}">${q.product_name} — ${q.length}mm (${q.stock_quantity} dona bor)</option>`).join('')
+            : '<option value="">Qoldiq yo\'q</option>';
+
+        const oynakItems = await omGetOynak();
+        const oynakSelect = document.getElementById('ordConfirmOynakSelect');
+        oynakSelect.innerHTML = oynakItems.length
+            ? oynakItems.map(o => `<option value="${o.id}">${o.brand} ${o.product_name} — ${o.size || ''} (${o.stock_quantity} ${o.unit} bor)</option>`).join('')
+            : '<option value="">Oynak yo\'q</option>';
+
+        const renderQoldiqPicks = () => _ordRenderPickList('ordConfirmQoldiqList', window._ordConfirmQoldiqPicks, renderQoldiqPicks);
+        const renderOynakPicks = () => _ordRenderPickList('ordConfirmOynakList', window._ordConfirmOynakPicks, renderOynakPicks);
+        renderQoldiqPicks();
+        renderOynakPicks();
+
+        document.getElementById('ordConfirmQoldiqAddBtn').onclick = () => {
+            const id = qoldiqSelect.value;
+            const qty = parseInt(document.getElementById('ordConfirmQoldiqQty').value) || 0;
+            const item = qoldiqItems.find(q => q.id === id);
+            if (!item || qty <= 0) return;
+            if (qty > Number(item.stock_quantity)) return alert("Omborda yetarli qoldiq yo'q!");
+            window._ordConfirmQoldiqPicks.push({ id: item.id, label: `${item.product_name} (${item.length}mm)`, qty, maxQty: Number(item.stock_quantity) });
+            renderQoldiqPicks();
+        };
+        document.getElementById('ordConfirmOynakAddBtn').onclick = () => {
+            const id = oynakSelect.value;
+            const qty = parseInt(document.getElementById('ordConfirmOynakQty').value) || 0;
+            const item = oynakItems.find(o => o.id === id);
+            if (!item || qty <= 0) return;
+            if (qty > Number(item.stock_quantity)) return alert("Omborda yetarli oynak yo'q!");
+            window._ordConfirmOynakPicks.push({ id: item.id, label: `${item.brand} ${item.product_name}`, qty, maxQty: Number(item.stock_quantity) });
+            renderOynakPicks();
+        };
+
+        document.getElementById('ordConfirmCancelBtn').onclick = () => modal.classList.add('hidden');
+        document.getElementById('ordConfirmSubmitBtn').onclick = () => confirmOrderMaterials(orderId);
+
+        modal.classList.remove('hidden');
+    }
+
     async function confirmOrderMaterials(orderId) {
-        if (!confirm("Buyurtma uchun profil/aksessuar ombordan ajratilib, Ishlab Chiqarishga o'tkazilsinmi?")) return;
+        const modal = document.getElementById('ordConfirmModal');
+        const qoldiqPicks = window._ordConfirmQoldiqPicks || [];
+        const oynakPicks = window._ordConfirmOynakPicks || [];
         try {
             const { data: order } = await supabase.from('sales_orders').select('*').eq('id', orderId).maybeSingle();
             if (!order) return alert('Buyurtma topilmadi!');
@@ -1273,16 +1258,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const have = stock ? Number(stock.stock_quantity) || 0 : 0;
                 if (have < p.meters) {
                     alert(`"${p.material_name}" yetarli emas (${have}m bor, ${p.meters}m kerak). Avval kirim qiling.`);
+                    if (modal) modal.classList.add('hidden');
                     loadOrdersConfirmation();
                     return;
                 }
             }
-            let accInventory = JSON.parse(localStorage.getItem('romix_accessories_inventory')) || [];
+            let accInventory = await omGetAccessories();
             for (const a of accessories) {
                 const item = accInventory.find(x => (x.name || '').toLowerCase() === a.name.toLowerCase());
                 const have = item ? Number(item.qty) || 0 : 0;
                 if (have < a.qty) {
                     alert(`"${a.name}" yetarli emas (${have} bor, ${a.qty} kerak). Avval kirim qiling.`);
+                    if (modal) modal.classList.add('hidden');
                     loadOrdersConfirmation();
                     return;
                 }
@@ -1300,22 +1287,43 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const item = accInventory.find(x => (x.name || '').toLowerCase() === a.name.toLowerCase());
                 if (item) item.qty = (Number(item.qty) || 0) - a.qty;
             });
+            for (const item of accInventory) {
+                await supabase.from('romix_accessories').update({ qty: item.qty }).eq('id', item.id);
+            }
             localStorage.setItem('romix_accessories_inventory', JSON.stringify(accInventory));
 
             const curUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
             const operatorName = curUser.full_name || curUser.username || 'Ombor';
             if (accessories.length > 0) {
-                let logs = JSON.parse(localStorage.getItem('romix_accessories_history_log')) || [];
-                accessories.forEach(a => {
-                    logs.unshift({
+                for (const a of accessories) {
+                    await supabase.from('romix_accessories_history').insert([{
+                        id: 'HIST-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
                         timestamp: new Date().toLocaleDateString('uz-UZ') + ' ' + new Date().toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' }),
                         action: 'Buyurtma Chiqim 📤',
                         details: `"${a.name}" dan ${a.qty} dona buyurtma uchun ajratildi (${order.customer_name}).`,
                         operator: operatorName.toUpperCase()
-                    });
-                });
-                if (logs.length > 100) logs = logs.slice(0, 100);
-                localStorage.setItem('romix_accessories_history_log', JSON.stringify(logs));
+                    }]);
+                }
+            }
+
+            // Qoldiq Profillar — ombor xodimi qo'lda biriktirgan miqdorlarni ayiramiz
+            for (const pick of qoldiqPicks) {
+                const { data: q } = await supabase.from('romix_qoldiq_profillar').select('stock_quantity').eq('id', pick.id).maybeSingle();
+                const have = q ? Number(q.stock_quantity) || 0 : 0;
+                const newQty = Math.max(0, have - pick.qty);
+                if (newQty === 0) {
+                    await supabase.from('romix_qoldiq_profillar').delete().eq('id', pick.id);
+                } else {
+                    await supabase.from('romix_qoldiq_profillar').update({ stock_quantity: newQty }).eq('id', pick.id);
+                }
+            }
+
+            // Oynak — xuddi shunday, qo'lda biriktirilgan miqdorni ayiramiz
+            for (const pick of oynakPicks) {
+                const { data: o } = await supabase.from('romix_oynak').select('stock_quantity').eq('id', pick.id).maybeSingle();
+                const have = o ? Number(o.stock_quantity) || 0 : 0;
+                const newQty = Math.max(0, have - pick.qty);
+                await supabase.from('romix_oynak').update({ stock_quantity: newQty }).eq('id', pick.id);
             }
 
             await supabase.from('sales_orders').update({
@@ -1324,7 +1332,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ombor_confirmed_by: operatorName
             }).eq('id', orderId);
 
-            generateOrderConfirmationPdf(order, profiles, accessories);
+            generateOrderConfirmationPdf(order, profiles, accessories, qoldiqPicks, oynakPicks, operatorName);
+
+            window._ordConfirmQoldiqPicks = [];
+            window._ordConfirmOynakPicks = [];
+            if (modal) modal.classList.add('hidden');
 
             window.showPremiumToast ? window.showPremiumToast('Tasdiqlandi', "Buyurtma Ishlab Chiqarishga o'tkazildi.", true) : alert("Buyurtma tasdiqlandi va Ishlab Chiqarishga o'tkazildi!");
             loadOrdersConfirmation();
@@ -1334,33 +1346,145 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    function generateOrderConfirmationPdf(order, profiles, accessories) {
+    function generateOrderConfirmationPdf(order, profiles, accessories, qoldiqPicks, oynakPicks, operatorName) {
         if (!window.jspdf || !window.jspdf.jsPDF) {
             console.warn('jsPDF yuklanmagan, PDF chiqarilmadi');
             return;
         }
+        qoldiqPicks = qoldiqPicks || [];
+        oynakPicks = oynakPicks || [];
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-        doc.setFontSize(16);
-        doc.text('Ombor Tasdiqnomasi', 105, 20, { align: 'center' });
+        const pageW = 210;
+        const navy = [22, 33, 62];
+        const cyan = [0, 200, 180];
+        const lightGray = [244, 246, 250];
+        const textDark = [30, 34, 45];
+
+        // --- Sarlavha (header) ---
+        doc.setFillColor(...navy);
+        doc.rect(0, 0, pageW, 30, 'F');
+        doc.setFillColor(...cyan);
+        doc.rect(0, 30, pageW, 1.4, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(18);
+        doc.text('AKFA ROMIX', 15, 14);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10.5);
+        doc.setTextColor(180, 220, 255);
+        doc.text('OMBOR TASDIQNOMASI — Buyurtma uchun ajratilgan mahsulotlar', 15, 22);
+        doc.setFontSize(9);
+        doc.setTextColor(200, 200, 200);
+        doc.text(`№ ${String(order.id || '').slice(0, 8).toUpperCase()}`, pageW - 15, 14, { align: 'right' });
+        doc.text(new Date().toLocaleDateString('uz-UZ'), pageW - 15, 22, { align: 'right' });
+
+        // --- Ma'lumot bloki ---
+        let y = 40;
+        doc.setFillColor(...lightGray);
+        doc.roundedRect(15, y, pageW - 30, 26, 2, 2, 'F');
+        doc.setTextColor(...textDark);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.text('BUYURTMACHI', 20, y + 8);
+        doc.text('BUYURTMA SANASI', 110, y + 8);
+        doc.setFont('helvetica', 'normal');
         doc.setFontSize(11);
-        doc.text(`Mijoz: ${order.customer_name || '---'}`, 15, 35);
-        doc.text(`Buyurtma: ${order.prod_type || '---'}`, 15, 42);
-        doc.text(`Sana: ${new Date().toLocaleDateString('uz-UZ')}`, 15, 49);
-        let y = 62;
-        doc.setFontSize(13);
-        doc.text('Profil Ehtiyoji:', 15, y);
-        y += 8;
+        doc.text(order.customer_name || '---', 20, y + 15);
+        doc.text(order.created_at ? new Date(order.created_at).toLocaleDateString('uz-UZ') : '---', 110, y + 15);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.text('BUYURTMA TURI', 20, y + 21.5);
+        doc.setFont('helvetica', 'normal');
         doc.setFontSize(10);
-        if (profiles.length === 0) { doc.text("- Yo'q", 20, y); y += 7; }
-        profiles.forEach(p => { doc.text(`- ${p.material_name}: ${p.meters} metr`, 20, y); y += 7; });
-        y += 5;
-        doc.setFontSize(13);
-        doc.text("Aksessuar Ro'yxati:", 15, y);
-        y += 8;
-        doc.setFontSize(10);
-        if (accessories.length === 0) { doc.text("- Yo'q", 20, y); y += 7; }
-        accessories.forEach(a => { doc.text(`- ${a.name}: ${a.qty} dona`, 20, y); y += 7; });
+        doc.text(order.prod_type || '---', 55, y + 21.5);
+
+        // --- Mahsulotlar jadvali ---
+        y += 36;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(...textDark);
+        doc.text("Ombordan Ajratilgan Mahsulotlar", 15, y);
+        y += 6;
+
+        const rows = [
+            ...profiles.map(p => ['📏 Profil', p.material_name, `${p.meters} metr`]),
+            ...accessories.map(a => ['🔩 Aksesuvar', a.name, `${a.qty} dona`]),
+            ...qoldiqPicks.map(q => ['✂️ Qoldiq', q.label, `${q.qty} dona`]),
+            ...oynakPicks.map(o => ['🪟 Oynak', o.label, `${o.qty} dona`])
+        ];
+
+        const colX = [15, 60, 155];
+        const colW = [45, 95, 40];
+        const rowH = 8;
+
+        doc.setFillColor(...navy);
+        doc.rect(15, y, pageW - 30, rowH, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9.5);
+        doc.text('TURI', colX[0] + 2, y + 5.5);
+        doc.text('NOMI', colX[1] + 2, y + 5.5);
+        doc.text('MIQDORI', colX[2] + 2, y + 5.5);
+        y += rowH;
+
+        if (rows.length === 0) {
+            doc.setTextColor(...textDark);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            doc.text("Ajratilgan mahsulot yo'q", 20, y + 6);
+            y += rowH;
+        } else {
+            rows.forEach((r, idx) => {
+                if (y > 255) { doc.addPage(); y = 20; }
+                if (idx % 2 === 0) { doc.setFillColor(...lightGray); doc.rect(15, y, pageW - 30, rowH, 'F'); }
+                doc.setTextColor(...textDark);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(9.5);
+                doc.text(String(r[0]), colX[0] + 2, y + 5.5);
+                doc.text(String(r[1]).slice(0, 42), colX[1] + 2, y + 5.5);
+                doc.setFont('helvetica', 'bold');
+                doc.text(String(r[2]), colX[2] + 2, y + 5.5);
+                doc.setDrawColor(225, 227, 232);
+                doc.line(15, y + rowH, pageW - 15, y + rowH);
+                y += rowH;
+            });
+        }
+
+        // --- Imzo bloklari (pastda) ---
+        let sigY = Math.max(y + 20, 235);
+        if (sigY > 265) { doc.addPage(); sigY = 40; }
+        const boxW = (pageW - 30 - 10) / 2;
+        [
+            { x: 15, label: 'OMBORCHI', name: operatorName || '' },
+            { x: 15 + boxW + 10, label: 'ISHLAB CHIQARUVCHI', name: '' }
+        ].forEach(sig => {
+            doc.setDrawColor(...navy);
+            doc.setLineWidth(0.4);
+            doc.roundedRect(sig.x, sigY, boxW, 34, 2, 2);
+            doc.setFillColor(...navy);
+            doc.rect(sig.x, sigY, boxW, 8, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9.5);
+            doc.text(sig.label, sig.x + boxW / 2, sigY + 5.5, { align: 'center' });
+            doc.setTextColor(...textDark);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+            doc.text('F.I.Sh:', sig.x + 4, sigY + 16);
+            doc.text(sig.name, sig.x + 22, sigY + 16);
+            doc.setDrawColor(180, 183, 190);
+            doc.line(sig.x + 4, sigY + 25, sig.x + boxW - 4, sigY + 25);
+            doc.setFontSize(7.5);
+            doc.setTextColor(120, 124, 135);
+            doc.text('Imzo', sig.x + 4, sigY + 29);
+            doc.text('Sana: ____ / ____ / ______', sig.x + boxW - 4, sigY + 29, { align: 'right' });
+        });
+
+        doc.setFontSize(7.5);
+        doc.setTextColor(150, 150, 150);
+        doc.text('AKFA Romix — avtomatik tizim tomonidan yaratilgan hujjat', 15, 290);
+
         doc.save(`Tasdiqnoma_${(order.customer_name || 'order').replace(/\s+/g, '_')}.pdf`);
     }
 
@@ -1370,11 +1494,68 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ============================================================
     function omFmt(n) { return Math.round(Number(n) || 0).toLocaleString('uz-UZ') + ' UZS'; }
     function omMonthKey() { return new Date().toISOString().slice(0, 7); }
-    function omGetAccessories() { try { return JSON.parse(localStorage.getItem('romix_accessories_inventory')) || []; } catch { return []; } }
-    function omGetQoldiq() { try { return JSON.parse(localStorage.getItem('romix_qoldiq_inventory')) || []; } catch { return []; } }
     function omQoldiqValue(items) { return items.reduce((s, q) => s + ((Number(q.length) || 0) * (Number(q.stock_quantity) || 0) * 25), 0); }
-    function omGetOynak() { try { return JSON.parse(localStorage.getItem('romix_oynak_inventory')) || []; } catch { return []; } }
     function omOynakValue(items) { return items.reduce((s, o) => s + ((Number(o.price) || 0) * (Number(o.stock_quantity) || 0)), 0); }
+
+    // Aksesuvar/Qoldiq/Oynak — avval faqat localStorage'da edi, endi Supabase'da (markazlashgan).
+    // Har biri birinchi o'qishda: Supabase jadvali bo'sh VA localStorage'da eski ma'lumot bo'lsa,
+    // bir martalik avtomatik ko'chiriladi (haqiqiy ombor kompyuterida qolgan ma'lumot yo'qolmasligi uchun).
+    let _omMigrationChecked = { accessories: false, qoldiq: false, oynak: false };
+
+    async function _omMigrateOnce(key, table, localKey, mapFn) {
+        if (_omMigrationChecked[key]) return;
+        _omMigrationChecked[key] = true;
+        try {
+            const { count, error } = await supabase.from(table).select('id', { count: 'exact', head: true });
+            if (error) throw error;
+            if (count > 0) return;
+            const local = JSON.parse(localStorage.getItem(localKey) || '[]');
+            if (!local.length) return;
+            const rows = local.map(mapFn);
+            const { error: insErr } = await supabase.from(table).insert(rows);
+            if (insErr) throw insErr;
+            console.log(`✅ ${table}: ${rows.length} ta yozuv localStorage'dan Supabase'ga ko'chirildi.`);
+        } catch (e) {
+            console.warn(`Ombor migratsiya xatosi (${table}):`, e);
+        }
+    }
+
+    async function omGetAccessories() {
+        await _omMigrateOnce('accessories', 'romix_accessories', 'romix_accessories_inventory', (a, i) => ({
+            id: a.id || ('ACC-' + Date.now() + '-' + i), name: a.name, category: a.category,
+            qty: Number(a.qty) || 0, unit: a.unit, spec: a.spec || '', price: Number(a.price) || 0
+        }));
+        try {
+            const { data, error } = await supabase.from('romix_accessories').select('*').order('created_at', { ascending: false });
+            if (error) throw error;
+            return data || [];
+        } catch (e) { console.warn('Aksesuvar fetch error:', e); return []; }
+    }
+
+    async function omGetQoldiq() {
+        await _omMigrateOnce('qoldiq', 'romix_qoldiq_profillar', 'romix_qoldiq_inventory', (q, i) => ({
+            id: q.id || ('QLD-' + Date.now() + '-' + i), product_name: q.product_name, brand: q.brand,
+            series: q.series, color: q.color, profile_type: q.profile_type,
+            length: Number(q.length) || 0, stock_quantity: Number(q.stock_quantity) || 0
+        }));
+        try {
+            const { data, error } = await supabase.from('romix_qoldiq_profillar').select('*').order('created_at', { ascending: false });
+            if (error) throw error;
+            return data || [];
+        } catch (e) { console.warn('Qoldiq fetch error:', e); return []; }
+    }
+
+    async function omGetOynak() {
+        await _omMigrateOnce('oynak', 'romix_oynak', 'romix_oynak_inventory', (o, i) => ({
+            id: 'OYNAK-' + Date.now() + '-' + i, brand: o.brand, product_name: o.product_name || o.brand,
+            size: o.size || '', stock_quantity: Number(o.stock_quantity) || 0, unit: o.unit || 'dona', price: Number(o.price) || 0
+        }));
+        try {
+            const { data, error } = await supabase.from('romix_oynak').select('*').order('created_at', { ascending: false });
+            if (error) throw error;
+            return data || [];
+        } catch (e) { console.warn('Oynak fetch error:', e); return []; }
+    }
 
     function omGroupProfilByName(items) {
         const groups = {};
@@ -1450,8 +1631,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const { data } = await supabase.from('romix_inventory').select('*');
             profilItems = data || [];
         } catch (e) { console.warn('Ombor Jami profil fetch error:', e); }
-        const accessories = omGetAccessories();
-        const qoldiqItems = omGetQoldiq();
+        const accessories = await omGetAccessories();
+        const qoldiqItems = await omGetQoldiq();
 
         window._ojData = {
             profil: { items: profilItems, groups: omGroupProfilByName(profilItems) },
@@ -1604,9 +1785,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             omborTx = data || [];
         } catch (e) { console.warn('Umumiy tranzaksiya fetch error:', e); }
 
-        const accessories = omGetAccessories();
-        const qoldiqItems = omGetQoldiq();
-        const oynakItems = omGetOynak();
+        const accessories = await omGetAccessories();
+        const qoldiqItems = await omGetQoldiq();
+        const oynakItems = await omGetOynak();
 
         const profilValue = profilItems.reduce((s, p) => s + ((Number(p.price) || 0) * (Number(p.stock_quantity) || 0)), 0);
         const accValue = accessories.reduce((s, a) => s + ((Number(a.price) || 0) * (Number(a.qty) || 0)), 0);

@@ -297,50 +297,8 @@
                         <p style="color: var(--adm-text-sec);">Romix Mahsulotlar va xom-ashyo nazorati</p>
                     </div>
                     <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                        <button id="openScanModal" class="btn-glass" title="Skayner yordamida qabul qilish">
-                            <span style="font-size: 1.2rem;">📷</span> Skayner (QR) Qabul
-                        </button>
                         <div style="display:flex; align-items:center; gap:8px; background:rgba(255,170,0,0.08); border:1px solid rgba(255,170,0,0.25); color:#ffaa00; padding:9px 16px; border-radius:12px; font-size:0.78rem; font-weight:600;">
-                            ℹ️ Kirim (mahsulot qabul qilish) endi Buxgalteriya bo'limida amalga oshiriladi
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Modal: QR Ruxsatnoma Skayner -->
-                <div id="qrScanModal" class="hidden"
-                    style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center;">
-                    <div class="user-form-modal" style="width: 600px; background:var(--adm-surface);">
-                        <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
-                            <span style="font-size: 1.5rem;">📷</span>
-                            <h2 style="color:var(--adm-text);">Ruxsatnomani Qabul Qilish</h2>
-                        </div>
-                        <p style="font-size:0.9rem; color:var(--adm-text-sec); margin-bottom:15px;">Mijoz/Brigada taqdim
-                            etgan qog'ozdagi id kodini yoki QR skayner orqali id kodini kiriting:</p>
-
-                        <div style="display:flex; gap:10px;">
-                            <input type="text" id="qrReqId" class="form-input-v2" placeholder="Masalan: 3f8a9e..."
-                                style="flex:1;">
-                            <button id="searchReqBtn"
-                                style="background:#334155; color:#fff; border:none; border-radius:12px; padding:0 15px; font-weight:700; cursor:pointer;">🔎
-                                Qidirish</button>
-                        </div>
-
-                        <div id="reqResultArea" class="hidden"
-                            style="margin-top:20px; background:rgba(255,255,255,0.05); padding:15px; border-radius:10px;">
-                            <h3 style="color:#00d2ff; margin-bottom:10px;" id="reqGroupName">Guruh Nomi</h3>
-                            <ul id="reqMatList"
-                                style="list-style:none; padding:0; margin-bottom:15px; max-height:200px; overflow-y:auto; font-size:0.9rem; color:#ccc;">
-                            </ul>
-                            <div style="display:flex; gap:10px; margin-top:15px;">
-                                <button id="approveReqBtn"
-                                    style="flex:1; background:#00ff88; color:#000; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">Tasdiqlash
-                                    va Chiqim Qilish</button>
-                            </div>
-                        </div>
-
-                        <div style="display:flex; gap:10px; margin-top:20px;">
-                            <button id="closeScanModal"
-                                style="flex:1; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; padding:12px; border-radius:12px; cursor:pointer;">Yopish</button>
+                            ℹ️ Kirim (mahsulot qabul qilish) endi Buxgalteriya bo'limida amalga oshiriladi. Chiqim faqat "Olingan Buyurtmalar" orqali, buyurtmaga bog'liq holda bo'ladi.
                         </div>
                     </div>
                 </div>
@@ -438,6 +396,50 @@
                 </div>
             </section>
         </main>
+    </div>
+
+    <!-- Modal: Buyurtmani Tasdiqlash (Profil/Aksesuvar avtomatik + Qoldiq/Oynak ixtiyoriy) -->
+    <div id="ordConfirmModal" class="hidden"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:2500; display:flex; align-items:center; justify-content:center; padding:20px;">
+        <div class="user-form-modal" style="width: 640px; max-height:92vh; overflow-y:auto; background:var(--adm-surface);">
+            <div style="display:flex; align-items:center; gap:15px; margin-bottom:16px;">
+                <span style="font-size: 1.8rem;">✅</span>
+                <div>
+                    <h2 style="color:var(--adm-text); margin:0;">Buyurtmani Tasdiqlash</h2>
+                    <p id="ordConfirmCustomer" style="color:var(--adm-text-sec); font-size:0.82rem; margin:2px 0 0;"></p>
+                </div>
+            </div>
+
+            <div style="margin-bottom:14px;">
+                <div style="font-weight:700; font-size:0.82rem; color:var(--adm-text); margin-bottom:6px;">📏 Profil / 🔩 Aksesuvar (avtomatik hisoblangan)</div>
+                <div id="ordConfirmAutoList" style="background:rgba(255,255,255,0.03); border:1px solid var(--adm-border); border-radius:12px; padding:10px 12px;"></div>
+            </div>
+
+            <div style="margin-bottom:14px;">
+                <div style="font-weight:700; font-size:0.82rem; color:var(--adm-text); margin-bottom:6px;">✂️ Qoldiq Profillar (ixtiyoriy)</div>
+                <div style="display:flex; gap:8px;">
+                    <select id="ordConfirmQoldiqSelect" class="form-input-v2" style="flex:1;"></select>
+                    <input type="number" id="ordConfirmQoldiqQty" min="1" value="1" class="form-input-v2" style="width:90px;">
+                    <button id="ordConfirmQoldiqAddBtn" class="btn-glass" style="white-space:nowrap;">➕ Qo'shish</button>
+                </div>
+                <div id="ordConfirmQoldiqList" style="margin-top:8px;"></div>
+            </div>
+
+            <div style="margin-bottom:18px;">
+                <div style="font-weight:700; font-size:0.82rem; color:var(--adm-text); margin-bottom:6px;">🪟 Oynak (ixtiyoriy)</div>
+                <div style="display:flex; gap:8px;">
+                    <select id="ordConfirmOynakSelect" class="form-input-v2" style="flex:1;"></select>
+                    <input type="number" id="ordConfirmOynakQty" min="1" value="1" class="form-input-v2" style="width:90px;">
+                    <button id="ordConfirmOynakAddBtn" class="btn-glass" style="white-space:nowrap;">➕ Qo'shish</button>
+                </div>
+                <div id="ordConfirmOynakList" style="margin-top:8px;"></div>
+            </div>
+
+            <div style="display:flex; gap:10px;">
+                <button id="ordConfirmSubmitBtn" style="flex:1.3; background:#00ff88; color:#000; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">✅ Tasdiqlash va Ishlab Chiqarishga O'tkazish</button>
+                <button id="ordConfirmCancelBtn" style="flex:1; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; padding:12px; border-radius:12px; cursor:pointer;">Bekor qilish</button>
+            </div>
+        </div>
     </div>
 
     <!-- Modal: Yangi Kirim Amali -->

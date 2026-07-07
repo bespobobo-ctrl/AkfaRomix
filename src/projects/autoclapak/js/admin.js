@@ -451,7 +451,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         expenses: 'romix_expenses_v1',
         debts: 'romix_debts_v1',
         payments: 'romix_payment_log_v1',
-        utilityReadings: 'romix_utility_readings_v1'
+        utilityReadings: 'romix_utility_readings_v1',
+        accessories: 'romix_accessories_inventory',
+        qoldiqProfillar: 'romix_qoldiq_inventory',
+        oynak: 'romix_oynak_inventory'
     };
 
     function _buhToday() { return new Date().toISOString().slice(0, 10); }
@@ -762,18 +765,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         return { totalEmp, monthlyPayrollFund };
     }
 
-    // Aksesuar zaxirasi faqat brauzer localStorage'da saqlanadi (romix_ombor_aksesuvar.html
-    // shu kalitni boshqaradi). Bir xil origin bo'lgani uchun shu yerdan ham o'qiy olamiz.
-    function _buhGetAccessories() {
-        try { return JSON.parse(localStorage.getItem('romix_accessories_inventory')) || []; } catch { return []; }
-    }
-    function _buhSaveAccessories(list) {
-        localStorage.setItem('romix_accessories_inventory', JSON.stringify(list));
-    }
-    function _buhAccessoriesValue() {
-        return _buhGetAccessories().reduce((s, a) => s + ((Number(a.price) || 0) * (Number(a.qty) || 0)), 0);
+    // Aksesuar/Qoldiq/Oynak — endi Supabase'da (avval faqat brauzer localStorage'da edi).
+    // Birinchi o'qishda: Supabase jadvali bo'sh VA localStorage'da eski ma'lumot bo'lsa,
+    // bir martalik avtomatik ko'chiriladi (haqiqiy ombor kompyuteridagi ma'lumot yo'qolmasin).
+    let _buhOmborMigrationChecked = { accessories: false, qoldiq: false, oynak: false };
+    async function _buhOmborMigrateOnce(key, table, localKey, mapFn) {
+        if (_buhOmborMigrationChecked[key]) return;
+        _buhOmborMigrationChecked[key] = true;
+        try {
+            const { count, error } = await supabase.from(table).select('id', { count: 'exact', head: true });
+            if (error) throw error;
+            if (count > 0) return;
+            const local = JSON.parse(localStorage.getItem(localKey) || '[]');
+            if (!local.length) return;
+            const rows = local.map(mapFn);
+            const { error: insErr } = await supabase.from(table).insert(rows);
+            if (insErr) throw insErr;
+        } catch (e) { console.warn(`Buh ombor migratsiya xatosi (${table}):`, e); }
     }
 
+    async function _buhGetAccessories() {
+        await _buhOmborMigrateOnce('accessories', 'romix_accessories', ROMIX_BUH_KEYS.accessories, (a, i) => ({
+            id: a.id || ('ACC-' + Date.now() + '-' + i), name: a.name, category: a.category,
+            qty: Number(a.qty) || 0, unit: a.unit, spec: a.spec || '', price: Number(a.price) || 0
+        }));
+        return await romixBuhSelect('romix_accessories', ROMIX_BUH_KEYS.accessories);
+    }
+    async function _buhUpdateAccessoryPrice(id, price) {
+        await romixBuhUpdate('romix_accessories', ROMIX_BUH_KEYS.accessories, id, { price });
+    }
     async function renderRomixBuhOmbor() {
         const statsEl = document.getElementById('buh-ombor-stats');
         const gridEl = document.getElementById('buh-ombor-grid');
@@ -784,12 +804,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             const { data } = await supabase.from('romix_inventory').select('*').order('product_name', { ascending: true });
             items = data || [];
         } catch (e) { console.warn('Buh Ombor fetch error:', e); }
-        const accessories = _buhGetAccessories();
+        const accessories = await _buhGetAccessories();
 
         const totalItems = items.length;
         const lowStock = items.filter(p => (Number(p.stock_quantity) || 0) < 10).length;
         const totalValue = items.reduce((s, p) => s + ((Number(p.price) || 0) * (Number(p.stock_quantity) || 0)), 0);
-        const accValue = _buhAccessoriesValue();
+        const accValue = accessories.reduce((s, a) => s + ((Number(a.price) || 0) * (Number(a.qty) || 0)), 0);
 
         if (statsEl) {
             statsEl.innerHTML = `
@@ -832,7 +852,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>`;
             }).join('');
 
-            const accCardsHtml = accessories.map((a, idx) => {
+            const accCardsHtml = accessories.map((a) => {
                 const qty = Number(a.qty) || 0;
                 const price = Number(a.price) || 0;
                 const val = price * qty;
@@ -855,7 +875,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div style="display:flex; justify-content:space-between; font-size:0.76rem; color:rgba(255,255,255,0.5);">
                         <span>Jami qiymat</span><strong style="color:#00d2ff; font-family:monospace;">${_buhFmt(val)}</strong>
                     </div>
-                    <button onclick="window.openRomixPriceModal('accessory', '${idx}', '${nameEsc}', ${price}, ${qty}, '${unitEsc}')"
+                    <button onclick="window.openRomixPriceModal('accessory', '${a.id}', '${nameEsc}', ${price}, ${qty}, '${unitEsc}')"
                         style="display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(186,104,200,0.1); border:1px solid rgba(186,104,200,0.25); color:#BA68C8; padding:9px; border-radius:10px; font-size:0.76rem; font-weight:700; cursor:pointer; transition:all 0.2s; width:100%; margin-top:2px;"
                         onmouseenter="this.style.background='rgba(186,104,200,0.2)'; this.style.transform='translateY(-1px)';"
                         onmouseleave="this.style.background='rgba(186,104,200,0.1)'; this.style.transform='translateY(0)';">
@@ -906,11 +926,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (isNaN(val) || val < 0) { alert("Iltimos, to'g'ri narx kiriting."); return; }
 
         if (state.source === 'accessory') {
-            const list = _buhGetAccessories();
-            const idx = Number(state.id);
-            if (!list[idx]) { alert("Aksesuar topilmadi. Ro'yxatni yangilab ko'ring."); return; }
-            list[idx].price = val;
-            _buhSaveAccessories(list);
+            await _buhUpdateAccessoryPrice(state.id, val);
             window.showPremiumToast('Muvaffaqiyatli', 'Aksesuar narxi yangilandi.', true);
             window.closeRomixPriceModal();
             await renderRomixBuhOmbor();
@@ -1071,7 +1087,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const modal = document.getElementById('buh-acc-kirim-modal');
         if (modal) modal.style.display = 'none';
     };
-    window.saveBuhAccKirim = () => {
+    window.saveBuhAccKirim = async () => {
         const name = document.getElementById('buhAccName').value.trim();
         const categorySelect = document.getElementById('buhAccCategory').value;
         const customCategory = document.getElementById('buhAccCustomCategory').value.trim();
@@ -1085,31 +1101,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        let inventory = JSON.parse(localStorage.getItem('romix_accessories_inventory')) || [];
-        const matchedIndex = inventory.findIndex(item => item.name.toLowerCase() === name.toLowerCase());
-        if (matchedIndex > -1) {
-            inventory[matchedIndex].qty += qty;
-            inventory[matchedIndex].spec = spec;
-            inventory[matchedIndex].category = finalCategory;
+        const inventory = await _buhGetAccessories();
+        const matched = inventory.find(item => (item.name || '').toLowerCase() === name.toLowerCase());
+        if (matched) {
+            await romixBuhUpdate('romix_accessories', ROMIX_BUH_KEYS.accessories, matched.id, {
+                qty: (Number(matched.qty) || 0) + qty, spec, category: finalCategory
+            });
         } else {
-            inventory.push({ name, category: finalCategory, qty, unit, spec });
+            await romixBuhInsert('romix_accessories', ROMIX_BUH_KEYS.accessories, {
+                id: 'ACC-' + Date.now(), name, category: finalCategory, qty, unit, spec, price: 0
+            });
         }
-        localStorage.setItem('romix_accessories_inventory', JSON.stringify(inventory));
 
         // Tarix jurnaliga yozish (romix_ombor_aksesuvar.html'dagi addHistoryLog bilan bir xil shakl)
         const curUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
         const operator = (curUser.full_name || curUser.username || 'BUXGALTERIYA').toUpperCase();
         const now = new Date();
         const timeStr = now.toLocaleDateString('uz-UZ') + ' ' + now.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
-        let logs = JSON.parse(localStorage.getItem('romix_accessories_history_log')) || [];
-        logs.unshift({
+        await romixBuhInsert('romix_accessories_history', 'romix_accessories_history_log', {
+            id: 'HIST-' + Date.now(),
             timestamp: timeStr,
             action: 'Dona Kirim 📥',
             details: `"${name}" mahsulotidan ${qty.toLocaleString()} ${unit} Dona Kirim qilindi (Buxgalteriya). Kategoriya: ${finalCategory}. Xususiyati: ${spec}.`,
             operator: operator
         });
-        if (logs.length > 100) logs.pop();
-        localStorage.setItem('romix_accessories_history_log', JSON.stringify(logs));
 
         window.showPremiumToast('Muvaffaqiyatli', `${name} — ${qty} ${unit} kirim qilindi.`, true);
         window.closeBuhAccKirimModal();
@@ -1122,9 +1137,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // ========================================================
-    // ======== BUXGALTERIYA: SPISKA KIRIM (guruhli, localStorage) =
+    // ======== BUXGALTERIYA: SPISKA KIRIM (guruhli) ===========
     // Bir nechta aksessuar tovarni vaqtinchalik ro'yxatga
-    // qo'shib, birdaniga romix_accessories_inventory'ga yozadi.
+    // qo'shib, birdaniga romix_accessories (Supabase)ga yozadi.
     // ========================================================
     let buhSpiskaTempItems = [];
 
@@ -1190,38 +1205,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('buhSpiskaTempCount').textContent = `${buhSpiskaTempItems.length} ta tovar`;
         document.getElementById('buhSpiskaTempTotalQty').textContent = `${totalQty.toLocaleString()} dona`;
     };
-    window.commitBuhSpiskaDeposit = () => {
+    window.commitBuhSpiskaDeposit = async () => {
         if (buhSpiskaTempItems.length === 0) {
             alert("Iltimos, tasdiqlashdan oldin hech bo'lmaganda bitta mahsulot qo'shing!");
             return;
         }
-        let inventory = JSON.parse(localStorage.getItem('romix_accessories_inventory')) || [];
+        const inventory = await _buhGetAccessories();
         const curUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
         const operator = (curUser.full_name || curUser.username || 'BUXGALTERIYA').toUpperCase();
-        let logs = JSON.parse(localStorage.getItem('romix_accessories_history_log')) || [];
 
-        buhSpiskaTempItems.forEach(item => {
-            const matchedIndex = inventory.findIndex(inv => inv.name.toLowerCase() === item.name.toLowerCase());
-            if (matchedIndex > -1) {
-                inventory[matchedIndex].qty += item.qty;
-                inventory[matchedIndex].spec = item.spec;
-                inventory[matchedIndex].category = item.category;
+        for (const item of buhSpiskaTempItems) {
+            const matched = inventory.find(inv => (inv.name || '').toLowerCase() === item.name.toLowerCase());
+            if (matched) {
+                await romixBuhUpdate('romix_accessories', ROMIX_BUH_KEYS.accessories, matched.id, {
+                    qty: (Number(matched.qty) || 0) + item.qty, spec: item.spec, category: item.category
+                });
+                matched.qty = (Number(matched.qty) || 0) + item.qty;
             } else {
-                inventory.push({ name: item.name, category: item.category, qty: item.qty, unit: item.unit, spec: item.spec });
+                const newItem = { id: 'ACC-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), name: item.name, category: item.category, qty: item.qty, unit: item.unit, spec: item.spec, price: 0 };
+                await romixBuhInsert('romix_accessories', ROMIX_BUH_KEYS.accessories, newItem);
+                inventory.push(newItem);
             }
             const now = new Date();
             const timeStr = now.toLocaleDateString('uz-UZ') + ' ' + now.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
-            logs.unshift({
+            await romixBuhInsert('romix_accessories_history', 'romix_accessories_history_log', {
+                id: 'HIST-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
                 timestamp: timeStr,
                 action: 'Spiska Kirim 📜',
                 details: `"${item.name}" mahsulotidan ${item.qty.toLocaleString()} ${item.unit} Spiska orqali guruhli kirim qilindi (Buxgalteriya). Kategoriya: ${item.category}.`,
                 operator: operator
             });
-        });
-        if (logs.length > 100) logs = logs.slice(0, 100);
-
-        localStorage.setItem('romix_accessories_inventory', JSON.stringify(inventory));
-        localStorage.setItem('romix_accessories_history_log', JSON.stringify(logs));
+        }
 
         window.showPremiumToast('Muvaffaqiyatli', `${buhSpiskaTempItems.length} ta tovar kirim qilindi.`, true);
         window.closeBuhSpiskaModal();
@@ -1232,7 +1246,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Spiska hujjati rasmi /api/spiska-vision'ga yuboriladi,
     // AI aniqlagan mahsulotlar ro'yxati ko'rib chiqiladi/tahrirlanadi,
     // tasdiqlangach turi bo'yicha romix_inventory (profil) yoki
-    // romix_accessories_inventory (aksessuar)ga yoziladi.
+    // romix_accessories (aksessuar, Supabase)ga yoziladi.
     // ========================================================
     window.openBuhVisionModal = () => {
         window.__buhVisionImageData = null;
@@ -1420,33 +1434,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (accItems.length > 0) {
-            let inventory = JSON.parse(localStorage.getItem('romix_accessories_inventory')) || [];
+            const inventory = await _buhGetAccessories();
             const curUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
             const operator = (curUser.full_name || curUser.username || 'BUXGALTERIYA').toUpperCase();
-            let logs = JSON.parse(localStorage.getItem('romix_accessories_history_log')) || [];
-            accItems.forEach(it => {
+            for (const it of accItems) {
                 const finalCategory = it.category && it.category !== '' ? it.category : "Boshqa...";
-                const matchedIndex = inventory.findIndex(inv => inv.name.toLowerCase() === it.name.toLowerCase());
-                if (matchedIndex > -1) {
-                    inventory[matchedIndex].qty += it.qty;
-                    inventory[matchedIndex].spec = it.spec;
-                    inventory[matchedIndex].category = finalCategory;
-                    if (it.price > 0) inventory[matchedIndex].price = it.price;
+                const matched = inventory.find(inv => (inv.name || '').toLowerCase() === it.name.toLowerCase());
+                if (matched) {
+                    const patch = { qty: (Number(matched.qty) || 0) + it.qty, spec: it.spec, category: finalCategory };
+                    if (it.price > 0) patch.price = it.price;
+                    await romixBuhUpdate('romix_accessories', ROMIX_BUH_KEYS.accessories, matched.id, patch);
+                    matched.qty = patch.qty;
                 } else {
-                    inventory.push({ name: it.name, category: finalCategory, qty: it.qty, unit: it.unit, spec: it.spec, price: it.price || 0 });
+                    const newItem = { id: 'ACC-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), name: it.name, category: finalCategory, qty: it.qty, unit: it.unit, spec: it.spec, price: it.price || 0 };
+                    await romixBuhInsert('romix_accessories', ROMIX_BUH_KEYS.accessories, newItem);
+                    inventory.push(newItem);
                 }
                 const now = new Date();
                 const timeStr = now.toLocaleDateString('uz-UZ') + ' ' + now.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
-                logs.unshift({
+                await romixBuhInsert('romix_accessories_history', 'romix_accessories_history_log', {
+                    id: 'HIST-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
                     timestamp: timeStr,
                     action: 'Rasmdan Kirim (AI) 📷',
                     details: `"${it.name}" mahsulotidan ${it.qty.toLocaleString()} ${it.unit} rasm orqali (AI) kirim qilindi. Kategoriya: ${finalCategory}.`,
                     operator: operator
                 });
-            });
-            if (logs.length > 100) logs = logs.slice(0, 100);
-            localStorage.setItem('romix_accessories_inventory', JSON.stringify(inventory));
-            localStorage.setItem('romix_accessories_history_log', JSON.stringify(logs));
+            }
         }
 
         window.showPremiumToast('Muvaffaqiyatli', `${items.length} ta mahsulot kirim qilindi (${profilItems.length} profil, ${accItems.length} aksessuar).`, true);
@@ -1860,9 +1873,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             }).join('');
     }
 
-    // Qoldiq profillar — kesimdan qolgan alohida zaxira (romix_qoldiq_inventory, faqat localStorage)
-    function _buhGetQoldiqProfillar() {
-        try { return JSON.parse(localStorage.getItem('romix_qoldiq_inventory')) || []; } catch { return []; }
+    // Qoldiq profillar — kesimdan qolgan alohida zaxira (endi Supabase'da, romix_qoldiq_profillar)
+    async function _buhGetQoldiqProfillar() {
+        await _buhOmborMigrateOnce('qoldiq', 'romix_qoldiq_profillar', ROMIX_BUH_KEYS.qoldiqProfillar, (q, i) => ({
+            id: q.id || ('QLD-' + Date.now() + '-' + i), product_name: q.product_name, brand: q.brand,
+            series: q.series, color: q.color, profile_type: q.profile_type,
+            length: Number(q.length) || 0, stock_quantity: Number(q.stock_quantity) || 0
+        }));
+        return await romixBuhSelect('romix_qoldiq_profillar', ROMIX_BUH_KEYS.qoldiqProfillar);
     }
     function _buhQoldiqValue(items) {
         return items.reduce((s, q) => s + ((Number(q.length) || 0) * (Number(q.stock_quantity) || 0) * 25), 0);
@@ -1879,12 +1897,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             }).join('');
     }
 
-    // Oynak (oyna/shisha) — Qoldiq Profillar kabi alohida zaxira, faqat localStorage (hali maxsus sahifasi yo'q)
-    function _buhGetOynak() {
-        try { return JSON.parse(localStorage.getItem('romix_oynak_inventory')) || []; } catch { return []; }
+    // Oynak (oyna/shisha) — endi Supabase'da (romix_oynak), hali maxsus sahifasi yo'q (shu yerdan boshqariladi)
+    async function _buhGetOynak() {
+        await _buhOmborMigrateOnce('oynak', 'romix_oynak', ROMIX_BUH_KEYS.oynak, (o, i) => ({
+            id: 'OYNAK-' + Date.now() + '-' + i, brand: o.brand, product_name: o.product_name || o.brand,
+            size: o.size || '', stock_quantity: Number(o.stock_quantity) || 0, unit: o.unit || 'dona', price: Number(o.price) || 0
+        }));
+        return await romixBuhSelect('romix_oynak', ROMIX_BUH_KEYS.oynak);
     }
-    function _buhSaveOynak(list) {
-        localStorage.setItem('romix_oynak_inventory', JSON.stringify(list));
+    async function _buhAddOynak(item) {
+        await romixBuhInsert('romix_oynak', ROMIX_BUH_KEYS.oynak, item);
+    }
+    async function _buhDeleteOynak(id) {
+        await romixBuhDelete('romix_oynak', ROMIX_BUH_KEYS.oynak, id);
     }
     function _buhOynakValue(items) {
         return items.reduce((s, o) => s + ((Number(o.price) || 0) * (Number(o.stock_quantity) || 0)), 0);
@@ -2120,8 +2145,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 title: brandFilter === 'barchasi' ? '🪟 Oynak (barcha turlar)' : `🪟 Oynak — ${indexed[0] ? (indexed[0].o.brand || "Noma'lum") : brandFilter}`,
                 value, qtyText: _buhQtyBreakdown(indexed.map(({ o }) => o), 'stock_quantity', 'unit'),
                 columns: ['Turi/Brend', 'Nomi', "O'lcham", 'Soni', 'Narx', 'Qiymat'], alignRight: [false, false, false, true, true, true],
-                rows: indexed.map(({ o, idx }) => [o.brand || "Noma'lum", o.product_name || "Noma'lum", o.size || '-', `${(Number(o.stock_quantity) || 0).toLocaleString('uz-UZ')} ${o.unit || 'dona'}`, _buhFmt(o.price), _buhFmt((Number(o.price) || 0) * (Number(o.stock_quantity) || 0))]),
-                rowIndexes: indexed.map(({ idx }) => idx),
+                rows: indexed.map(({ o }) => [o.brand || "Noma'lum", o.product_name || "Noma'lum", o.size || '-', `${(Number(o.stock_quantity) || 0).toLocaleString('uz-UZ')} ${o.unit || 'dona'}`, _buhFmt(o.price), _buhFmt((Number(o.price) || 0) * (Number(o.stock_quantity) || 0))]),
+                rowIds: indexed.map(({ o }) => o.id),
                 oynakBrands: brands, oynakActiveBrand: brandFilter, isOynak: true
             };
         }
@@ -2336,7 +2361,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const extraCol = data.isOynak ? ['Amal'] : [];
             const headHtml = [...data.columns, ...extraCol].map((c, i) => `<th ${data.alignRight[i] ? 'style="text-align:right;"' : ''}>${c}</th>`).join('');
             const rowsHtml = data.rows.length
-                ? data.rows.map((r, idx) => `<tr>${r.map((cell, i) => `<td ${data.alignRight[i] ? 'style="text-align:right;"' : ''}>${cell}</td>`).join('')}${data.isOynak ? `<td><button class="buh-row-action-btn" style="background:rgba(255,77,79,0.15); color:#ff4d4f;" onclick="window.deleteBuhOynakItem(${data.rowIndexes ? data.rowIndexes[idx] : idx})">O'chirish</button></td>` : ''}</tr>`).join('')
+                ? data.rows.map((r, idx) => `<tr>${r.map((cell, i) => `<td ${data.alignRight[i] ? 'style="text-align:right;"' : ''}>${cell}</td>`).join('')}${data.isOynak ? `<td><button class="buh-row-action-btn" style="background:rgba(255,77,79,0.15); color:#ff4d4f;" onclick="window.deleteBuhOynakItem('${data.rowIds ? data.rowIds[idx] : ''}')">O'chirish</button></td>` : ''}</tr>`).join('')
                 : `<tr><td colspan="${data.columns.length + extraCol.length}" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Ma'lumot topilmadi</td></tr>`;
             tableEl.innerHTML = `<div style="overflow-x:auto;"><table class="v2-table"><thead><tr>${headHtml}</tr></thead>
                 <tbody>${rowsHtml}</tbody></table></div>`;
@@ -2351,7 +2376,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (cardEl) cardEl.textContent = _buhFmt(d.omborTotal);
     }
 
-    window.addBuhOynakItem = (e) => {
+    window.addBuhOynakItem = async (e) => {
         e.preventDefault();
         const brand = document.getElementById('buhOynakBrand').value.trim();
         const name = document.getElementById('buhOynakName').value.trim();
@@ -2359,9 +2384,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const qty = parseFloat(document.getElementById('buhOynakQty').value) || 0;
         const price = parseFloat(document.getElementById('buhOynakPrice').value) || 0;
         if (!brand || qty <= 0) return;
-        const list = _buhGetOynak();
-        list.push({ brand, product_name: name || brand, size, stock_quantity: qty, unit: 'dona', price });
-        _buhSaveOynak(list);
+        await _buhAddOynak({
+            id: 'OYNAK-' + Date.now(), brand, product_name: name || brand, size,
+            stock_quantity: qty, unit: 'dona', price
+        });
+        const list = await _buhGetOynak();
         window._buhUmumiyData.oynakItems = list;
         window._buhUmumiyData.oynakValue = _buhOynakValue(list);
         _buhRefreshOmborCardTotal();
@@ -2369,11 +2396,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.showPremiumToast && window.showPremiumToast('Saqlandi', `${brand} qo'shildi.`, true);
     };
 
-    window.deleteBuhOynakItem = (idx) => {
-        if (!confirm("Ushbu oynak yozuvini o'chirmoqchimisiz?")) return;
-        const list = _buhGetOynak();
-        list.splice(idx, 1);
-        _buhSaveOynak(list);
+    window.deleteBuhOynakItem = async (id) => {
+        if (!id || !confirm("Ushbu oynak yozuvini o'chirmoqchimisiz?")) return;
+        await _buhDeleteOynak(id);
+        const list = await _buhGetOynak();
         window._buhUmumiyData.oynakItems = list;
         window._buhUmumiyData.oynakValue = _buhOynakValue(list);
         _buhRefreshOmborCardTotal();
@@ -2748,13 +2774,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const profilValue = profilItems.reduce((s, p) => s + ((Number(p.price) || 0) * (Number(p.stock_quantity) || 0)), 0);
 
-        const accessories = _buhGetAccessories();
+        const accessories = await _buhGetAccessories();
         const accValue = accessories.reduce((s, a) => s + ((Number(a.price) || 0) * (Number(a.qty) || 0)), 0);
 
-        const qoldiqItems = _buhGetQoldiqProfillar();
+        const qoldiqItems = await _buhGetQoldiqProfillar();
         const qoldiqValue = _buhQoldiqValue(qoldiqItems);
 
-        const oynakItems = _buhGetOynak();
+        const oynakItems = await _buhGetOynak();
         const oynakValue = _buhOynakValue(oynakItems);
 
         const omborTotal = profilValue + accValue + qoldiqValue + oynakValue;
@@ -2764,10 +2790,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Chiqim — faqat 50% avans to'langan va Ombor bo'limi tasdiqlagan buyurtmalar uchun ajratilgan chiqim (confirmOrderMaterials oqimi)
         const chiqimTx = omborTx.filter(t => t.type === 'OUT' && (t.note || '').startsWith("Buyurtma uchun ajratildi"));
 
-        // Aksesuvar Kirim — Buxgalteriya orqali (romix_accessories_history_log, faqat "(Buxgalteriya)" belgili, shu oy)
+        // Aksesuvar Kirim — Buxgalteriya orqali (romix_accessories_history, faqat "(Buxgalteriya)" belgili, shu oy)
         let kirimAccessoryLog = [];
         try {
-            const logs = JSON.parse(localStorage.getItem('romix_accessories_history_log')) || [];
+            const logs = await romixBuhSelect('romix_accessories_history', 'romix_accessories_history_log');
             kirimAccessoryLog = logs.filter(l => {
                 if (!/kirim/i.test(l.action || '')) return false;
                 if (!(l.details || '').includes('(Buxgalteriya)')) return false;
@@ -3114,6 +3140,23 @@ CREATE TABLE IF NOT EXISTS romix_utility_readings (
     avto_sarfi NUMERIC,
     expense_id TEXT,
     created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Aksesuvar / Qoldiq Profillar / Oynak (avval faqat localStorage'da edi, endi markazlashgan)
+CREATE TABLE IF NOT EXISTS romix_accessories (
+    id TEXT PRIMARY KEY, name TEXT NOT NULL, category TEXT, qty NUMERIC DEFAULT 0,
+    unit TEXT, spec TEXT, price NUMERIC DEFAULT 0, created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS romix_accessories_history (
+    id TEXT PRIMARY KEY, timestamp TEXT, action TEXT, details TEXT, operator TEXT, created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS romix_qoldiq_profillar (
+    id TEXT PRIMARY KEY, product_name TEXT, brand TEXT, series TEXT, color TEXT,
+    profile_type TEXT, length NUMERIC DEFAULT 0, stock_quantity NUMERIC DEFAULT 0, created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS romix_oynak (
+    id TEXT PRIMARY KEY, brand TEXT, product_name TEXT, size TEXT,
+    stock_quantity NUMERIC DEFAULT 0, unit TEXT, price NUMERIC DEFAULT 0, created_at TIMESTAMPTZ DEFAULT now()
 );`;
 
     window.openRomixBuhDbSetupModal = () => {
@@ -6457,26 +6500,8 @@ CREATE TABLE IF NOT EXISTS romix_utility_readings (
     async function loadRomixDashboardStats() {
         const todayStr = new Date().toISOString().split('T')[0];
 
-        // 0. Seed database tables locally if they are empty
-        if (!localStorage.getItem('romix_accessories_inventory')) {
-            const defaultAcc = [
-                { name: "AKFA Eshik Qulflari", category: "Zamoklar", qty: 1200, unit: "dona", spec: "Standart" },
-                { name: "Oyna Ruchkalari Premium", category: "Ruchkalar", qty: 2500, unit: "dona", spec: "Premium" },
-                { name: "Rezina Qistirma 8mm", category: "Qistirmalar", qty: 7350, unit: "metr", spec: "EPDM Qora" },
-                { name: "Burchak Biriktiruvchi PVX", category: "Biriktiruvchilar", qty: 1400, unit: "dona", spec: "PVX" }
-            ];
-            localStorage.setItem('romix_accessories_inventory', JSON.stringify(defaultAcc));
-        }
-
-        if (!localStorage.getItem('romix_qoldiq_inventory')) {
-            const defaultQoldiq = [
-                { id: "q1", product_name: "AKFA Plastik 6000 QVT Oq", brand: "AKFA Plastik", series: "6000 QVT", color: "Oq", profile_type: "Profil Frame", length: 1500, stock_quantity: 8, created_at: "2026-07-01T10:00:00.000Z" },
-                { id: "q2", product_name: "AKFA Plastik 6000 TRIO Mocha", brand: "AKFA Plastik", series: "6000 TRIO", color: "Mocha", profile_type: "Profil Frame", length: 2200, stock_quantity: 4, created_at: "2026-07-01T11:30:00.000Z" },
-                { id: "q3", product_name: "Ekopen Plastik 5800 TRIO Oq", brand: "Ekopen Plastik", series: "5800 TRIO", color: "Oq", profile_type: "Shtapik", length: 950, stock_quantity: 15, created_at: "2026-06-30T14:15:00.000Z" },
-                { id: "q4", product_name: "AKFA Alyuminiy 5200 QVT Qora", brand: "AKFA Alyuminiy", series: "5200 QVT", color: "Qora", profile_type: "Tokcha", length: 3100, stock_quantity: 3, created_at: "2026-07-01T12:00:00.000Z" }
-            ];
-            localStorage.setItem('romix_qoldiq_inventory', JSON.stringify(defaultQoldiq));
-        }
+        // Aksesuvar/Qoldiq endi Supabase'da — bir martalik migratsiya _buhGetAccessories()/
+        // _buhGetQoldiqProfillar() ichida avtomatik amalga oshadi (pastda, statistika hisoblashda).
 
         const plastLocalKey = 'romix_db_romix_inventory';
         if (!localStorage.getItem(plastLocalKey)) {
@@ -6578,12 +6603,14 @@ CREATE TABLE IF NOT EXISTS romix_utility_readings (
         } catch (err) { console.error("Plast stock fetch issue:", err); }
 
         try {
-            const accRaw = localStorage.getItem('romix_accessories_inventory');
-            if (accRaw) {
-                const accData = JSON.parse(accRaw);
-                accData.forEach(a => {
-                    const qty = parseInt(a.qty) || 0;
-                    accStock += qty;
+            const accData = await _buhGetAccessories();
+            accData.forEach(a => {
+                const qty = parseInt(a.qty) || 0;
+                accStock += qty;
+                const price = Number(a.price) || 0;
+                if (price > 0) {
+                    accVal += qty * price;
+                } else {
                     const nameLower = (a.name || '').toLowerCase();
                     let estPrice = 30000;
                     if (nameLower.includes('dovodchik')) estPrice = 120000;
@@ -6593,22 +6620,19 @@ CREATE TABLE IF NOT EXISTS romix_utility_readings (
                     else if (nameLower.includes('setka')) estPrice = 40000;
                     else if (nameLower.includes('rezina') || nameLower.includes('zichlagich')) estPrice = 8000;
                     accVal += qty * estPrice;
-                });
-            }
+                }
+            });
         } catch (err) { console.error("Accessories stock calculation issue:", err); }
 
         try {
-            const qoldiqRaw = localStorage.getItem('romix_qoldiq_inventory');
-            if (qoldiqRaw) {
-                const qoldiqData = JSON.parse(qoldiqRaw);
-                qoldiqData.forEach(q => {
-                    const qty = parseInt(q.stock_quantity) || 0;
-                    const len = parseFloat(q.length) || 0;
-                    qoldiqStock += qty;
-                    qoldiqLength += len * qty;
-                    qoldiqVal += len * qty * 25;
-                });
-            }
+            const qoldiqData = await _buhGetQoldiqProfillar();
+            qoldiqData.forEach(q => {
+                const qty = parseInt(q.stock_quantity) || 0;
+                const len = parseFloat(q.length) || 0;
+                qoldiqStock += qty;
+                qoldiqLength += len * qty;
+                qoldiqVal += len * qty * 25;
+            });
         } catch (err) { console.error("Remnants stock calculation issue:", err); }
 
         const grandStock = plastStock + accStock + qoldiqStock;
