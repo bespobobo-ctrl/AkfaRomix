@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.querySelectorAll(`[data-tab="${tabId}"]`).forEach(b => b.classList.add('active'));
 
         if (tabId === 'umumiy') loadOmborUmumiy();
-        if (tabId === 'inventory') loadInventory();
+        if (tabId === 'inventory') { loadInventory(); loadOmborJami(); }
         if (tabId === 'staff') loadStaff();
         if (tabId === 'history') loadHistory();
         if (tabId === 'settings') loadSettings();
@@ -1425,6 +1425,163 @@ document.addEventListener('DOMContentLoaded', async () => {
         return Object.values(groups).sort((a, b) => b.value - a.value);
     }
     function omSafeKey(str) { return (str || '').replace(/[^a-zA-Z0-9]/g, '_'); }
+
+    // ============================================================
+    // ==== OMBOR JAMI — Premium 3 bo'limli ko'rinish             ====
+    // (Profil / Aksesuvar / Qoldiq Profil — brend/kategoriya      ====
+    //  chip-filtri bilan, mm/brend/kategoriya/miqdor batafsil)   ====
+    // ============================================================
+    const _OJ_CATEGORY_META = {
+        profil: { icon: '📦', label: 'Profil', title: '📦 Profil — Brend/Seriya Bo\'yicha' },
+        aksesuvar: { icon: '🔩', label: 'Aksesuvar', title: '🔩 Aksesuvar — Kategoriya Bo\'yicha' },
+        qoldiq: { icon: '✂️', label: 'Qoldiq Profil', title: '✂️ Qoldiq Profil — Brend Bo\'yicha' }
+    };
+    window._ojData = null;
+    window._ojActiveCategory = 'profil';
+    window._ojActiveBrand = { profil: 'barchasi', aksesuvar: 'barchasi', qoldiq: 'barchasi' };
+    window._ojSearchTerm = '';
+
+    async function loadOmborJami() {
+        const tabsEl = document.getElementById('ojCategoryTabs');
+        if (!tabsEl) return;
+
+        let profilItems = [];
+        try {
+            const { data } = await supabase.from('romix_inventory').select('*');
+            profilItems = data || [];
+        } catch (e) { console.warn('Ombor Jami profil fetch error:', e); }
+        const accessories = omGetAccessories();
+        const qoldiqItems = omGetQoldiq();
+
+        window._ojData = {
+            profil: { items: profilItems, groups: omGroupProfilByName(profilItems) },
+            aksesuvar: { items: accessories, groups: omGroupAccessoriesByCategory(accessories) },
+            qoldiq: { items: qoldiqItems, groups: omGroupQoldiqByBrand(qoldiqItems) }
+        };
+
+        tabsEl.querySelectorAll('.om-brand-chip').forEach(chip => {
+            chip.onclick = () => {
+                window._ojActiveCategory = chip.dataset.ojCat;
+                window._ojSearchTerm = '';
+                const search = document.getElementById('ojSearchInput');
+                if (search) search.value = '';
+                renderOmborJami();
+            };
+        });
+        const searchInput = document.getElementById('ojSearchInput');
+        if (searchInput) {
+            searchInput.oninput = () => {
+                window._ojSearchTerm = searchInput.value.toLowerCase().trim();
+                renderOmborJami();
+            };
+        }
+
+        renderOmborJami();
+    }
+
+    function renderOmborJami() {
+        const cat = window._ojActiveCategory;
+        const data = window._ojData && window._ojData[cat];
+        const statRow = document.getElementById('ojStatRow');
+        const brandFilterEl = document.getElementById('ojBrandFilter');
+        const tableWrap = document.getElementById('ojItemsTableWrap');
+        const titleEl = document.getElementById('ojCategoryTitle');
+        if (!data || !statRow || !brandFilterEl || !tableWrap) return;
+
+        document.querySelectorAll('#ojCategoryTabs .om-brand-chip').forEach(c => {
+            c.classList.toggle('active', c.dataset.ojCat === cat);
+        });
+        if (titleEl) titleEl.textContent = _OJ_CATEGORY_META[cat].title;
+
+        const totalValue = data.groups.reduce((s, g) => s + g.value, 0);
+        const totalQty = data.groups.reduce((s, g) => s + g.qty, 0);
+        statRow.innerHTML = `
+            <div class="om-stat-card"><div class="lbl">💰 Jami Qiymat</div><div class="val">${omFmt(totalValue)}</div></div>
+            <div class="om-stat-card"><div class="lbl">📦 Jami Miqdor</div><div class="val">${totalQty.toLocaleString('uz-UZ')}</div></div>
+            <div class="om-stat-card"><div class="lbl">🏷️ Turlar Soni</div><div class="val">${data.groups.length}</div></div>
+        `;
+
+        const activeBrand = window._ojActiveBrand[cat] || 'barchasi';
+        brandFilterEl.innerHTML = `
+            <div class="om-brand-chip ${activeBrand === 'barchasi' ? 'active' : ''}" onclick="window._ojSelectBrand('barchasi')">
+                <span class="chip-name">🗂️ Barchasi</span><span class="chip-meta">${data.groups.length} xil</span>
+            </div>
+            ${data.groups.map(g => `<div class="om-brand-chip ${activeBrand === g.name ? 'active' : ''}" onclick="window._ojSelectBrand('${g.name.replace(/'/g, "\\'")}')">
+                <span class="chip-name">${g.name}</span><span class="chip-meta">${g.qty.toLocaleString('uz-UZ')} ${g.unit || ''}</span>
+            </div>`).join('')}
+        `;
+
+        let items;
+        if (activeBrand === 'barchasi') {
+            items = data.items;
+        } else {
+            const grp = data.groups.find(g => g.name === activeBrand);
+            items = grp ? grp.items : [];
+        }
+        const q = window._ojSearchTerm;
+        if (q) {
+            items = items.filter(it => (it.product_name || it.name || '').toLowerCase().includes(q));
+        }
+
+        if (cat === 'profil') {
+            const rows = items.length ? items.map(p => {
+                const meta = p.metadata || {};
+                const qty = Number(p.stock_quantity) || 0;
+                const price = Number(p.price) || 0;
+                return `<tr>
+                    <td>${p.product_name || "Noma'lum"}</td>
+                    <td>${meta.brend || '-'}</td>
+                    <td>${meta.seriya || '-'}</td>
+                    <td style="text-align:right;">${meta.uzunligi || '-'}</td>
+                    <td>${meta.shakli || '-'}</td>
+                    <td>${meta.rangi || '-'}</td>
+                    <td style="text-align:right;">${qty.toLocaleString('uz-UZ')} ${p.unit || ''}</td>
+                    <td style="text-align:right;">${omFmt(price)}</td>
+                    <td style="text-align:right; font-weight:700; color:#00d2ff;">${omFmt(price * qty)}</td>
+                </tr>`;
+            }).join('') : `<tr><td colspan="9" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Mahsulot topilmadi</td></tr>`;
+            tableWrap.innerHTML = `<table class="v2-table"><thead><tr>
+                <th>Mahsulot</th><th>Brend</th><th>Seriya</th><th style="text-align:right;">Uzunligi (mm)</th><th>Shakli</th><th>Rangi</th>
+                <th style="text-align:right;">Miqdor</th><th style="text-align:right;">Narxi</th><th style="text-align:right;">Qiymati</th>
+            </tr></thead><tbody>${rows}</tbody></table>`;
+        } else if (cat === 'aksesuvar') {
+            const rows = items.length ? items.map(a => {
+                const qty = Number(a.qty) || 0;
+                const price = Number(a.price) || 0;
+                return `<tr>
+                    <td>${a.name || "Noma'lum"}</td>
+                    <td>${a.category || '-'}</td>
+                    <td style="text-align:right;">${qty.toLocaleString('uz-UZ')} ${a.unit || ''}</td>
+                    <td style="text-align:right;">${omFmt(price)}</td>
+                    <td style="text-align:right; font-weight:700; color:#00d2ff;">${omFmt(price * qty)}</td>
+                </tr>`;
+            }).join('') : `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Mahsulot topilmadi</td></tr>`;
+            tableWrap.innerHTML = `<table class="v2-table"><thead><tr>
+                <th>Mahsulot</th><th>Kategoriya</th><th style="text-align:right;">Miqdor</th><th style="text-align:right;">Narxi</th><th style="text-align:right;">Qiymati</th>
+            </tr></thead><tbody>${rows}</tbody></table>`;
+        } else {
+            const rows = items.length ? items.map(qi => {
+                const qty = Number(qi.stock_quantity) || 0;
+                const len = Number(qi.length) || 0;
+                const val = len * qty * 25;
+                return `<tr>
+                    <td>${qi.product_name || "Noma'lum"}</td>
+                    <td>${qi.brand || '-'}</td>
+                    <td style="text-align:right;">${len.toLocaleString('uz-UZ')}</td>
+                    <td style="text-align:right;">${qty.toLocaleString('uz-UZ')} dona</td>
+                    <td style="text-align:right; font-weight:700; color:#00d2ff;">${omFmt(val)}</td>
+                </tr>`;
+            }).join('') : `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Mahsulot topilmadi</td></tr>`;
+            tableWrap.innerHTML = `<table class="v2-table"><thead><tr>
+                <th>Mahsulot</th><th>Brend</th><th style="text-align:right;">Uzunligi (mm)</th><th style="text-align:right;">Miqdor</th><th style="text-align:right;">Qiymati</th>
+            </tr></thead><tbody>${rows}</tbody></table>`;
+        }
+    }
+
+    window._ojSelectBrand = (brand) => {
+        window._ojActiveBrand[window._ojActiveCategory] = brand;
+        renderOmborJami();
+    };
 
     window._omUmumiyData = null;
     window._omActiveFilter = 'barchasi';
