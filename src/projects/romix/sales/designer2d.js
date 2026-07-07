@@ -20,6 +20,7 @@ export function createDesigner(host, opts = {}) {
     let W = opts.W || 1500, H = opts.H || 1600;
     let root = { id: uid(), kind: 'leaf', opening: 'kar' };
     let selected = root.id;
+    let out = { cells: [], imposts: [] }; // render()da to'ldiriladi, bindSvg() bo'lim o'lchamini shundan topadi
     const onChange = opts.onChange || (() => { });
 
     const itemWidthInput = document.getElementById('itemWidth');
@@ -305,7 +306,7 @@ export function createDesigner(host, opts = {}) {
     }
 
     function render() {
-        const out = { cells: [], imposts: [] };
+        out = { cells: [], imposts: [] };
         const inner = { x: FRAME, y: FRAME, w: W - 2 * FRAME, h: H - 2 * FRAME };
         layout(root, inner, out);
 
