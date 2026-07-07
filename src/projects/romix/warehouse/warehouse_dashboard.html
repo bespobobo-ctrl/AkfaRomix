@@ -238,7 +238,7 @@
             <section id="umumiy-view" class="warehouse-section">
                 <div style="margin-bottom: 25px;">
                     <h1 style="font-size: 2.2rem; font-weight: 600;">📊 Umumiy Ombor Ko'rinishi</h1>
-                    <p style="color: var(--adm-text-sec);">Ombor umumiy holati, oylik kirim/chiqim va bo'limlar bo'yicha qiymat</p>
+                    <p style="color: var(--adm-text-sec);">Ombor umumiy holati, oylik kirim/chiqim va bo'limlar bo'yicha miqdor</p>
                 </div>
                 <style>
                     .om-stat-row { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:16px; margin-bottom:22px; }
@@ -268,15 +268,15 @@
                 </style>
                 <div class="om-stat-row">
                     <div class="om-stat-card">
-                        <div class="lbl">💰 Ombor Umumiy Qiymati</div>
+                        <div class="lbl">🏷️ Jami Mahsulot Turlari</div>
                         <div class="val" id="omUmumiyTotalValue">--</div>
                     </div>
                     <div class="om-stat-card">
-                        <div class="lbl" style="color:#00ff88;">📥 Oylik Kirim</div>
+                        <div class="lbl" style="color:#00ff88;">📥 Oylik Kirim (miqdor)</div>
                         <div class="val" id="omUmumiyKirim" style="color:#00ff88;">--</div>
                     </div>
                     <div class="om-stat-card">
-                        <div class="lbl" style="color:#ff4d4f;">📤 Oylik Chiqim</div>
+                        <div class="lbl" style="color:#ff4d4f;">📤 Oylik Chiqim (miqdor)</div>
                         <div class="val" id="omUmumiyChiqim" style="color:#ff4d4f;">--</div>
                     </div>
                 </div>
@@ -291,12 +291,14 @@
             </section>
 
             <section id="inventory-view" class="warehouse-section hidden">
-                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; flex-wrap:wrap; gap:14px;">
                     <div>
                         <h1 style="font-size: 2.2rem; font-weight: 600;">Ombor Jami</h1>
                         <p style="color: var(--adm-text-sec);">Romix Mahsulotlar va xom-ashyo nazorati</p>
                     </div>
-                    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+                        <button id="ojExportExcelBtn" style="display:flex; align-items:center; gap:6px; background:#1D6F42; color:#fff; border:none; padding:10px 18px; border-radius:12px; font-size:0.82rem; font-weight:700; cursor:pointer;">📊 Excel</button>
+                        <button id="ojExportPdfBtn" style="display:flex; align-items:center; gap:6px; background:#c0392b; color:#fff; border:none; padding:10px 18px; border-radius:12px; font-size:0.82rem; font-weight:700; cursor:pointer;">📄 PDF</button>
                         <div style="display:flex; align-items:center; gap:8px; background:rgba(255,170,0,0.08); border:1px solid rgba(255,170,0,0.25); color:#ffaa00; padding:9px 16px; border-radius:12px; font-size:0.78rem; font-weight:600;">
                             ℹ️ Kirim (mahsulot qabul qilish) endi Buxgalteriya bo'limida amalga oshiriladi. Chiqim faqat "Olingan Buyurtmalar" orqali, buyurtmaga bog'liq holda bo'ladi.
                         </div>
@@ -498,10 +500,6 @@
                     <label class="form-label">Kirim Miqdori</label>
                     <input type="number" id="kQty" placeholder="0.00" class="form-input-v2">
                 </div>
-                <div>
-                    <label class="form-label">Mahsulot Narxi ($/so'm)</label>
-                    <input type="number" id="kPrice" placeholder="0.00" class="form-input-v2">
-                </div>
             </div>
 
             <div style="margin-top:15px;">
@@ -532,8 +530,6 @@
             <input type="text" id="eName" class="form-input-v2">
             <label class="form-label">Soni (Qoldiq)</label>
             <input type="number" id="eQty" class="form-input-v2">
-            <label class="form-label">Narxi</label>
-            <input type="number" id="ePrice" class="form-input-v2">
             <div style="display:flex; gap:10px; margin-top:20px;">
                 <button id="saveEditBtn"
                     style="flex:1; background:var(--adm-accent); color:#fff; border:none; padding:12px; border-radius:12px; font-weight:600; cursor:pointer;">Saqlash</button>
@@ -609,7 +605,6 @@
                                 <th style="padding:15px; text-align:left;">Mahsulot</th>
                                 <th style="padding:15px; text-align:center;">Hajm</th>
                                 <th style="padding:15px; text-align:center;">Birlik</th>
-                                <th style="padding:15px; text-align:right;">Narxi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -623,9 +618,6 @@
                                 </td>
                                 <td id="invUnit"
                                     style="padding:20px 15px; border-bottom:1px solid #eee; text-align:center;"></td>
-                                <td id="invPrice"
-                                    style="padding:20px 15px; border-bottom:1px solid #eee; text-align:right; font-weight:700; color:#007c52;">
-                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -794,6 +786,8 @@
     </script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script type="module" src="/src/projects/romix/warehouse/warehouse.js"></script>
 </body>
 

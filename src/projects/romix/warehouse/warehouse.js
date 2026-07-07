@@ -178,11 +178,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Calculate Stats
         const totalItems = data.length;
         const lowStock = data.filter(p => p.stock_quantity < 10).length;
-        const totalValue = data.reduce((acc, p) => acc + (p.price * p.stock_quantity), 0);
+        const totalQty = data.reduce((acc, p) => acc + (Number(p.stock_quantity) || 0), 0);
 
         document.getElementById('statTotalItems').textContent = totalItems;
         document.getElementById('statLowStock').textContent = lowStock;
-        document.getElementById('statTodayIn').textContent = `$${totalValue.toLocaleString()}`;
+        document.getElementById('statTodayIn').textContent = totalQty.toLocaleString('uz-UZ');
 
         renderBrandSelector();
         renderCategoryTabs();
@@ -483,7 +483,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     window.editingProdId = p.id;
                     document.getElementById('eName').value = p.product_name;
                     document.getElementById('eQty').value = p.stock_quantity;
-                    document.getElementById('ePrice').value = p.price;
                     editModal.classList.remove('hidden');
                 }
             };
@@ -680,11 +679,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('invQty').textContent = tx.quantity;
         document.getElementById('invUnit').textContent = prod.unit || "";
 
-        // Show supplier and price info
+        // Show supplier info
         if (document.getElementById('invSupplier')) {
             document.getElementById('invSupplier').textContent = tx.supplier_name || "---";
             document.getElementById('invPhone').textContent = tx.supplier_phone || "";
-            document.getElementById('invPrice').textContent = tx.price ? `$${tx.price.toLocaleString()}` : "---";
         }
 
         if (document.getElementById('invSubInfo')) {
@@ -708,7 +706,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const name = document.getElementById('kName').value.trim();
             const cat = document.getElementById('kCategory').value;
             const qty = parseFloat(document.getElementById('kQty').value);
-            const price = parseFloat(document.getElementById('kPrice').value) || 0;
+            const price = 0; // Narxni Buxgalteriya belgilaydi, Ombor kirim qilishda narx kiritmaydi
             const supplier = document.getElementById('kSupplier').value.trim();
             const phone = document.getElementById('kPhone').value.trim();
             const unit = document.getElementById('kUnit').value;
@@ -784,11 +782,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('saveEditBtn').onclick = async () => {
         const name = document.getElementById('eName').value.trim();
         const qty = parseFloat(document.getElementById('eQty').value);
-        const price = parseFloat(document.getElementById('ePrice').value);
         if (!name) return alert("Nomi bo'sh bo'lmasligi kerak!");
         if (isNaN(qty) || qty < 0) return alert("Iltimos, to'g'ri miqdor kiriting (0 dan kichik bo'lmasligi kerak)!");
-        if (isNaN(price) || price < 0) return alert("Iltimos, to'g'ri narx kiriting (0 dan kichik bo'lmasligi kerak)!");
-        await supabase.from('romix_inventory').update({ product_name: name, stock_quantity: qty, price }).eq('id', window.editingProdId);
+        await supabase.from('romix_inventory').update({ product_name: name, stock_quantity: qty }).eq('id', window.editingProdId);
         editModal.classList.add('hidden');
         loadInventory();
     };
@@ -1489,13 +1485,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================================
-    // ==== UMUMIY — Ombor CRM ko'rinishi (qiymat, kirim/chiqim, ====
-    // ==== Profil/Aksesuvar/Qoldiq bo'yicha brend-filtr)         ====
+    // ==== UMUMIY — Ombor CRM ko'rinishi (faqat miqdor, kirim/chiqim, ====
+    // ==== Profil/Aksesuvar/Qoldiq/Oynak bo'yicha brend-filtr)   ====
     // ============================================================
-    function omFmt(n) { return Math.round(Number(n) || 0).toLocaleString('uz-UZ') + ' UZS'; }
     function omMonthKey() { return new Date().toISOString().slice(0, 7); }
-    function omQoldiqValue(items) { return items.reduce((s, q) => s + ((Number(q.length) || 0) * (Number(q.stock_quantity) || 0) * 25), 0); }
-    function omOynakValue(items) { return items.reduce((s, o) => s + ((Number(o.price) || 0) * (Number(o.stock_quantity) || 0)), 0); }
 
     // Aksesuvar/Qoldiq/Oynak — avval faqat localStorage'da edi, endi Supabase'da (markazlashgan).
     // Har biri birinchi o'qishda: Supabase jadvali bo'sh VA localStorage'da eski ma'lumot bo'lsa,
@@ -1557,53 +1550,50 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (e) { console.warn('Oynak fetch error:', e); return []; }
     }
 
+    // Ombor (warehouse) rolida narx/qiymat ko'rsatilmaydi — faqat miqdor (metr/dona).
+    // Shu sabab guruhlar miqdor bo'yicha saralanadi (eng ko'p zaxira birinchi).
     function omGroupProfilByName(items) {
         const groups = {};
         items.forEach(p => {
             const meta = p.metadata || {};
             const key = meta.brend ? `${meta.brend}${meta.seriya ? ' ' + meta.seriya : ''}` : (p.product_name || "Noma'lum");
-            if (!groups[key]) groups[key] = { name: key, qty: 0, value: 0, unit: p.unit || '', items: [] };
+            if (!groups[key]) groups[key] = { name: key, qty: 0, unit: p.unit || '', items: [] };
             groups[key].qty += Number(p.stock_quantity) || 0;
-            groups[key].value += (Number(p.price) || 0) * (Number(p.stock_quantity) || 0);
             if (!groups[key].unit) groups[key].unit = p.unit || '';
             groups[key].items.push(p);
         });
-        return Object.values(groups).sort((a, b) => b.value - a.value);
+        return Object.values(groups).sort((a, b) => b.qty - a.qty);
     }
     function omGroupAccessoriesByCategory(items) {
         const groups = {};
         items.forEach(a => {
             const key = a.category || 'Boshqa';
-            if (!groups[key]) groups[key] = { name: key, qty: 0, value: 0, unit: a.unit || '', items: [] };
+            if (!groups[key]) groups[key] = { name: key, qty: 0, unit: a.unit || '', items: [] };
             groups[key].qty += Number(a.qty) || 0;
-            groups[key].value += (Number(a.price) || 0) * (Number(a.qty) || 0);
             if (!groups[key].unit) groups[key].unit = a.unit || '';
             groups[key].items.push(a);
         });
-        return Object.values(groups).sort((a, b) => b.value - a.value);
+        return Object.values(groups).sort((a, b) => b.qty - a.qty);
     }
     function omGroupQoldiqByBrand(items) {
         const groups = {};
         items.forEach(q => {
             const key = q.brand || q.product_name || "Noma'lum";
-            const val = (Number(q.length) || 0) * (Number(q.stock_quantity) || 0) * 25;
-            if (!groups[key]) groups[key] = { name: key, qty: 0, value: 0, unit: 'dona', items: [] };
+            if (!groups[key]) groups[key] = { name: key, qty: 0, unit: 'dona', items: [] };
             groups[key].qty += Number(q.stock_quantity) || 0;
-            groups[key].value += val;
             groups[key].items.push(q);
         });
-        return Object.values(groups).sort((a, b) => b.value - a.value);
+        return Object.values(groups).sort((a, b) => b.qty - a.qty);
     }
     function omGroupOynakByBrand(items) {
         const groups = {};
         items.forEach(o => {
             const key = o.brand || "Noma'lum";
-            if (!groups[key]) groups[key] = { name: key, qty: 0, value: 0, unit: o.unit || 'dona', items: [] };
+            if (!groups[key]) groups[key] = { name: key, qty: 0, unit: o.unit || 'dona', items: [] };
             groups[key].qty += Number(o.stock_quantity) || 0;
-            groups[key].value += (Number(o.price) || 0) * (Number(o.stock_quantity) || 0);
             groups[key].items.push(o);
         });
-        return Object.values(groups).sort((a, b) => b.value - a.value);
+        return Object.values(groups).sort((a, b) => b.qty - a.qty);
     }
     function omSafeKey(str) { return (str || '').replace(/[^a-zA-Z0-9]/g, '_'); }
 
@@ -1677,10 +1667,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         if (titleEl) titleEl.textContent = _OJ_CATEGORY_META[cat].title;
 
-        const totalValue = data.groups.reduce((s, g) => s + g.value, 0);
         const totalQty = data.groups.reduce((s, g) => s + g.qty, 0);
         statRow.innerHTML = `
-            <div class="om-stat-card"><div class="lbl">💰 Jami Qiymat</div><div class="val">${omFmt(totalValue)}</div></div>
             <div class="om-stat-card"><div class="lbl">📦 Jami Miqdor</div><div class="val">${totalQty.toLocaleString('uz-UZ')}</div></div>
             <div class="om-stat-card"><div class="lbl">🏷️ Turlar Soni</div><div class="val">${data.groups.length}</div></div>
         `;
@@ -1711,7 +1699,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const rows = items.length ? items.map(p => {
                 const meta = p.metadata || {};
                 const qty = Number(p.stock_quantity) || 0;
-                const price = Number(p.price) || 0;
                 return `<tr>
                     <td>${p.product_name || "Noma'lum"}</td>
                     <td>${meta.brend || '-'}</td>
@@ -1719,61 +1706,51 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <td style="text-align:right;">${meta.uzunligi || '-'}</td>
                     <td>${meta.shakli || '-'}</td>
                     <td>${meta.rangi || '-'}</td>
-                    <td style="text-align:right;">${qty.toLocaleString('uz-UZ')} ${p.unit || ''}</td>
-                    <td style="text-align:right;">${omFmt(price)}</td>
-                    <td style="text-align:right; font-weight:700; color:#00d2ff;">${omFmt(price * qty)}</td>
+                    <td style="text-align:right; font-weight:700; color:#00d2ff;">${qty.toLocaleString('uz-UZ')} ${p.unit || ''}</td>
                 </tr>`;
-            }).join('') : `<tr><td colspan="9" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Mahsulot topilmadi</td></tr>`;
+            }).join('') : `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Mahsulot topilmadi</td></tr>`;
             tableWrap.innerHTML = `<table class="v2-table"><thead><tr>
                 <th>Mahsulot</th><th>Brend</th><th>Seriya</th><th style="text-align:right;">Uzunligi (mm)</th><th>Shakli</th><th>Rangi</th>
-                <th style="text-align:right;">Miqdor</th><th style="text-align:right;">Narxi</th><th style="text-align:right;">Qiymati</th>
+                <th style="text-align:right;">Miqdor</th>
             </tr></thead><tbody>${rows}</tbody></table>`;
         } else if (cat === 'aksesuvar') {
             const rows = items.length ? items.map(a => {
                 const qty = Number(a.qty) || 0;
-                const price = Number(a.price) || 0;
                 return `<tr>
                     <td>${a.name || "Noma'lum"}</td>
                     <td>${a.category || '-'}</td>
-                    <td style="text-align:right;">${qty.toLocaleString('uz-UZ')} ${a.unit || ''}</td>
-                    <td style="text-align:right;">${omFmt(price)}</td>
-                    <td style="text-align:right; font-weight:700; color:#00d2ff;">${omFmt(price * qty)}</td>
+                    <td style="text-align:right; font-weight:700; color:#00d2ff;">${qty.toLocaleString('uz-UZ')} ${a.unit || ''}</td>
                 </tr>`;
-            }).join('') : `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Mahsulot topilmadi</td></tr>`;
+            }).join('') : `<tr><td colspan="3" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Mahsulot topilmadi</td></tr>`;
             tableWrap.innerHTML = `<table class="v2-table"><thead><tr>
-                <th>Mahsulot</th><th>Kategoriya</th><th style="text-align:right;">Miqdor</th><th style="text-align:right;">Narxi</th><th style="text-align:right;">Qiymati</th>
+                <th>Mahsulot</th><th>Kategoriya</th><th style="text-align:right;">Miqdor</th>
             </tr></thead><tbody>${rows}</tbody></table>`;
         } else if (cat === 'qoldiq') {
             const rows = items.length ? items.map(qi => {
                 const qty = Number(qi.stock_quantity) || 0;
                 const len = Number(qi.length) || 0;
-                const val = len * qty * 25;
                 return `<tr>
                     <td>${qi.product_name || "Noma'lum"}</td>
                     <td>${qi.brand || '-'}</td>
                     <td style="text-align:right;">${len.toLocaleString('uz-UZ')}</td>
-                    <td style="text-align:right;">${qty.toLocaleString('uz-UZ')} dona</td>
-                    <td style="text-align:right; font-weight:700; color:#00d2ff;">${omFmt(val)}</td>
+                    <td style="text-align:right; font-weight:700; color:#00d2ff;">${qty.toLocaleString('uz-UZ')} dona</td>
                 </tr>`;
-            }).join('') : `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Mahsulot topilmadi</td></tr>`;
+            }).join('') : `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Mahsulot topilmadi</td></tr>`;
             tableWrap.innerHTML = `<table class="v2-table"><thead><tr>
-                <th>Mahsulot</th><th>Brend</th><th style="text-align:right;">Uzunligi (mm)</th><th style="text-align:right;">Miqdor</th><th style="text-align:right;">Qiymati</th>
+                <th>Mahsulot</th><th>Brend</th><th style="text-align:right;">Uzunligi (mm)</th><th style="text-align:right;">Miqdor</th>
             </tr></thead><tbody>${rows}</tbody></table>`;
         } else if (cat === 'oynak') {
             const rows = items.length ? items.map(o => {
                 const qty = Number(o.stock_quantity) || 0;
-                const price = Number(o.price) || 0;
                 return `<tr>
                     <td>${o.product_name || "Noma'lum"}</td>
                     <td>${o.brand || '-'}</td>
                     <td>${o.size || '-'}</td>
-                    <td style="text-align:right;">${qty.toLocaleString('uz-UZ')} ${o.unit || 'dona'}</td>
-                    <td style="text-align:right;">${omFmt(price)}</td>
-                    <td style="text-align:right; font-weight:700; color:#00d2ff;">${omFmt(price * qty)}</td>
+                    <td style="text-align:right; font-weight:700; color:#00d2ff;">${qty.toLocaleString('uz-UZ')} ${o.unit || 'dona'}</td>
                 </tr>`;
-            }).join('') : `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Mahsulot topilmadi</td></tr>`;
+            }).join('') : `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Mahsulot topilmadi</td></tr>`;
             tableWrap.innerHTML = `<table class="v2-table"><thead><tr>
-                <th>Mahsulot</th><th>Brend</th><th>O'lcham</th><th style="text-align:right;">Miqdor</th><th style="text-align:right;">Narxi</th><th style="text-align:right;">Qiymati</th>
+                <th>Mahsulot</th><th>Brend</th><th>O'lcham</th><th style="text-align:right;">Miqdor</th>
             </tr></thead><tbody>${rows}</tbody></table>`;
         }
     }
@@ -1782,6 +1759,127 @@ document.addEventListener('DOMContentLoaded', async () => {
         window._ojActiveBrand[window._ojActiveCategory] = brand;
         renderOmborJami();
     };
+
+    // "Ombor Jami" — professional Excel/PDF hisobot eksporti. Faqat miqdor (narxsiz).
+    // window._ojData allaqachon barcha 4 toifani o'z ichiga oladi (loadOmborJami() orqali).
+    function _ojRound(n) { return Math.round((Number(n) || 0) * 100) / 100; }
+
+    function _ojBuildCategoryRows(cat) {
+        const data = window._ojData && window._ojData[cat];
+        if (!data) return { headers: [], rows: [] };
+        if (cat === 'profil') {
+            return {
+                headers: ['Mahsulot', 'Brend', 'Seriya', "Uzunligi (mm)", 'Shakli', 'Rangi', 'Miqdor', 'Birlik'],
+                rows: data.items.map(p => {
+                    const meta = p.metadata || {};
+                    return [p.product_name || "Noma'lum", meta.brend || '-', meta.seriya || '-', meta.uzunligi || '-', meta.shakli || '-', meta.rangi || '-', _ojRound(p.stock_quantity), p.unit || ''];
+                })
+            };
+        } else if (cat === 'aksesuvar') {
+            return {
+                headers: ['Mahsulot', 'Kategoriya', 'Miqdor', 'Birlik'],
+                rows: data.items.map(a => [a.name || "Noma'lum", a.category || '-', _ojRound(a.qty), a.unit || ''])
+            };
+        } else if (cat === 'qoldiq') {
+            return {
+                headers: ['Mahsulot', 'Brend', "Uzunligi (mm)", 'Miqdor'],
+                rows: data.items.map(q => [q.product_name || "Noma'lum", q.brand || '-', _ojRound(q.length), _ojRound(q.stock_quantity)])
+            };
+        } else if (cat === 'oynak') {
+            return {
+                headers: ['Mahsulot', 'Brend', "O'lcham", 'Miqdor', 'Birlik'],
+                rows: data.items.map(o => [o.product_name || "Noma'lum", o.brand || '-', o.size || '-', _ojRound(o.stock_quantity), o.unit || 'dona'])
+            };
+        }
+        return { headers: [], rows: [] };
+    }
+
+    const _OJ_EXPORT_CATS = [
+        { key: 'profil', label: 'Profil' },
+        { key: 'aksesuvar', label: 'Aksesuvar' },
+        { key: 'qoldiq', label: 'Qoldiq Profillar' },
+        { key: 'oynak', label: 'Oynak' }
+    ];
+
+    function exportOmborJamiExcel() {
+        if (typeof XLSX === 'undefined') { alert('Excel kutubxonasi yuklanmagan.'); return; }
+        if (!window._ojData) { alert("Ma'lumot hali yuklanmagan."); return; }
+        const wb = XLSX.utils.book_new();
+
+        const summaryRows = _OJ_EXPORT_CATS.map(c => {
+            const d = window._ojData[c.key];
+            const totalQty = d ? _ojRound(d.groups.reduce((s, g) => s + g.qty, 0)) : 0;
+            return { "Bo'lim": c.label, "Turlar Soni": d ? d.groups.length : 0, "Jami Miqdor": totalQty };
+        });
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), "Umumiy");
+
+        _OJ_EXPORT_CATS.forEach(c => {
+            const { headers, rows } = _ojBuildCategoryRows(c.key);
+            if (!rows.length) return;
+            const sheetData = rows.map(r => {
+                const obj = {};
+                headers.forEach((h, i) => { obj[h] = r[i]; });
+                return obj;
+            });
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sheetData), c.label.slice(0, 31));
+        });
+
+        XLSX.writeFile(wb, `AKFA_Romix_Ombor_Hisoboti_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    }
+
+    function exportOmborJamiPdf() {
+        if (!window.jspdf || !window.jspdf.jsPDF) { alert('PDF kutubxonasi yuklanmagan.'); return; }
+        if (!window._ojData) { alert("Ma'lumot hali yuklanmagan."); return; }
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+        const pageW = 210;
+        const navy = [22, 33, 62];
+        const cyan = [0, 200, 180];
+
+        doc.setFillColor(...navy);
+        doc.rect(0, 0, pageW, 26, 'F');
+        doc.setFillColor(...cyan);
+        doc.rect(0, 26, pageW, 1.2, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(17);
+        doc.text('AKFA ROMIX', 15, 12);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.setTextColor(180, 220, 255);
+        doc.text('OMBOR HISOBOTI — Korxona Ombor Nazorati (faqat miqdor)', 15, 19);
+        doc.setFontSize(9);
+        doc.setTextColor(200, 200, 200);
+        doc.text(new Date().toLocaleDateString('uz-UZ'), pageW - 15, 12, { align: 'right' });
+
+        let y = 36;
+        _OJ_EXPORT_CATS.forEach(c => {
+            const { headers, rows } = _ojBuildCategoryRows(c.key);
+            if (!rows.length) return;
+            if (y > 260) { doc.addPage(); y = 20; }
+            doc.setTextColor(...navy);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(12.5);
+            doc.text(`${c.label} (${rows.length} xil)`, 15, y);
+            y += 4;
+            doc.autoTable({
+                startY: y,
+                head: [headers],
+                body: rows,
+                theme: 'grid',
+                margin: { left: 15, right: 15 },
+                headStyles: { fillColor: navy, fontSize: 8.5 },
+                bodyStyles: { fontSize: 8.5 },
+                didDrawPage: () => {}
+            });
+            y = doc.lastAutoTable.finalY + 12;
+        });
+
+        doc.save(`AKFA_Romix_Ombor_Hisoboti_${new Date().toISOString().slice(0, 10)}.pdf`);
+    }
+
+    document.getElementById('ojExportExcelBtn')?.addEventListener('click', exportOmborJamiExcel);
+    document.getElementById('ojExportPdfBtn')?.addEventListener('click', exportOmborJamiPdf);
 
     window._omUmumiyData = null;
     window._omActiveFilter = 'barchasi';
@@ -1808,24 +1906,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         const qoldiqItems = await omGetQoldiq();
         const oynakItems = await omGetOynak();
 
-        const profilValue = profilItems.reduce((s, p) => s + ((Number(p.price) || 0) * (Number(p.stock_quantity) || 0)), 0);
-        const accValue = accessories.reduce((s, a) => s + ((Number(a.price) || 0) * (Number(a.qty) || 0)), 0);
-        const qoldiqValue = omQoldiqValue(qoldiqItems);
-        const oynakValue = omOynakValue(oynakItems);
-        const totalValue = profilValue + accValue + qoldiqValue + oynakValue;
+        const profilGroups = omGroupProfilByName(profilItems);
+        const accGroups = omGroupAccessoriesByCategory(accessories);
+        const qoldiqGroups = omGroupQoldiqByBrand(qoldiqItems);
+        const oynakGroups = omGroupOynakByBrand(oynakItems);
+        const totalTypes = profilGroups.length + accGroups.length + qoldiqGroups.length + oynakGroups.length;
 
-        const kirimTotal = omborTx.filter(t => t.type === 'IN' && (t.note || '').includes('Buxgalteriya')).reduce((s, t) => s + ((Number(t.quantity) || 0) * (Number(t.romix_inventory?.price) || 0)), 0);
-        const chiqimTotal = omborTx.filter(t => t.type === 'OUT' && (t.note || '').startsWith('Buyurtma uchun ajratildi')).reduce((s, t) => s + ((Number(t.quantity) || 0) * (Number(t.romix_inventory?.price) || 0)), 0);
+        const kirimQty = omborTx.filter(t => t.type === 'IN' && (t.note || '').includes('Buxgalteriya')).reduce((s, t) => s + (Number(t.quantity) || 0), 0);
+        const chiqimQty = omborTx.filter(t => t.type === 'OUT' && (t.note || '').startsWith('Buyurtma uchun ajratildi')).reduce((s, t) => s + (Number(t.quantity) || 0), 0);
 
-        totalValEl.textContent = omFmt(totalValue);
-        kirimEl.textContent = omFmt(kirimTotal);
-        chiqimEl.textContent = omFmt(chiqimTotal);
+        totalValEl.textContent = totalTypes.toLocaleString('uz-UZ') + ' xil';
+        kirimEl.textContent = kirimQty.toLocaleString('uz-UZ');
+        chiqimEl.textContent = chiqimQty.toLocaleString('uz-UZ');
 
         window._omUmumiyData = {
-            profil: { value: profilValue, qty: profilItems.reduce((s, p) => s + (Number(p.stock_quantity) || 0), 0), groups: omGroupProfilByName(profilItems) },
-            aksesuvar: { value: accValue, qty: accessories.reduce((s, a) => s + (Number(a.qty) || 0), 0), groups: omGroupAccessoriesByCategory(accessories) },
-            qoldiq: { value: qoldiqValue, qty: qoldiqItems.reduce((s, q) => s + (Number(q.stock_quantity) || 0), 0), groups: omGroupQoldiqByBrand(qoldiqItems) },
-            oynak: { value: oynakValue, qty: oynakItems.reduce((s, o) => s + (Number(o.stock_quantity) || 0), 0), groups: omGroupOynakByBrand(oynakItems) }
+            profil: { qty: profilItems.reduce((s, p) => s + (Number(p.stock_quantity) || 0), 0), groups: profilGroups },
+            aksesuvar: { qty: accessories.reduce((s, a) => s + (Number(a.qty) || 0), 0), groups: accGroups },
+            qoldiq: { qty: qoldiqItems.reduce((s, q) => s + (Number(q.stock_quantity) || 0), 0), groups: qoldiqGroups },
+            oynak: { qty: oynakItems.reduce((s, o) => s + (Number(o.stock_quantity) || 0), 0), groups: oynakGroups }
         };
 
         document.querySelectorAll('#omFilterPills .om-brand-chip').forEach(chip => {
@@ -1855,7 +1953,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="om-group-card" onclick="window._omActiveFilter='${c.key}'; window.renderOmborUmumiyFilter();">
                     <div class="g-name">${c.icon} ${c.label}</div>
                     <div class="g-qty">${c.qty.toLocaleString('uz-UZ')} dona/birlik</div>
-                    <div class="g-value">${omFmt(c.value)}</div>
+                    <div class="g-value">${c.groups.length} xil turi</div>
                 </div>`).join('')}</div>`;
             return;
         }
@@ -1865,10 +1963,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const activeBrand = window._omActiveBrandByFilter[filter] || 'barchasi';
         const brandChipsHtml = `<div class="om-brand-filter-row" style="margin-bottom:16px;">
             <div class="om-brand-chip ${activeBrand === 'barchasi' ? 'active' : ''}" onclick="window._omSelectBrand('${filter}','barchasi')">
-                <span class="chip-name">🗂️ Barchasi</span><span class="chip-meta">${omFmt(section.value)}</span>
+                <span class="chip-name">🗂️ Barchasi</span><span class="chip-meta">${section.groups.length} xil</span>
             </div>
             ${section.groups.map(g => `<div class="om-brand-chip ${activeBrand === g.name ? 'active' : ''}" onclick="window._omSelectBrand('${filter}','${g.name.replace(/'/g, "\\'")}')">
-                <span class="chip-name">${g.name}</span><span class="chip-meta">${omFmt(g.value)}</span>
+                <span class="chip-name">${g.name}</span><span class="chip-meta">${g.qty.toLocaleString('uz-UZ')} ${g.unit || ''}</span>
             </div>`).join('')}
         </div>`;
 
@@ -1876,31 +1974,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (activeBrand === 'barchasi') {
             rowsHtml = section.groups.length ? section.groups.map(g => `<tr>
                     <td>${g.name}</td>
-                    <td style="text-align:right;">${g.qty.toLocaleString('uz-UZ')} ${g.unit || ''}</td>
+                    <td style="text-align:right; font-weight:700; color:#00d2ff;">${g.qty.toLocaleString('uz-UZ')} ${g.unit || ''}</td>
                     <td style="text-align:right;">${g.variants || g.items.length} xil</td>
-                    <td style="text-align:right; font-weight:700; color:#00d2ff;">${omFmt(g.value)}</td>
-                </tr>`).join('') : `<tr><td colspan="4" style="text-align:center; color:var(--adm-text-sec); padding:16px;">Mahsulot topilmadi</td></tr>`;
+                </tr>`).join('') : `<tr><td colspan="3" style="text-align:center; color:var(--adm-text-sec); padding:16px;">Mahsulot topilmadi</td></tr>`;
         } else {
             const group = section.groups.find(g => g.name === activeBrand);
             const items = group ? group.items : [];
             rowsHtml = items.length ? items.map(it => {
                 const qty = Number(it.stock_quantity ?? it.qty) || 0;
-                const price = Number(it.price) || 0;
                 return `<tr>
                     <td>${it.product_name || it.name || "Noma'lum"}</td>
-                    <td style="text-align:right;">${qty.toLocaleString('uz-UZ')} ${it.unit || ''}</td>
-                    <td style="text-align:right;">${omFmt(price)}</td>
-                    <td style="text-align:right; font-weight:700; color:#00d2ff;">${omFmt(price * qty)}</td>
+                    <td style="text-align:right; font-weight:700; color:#00d2ff;">${qty.toLocaleString('uz-UZ')} ${it.unit || ''}</td>
                 </tr>`;
-            }).join('') : `<tr><td colspan="4" style="text-align:center; color:var(--adm-text-sec); padding:16px;">Mahsulot topilmadi</td></tr>`;
+            }).join('') : `<tr><td colspan="2" style="text-align:center; color:var(--adm-text-sec); padding:16px;">Mahsulot topilmadi</td></tr>`;
         }
 
         content.innerHTML = `${brandChipsHtml}
             <div style="overflow-x:auto;"><table class="v2-table"><thead><tr>
                 <th>${activeBrand === 'barchasi' ? 'Nomi' : 'Mahsulot'}</th>
                 <th style="text-align:right;">Miqdor</th>
-                <th style="text-align:right;">${activeBrand === 'barchasi' ? 'Variantlar' : 'Narxi'}</th>
-                <th style="text-align:right;">Qiymati</th>
+                ${activeBrand === 'barchasi' ? '<th style="text-align:right;">Variantlar</th>' : ''}
             </tr></thead><tbody>${rowsHtml}</tbody></table></div>`;
     }
 
