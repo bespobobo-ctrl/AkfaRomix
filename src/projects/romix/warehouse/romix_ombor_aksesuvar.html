@@ -1752,6 +1752,11 @@
 
         // Butun `inventory` massivini Supabase'ga yozib qo'yadi (upsert, id bo'yicha).
         // Fire-and-forget chaqiriladi — UI allaqachon xotiradagi massivdan darhol yangilanadi.
+        // MUHIM: bu yerda "Supabase'da bor-u mahalliy massivda yo'q qatorlarni o'chirish" (prune)
+        // ATAYIN QILINMAYDI — agar bu sahifa eski holatda ochiq turgan bo'lsa (masalan, shu orada
+        // Buxgalteriyada boshqa mahsulot o'chirilgan bo'lsa), bunday "prune" o'sha o'chirilgan
+        // mahsulotni xato ravishda qayta tiklab qo'yardi. O'chirish endi faqat executeDelete()da
+        // aniq (targeted) supabase...delete().eq('id', ...) orqali amalga oshadi.
         async function syncInventoryToSupabase() {
             try {
                 inventory.forEach((item, i) => { if (!item.id) item.id = 'ACC-' + Date.now() + '-' + i; });
@@ -1761,11 +1766,6 @@
                     unit: a.unit, spec: a.spec || '', price: Number(a.price) || 0
                 }));
                 if (rows.length) await supabase.from('romix_accessories').upsert(rows);
-                // O'chirilgan elementlarni ham Supabase'dan tozalash
-                const { data: existing } = await supabase.from('romix_accessories').select('id');
-                const currentIds = new Set(rows.map(r => r.id));
-                const toDelete = (existing || []).filter(e => !currentIds.has(e.id)).map(e => e.id);
-                if (toDelete.length) await supabase.from('romix_accessories').delete().in('id', toDelete);
             } catch (e) {
                 console.warn('Aksesuvar Supabase sync xatosi:', e);
             }
@@ -2970,9 +2970,18 @@
                 const item = inventory[idx];
                 // Splice array, save and refresh
                 inventory.splice(idx, 1);
-                syncInventoryToSupabase();
+                localStorage.setItem('romix_accessories_inventory', JSON.stringify(inventory));
+                // Aniq (targeted) o'chirish — syncInventoryToSupabase()ning butun-massiv
+                // upsert+prune mantig'i ishlatilmaydi, chunki agar bu sahifa eski holatda
+                // ochiq bo'lsa (masalan boshqa joyda — Buxgalteriyada — shu orada o'chirilgan
+                // mahsulot hali shu sahifaning xotirasida bo'lsa), keyingi har qanday
+                // sinxronlash o'sha eski mahsulotni Supabase'ga qaytadan yozib qo'yishi mumkin edi.
+                if (item.id) {
+                    supabase.from('romix_accessories').delete().eq('id', item.id)
+                        .then(({ error }) => { if (error) console.warn('Aksesuar o\'chirishda xatolik:', error); });
+                }
                 renderInventory();
-                
+
                 // Add history log
                 addHistoryLog("O'chirish 🗑️", `"${item.name}" mahsuloti ombordan butunlay o'chirildi. Miqdori: ${item.qty.toLocaleString()} ${item.unit}.`);
             }
