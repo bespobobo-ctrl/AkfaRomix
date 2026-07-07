@@ -183,24 +183,14 @@
                 </div>
             </section>
 
-            <!-- Orders Process View -->
+            <!-- Orders Process View — Buyurtma Harakat Grafigi (Kanban) -->
             <section id="orders-view" class="sales-section hidden">
-                <div style="margin-bottom: 30px;">
-                    <h1 style="font-size: 2.2rem; font-weight: 600;">Ishlab Chiqarish va O'rnatish</h1>
-                    <p style="color: var(--adm-text-sec);">Aktiv jarayondagi va bitkazilgan buyurtmalarni boshqarish</p>
+                <div style="margin-bottom: 20px;">
+                    <h1 style="font-size: 2.2rem; font-weight: 600;">Buyurtma Harakat Grafigi</h1>
+                    <p style="color: var(--adm-text-sec);">Har bir buyurtma zakazdan bajarilgunigacha qaysi bosqichda ekani</p>
                 </div>
 
-                <div class="bento-card" style="margin-bottom: 25px; border-top: 4px solid #00d2ff;">
-                    <h3 style="font-weight: 600; margin-bottom: 20px; color: #00d2ff;">Aktiv Buyurtmalar (Kutilmoqda &
-                        Jarayonda)</h3>
-                    <div id="processOrdersTable" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px;"></div>
-                </div>
-
-                <div class="bento-card" style="border-top: 4px solid #00ff88;">
-                    <h3 style="font-weight: 600; margin-bottom: 20px; color: #00ff88;">Bitirilgan Buyurtmalar (Arxiv)
-                    </h3>
-                    <div id="completedOrdersTable" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px;"></div>
-                </div>
+                <div id="kanbanBoard" style="display:flex; gap:16px; overflow-x:auto; padding-bottom:14px;"></div>
             </section>
         </main>
     </div>

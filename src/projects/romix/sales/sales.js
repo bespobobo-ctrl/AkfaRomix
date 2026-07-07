@@ -660,12 +660,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Clear views
         const table = document.getElementById('ordersTable');
-        const procTable = document.getElementById('processOrdersTable');
-        const compTable = document.getElementById('completedOrdersTable');
-
         if (table) table.innerHTML = '';
-        if (procTable) procTable.innerHTML = '';
-        if (compTable) compTable.innerHTML = '';
 
         let totalSum = 0;
         let count = 0;
@@ -723,57 +718,92 @@ document.addEventListener('DOMContentLoaded', async () => {
                 card.onclick = (e) => { if (e.target.closest('button')) return; openOrderDetail(o); };
                 table.appendChild(card);
             }
-
-            // --- Installation / Production Board — premium kartochka ---
-            if (o.status !== 'Tayyor / Yetkazildi') {
-                if (procTable) {
-                    const ocard = document.createElement('div');
-                    ocard.style.cssText = `border-top:3px solid ${statusColor}; border-radius:16px; background:var(--adm-surface); border:1px solid var(--adm-border); border-top:3px solid ${statusColor}; padding:16px; display:flex; flex-direction:column; gap:10px; box-shadow:var(--adm-shadow);`;
-                    ocard.innerHTML = `
-                        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
-                            <div>
-                                <div style="font-weight:700; color:var(--adm-text); font-size:0.85rem;">#${o.id.slice(0, 6).toUpperCase()}</div>
-                                <div style="font-size:0.78rem; color:var(--adm-text-sec); margin-top:2px;">${o.customer_name}</div>
-                            </div>
-                            ${statusHtml}
-                        </div>
-                        <div style="font-size:0.76rem; color:var(--adm-text-sec); border-top:1px dashed var(--adm-border); padding-top:8px;">Ombor: ${o.ombor_confirmed_at ? `<strong style="color:#00ff88;">✅ Tasdiqlangan (${new Date(o.ombor_confirmed_at).toLocaleDateString('uz-UZ')})</strong>` : `<strong style="color:#ffaa00;">⏳ Tasdiq kutilmoqda</strong>`}</div>
-                        ${deadlineBadge}
-                        ${advanceBadgeHtml(o)}
-                        <div style="display:flex; gap:8px;">
-                            <button class="complete-btn" data-id="${o.id}" style="flex:1; background:#00ff88; color:#000; border:none; padding:9px 12px; border-radius:10px; font-weight:600; font-size:0.78rem; cursor:pointer;">✓ Bitirish</button>
-                        </div>
-                    `;
-                    ocard.style.cursor = 'pointer';
-                    ocard.onclick = (e) => { if (e.target.closest('button')) return; openOrderDetail(o); };
-                    procTable.appendChild(ocard);
-                }
-            } else {
-                // Completed — premium kartochka (arxiv)
-                if (compTable) {
-                    const ccard = document.createElement('div');
-                    ccard.style.cssText = `border-top:3px solid #00ff88; border-radius:16px; background:var(--adm-surface); border:1px solid var(--adm-border); border-top:3px solid #00ff88; padding:16px; display:flex; flex-direction:column; gap:8px; box-shadow:var(--adm-shadow);`;
-                    ccard.innerHTML = `
-                        <div style="font-weight:700; color:var(--adm-text); font-size:0.85rem;">#${o.id.slice(0, 6).toUpperCase()}</div>
-                        <div style="font-size:0.78rem; color:var(--adm-text-sec);">${o.customer_name}</div>
-                        <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed var(--adm-border); padding-top:8px; font-size:0.76rem;">
-                            <span style="color:var(--adm-text-sec);">Tugatilgan: ${new Date().toLocaleDateString()}</span>
-                            <strong style="color:#00ff88; font-family:monospace;">${Number(o.total_price).toLocaleString()} UZS</strong>
-                        </div>
-                    `;
-                    ccard.style.cursor = 'pointer';
-                    ccard.onclick = () => openOrderDetail(o);
-                    compTable.appendChild(ccard);
-                }
-            }
         });
 
         allOrders = orders;
         updatePeriodKpis();
         if (!ordersSummaryModal.classList.contains('hidden')) renderOrdersSummary();
+        renderKanbanBoard();
 
         tickCountdowns(); // darhol bo'yash, 1 soniya kutmasdan
         bindActionButtons();
+    }
+
+    // ═══════════ Buyurtma Harakat Grafigi — "Ishlab Chiqarish va O'rnatish" Kanban taxtasi ═══════════
+    // Sotuv/Ombor/Ishlab Chiqarish/Showroom'dagi haqiqiy maydonlardan (status/paid_amount/ombor_confirmed_at/
+    // production_stage/install_group/install_status) buyurtmaning joriy bosqichini aniqlaydi — DB'da alohida
+    // "bosqich" ustuni yo'q, bularning barchasi mavjud maydonlar kombinatsiyasidan hisoblanadi.
+    const KANBAN_STAGES = [
+        { key: 'yangi', label: '🆕 Yangi Zakaz', color: '#94a3b8' },
+        { key: 'avans_kutmoqda', label: '⏳ Avans Kutayotgan', color: '#ffaa00' },
+        { key: 'ombor_tasdiqlamagan', label: '📦 Ombor Tasdiqlamagan', color: '#ef4444' },
+        { key: 'navbatida', label: '🗂️ Ishlab Chiqarish Navbatida', color: '#a855f7' },
+        { key: 'ishlab_chiqarilmoqda', label: '🏭 Ishlab Chiqarilmoqda', color: '#00d2ff' },
+        { key: 'tayyor', label: '✅ Buyurtma Tayyor', color: '#22c55e' },
+        { key: 'ornatilishda', label: "🚚 O'rnatilish Jarayonida", color: '#6366f1' },
+        { key: 'bajarilgan', label: '🏁 Bajarilgan', color: '#00ff88' }
+    ];
+
+    function getJourneyStage(o) {
+        if (o.status === 'Tayyor / Yetkazildi') return 'bajarilgan';
+        if (o.production_stage === 'tayyor_omborda') {
+            return (o.install_group && o.install_status !== 'Bajarildi') ? 'ornatilishda' : 'tayyor';
+        }
+        if (['kesish', 'payvandlash', 'yigish_qadoqlash'].includes(o.production_stage)) return 'ishlab_chiqarilmoqda';
+        if (o.status === 'Jarayonda') return 'navbatida'; // ombor tasdiqladi, ishlab chiqarish qabul qilishini kutmoqda
+        const total = Number(o.total_price) || 0;
+        const paid = Number(o.paid_amount) || 0;
+        if (total > 0 && paid / total >= 0.5) return 'ombor_tasdiqlamagan'; // avans yetarli, ombor tasdig'ini kutmoqda
+        if (paid > 0) return 'avans_kutmoqda';
+        return 'yangi';
+    }
+
+    function renderKanbanBoard() {
+        const board = document.getElementById('kanbanBoard');
+        if (!board) return;
+        board.innerHTML = '';
+        KANBAN_STAGES.forEach(stage => {
+            const stageOrders = allOrders.filter(o => getJourneyStage(o) === stage.key);
+            const col = document.createElement('div');
+            col.style.cssText = 'flex:0 0 290px; display:flex; flex-direction:column; gap:10px;';
+            const cardsHtml = stageOrders.length
+                ? stageOrders.map(o => {
+                    const total = Number(o.total_price) || 0;
+                    const paid = Number(o.paid_amount) || 0;
+                    const percent = total > 0 ? Math.round((paid / total) * 100) : 0;
+                    const omborBadge = o.ombor_confirmed_at
+                        ? `<div style="font-size:0.66rem; color:#00ff88;">✅ Ombor tasdiqladi — ${new Date(o.ombor_confirmed_at).toLocaleDateString('uz-UZ')}</div>`
+                        : '';
+                    const installBadge = o.install_group
+                        ? `<div style="font-size:0.66rem; color:#6366f1;">🚚 Brigada: ${o.install_group}</div>`
+                        : '';
+                    return `
+                        <div class="kanban-card" data-id="${o.id}" style="border-top:3px solid ${stage.color}; border-radius:14px; background:var(--adm-surface); border:1px solid var(--adm-border); border-top:3px solid ${stage.color}; padding:12px; display:flex; flex-direction:column; gap:6px; box-shadow:var(--adm-shadow); cursor:pointer;">
+                            <div style="font-weight:700; color:var(--adm-text); font-size:0.82rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${o.customer_name}</div>
+                            <div style="font-size:0.7rem; color:var(--adm-text-sec);">${o.prod_type || ''}</div>
+                            <div style="font-size:0.7rem; color:var(--adm-text-sec);">💰 ${paid.toLocaleString()} / ${total.toLocaleString()} so'm (${percent}%)</div>
+                            ${omborBadge}
+                            ${installBadge}
+                            <div style="font-size:0.68rem; color:var(--adm-text-sec); border-top:1px dashed var(--adm-border); padding-top:5px;">⏳ Muddat: ${o.production_deadline ? new Date(o.production_deadline).toLocaleDateString('uz-UZ') : '---'}</div>
+                        </div>
+                    `;
+                }).join('')
+                : `<div style="text-align:center; color:var(--adm-text-sec); font-size:0.75rem; padding:20px 0;">Bo'sh</div>`;
+            col.innerHTML = `
+                <div style="background:${stage.color}1a; border-radius:12px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+                    <strong style="color:${stage.color}; font-size:0.78rem;">${stage.label}</strong>
+                    <span style="background:${stage.color}; color:#000; border-radius:10px; padding:2px 9px; font-size:0.72rem; font-weight:800;">${stageOrders.length}</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:10px; max-height:70vh; overflow-y:auto; padding-right:2px;">${cardsHtml}</div>
+            `;
+            col.querySelectorAll('.kanban-card').forEach(cardEl => {
+                cardEl.onclick = () => {
+                    const o = allOrders.find(x => x.id === cardEl.dataset.id);
+                    if (o) openOrderDetail(o);
+                };
+            });
+            board.appendChild(col);
+        });
     }
 
     // ═══════════ Kunlik/Haftalik/Oylik kartochkalar — bosilganda ochiladigan tafsilot (bosqich/to'lov tarixi bilan) ═══════════
@@ -1070,32 +1100,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         document.querySelectorAll('.view-ord-btn').forEach(b => {
             b.onclick = () => showContractInvoice(JSON.parse(b.dataset.order));
-        });
-
-        document.querySelectorAll('.complete-btn').forEach(b => {
-            b.onclick = async () => {
-                if (confirm("Haqiqatdan bu ish to'liq topshirildimi?")) {
-                    const id = b.dataset.id;
-                    const completedAt = new Date().toISOString();
-                    try {
-                        const { error } = await supabase.from('sales_orders').update({ status: 'Tayyor / Yetkazildi', completed_at: completedAt }).eq('id', id);
-                        if (error) throw error;
-                    } catch (err) {
-                        console.warn("Supabase complete order failed, applying to local storage:", err);
-                    }
-                    const localRaw = localStorage.getItem('romix_orders_local');
-                    if (localRaw) {
-                        const localOrders = JSON.parse(localRaw);
-                        const ord = localOrders.find(x => x.id === id);
-                        if (ord) {
-                            ord.status = 'Tayyor / Yetkazildi';
-                            ord.completed_at = completedAt;
-                            localStorage.setItem('romix_orders_local', JSON.stringify(localOrders));
-                        }
-                    }
-                    loadOrders();
-                }
-            };
         });
     }
 
