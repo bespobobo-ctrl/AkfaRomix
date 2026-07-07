@@ -2353,39 +2353,54 @@ function stopScanner() {
 }
 
 // USB/Bluetooth "klaviatura" tipidagi skanerlar (Netum va h.k.) kamera ishlatmaydi —
-// ular skanerlagan matnni fokusda turgan inputga to'g'ridan-to'g'ri "teradi". Ba'zi
-// skanerlar Enter (yoki Tab) bilan tugatadi, ba'zilari esa hech qanday tugatuvchi
-// belgi yubormaydi — shuning uchun ikkalasini ham qo'llab-quvvatlaymiz: Enter/Tab
-// kelsa darhol, kelmasa esa terish to'xtagandan ~250ms keyin avtomatik qayta ishlanadi.
+// ular skanerlagan matnni "teradi". Bitta inputning fokusiga tayanish beqaror
+// (skaner tez terganda fokus boshqa joyga o'tib ketishi mumkin) — shuning uchun
+// klaviatura bosilishlarini INPUT fokusidan qat'i nazar, butun hujjat (document)
+// darajasida ushlaymiz: skaner ekrani ochiq bo'lgan payt harflar/raqamlar bufferga
+// yig'iladi, Enter/Tab kelsa (yoki terish to'xtab ~250ms o'tsa) avtomatik qayta ishlanadi.
+let hwScanBuffer = '';
+let hwScanDebounceTimer = null;
+
+function flushHwScanBuffer() {
+    clearTimeout(hwScanDebounceTimer);
+    const val = hwScanBuffer.trim();
+    hwScanBuffer = '';
+    const input = document.getElementById('hwScannerInput');
+    if (input) input.value = '';
+    if (val) onScanSuccess(val);
+}
+
 function initHwScanner() {
     const input = document.getElementById('hwScannerInput');
     if (!input) return;
 
     if (!hwScannerBound) {
         hwScannerBound = true;
-        let debounceTimer = null;
+        document.addEventListener('keydown', (e) => {
+            const section = document.getElementById('scannerSection');
+            if (!section || section.style.display === 'none') return; // faqat skaner ekrani ochiq bo'lganda ishlaydi
 
-        const processScan = () => {
-            clearTimeout(debounceTimer);
-            const val = input.value.trim();
-            if (!val) return;
-            input.value = '';
-            onScanSuccess(val);
-        };
-
-        input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === 'Tab') {
                 e.preventDefault();
-                processScan();
+                flushHwScanBuffer();
+                return;
             }
-        });
-
-        input.addEventListener('input', () => {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(processScan, 250);
+            if (e.key.length === 1) { // faqat bitta belgili tugmalar (harf/raqam/tire va h.k.), Shift/Ctrl/Arrow kabi emas
+                // Brauzerning o'ziga tabiiy terishga yo'l qo'ymaymiz — aks holda input o'zi ham
+                // belgini qo'shib, bizning bufferimiz bilan to'qnashib, belgi ikki marta tushib qolardi.
+                e.preventDefault();
+                hwScanBuffer += e.key;
+                const inp = document.getElementById('hwScannerInput');
+                if (inp) inp.value = hwScanBuffer;
+                clearTimeout(hwScanDebounceTimer);
+                hwScanDebounceTimer = setTimeout(flushHwScanBuffer, 250);
+            }
         });
     }
 
+    hwScanBuffer = '';
+    clearTimeout(hwScanDebounceTimer);
+    input.value = '';
     input.focus();
     clearInterval(hwScannerRefocusTimer);
     hwScannerRefocusTimer = setInterval(() => {
