@@ -345,60 +345,50 @@
                     </div>
                 </div>
 
-                <div class="bento-container">
-                    <!-- Stat Card 1 -->
+                <!-- Eski statistik kartalar/jadval — boshqa oqimlar (Profil Kirim va h.k.) hali shu ID'larga
+                     yozayotgani uchun DOM'da qoladi, lekin endi ko'rinmaydi (yangi premium UI pastda) -->
+                <div class="bento-container hidden" style="display:none;">
                     <div class="bento-item" style="grid-column: span 3;">
                         <span class="stat-label">Jami Mahsulotlar</span>
                         <div class="stat-value" id="statTotalItems">--</div>
-                        <div style="font-size: 0.8rem; color: #007c52; margin-top: 10px;">↑ 12% o'sish</div>
                     </div>
-                    <!-- Stat Card 2 -->
                     <div class="bento-item" style="grid-column: span 3;">
                         <span class="stat-label">Kamaygan Zaxira</span>
                         <div class="stat-value" id="statLowStock" style="color: #ff4d4f;">--</div>
-                        <div style="font-size: 0.8rem; color: #ff4d4f; margin-top: 10px;">⚠️ Tezkor to'ldirish kerak
-                        </div>
                     </div>
-                    <!-- Stat Card 3 -->
                     <div class="bento-item" style="grid-column: span 3;">
                         <span class="stat-label">Bugungi Kirim</span>
                         <div class="stat-value" id="statTodayIn">--</div>
-                        <div style="font-size: 0.8rem; color: var(--adm-text-sec); margin-top: 10px;">Yangi hujjatlar
-                            asosida</div>
                     </div>
-                    <!-- Stat Card 4 -->
                     <div class="bento-item" style="grid-column: span 3;">
                         <span class="stat-label">Romix Xodimlari</span>
                         <div class="stat-value" id="statStaffCount">--</div>
-                        <div style="font-size: 0.8rem; color: var(--adm-text-sec); margin-top: 10px;">Faol navbatchilik
-                        </div>
                     </div>
-
-                    <!-- Main Inventory Table -->
                     <div class="bento-item" style="grid-column: span 12;">
-                        <div class="bento-header">
-                            <h3 style="font-weight: 700;">Inventarizatsiya Ro'yxati</h3>
-                            <div class="auto-layout-row">
-                                <input type="text" id="inventorySearch" placeholder="Qidiruv..." class="form-input-v2"
-                                    style="width: 250px; margin-bottom:0;">
-                                <button class="icon-btn">🔃</button>
-                            </div>
-                        </div>
+                        <input type="text" id="inventorySearch" style="width: 250px; margin-bottom:0;">
                         <table class="v2-table">
-                            <thead>
-                                <tr>
-                                    <th>Mahsulot</th>
-                                    <th>Kategoriya</th>
-                                    <th>Mavjud</th>
-                                    <th>Birlik</th>
-                                    <th>Narxi</th>
-                                    <th>Status</th>
-                                    <th>Harakat</th>
-                                </tr>
-                            </thead>
+                            <thead><tr><th>Mahsulot</th><th>Kategoriya</th><th>Mavjud</th><th>Birlik</th><th>Narxi</th><th>Status</th><th>Harakat</th></tr></thead>
                             <tbody id="inventoryTable"></tbody>
                         </table>
+                        <div id="brandSelectorRow"></div>
+                        <div id="categoryTabsRow"></div>
                     </div>
+                </div>
+
+                <!-- 💎 OMBOR JAMI — Premium 3 bo'limli ko'rinish (Profil / Aksesuvar / Qoldiq Profil) -->
+                <div class="om-brand-filter-row" id="ojCategoryTabs" style="margin-bottom:18px;">
+                    <div class="om-brand-chip active" data-oj-cat="profil"><span class="chip-name">📦 Profil</span></div>
+                    <div class="om-brand-chip" data-oj-cat="aksesuvar"><span class="chip-name">🔩 Aksesuvar</span></div>
+                    <div class="om-brand-chip" data-oj-cat="qoldiq"><span class="chip-name">✂️ Qoldiq Profil</span></div>
+                </div>
+                <div class="om-stat-row" id="ojStatRow"></div>
+                <div class="om-section-card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+                        <h3 id="ojCategoryTitle" style="font-weight:700; margin:0;">📦 Profil — Brend/Seriya Bo'yicha</h3>
+                        <input type="text" id="ojSearchInput" placeholder="Mahsulot nomi bo'yicha qidirish..." class="form-input-v2" style="width:260px; margin:0;">
+                    </div>
+                    <div class="om-brand-filter-row" id="ojBrandFilter" style="margin-bottom:16px;"></div>
+                    <div id="ojItemsTableWrap" style="overflow-x:auto;"></div>
                 </div>
             </section>
 
