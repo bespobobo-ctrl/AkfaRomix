@@ -1373,6 +1373,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     function omGetAccessories() { try { return JSON.parse(localStorage.getItem('romix_accessories_inventory')) || []; } catch { return []; } }
     function omGetQoldiq() { try { return JSON.parse(localStorage.getItem('romix_qoldiq_inventory')) || []; } catch { return []; } }
     function omQoldiqValue(items) { return items.reduce((s, q) => s + ((Number(q.length) || 0) * (Number(q.stock_quantity) || 0) * 25), 0); }
+    function omGetOynak() { try { return JSON.parse(localStorage.getItem('romix_oynak_inventory')) || []; } catch { return []; } }
+    function omOynakValue(items) { return items.reduce((s, o) => s + ((Number(o.price) || 0) * (Number(o.stock_quantity) || 0)), 0); }
 
     function omGroupProfilByName(items) {
         const groups = {};
@@ -1411,6 +1413,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         return Object.values(groups).sort((a, b) => b.value - a.value);
     }
+    function omGroupOynakByBrand(items) {
+        const groups = {};
+        items.forEach(o => {
+            const key = o.brand || "Noma'lum";
+            if (!groups[key]) groups[key] = { name: key, qty: 0, value: 0, unit: o.unit || 'dona', items: [] };
+            groups[key].qty += Number(o.stock_quantity) || 0;
+            groups[key].value += (Number(o.price) || 0) * (Number(o.stock_quantity) || 0);
+            groups[key].items.push(o);
+        });
+        return Object.values(groups).sort((a, b) => b.value - a.value);
+    }
     function omSafeKey(str) { return (str || '').replace(/[^a-zA-Z0-9]/g, '_'); }
 
     window._omUmumiyData = null;
@@ -1436,11 +1449,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const accessories = omGetAccessories();
         const qoldiqItems = omGetQoldiq();
+        const oynakItems = omGetOynak();
 
         const profilValue = profilItems.reduce((s, p) => s + ((Number(p.price) || 0) * (Number(p.stock_quantity) || 0)), 0);
         const accValue = accessories.reduce((s, a) => s + ((Number(a.price) || 0) * (Number(a.qty) || 0)), 0);
         const qoldiqValue = omQoldiqValue(qoldiqItems);
-        const totalValue = profilValue + accValue + qoldiqValue;
+        const oynakValue = omOynakValue(oynakItems);
+        const totalValue = profilValue + accValue + qoldiqValue + oynakValue;
 
         const kirimTotal = omborTx.filter(t => t.type === 'IN' && (t.note || '').includes('Buxgalteriya')).reduce((s, t) => s + ((Number(t.quantity) || 0) * (Number(t.romix_inventory?.price) || 0)), 0);
         const chiqimTotal = omborTx.filter(t => t.type === 'OUT' && (t.note || '').startsWith('Buyurtma uchun ajratildi')).reduce((s, t) => s + ((Number(t.quantity) || 0) * (Number(t.romix_inventory?.price) || 0)), 0);
@@ -1452,7 +1467,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         window._omUmumiyData = {
             profil: { value: profilValue, qty: profilItems.reduce((s, p) => s + (Number(p.stock_quantity) || 0), 0), groups: omGroupProfilByName(profilItems) },
             aksesuvar: { value: accValue, qty: accessories.reduce((s, a) => s + (Number(a.qty) || 0), 0), groups: omGroupAccessoriesByCategory(accessories) },
-            qoldiq: { value: qoldiqValue, qty: qoldiqItems.reduce((s, q) => s + (Number(q.stock_quantity) || 0), 0), groups: omGroupQoldiqByBrand(qoldiqItems) }
+            qoldiq: { value: qoldiqValue, qty: qoldiqItems.reduce((s, q) => s + (Number(q.stock_quantity) || 0), 0), groups: omGroupQoldiqByBrand(qoldiqItems) },
+            oynak: { value: oynakValue, qty: oynakItems.reduce((s, o) => s + (Number(o.stock_quantity) || 0), 0), groups: omGroupOynakByBrand(oynakItems) }
         };
 
         document.querySelectorAll('#omFilterPills .om-brand-chip').forEach(chip => {
@@ -1475,7 +1491,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const cards = [
                 { key: 'profil', icon: '📦', label: 'Profil Ombori', ...d.profil },
                 { key: 'aksesuvar', icon: '🔩', label: 'Aksesuvar', ...d.aksesuvar },
-                { key: 'qoldiq', icon: '✂️', label: 'Qoldiq Profillar', ...d.qoldiq }
+                { key: 'qoldiq', icon: '✂️', label: 'Qoldiq Profillar', ...d.qoldiq },
+                { key: 'oynak', icon: '🪟', label: 'Oynak', ...d.oynak }
             ];
             content.innerHTML = `<div class="om-group-grid">${cards.map(c => `
                 <div class="om-group-card" onclick="window._omActiveFilter='${c.key}'; window.renderOmborUmumiyFilter();">
