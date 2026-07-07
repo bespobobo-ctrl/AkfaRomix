@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Values
     const PRODUCTION_COST = 1000000; // base production markup per window/door
-    const INSTALLATION_PRICE_PER_SQM = 250000;
+    const INSTALLATION_PRICE_PER_SQM = 0; // mijoz xonadonida o'rnatib berish — biznes qoidasi bo'yicha bepul (0 so'm)
 
     // Umumiy tushum kartochkasi bosilganda ochiladigan tafsilot uchun — loadOrders() to'ldiradi
     let allOrders = [];
@@ -474,7 +474,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // 10% avto harajatlar
+        // Ishxona harajatlari — tan narxning 10%i (matnda foiz ko'rsatilmaydi, lekin hisobga qo'shiladi)
         const expenses = totalMaterials * 0.10;
 
         // Foyda foizi
@@ -1287,7 +1287,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     <strong>${baseCost.toLocaleString()} UZS</strong>
                                 </div>
                                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                                    <span>Avto Harajatlar (10%):</span>
+                                    <span>Ishxona Harajatlari:</span>
                                     <strong>${autoExpenses.toLocaleString()} UZS</strong>
                                 </div>
                                 <div style="display:flex; justify-content:space-between; margin-bottom:4px; color:#10b981;">
