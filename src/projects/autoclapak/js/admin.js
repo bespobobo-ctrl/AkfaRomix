@@ -9950,13 +9950,14 @@ CREATE TABLE IF NOT EXISTS buh_sales (
         }
     }, 1000);
 
-    // Xavfli Zona (Sozlamalar): Loyihani To'liq Tozalash — PIN (4567) + "TOZALASH" so'zi bilan
-    // ikki bosqichli himoyalangan. Barcha jadvallardagi QATORLARNI o'chiradi (strukturasi qoladi).
+    // Xavfli Zona (Sozlamalar): Loyihani To'liq Tozalash — PIN (4567) ochadi, keyin bitta
+    // confirm() bilan tasdiqlanadi. Barcha jadvallardagi QATORLARNI o'chiradi (strukturasi qoladi).
+    // MUHIM: Supabase RLS siyosati DELETE'ga ruxsat bermasa, XATO QAYTARMAYDI — jimgina hech
+    // narsa o'chmaydi. Shuning uchun har jadval uchun oldin/keyin qatorlar sonini solishtiramiz.
     setTimeout(() => {
         const pinInput = document.getElementById('wipePinInput');
         const unlockBtn = document.getElementById('wipeUnlockBtn');
         const confirmZone = document.getElementById('wipeConfirmZone');
-        const confirmWordInput = document.getElementById('wipeConfirmWordInput');
         const executeBtn = document.getElementById('wipeExecuteBtn');
         const statusMsg = document.getElementById('wipeStatusMsg');
         if (!unlockBtn) return;
@@ -9973,11 +9974,7 @@ CREATE TABLE IF NOT EXISTS buh_sales (
         };
 
         executeBtn.onclick = async () => {
-            if (!confirmWordInput || confirmWordInput.value.trim().toUpperCase() !== 'TOZALASH') {
-                alert('Tasdiqlash so\'zi noto\'g\'ri — aynan "TOZALASH" deb yozing.');
-                return;
-            }
-            if (!confirm("OXIRGI OGOHLANTIRISH: butun loyiha ma'lumotlari (buyurtmalar, xodimlar, ombor, moliya, davomat va h.k.) BUTUNLAY o'chiriladi va TIKLAB BO'LMAYDI. Rostdan davom etasizmi?")) return;
+            if (!confirm("OXIRGI OGOHLANTIRISH: butun Romix ma'lumotlari (buyurtmalar, xodimlar, ombor, moliya, davomat va h.k.) BUTUNLAY o'chiriladi va TIKLAB BO'LMAYDI. Rostdan davom etasizmi?")) return;
 
             // FAQAT Romix'ga tegishli jadvallar (AutoClapak'niki — clapak_*, buh_employees/
             // transactions/utilities/recipes/sales, warehouse_products/transactions — ATAYIN
@@ -9995,11 +9992,21 @@ CREATE TABLE IF NOT EXISTS buh_sales (
             executeBtn.disabled = true;
             executeBtn.textContent = 'Tozalanmoqda...';
             let doneCount = 0, failCount = 0;
+            const blocked = [];
             for (const table of TABLES) {
                 try {
+                    const { count: beforeCount } = await supabase.from(table).select('*', { count: 'exact', head: true });
                     const { error } = await supabase.from(table).delete().not('id', 'is', null);
-                    if (error) { failCount++; console.warn(`Wipe failed on ${table}:`, error); }
-                    else doneCount++;
+                    if (error) { failCount++; console.warn(`Wipe failed on ${table}:`, error); continue; }
+                    const { count: afterCount } = await supabase.from(table).select('*', { count: 'exact', head: true });
+                    if ((beforeCount || 0) > 0 && (afterCount || 0) > 0) {
+                        // Xato qaytmadi, lekin qatorlar hali ham bor — RLS DELETE siyosati cheklagan bo'lishi mumkin
+                        failCount++;
+                        blocked.push(`${table} (${afterCount}/${beforeCount} qoldi)`);
+                        console.warn(`Wipe: ${table} to'liq o'chmadi (before=${beforeCount}, after=${afterCount}) — RLS cheklashi mumkin`);
+                    } else {
+                        doneCount++;
+                    }
                 } catch (e) { failCount++; console.warn(`Wipe exception on ${table}:`, e); }
                 if (statusMsg) statusMsg.textContent = `${doneCount + failCount}/${TABLES.length} jadval tekshirildi...`;
             }
@@ -10011,8 +10018,9 @@ CREATE TABLE IF NOT EXISTS buh_sales (
 
             executeBtn.disabled = false;
             executeBtn.textContent = "🗑️ HAMMASINI O'CHIRISH";
-            if (statusMsg) statusMsg.textContent = `Tugadi: ${doneCount} jadval tozalandi, ${failCount} ta xato.`;
-            alert(`Tozalash tugadi. ${doneCount} jadval tozalandi${failCount ? `, ${failCount} tasida xato bo'ldi (konsolni tekshiring)` : ''}.\n\nSahifa qayta yuklanadi.`);
+            if (statusMsg) statusMsg.textContent = `Tugadi: ${doneCount} jadval tozalandi, ${failCount} ta muammo.`;
+            const blockedMsg = blocked.length ? `\n\nTo'liq o'chmagan jadvallar (RLS ruxsat siyosati DELETE'ni cheklayotgan bo'lishi mumkin):\n${blocked.join('\n')}` : '';
+            alert(`Tozalash tugadi. ${doneCount} jadval bo'shatildi${failCount ? `, ${failCount} tasida muammo bo'ldi` : ''}.${blockedMsg}\n\nSahifa qayta yuklanadi.`);
             window.location.reload();
         };
     }, 1000);
