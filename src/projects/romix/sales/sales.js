@@ -772,7 +772,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         updatePeriodKpis();
         if (!ordersSummaryModal.classList.contains('hidden')) renderOrdersSummary();
         renderKanbanBoard();
-        renderPaymentsLedger();
+        renderPaymentsView();
 
         tickCountdowns(); // darhol bo'yash, 1 soniya kutmasdan
         bindActionButtons();
@@ -991,43 +991,140 @@ document.addEventListener('DOMContentLoaded', async () => {
         return history;
     }
 
-    // To'lovlar Tarixi — barcha buyurtmalardagi to'lovlarni bitta xronologik ro'yxatga yig'adi
-    function renderPaymentsLedger() {
-        const list = document.getElementById('paymentsLedgerList');
-        if (!list) return;
+    // ═══════════ To'lovlar Tarixi — buyurtma bo'yicha umumiy/to'langan/qoldiq, holat filtri, joyida to'lov qabul qilish ═══════════
+    const PAYMENT_STATUS_META = {
+        yopilgan: { label: "✅ To'liq To'langan", color: '#00ff88' },
+        avans: { label: '💰 Avans Olindi (Qisman)', color: '#ffaa00' },
+        kutilmoqda: { label: "⏳ Hali To'lov Kutilmoqda", color: '#ef4444' }
+    };
+    function getPaymentStatus(o) {
+        const total = Number(o.total_price) || 0;
+        const paid = Number(o.paid_amount) || 0;
+        if (total > 0 && paid >= total) return 'yopilgan';
+        if (paid > 0) return 'avans';
+        return 'kutilmoqda';
+    }
+    let currentPaymentsFilter = 'all';
 
-        const entries = [];
-        allOrders.forEach(o => {
-            getBackfilledPaymentHistory(o).forEach(p => {
-                entries.push({ amount: Number(p.amount) || 0, by: p.by || "Noma'lum", at: p.at, note: p.note || '', order: o });
-            });
+    function renderPaymentsView() {
+        const tabs = document.getElementById('paymentsFilterTabs');
+        const grid = document.getElementById('paymentsOrdersGrid');
+        if (!tabs || !grid) return;
+
+        const buckets = { yopilgan: 0, avans: 0, kutilmoqda: 0 };
+        allOrders.forEach(o => buckets[getPaymentStatus(o)]++);
+
+        let chipsHtml = `<button class="payments-filter-chip" data-filter="all" style="border:none; background:${currentPaymentsFilter === 'all' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.05)'}; color:var(--adm-text); padding:9px 14px; border-radius:12px; font-size:0.78rem; font-weight:700; cursor:pointer;">Barchasi (${allOrders.length})</button>`;
+        Object.keys(PAYMENT_STATUS_META).forEach(key => {
+            const meta = PAYMENT_STATUS_META[key];
+            const active = currentPaymentsFilter === key;
+            chipsHtml += `<button class="payments-filter-chip" data-filter="${key}" style="border:none; background:${active ? meta.color + '2a' : 'rgba(255,255,255,0.05)'}; color:${meta.color}; padding:9px 14px; border-radius:12px; font-size:0.78rem; font-weight:700; cursor:pointer; ${active ? `box-shadow: inset 0 0 0 1.5px ${meta.color};` : ''}">${meta.label} (${buckets[key]})</button>`;
         });
-        entries.sort((a, b) => new Date(b.at || 0) - new Date(a.at || 0));
+        tabs.innerHTML = chipsHtml;
+        tabs.querySelectorAll('.payments-filter-chip').forEach(b => {
+            b.onclick = () => { currentPaymentsFilter = b.dataset.filter; renderPaymentsView(); };
+        });
 
-        const total = entries.reduce((s, e) => s + e.amount, 0);
-        document.getElementById('paymentsLedgerTotal').textContent = total.toLocaleString() + " so'm";
+        const filtered = currentPaymentsFilter === 'all' ? allOrders : allOrders.filter(o => getPaymentStatus(o) === currentPaymentsFilter);
 
-        if (entries.length === 0) {
-            list.innerHTML = `<div style="text-align:center; padding:30px; color:var(--adm-text-sec);">Hali to'lov qabul qilinmagan</div>`;
+        let collected = 0, pending = 0;
+        filtered.forEach(o => {
+            const total = Number(o.total_price) || 0;
+            const paid = Number(o.paid_amount) || 0;
+            collected += paid;
+            pending += Math.max(0, total - paid);
+        });
+        document.getElementById('paymentsCollectedTotal').textContent = collected.toLocaleString() + " so'm";
+        document.getElementById('paymentsPendingTotal').textContent = pending.toLocaleString() + " so'm";
+
+        grid.innerHTML = '';
+        if (filtered.length === 0) {
+            grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:30px; color:var(--adm-text-sec);">Bu holatda buyurtma yo'q</div>`;
             return;
         }
-
-        list.innerHTML = entries.map(e => `
-            <div class="ledger-entry" data-id="${e.order.id}" style="display:flex; justify-content:space-between; align-items:center; gap:14px; background:var(--adm-surface); border:1px solid var(--adm-border); border-radius:14px; padding:14px 18px; cursor:pointer; box-shadow:var(--adm-shadow);">
-                <div style="min-width:0;">
-                    <div style="font-weight:700; color:var(--adm-text); font-size:0.88rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${e.order.customer_name}</div>
-                    <div style="font-size:0.72rem; color:var(--adm-text-sec); margin-top:2px;">${e.by} — ${e.at ? new Date(e.at).toLocaleString('uz-UZ') : '---'}</div>
-                    ${e.note ? `<div style="font-size:0.7rem; color:var(--adm-text-sec); margin-top:3px; font-style:italic;">💬 ${e.note}</div>` : ''}
+        filtered.forEach(o => {
+            const status = getPaymentStatus(o);
+            const meta = PAYMENT_STATUS_META[status];
+            const total = Number(o.total_price) || 0;
+            const paid = Number(o.paid_amount) || 0;
+            const remaining = Math.max(0, total - paid);
+            const percent = total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0;
+            const card = document.createElement('div');
+            card.style.cssText = `border-top:3px solid ${meta.color}; border-radius:16px; background:var(--adm-surface); border:1px solid var(--adm-border); border-top:3px solid ${meta.color}; padding:14px; display:flex; flex-direction:column; gap:8px; box-shadow:var(--adm-shadow);`;
+            card.innerHTML = `
+                <div class="payments-card-info" style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; cursor:pointer;">
+                    <div style="min-width:0;">
+                        <div style="font-weight:700; color:var(--adm-text); font-size:0.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${o.customer_name}</div>
+                        <div style="font-size:0.7rem; color:var(--adm-text-sec);">${o.prod_type || ''}</div>
+                    </div>
+                    <span style="background:${meta.color}1a; color:${meta.color}; padding:3px 10px; border-radius:12px; font-size:0.62rem; font-weight:700; white-space:nowrap;">${meta.label}</span>
                 </div>
-                <strong style="color:#00ff88; font-family:monospace; white-space:nowrap;">+${e.amount.toLocaleString()} so'm</strong>
-            </div>
-        `).join('');
-        list.querySelectorAll('.ledger-entry').forEach(el => {
-            el.onclick = () => {
-                const o = allOrders.find(x => x.id === el.dataset.id);
-                if (o) openOrderDetail(o);
-            };
+                <div style="width:100%; height:8px; background:rgba(255,255,255,0.08); border-radius:6px; overflow:hidden;">
+                    <div style="width:${percent}%; height:100%; background:linear-gradient(90deg,#00d2ff,#00ff88);"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:0.74rem;">
+                    <span style="color:var(--adm-text-sec);">Umumiy: <strong style="color:var(--adm-text);">${total.toLocaleString()}</strong></span>
+                    <span style="color:var(--adm-text-sec);">To'langan: <strong style="color:#00ff88;">${paid.toLocaleString()}</strong></span>
+                </div>
+                <div style="font-size:0.74rem; color:${remaining > 0 ? '#ef4444' : '#00ff88'};">Qoldiq: <strong>${remaining.toLocaleString()} so'm</strong></div>
+                ${remaining > 0 ? `<button class="add-payment-btn" style="background:#00ff88; color:#000; border:none; padding:9px; border-radius:10px; font-weight:700; font-size:0.78rem; cursor:pointer; margin-top:4px;">+ To'lov Qabul Qilish</button>` : ''}
+            `;
+            card.querySelector('.payments-card-info').onclick = () => openOrderDetail(o);
+            const addBtn = card.querySelector('.add-payment-btn');
+            if (addBtn) addBtn.onclick = () => openAddPayment(o);
+            grid.appendChild(card);
         });
+    }
+
+    function openAddPayment(o) {
+        window.addPaymentOrder = o;
+        const total = Number(o.total_price) || 0;
+        const paid = Number(o.paid_amount) || 0;
+        document.getElementById('apOrderInfo').innerHTML = `<strong style="color:var(--adm-text);">${o.customer_name}</strong><br>Umumiy: ${total.toLocaleString()} so'm — To'langan: ${paid.toLocaleString()} so'm — Qoldiq: <strong style="color:#ef4444;">${(total - paid).toLocaleString()} so'm</strong>`;
+        document.getElementById('apAmount').value = '';
+        document.getElementById('apNote').value = '';
+        document.getElementById('addPaymentModal').classList.remove('hidden');
+    }
+    const apAmountInput = document.getElementById('apAmount');
+    if (apAmountInput) apAmountInput.addEventListener('input', () => formatMoneyInput(apAmountInput));
+    const closeAddPaymentBtn = document.getElementById('closeAddPaymentModal');
+    if (closeAddPaymentBtn) closeAddPaymentBtn.onclick = () => document.getElementById('addPaymentModal').classList.add('hidden');
+    const saveAddPaymentBtn = document.getElementById('saveAddPaymentBtn');
+    if (saveAddPaymentBtn) {
+        saveAddPaymentBtn.onclick = async () => {
+            const o = window.addPaymentOrder;
+            if (!o) return;
+            const amount = parseMoneyInput(document.getElementById('apAmount'));
+            if (amount <= 0) return alert("To'g'ri summa kiriting!");
+            const note = document.getElementById('apNote').value.trim();
+            const receivedBy = user?.full_name || user?.username || 'Sotuv';
+            const receivedAt = new Date().toISOString();
+            const newPaid = (Number(o.paid_amount) || 0) + amount;
+            const prevHistory = Array.isArray(o.payment_history) ? o.payment_history : [];
+            const updatePayload = {
+                paid_amount: newPaid,
+                payment_date: receivedAt,
+                advance_received_by: receivedBy,
+                payment_history: [...prevHistory, { amount, by: receivedBy, at: receivedAt, note }]
+            };
+            try {
+                const { error } = await supabase.from('sales_orders').update(updatePayload).eq('id', o.id);
+                if (error) throw error;
+            } catch (err) {
+                console.warn('addPayment update failed:', err);
+            }
+            const localRaw = localStorage.getItem('romix_orders_local');
+            if (localRaw) {
+                const localOrders = JSON.parse(localRaw);
+                const ord = localOrders.find(x => x.id === o.id);
+                if (ord) {
+                    Object.assign(ord, updatePayload);
+                    localStorage.setItem('romix_orders_local', JSON.stringify(localOrders));
+                }
+            }
+            document.getElementById('addPaymentModal').classList.add('hidden');
+            loadOrders();
+        };
     }
 
     // Buyurtma tafsiloti: shartnoma summasi, progress-bar va to'lovlar tarixi (premium ko'rinish)

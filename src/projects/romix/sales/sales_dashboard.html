@@ -195,19 +195,27 @@
                 <div id="kanbanBoard" style="display:flex; flex-direction:column; gap:18px;"></div>
             </section>
 
-            <!-- Payments Ledger — barcha buyurtmalardagi to'lovlar bitta yig'ilgan tarix sifatida -->
+            <!-- To'lovlar Tarixi — har bir buyurtma bo'yicha umumiy/to'langan/qoldiq, holat filtri, joyida to'lov qo'shish -->
             <section id="payments-view" class="sales-section hidden">
-                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; flex-wrap:wrap; gap:12px;">
-                    <div>
-                        <h1 style="font-size: 2.2rem; font-weight: 600;">To'lovlar Tarixi</h1>
-                        <p style="color: var(--adm-text-sec);">Barcha buyurtmalar bo'yicha qabul qilingan to'lovlar — kim, qachon, qancha</p>
+                <div style="margin-bottom: 20px;">
+                    <h1 style="font-size: 2.2rem; font-weight: 600;">To'lovlar Tarixi</h1>
+                    <p style="color: var(--adm-text-sec);">Har bir buyurtmaning umumiy summasi, to'langani va qolgan qarzi — shu yerdan to'lov qabul qilish mumkin</p>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:18px;">
+                    <div class="kpi-card">
+                        <span style="font-size: 0.75rem; color: var(--adm-text-sec);">JAMI YIG'ILGAN</span>
+                        <h2 id="paymentsCollectedTotal" style="font-size: 1.4rem; font-weight: 700; color:#00ff88;">0 so'm</h2>
                     </div>
-                    <div class="kpi-card" style="padding:14px 22px;">
-                        <span style="font-size: 0.75rem; color: var(--adm-text-sec);">JAMI QABUL QILINGAN</span>
-                        <h2 id="paymentsLedgerTotal" style="font-size: 1.4rem; font-weight: 700; color:#00ff88;">0 so'm</h2>
+                    <div class="kpi-card">
+                        <span style="font-size: 0.75rem; color: var(--adm-text-sec);">TO'LANISHI KUTILAYOTGAN (QOLDIQ)</span>
+                        <h2 id="paymentsPendingTotal" style="font-size: 1.4rem; font-weight: 700; color:#ef4444;">0 so'm</h2>
                     </div>
                 </div>
-                <div id="paymentsLedgerList" style="display:flex; flex-direction:column; gap:10px;"></div>
+
+                <div id="paymentsFilterTabs" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;"></div>
+
+                <div id="paymentsOrdersGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px;"></div>
             </section>
 
             <!-- Sozlamalar -->
@@ -533,6 +541,28 @@
                 <button id="saveSalesAgentBtn"
                     style="flex:1; background:#00d2ff; color:#000; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">Saqlash</button>
                 <button id="closeAddSalesAgentModal"
+                    style="flex:1; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; border-radius:12px; cursor:pointer;">Bekor qilish</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: To'lov Qabul Qilish (To'lovlar Tarixi ichida) -->
+    <div id="addPaymentModal" class="hidden"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:2200; display:flex; align-items:center; justify-content:center;">
+        <div class="user-form-modal" style="width: 440px; background:var(--adm-surface);">
+            <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+                <span style="font-size: 1.5rem;">💰</span>
+                <h2 style="color:var(--adm-text);">To'lov Qabul Qilish</h2>
+            </div>
+            <div id="apOrderInfo" style="font-size:0.85rem; color:var(--adm-text-sec); margin-bottom:16px; background:rgba(255,255,255,0.03); padding:12px; border-radius:12px;"></div>
+            <label class="form-label">To'lov summasi</label>
+            <input type="text" inputmode="numeric" id="apAmount" class="form-input-v2" placeholder="0">
+            <label class="form-label">Izoh — qayerdan va qay shaklda olindi</label>
+            <input type="text" id="apNote" class="form-input-v2" placeholder="masalan: ofisda naqd, Payme, karta...">
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button id="saveAddPaymentBtn"
+                    style="flex:1; background:#00ff88; color:#000; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">Saqlash</button>
+                <button id="closeAddPaymentModal"
                     style="flex:1; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; border-radius:12px; cursor:pointer;">Bekor qilish</button>
             </div>
         </div>
