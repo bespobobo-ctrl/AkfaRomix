@@ -22,6 +22,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const PRODUCTION_COST = 1000000; // base production markup per window/door
     const INSTALLATION_PRICE_PER_SQM = 250000;
 
+    // Umumiy tushum kartochkasi bosilganda ochiladigan tafsilot uchun — loadOrders() to'ldiradi
+    let allOrders = [];
+
     // Tabs
     const sections = document.querySelectorAll('.sales-section');
     const navButtons = document.querySelectorAll('.nav-icon');
@@ -762,9 +765,86 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (document.getElementById('kpiTotal')) document.getElementById('kpiTotal').textContent = totalSum.toLocaleString();
         if (document.getElementById('kpiCount')) document.getElementById('kpiCount').textContent = count;
 
+        allOrders = orders;
+        if (!document.getElementById('ordersSummaryModal').classList.contains('hidden')) renderOrdersSummary();
+
         tickCountdowns(); // darhol bo'yash, 1 soniya kutmasdan
         bindActionButtons();
     }
+
+    // ═══════════ Umumiy Tushum — bosilganda ochiladigan tafsilot (tavar/holat/avans/kim-qachon + oylik jam') ═══════════
+    const ordersSummaryModal = document.getElementById('ordersSummaryModal');
+    const summaryStatusFilter = document.getElementById('summaryStatusFilter');
+
+    function isThisMonth(dateStr) {
+        if (!dateStr) return false;
+        const d = new Date(dateStr);
+        const now = new Date();
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    }
+
+    function renderOrdersSummary() {
+        const filter = summaryStatusFilter.value;
+        const filtered = filter === 'all' ? allOrders : allOrders.filter(o => o.status === filter);
+
+        // Bu oylik jami: qabul qilingan (shu oy yaratilgan buyurtmalar summasi) va bajarilgan (shu oy Tayyor/Yetkazildi bo'lganlar)
+        let monthReceived = 0, monthCompleted = 0;
+        allOrders.forEach(o => {
+            if (isThisMonth(o.created_at)) monthReceived += parseFloat(o.total_price || 0);
+            if (o.status === 'Tayyor / Yetkazildi' && isThisMonth(o.completed_at || o.created_at)) monthCompleted += parseFloat(o.total_price || 0);
+        });
+        document.getElementById('summaryMonthReceived').textContent = monthReceived.toLocaleString() + " so'm";
+        document.getElementById('summaryMonthCompleted').textContent = monthCompleted.toLocaleString() + " so'm";
+
+        const STATUS_PILL = {
+            'Kutilmoqda': { text: '📝 Kutilmoqda', color: '#ffaa00' },
+            'Jarayonda': { text: '⚙️ Ishlab chiqarishda', color: '#00d2ff' },
+            'Tayyor / Yetkazildi': { text: "✅ Tayyor / O'rnatildi", color: '#00ff88' }
+        };
+
+        const grid = document.getElementById('summaryOrdersGrid');
+        grid.innerHTML = '';
+        if (filtered.length === 0) {
+            grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:30px; color:var(--adm-text-sec);">Bu holatda buyurtma yo'q</div>`;
+            return;
+        }
+        filtered.forEach(o => {
+            const pill = STATUS_PILL[o.status] || { text: o.status, color: '#ffaa00' };
+            const total = Number(o.total_price) || 0;
+            const paid = Number(o.paid_amount) || 0;
+            const whoWhen = o.advance_received_by
+                ? `${o.advance_received_by}${o.payment_date ? ' — ' + new Date(o.payment_date).toLocaleDateString('uz-UZ') : ''}`
+                : "Hali qabul qilinmagan";
+            const card = document.createElement('div');
+            card.style.cssText = `border-top:3px solid ${pill.color}; border-radius:16px; background:var(--adm-surface); border:1px solid var(--adm-border); border-top:3px solid ${pill.color}; padding:14px; display:flex; flex-direction:column; gap:7px; box-shadow:var(--adm-shadow);`;
+            card.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+                    <div style="min-width:0;">
+                        <div style="font-weight:700; color:var(--adm-text); font-size:0.88rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${o.customer_name}</div>
+                        <div style="font-size:0.72rem; color:var(--adm-text-sec); margin-top:2px;">${o.prod_type || ''}</div>
+                    </div>
+                    <span style="background:${pill.color}1a; color:${pill.color}; padding:3px 10px; border-radius:12px; font-size:0.64rem; font-weight:700; white-space:nowrap;">${pill.text}</span>
+                </div>
+                <div style="font-size:0.74rem; color:var(--adm-text-sec); border-top:1px dashed var(--adm-border); padding-top:7px;">
+                    💰 Avans: <strong style="color:var(--adm-text);">${paid.toLocaleString()} / ${total.toLocaleString()} so'm</strong>
+                </div>
+                <div style="font-size:0.7rem; color:var(--adm-text-sec);">Kim/qachon oldi: <strong style="color:var(--adm-text);">${whoWhen}</strong></div>
+                <div style="font-size:0.7rem; color:var(--adm-text-sec);">Qabul qildi: <strong style="color:var(--adm-text);">${o.created_by || "Noma'lum"}</strong></div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    if (document.getElementById('kpiTotalCard')) {
+        document.getElementById('kpiTotalCard').onclick = () => {
+            ordersSummaryModal.classList.remove('hidden');
+            renderOrdersSummary();
+        };
+    }
+    if (document.getElementById('closeOrdersSummaryBtn')) {
+        document.getElementById('closeOrdersSummaryBtn').onclick = () => ordersSummaryModal.classList.add('hidden');
+    }
+    if (summaryStatusFilter) summaryStatusFilter.onchange = renderOrdersSummary;
 
     function bindActionButtons() {
         document.querySelectorAll('.del-btn').forEach(b => {
@@ -965,8 +1045,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             b.onclick = async () => {
                 if (confirm("Haqiqatdan bu ish to'liq topshirildimi?")) {
                     const id = b.dataset.id;
+                    const completedAt = new Date().toISOString();
                     try {
-                        const { error } = await supabase.from('sales_orders').update({ status: 'Tayyor / Yetkazildi' }).eq('id', id);
+                        const { error } = await supabase.from('sales_orders').update({ status: 'Tayyor / Yetkazildi', completed_at: completedAt }).eq('id', id);
                         if (error) throw error;
                     } catch (err) {
                         console.warn("Supabase complete order failed, applying to local storage:", err);
@@ -977,6 +1058,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const ord = localOrders.find(x => x.id === id);
                         if (ord) {
                             ord.status = 'Tayyor / Yetkazildi';
+                            ord.completed_at = completedAt;
                             localStorage.setItem('romix_orders_local', JSON.stringify(localOrders));
                         }
                     }
@@ -1022,6 +1104,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             production_deadline: document.getElementById('oProdDeadline').value,
             material_estimate: computeMaterialEstimate(orderItems),
             status: 'Kutilmoqda',
+            created_by: user?.full_name || user?.username || 'Sotuv',
             created_at: new Date().toISOString()
         };
 
