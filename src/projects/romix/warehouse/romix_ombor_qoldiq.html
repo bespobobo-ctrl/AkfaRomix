@@ -525,6 +525,10 @@
             }
         }
 
+        // MUHIM: bu yerda "Supabase'da bor-u mahalliy massivda yo'q qatorlarni o'chirish" (prune)
+        // ATAYIN QILINMAYDI — agar bu sahifa eski holatda ochiq turgan bo'lsa (masalan, shu orada
+        // boshqa joyda biror qoldiq o'chirilgan bo'lsa), bunday "prune" o'sha o'chirilgan qatorni
+        // xato ravishda qayta tiklab qo'yardi. O'chirish faqat aniq (targeted) DELETE orqali bo'ladi.
         async function syncQoldiqToSupabase() {
             try {
                 localStorage.setItem('romix_qoldiq_inventory', JSON.stringify(qoldiqCache));
@@ -533,12 +537,16 @@
                     profile_type: q.profile_type, length: Number(q.length) || 0, stock_quantity: Number(q.stock_quantity) || 0
                 }));
                 if (rows.length) await supabase.from('romix_qoldiq_profillar').upsert(rows);
-                const { data: existing } = await supabase.from('romix_qoldiq_profillar').select('id');
-                const currentIds = new Set(rows.map(r => r.id));
-                const toDelete = (existing || []).filter(e => !currentIds.has(e.id)).map(e => e.id);
-                if (toDelete.length) await supabase.from('romix_qoldiq_profillar').delete().in('id', toDelete);
             } catch (e) {
                 console.warn('Qoldiq Supabase sync xatosi:', e);
+            }
+        }
+        async function deleteQoldiqFromSupabase(id) {
+            try {
+                const { error } = await supabase.from('romix_qoldiq_profillar').delete().eq('id', id);
+                if (error) console.warn('Qoldiq o\'chirishda xatolik:', error);
+            } catch (e) {
+                console.warn('Qoldiq o\'chirishda xatolik:', e);
             }
         }
 
@@ -663,7 +671,8 @@
                     if (confirm("Ushbu qoldiqni o'chirmoqchimisiz?")) {
                         const id = b.dataset.id;
                         qoldiqCache = qoldiqCache.filter(x => x.id !== id);
-                        syncQoldiqToSupabase();
+                        localStorage.setItem('romix_qoldiq_inventory', JSON.stringify(qoldiqCache));
+                        deleteQoldiqFromSupabase(id);
                         loadQoldiqData(document.getElementById('qoldiqSearch').value);
                     }
                 };
