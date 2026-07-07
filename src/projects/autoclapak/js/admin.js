@@ -958,6 +958,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+    // Profil (romix_inventory) o'chirishga urinadi; agar mahsulotning eski kirim/chiqim tarixi
+    // (romix_transactions.product_id) bo'lsa, Postgres FOREIGN KEY xatosi (23503) qaytaradi —
+    // shu holatni aniqlab, foydalanuvchidan tarixi bilan birga o'chirishga ruxsat so'raymiz.
+    async function _buhDeleteInventoryCascade(id, name) {
+        const { error } = await supabase.from('romix_inventory').delete().eq('id', id);
+        if (!error) return { ok: true };
+
+        const isFk = error.code === '23503' || /foreign key|violates|referenced/i.test(error.message || '');
+        if (!isFk) return { ok: false, error };
+
+        const wantsCascade = confirm(`"${name}" mahsulotining oldingi kirim/chiqim tarixi bor, shuning uchun to'g'ridan-to'g'ri o'chirib bo'lmadi.\n\nMahsulotni TARIXI BILAN BIRGA butunlay o'chirilsinmi? (Bu amalni ortga qaytarib bo'lmaydi!)`);
+        if (!wantsCascade) return { ok: false, error, cancelled: true };
+
+        try {
+            const { error: txErr } = await supabase.from('romix_transactions').delete().eq('product_id', id);
+            if (txErr) return { ok: false, error: txErr };
+            const { error: err2 } = await supabase.from('romix_inventory').delete().eq('id', id);
+            if (err2) return { ok: false, error: err2 };
+            return { ok: true };
+        } catch (e) { return { ok: false, error: e }; }
+    }
+
     // Ombor (Kirim) kartochkalarida — Profil/Aksesuar mahsulotini tahrirlash/o'chirish (Narx belgilashdan tashqari)
     window.editRomixOmborItem = async (source, id, currentName, currentQty, currentPrice, currentUnit) => {
         const name = prompt('Nomi:', currentName || ''); if (name === null) return;
@@ -987,10 +1009,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const res = await romixBuhDelete('romix_accessories', ROMIX_BUH_KEYS.accessories, id);
             if (res && res.ok === false) { alert("Xatolik: bazadan o'chirib bo'lmadi — " + (res.error && res.error.message || "sabab noma'lum") + ". (Ehtimol bu mahsulot boshqa yozuvlarda ishlatilgan.)"); return; }
         } else {
-            try {
-                const { error } = await supabase.from('romix_inventory').delete().eq('id', id);
-                if (error) throw error;
-            } catch (err) { alert('Xatolik: ' + err.message); return; }
+            const res = await _buhDeleteInventoryCascade(id, name);
+            if (!res.ok) { if (!res.cancelled) alert('Xatolik: ' + (res.error && res.error.message || "sabab noma'lum")); return; }
         }
         window.showPremiumToast && window.showPremiumToast("O'chirildi", 'Mahsulot ombordan olib tashlandi.', true);
         await renderRomixBuhOmbor();
@@ -2541,10 +2561,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const info = _buhOmborTableInfo(filter);
         if (!info || !id || !confirm("Ushbu mahsulotni ombordan o'chirmoqchimisiz?")) return;
         if (filter === 'profil') {
-            try {
-                const { error } = await supabase.from('romix_inventory').delete().eq('id', id);
-                if (error) throw error;
-            } catch (err) { alert('Xatolik: ' + err.message); return; }
+            const item = _buhOmborFindItem(filter, id);
+            const res = await _buhDeleteInventoryCascade(id, (item && item.product_name) || 'mahsulot');
+            if (!res.ok) { if (!res.cancelled) alert('Xatolik: ' + (res.error && res.error.message || "sabab noma'lum")); return; }
         } else {
             const res = await romixBuhDelete(info.table, info.localKey, id);
             if (res && res.ok === false) { alert("Xatolik: bazadan o'chirib bo'lmadi — " + (res.error && res.error.message || "sabab noma'lum") + ". (Ehtimol bu mahsulot boshqa yozuvlarda ishlatilgan.)"); return; }
