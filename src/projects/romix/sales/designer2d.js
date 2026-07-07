@@ -10,7 +10,8 @@ const uid = () => 'n' + (++_uid);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 export const OPENINGS = {
-    kar: 'Kar', casement_l: 'Kasement ←', casement_r: 'Kasement →', tilt: 'Tilt', tilt_turn: 'Tilt-turn'
+    kar: 'Kar', casement_l: 'Kasement ←', casement_r: 'Kasement →', tilt: 'Tilt (tepaga)', tilt_bottom: 'Tilt (pastga)',
+    tilt_turn: 'Tilt-turn ←', tilt_turn_r: 'Tilt-turn →'
 };
 
 export function createDesigner(host, opts = {}) {
@@ -102,7 +103,9 @@ export function createDesigner(host, opts = {}) {
                 <button type="button" class="d2-btn" data-op="casement_l">⬅️<br>Chapga</button>
                 <button type="button" class="d2-btn" data-op="casement_r">➡️<br>O'ngga</button>
                 <button type="button" class="d2-btn" data-op="tilt">⬆️<br>Tepaga</button>
-                <button type="button" class="d2-btn" data-op="tilt_turn">🔄<br>2 Rejim</button>
+                <button type="button" class="d2-btn" data-op="tilt_bottom">⬇️<br>Pastga</button>
+                <button type="button" class="d2-btn" data-op="tilt_turn">🔄<br>2 Rejim ←</button>
+                <button type="button" class="d2-btn" data-op="tilt_turn_r">🔄<br>2 Rejim →</button>
             </div>
             
             <!-- Center Canvas -->
@@ -273,7 +276,9 @@ export function createDesigner(host, opts = {}) {
         if (op === 'casement_l') s = L(x, y, x + w, y + h / 2) + L(x, y + h, x + w, y + h / 2);
         else if (op === 'casement_r') s = L(x + w, y, x, y + h / 2) + L(x + w, y + h, x, y + h / 2);
         else if (op === 'tilt') s = L(x, y + h, x + w / 2, y) + L(x + w, y + h, x + w / 2, y);
+        else if (op === 'tilt_bottom') s = L(x, y, x + w / 2, y + h) + L(x + w, y, x + w / 2, y + h);
         else if (op === 'tilt_turn') s = L(x, y, x + w, y + h / 2) + L(x, y + h, x + w, y + h / 2) + L(x, y + h, x + w / 2, y) + L(x + w, y + h, x + w / 2, y);
+        else if (op === 'tilt_turn_r') s = L(x + w, y, x, y + h / 2) + L(x + w, y + h, x, y + h / 2) + L(x, y + h, x + w / 2, y) + L(x + w, y + h, x + w / 2, y);
         return s;
     }
 
