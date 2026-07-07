@@ -488,6 +488,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (e) { console.warn(`Romix Buh insert exception on ${table}:`, e); }
         return record;
     }
+    // Ikkalasi ham { ok, error } qaytaradi — chaqiruvchi xatoni foydalanuvchiga ko'rsatishi mumkin.
+    // Eski chaqiruvchilar qaytish qiymatini o'qimaydi (await ...;), shuning uchun bu backward-compatible.
     async function romixBuhUpdate(table, localKey, id, patch) {
         let localList = [];
         try { localList = JSON.parse(localStorage.getItem(localKey)) || []; } catch {}
@@ -495,8 +497,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         localStorage.setItem(localKey, JSON.stringify(localList));
         try {
             const { error } = await supabase.from(table).update(patch).eq('id', id);
-            if (error) console.warn(`Romix Buh update failed on ${table}:`, error);
-        } catch (e) { console.warn(`Romix Buh update exception on ${table}:`, e); }
+            if (error) { console.warn(`Romix Buh update failed on ${table}:`, error); return { ok: false, error }; }
+            return { ok: true };
+        } catch (e) { console.warn(`Romix Buh update exception on ${table}:`, e); return { ok: false, error: e }; }
     }
     async function romixBuhDelete(table, localKey, id) {
         let localList = [];
@@ -505,8 +508,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         localStorage.setItem(localKey, JSON.stringify(localList));
         try {
             const { error } = await supabase.from(table).delete().eq('id', id);
-            if (error) console.warn(`Romix Buh delete failed on ${table}:`, error);
-        } catch (e) { console.warn(`Romix Buh delete exception on ${table}:`, e); }
+            if (error) { console.warn(`Romix Buh delete failed on ${table}:`, error); return { ok: false, error }; }
+            return { ok: true };
+        } catch (e) { console.warn(`Romix Buh delete exception on ${table}:`, e); return { ok: false, error: e }; }
     }
 
     let _romixBuhPillsBound = false;
@@ -843,12 +847,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div style="display:flex; justify-content:space-between; font-size:0.76rem; color:rgba(255,255,255,0.5);">
                         <span>Jami qiymat</span><strong style="color:#00d2ff; font-family:monospace;">${_buhFmt(val)}</strong>
                     </div>
-                    <button onclick="window.openRomixPriceModal('inventory', '${p.id}', '${nameEsc}', ${p.price || 0}, ${qty}, '${unitEsc}')"
-                        style="display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(0,186,255,0.1); border:1px solid rgba(0,186,255,0.25); color:#00baff; padding:9px; border-radius:10px; font-size:0.76rem; font-weight:700; cursor:pointer; transition:all 0.2s; width:100%; margin-top:2px;"
-                        onmouseenter="this.style.background='rgba(0,186,255,0.2)'; this.style.transform='translateY(-1px)';"
-                        onmouseleave="this.style.background='rgba(0,186,255,0.1)'; this.style.transform='translateY(0)';">
-                        💲 Narx belgilash
-                    </button>
+                    <div style="display:flex; gap:6px; margin-top:2px;">
+                        <button onclick="window.openRomixPriceModal('inventory', '${p.id}', '${nameEsc}', ${p.price || 0}, ${qty}, '${unitEsc}')"
+                            style="flex:2; display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(0,186,255,0.1); border:1px solid rgba(0,186,255,0.25); color:#00baff; padding:9px; border-radius:10px; font-size:0.74rem; font-weight:700; cursor:pointer;">
+                            💲 Narx
+                        </button>
+                        <button onclick="window.editRomixOmborItem('inventory', '${p.id}', '${nameEsc}', ${qty}, ${p.price || 0}, '${unitEsc}')"
+                            title="Tahrirlash" style="flex:1; background:rgba(0,255,136,0.1); border:1px solid rgba(0,255,136,0.25); color:#00ff88; padding:9px; border-radius:10px; font-size:0.85rem; cursor:pointer;">✏️</button>
+                        <button onclick="window.deleteRomixOmborItem('inventory', '${p.id}', '${nameEsc}')"
+                            title="O'chirish" style="flex:1; background:rgba(255,77,79,0.1); border:1px solid rgba(255,77,79,0.25); color:#ff4d4f; padding:9px; border-radius:10px; font-size:0.85rem; cursor:pointer;">🗑️</button>
+                    </div>
                 </div>`;
             }).join('');
 
@@ -875,12 +883,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div style="display:flex; justify-content:space-between; font-size:0.76rem; color:rgba(255,255,255,0.5);">
                         <span>Jami qiymat</span><strong style="color:#00d2ff; font-family:monospace;">${_buhFmt(val)}</strong>
                     </div>
-                    <button onclick="window.openRomixPriceModal('accessory', '${a.id}', '${nameEsc}', ${price}, ${qty}, '${unitEsc}')"
-                        style="display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(186,104,200,0.1); border:1px solid rgba(186,104,200,0.25); color:#BA68C8; padding:9px; border-radius:10px; font-size:0.76rem; font-weight:700; cursor:pointer; transition:all 0.2s; width:100%; margin-top:2px;"
-                        onmouseenter="this.style.background='rgba(186,104,200,0.2)'; this.style.transform='translateY(-1px)';"
-                        onmouseleave="this.style.background='rgba(186,104,200,0.1)'; this.style.transform='translateY(0)';">
-                        💲 Narx belgilash
-                    </button>
+                    <div style="display:flex; gap:6px; margin-top:2px;">
+                        <button onclick="window.openRomixPriceModal('accessory', '${a.id}', '${nameEsc}', ${price}, ${qty}, '${unitEsc}')"
+                            style="flex:2; display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(186,104,200,0.1); border:1px solid rgba(186,104,200,0.25); color:#BA68C8; padding:9px; border-radius:10px; font-size:0.74rem; font-weight:700; cursor:pointer;">
+                            💲 Narx
+                        </button>
+                        <button onclick="window.editRomixOmborItem('accessory', '${a.id}', '${nameEsc}', ${qty}, ${price}, '${unitEsc}')"
+                            title="Tahrirlash" style="flex:1; background:rgba(0,255,136,0.1); border:1px solid rgba(0,255,136,0.25); color:#00ff88; padding:9px; border-radius:10px; font-size:0.85rem; cursor:pointer;">✏️</button>
+                        <button onclick="window.deleteRomixOmborItem('accessory', '${a.id}', '${nameEsc}')"
+                            title="O'chirish" style="flex:1; background:rgba(255,77,79,0.1); border:1px solid rgba(255,77,79,0.25); color:#ff4d4f; padding:9px; border-radius:10px; font-size:0.85rem; cursor:pointer;">🗑️</button>
+                    </div>
                 </div>`;
             }).join('');
 
@@ -944,6 +956,45 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (err) {
             alert('Xatolik: ' + err.message);
         }
+    };
+
+    // Ombor (Kirim) kartochkalarida — Profil/Aksesuar mahsulotini tahrirlash/o'chirish (Narx belgilashdan tashqari)
+    window.editRomixOmborItem = async (source, id, currentName, currentQty, currentPrice, currentUnit) => {
+        const name = prompt('Nomi:', currentName || ''); if (name === null) return;
+        const qty = prompt('Miqdor:', currentQty || 0); if (qty === null) return;
+        const price = prompt('Narx (1 birlik):', currentPrice || 0); if (price === null) return;
+        const patch = source === 'accessory'
+            ? { name: name.trim(), qty: parseFloat(qty) || 0, price: parseFloat(price) || 0 }
+            : { product_name: name.trim(), stock_quantity: parseFloat(qty) || 0, price: parseFloat(price) || 0 };
+
+        if (source === 'accessory') {
+            const res = await romixBuhUpdate('romix_accessories', ROMIX_BUH_KEYS.accessories, id, patch);
+            if (res && res.ok === false) { alert("Xatolik: bazada yangilab bo'lmadi — " + (res.error && res.error.message || "sabab noma'lum")); return; }
+        } else {
+            try {
+                const { error } = await supabase.from('romix_inventory').update(patch).eq('id', id);
+                if (error) throw error;
+            } catch (err) { alert('Xatolik: ' + err.message); return; }
+        }
+        window.showPremiumToast && window.showPremiumToast('Yangilandi', "Mahsulot ma'lumotlari yangilandi.", true);
+        await renderRomixBuhOmbor();
+        await renderBuhOverview();
+    };
+
+    window.deleteRomixOmborItem = async (source, id, name) => {
+        if (!confirm(`"${name}" mahsulotini ombordan o'chirmoqchimisiz?`)) return;
+        if (source === 'accessory') {
+            const res = await romixBuhDelete('romix_accessories', ROMIX_BUH_KEYS.accessories, id);
+            if (res && res.ok === false) { alert("Xatolik: bazadan o'chirib bo'lmadi — " + (res.error && res.error.message || "sabab noma'lum") + ". (Ehtimol bu mahsulot boshqa yozuvlarda ishlatilgan.)"); return; }
+        } else {
+            try {
+                const { error } = await supabase.from('romix_inventory').delete().eq('id', id);
+                if (error) throw error;
+            } catch (err) { alert('Xatolik: ' + err.message); return; }
+        }
+        window.showPremiumToast && window.showPremiumToast("O'chirildi", 'Mahsulot ombordan olib tashlandi.', true);
+        await renderRomixBuhOmbor();
+        await renderBuhOverview();
     };
 
     // ========================================================
@@ -2060,6 +2111,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 qtyText: _buhQtyBreakdown(sortedItems, 'stock_quantity', 'unit'),
                 columns: ["O'lcham / Variant", 'Miqdor', 'Narx', 'Qiymat'], alignRight: [false, true, true, true],
                 rows: sortedItems.map(p => [_buhProfilSizeLabel(p), `${(Number(p.stock_quantity) || 0).toLocaleString('uz-UZ')} ${p.unit || ''}`, _buhFmt(p.price), _buhFmt((Number(p.price) || 0) * (Number(p.stock_quantity) || 0))]),
+                rowIds: sortedItems.map(p => p.id), canEdit: true,
                 profilBrands: allGrouped, profilActiveBrand: brandFilter
             };
         }
@@ -2091,6 +2143,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 qtyText: _buhQtyBreakdown(sortedItems, 'qty', 'unit'),
                 columns: ['Nomi', 'Xususiyati', 'Miqdor', 'Narx', 'Qiymat'], alignRight: [false, false, true, true, true],
                 rows: sortedItems.map(a => [a.name || "Noma'lum", a.spec || '-', `${(Number(a.qty) || 0).toLocaleString('uz-UZ')} ${a.unit || ''}`, _buhFmt(a.price), _buhFmt((Number(a.price) || 0) * (Number(a.qty) || 0))]),
+                rowIds: sortedItems.map(a => a.id), canEdit: true,
                 accCategories: allGrouped, accActiveCategory: catFilter
             };
         }
@@ -2128,6 +2181,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 title: `✂️ ${activeGroup ? activeGroup.name : brandFilter}`, value, qtyText: `${totalDona.toLocaleString('uz-UZ')} dona (${totalMetr.toFixed(1)} metr)`,
                 columns: ['Nomi', 'Seriya/Rang', 'Uzunligi', 'Soni', 'Qiymat'], alignRight: [false, false, true, true, true],
                 rows: sortedItems.map(q => [q.product_name || "Noma'lum", [q.series, q.color].filter(Boolean).join(' / ') || '-', `${q.length || 0} mm`, `${(Number(q.stock_quantity) || 0).toLocaleString('uz-UZ')} dona`, _buhFmt((Number(q.length) || 0) * (Number(q.stock_quantity) || 0) * 25)]),
+                rowIds: sortedItems.map(q => q.id), canEdit: true,
                 qoldiqBrands: allGrouped, qoldiqActiveBrand: brandFilter
             };
         }
@@ -2146,8 +2200,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 value, qtyText: _buhQtyBreakdown(indexed.map(({ o }) => o), 'stock_quantity', 'unit'),
                 columns: ['Turi/Brend', 'Nomi', "O'lcham", 'Soni', 'Narx', 'Qiymat'], alignRight: [false, false, false, true, true, true],
                 rows: indexed.map(({ o }) => [o.brand || "Noma'lum", o.product_name || "Noma'lum", o.size || '-', `${(Number(o.stock_quantity) || 0).toLocaleString('uz-UZ')} ${o.unit || 'dona'}`, _buhFmt(o.price), _buhFmt((Number(o.price) || 0) * (Number(o.stock_quantity) || 0))]),
-                rowIds: indexed.map(({ o }) => o.id),
-                oynakBrands: brands, oynakActiveBrand: brandFilter, isOynak: true
+                rowIds: indexed.map(({ o }) => o.id), canEdit: true, isOynak: true,
+                oynakBrands: brands, oynakActiveBrand: brandFilter
             };
         }
         if (filter === 'chiqim') {
@@ -2358,10 +2412,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const tableEl = document.getElementById('buh-ombor-filter-table');
         if (tableEl) {
-            const extraCol = data.isOynak ? ['Amal'] : [];
+            const extraCol = data.canEdit ? ['Amal'] : [];
             const headHtml = [...data.columns, ...extraCol].map((c, i) => `<th ${data.alignRight[i] ? 'style="text-align:right;"' : ''}>${c}</th>`).join('');
             const rowsHtml = data.rows.length
-                ? data.rows.map((r, idx) => `<tr>${r.map((cell, i) => `<td ${data.alignRight[i] ? 'style="text-align:right;"' : ''}>${cell}</td>`).join('')}${data.isOynak ? `<td><button class="buh-row-action-btn" style="background:rgba(255,77,79,0.15); color:#ff4d4f;" onclick="window.deleteBuhOynakItem('${data.rowIds ? data.rowIds[idx] : ''}')">O'chirish</button></td>` : ''}</tr>`).join('')
+                ? data.rows.map((r, idx) => `<tr>${r.map((cell, i) => `<td ${data.alignRight[i] ? 'style="text-align:right;"' : ''}>${cell}</td>`).join('')}${data.canEdit ? `<td style="white-space:nowrap;">
+                        <button class="buh-row-action-btn" style="background:rgba(0,186,255,0.15); color:#00baff; margin-right:4px;" title="Tahrirlash" onclick="window.editBuhOmborItem('${filter}','${data.rowIds ? data.rowIds[idx] : ''}')">✏️</button>
+                        <button class="buh-row-action-btn" style="background:rgba(255,77,79,0.15); color:#ff4d4f;" title="O'chirish" onclick="window.deleteBuhOmborItem('${filter}','${data.rowIds ? data.rowIds[idx] : ''}')">🗑️</button>
+                    </td>` : ''}</tr>`).join('')
                 : `<tr><td colspan="${data.columns.length + extraCol.length}" style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">Ma'lumot topilmadi</td></tr>`;
             tableEl.innerHTML = `<div style="overflow-x:auto;"><table class="v2-table"><thead><tr>${headHtml}</tr></thead>
                 <tbody>${rowsHtml}</tbody></table></div>`;
@@ -2396,14 +2453,104 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.showPremiumToast && window.showPremiumToast('Saqlandi', `${brand} qo'shildi.`, true);
     };
 
-    window.deleteBuhOynakItem = async (id) => {
-        if (!id || !confirm("Ushbu oynak yozuvini o'chirmoqchimisiz?")) return;
-        await _buhDeleteOynak(id);
-        const list = await _buhGetOynak();
-        window._buhUmumiyData.oynakItems = list;
-        window._buhUmumiyData.oynakValue = _buhOynakValue(list);
+    // ═══ Ombor Qiymati — mahsulotlarni tahrirlash/o'chirish (Profil/Aksesuvar/Qoldiq/Oynak, 4 toifa umumiy) ═══
+    function _buhOmborTableInfo(filter) {
+        switch (filter) {
+            case 'profil': return { table: 'romix_inventory', localKey: null };
+            case 'aksesuvar': return { table: 'romix_accessories', localKey: ROMIX_BUH_KEYS.accessories };
+            case 'qoldiq': return { table: 'romix_qoldiq_profillar', localKey: ROMIX_BUH_KEYS.qoldiqProfillar };
+            case 'oynak': return { table: 'romix_oynak', localKey: ROMIX_BUH_KEYS.oynak };
+            default: return null;
+        }
+    }
+    async function _buhOmborRefetchAndRerender(filter) {
+        const d = window._buhUmumiyData;
+        if (!d) return;
+        if (filter === 'profil') {
+            const { data } = await supabase.from('romix_inventory').select('*');
+            d.profilItems = data || [];
+            d.profilValue = d.profilItems.reduce((s, p) => s + ((Number(p.price) || 0) * (Number(p.stock_quantity) || 0)), 0);
+        } else if (filter === 'aksesuvar') {
+            d.accessories = await _buhGetAccessories();
+            d.accValue = d.accessories.reduce((s, a) => s + ((Number(a.price) || 0) * (Number(a.qty) || 0)), 0);
+        } else if (filter === 'qoldiq') {
+            d.qoldiqItems = await _buhGetQoldiqProfillar();
+            d.qoldiqValue = _buhQoldiqValue(d.qoldiqItems);
+        } else if (filter === 'oynak') {
+            d.oynakItems = await _buhGetOynak();
+            d.oynakValue = _buhOynakValue(d.oynakItems);
+        }
+        d.omborTotal = d.profilValue + d.accValue + d.qoldiqValue + d.oynakValue;
         _buhRefreshOmborCardTotal();
-        window._buhRenderOmborFilterView('oynak');
+        window._buhRenderOmborFilterView(filter);
+    }
+    function _buhOmborFindItem(filter, id) {
+        const d = window._buhUmumiyData;
+        if (!d) return null;
+        if (filter === 'profil') return (d.profilItems || []).find(p => p.id === id);
+        if (filter === 'aksesuvar') return (d.accessories || []).find(a => a.id === id);
+        if (filter === 'qoldiq') return (d.qoldiqItems || []).find(q => q.id === id);
+        if (filter === 'oynak') return (d.oynakItems || []).find(o => o.id === id);
+        return null;
+    }
+
+    window.editBuhOmborItem = async (filter, id) => {
+        const info = _buhOmborTableInfo(filter);
+        const item = _buhOmborFindItem(filter, id);
+        if (!info || !item) return;
+
+        let patch = null;
+        if (filter === 'profil') {
+            const name = prompt('Nomi:', item.product_name || ''); if (name === null) return;
+            const qty = prompt('Miqdor:', item.stock_quantity || 0); if (qty === null) return;
+            const price = prompt('Narx (1 birlik):', item.price || 0); if (price === null) return;
+            patch = { product_name: name.trim(), stock_quantity: parseFloat(qty) || 0, price: parseFloat(price) || 0 };
+        } else if (filter === 'aksesuvar') {
+            const name = prompt('Nomi:', item.name || ''); if (name === null) return;
+            const qty = prompt('Miqdor:', item.qty || 0); if (qty === null) return;
+            const price = prompt('Narx (1 birlik):', item.price || 0); if (price === null) return;
+            patch = { name: name.trim(), qty: parseFloat(qty) || 0, price: parseFloat(price) || 0 };
+        } else if (filter === 'qoldiq') {
+            const name = prompt('Nomi:', item.product_name || ''); if (name === null) return;
+            const len = prompt('Uzunligi (mm):', item.length || 0); if (len === null) return;
+            const qty = prompt('Soni (dona):', item.stock_quantity || 0); if (qty === null) return;
+            patch = { product_name: name.trim(), length: parseFloat(len) || 0, stock_quantity: parseFloat(qty) || 0 };
+        } else if (filter === 'oynak') {
+            const name = prompt('Nomi:', item.product_name || ''); if (name === null) return;
+            const size = prompt("O'lcham:", item.size || ''); if (size === null) return;
+            const qty = prompt('Soni:', item.stock_quantity || 0); if (qty === null) return;
+            const price = prompt('Narx (1 birlik):', item.price || 0); if (price === null) return;
+            patch = { product_name: name.trim(), size: size.trim(), stock_quantity: parseFloat(qty) || 0, price: parseFloat(price) || 0 };
+        }
+        if (!patch) return;
+
+        if (filter === 'profil') {
+            try {
+                const { error } = await supabase.from('romix_inventory').update(patch).eq('id', id);
+                if (error) throw error;
+            } catch (err) { alert('Xatolik: ' + err.message); return; }
+        } else {
+            const res = await romixBuhUpdate(info.table, info.localKey, id, patch);
+            if (res && res.ok === false) { alert("Xatolik: bazada yangilab bo'lmadi — " + (res.error && res.error.message || "sabab noma'lum")); return; }
+        }
+        await _buhOmborRefetchAndRerender(filter);
+        window.showPremiumToast && window.showPremiumToast('Yangilandi', "Mahsulot ma'lumotlari yangilandi.", true);
+    };
+
+    window.deleteBuhOmborItem = async (filter, id) => {
+        const info = _buhOmborTableInfo(filter);
+        if (!info || !id || !confirm("Ushbu mahsulotni ombordan o'chirmoqchimisiz?")) return;
+        if (filter === 'profil') {
+            try {
+                const { error } = await supabase.from('romix_inventory').delete().eq('id', id);
+                if (error) throw error;
+            } catch (err) { alert('Xatolik: ' + err.message); return; }
+        } else {
+            const res = await romixBuhDelete(info.table, info.localKey, id);
+            if (res && res.ok === false) { alert("Xatolik: bazadan o'chirib bo'lmadi — " + (res.error && res.error.message || "sabab noma'lum") + ". (Ehtimol bu mahsulot boshqa yozuvlarda ishlatilgan.)"); return; }
+        }
+        await _buhOmborRefetchAndRerender(filter);
+        window.showPremiumToast && window.showPremiumToast("O'chirildi", 'Mahsulot ombordan olib tashlandi.', true);
     };
 
     window._buhToggleExpenseCategoryMenu = (e) => {
@@ -3181,9 +3328,10 @@ CREATE TABLE IF NOT EXISTS romix_oynak (
         bindRomixBuhPillTabs();
         bindRomixBuhForms();
 
-        // "Umumiy" paneli sahifada birinchi (eng yuqori) ko'rinadi, shuning uchun uning
-        // ma'lumotlari ham birinchi bo'lib yuklanadi — qolgan bo'limlar ortidan navbatda
-        // kutib, foydalanuvchini bir necha soniya bekorga kutdirmasin.
+        // Har bir panel o'z Supabase so'rovlarini qiladi va bir-biriga bog'liq emas —
+        // avval ketma-ket (await...await) yuklanardi, shuning uchun masalan "Ombor" (8-navbat)
+        // undan oldingi 7 ta panel tugagunicha "Yuklanmoqda..." holida qolib ketardi (3-7 soniya).
+        // Parallel yuklash bilan umumiy vaqt eng sekin bitta so'rov vaqtigacha qisqaradi.
         const steps = [
             ['updateBuhHeroKPIs', updateBuhHeroKPIs],
             ['renderBuhOverview', renderBuhOverview],
@@ -3195,13 +3343,9 @@ CREATE TABLE IF NOT EXISTS romix_oynak (
             ['renderRomixBuhOmbor', renderRomixBuhOmbor],
             ['renderBuhTashqiQarz', renderBuhTashqiQarz]
         ];
-        for (const [name, fn] of steps) {
-            try {
-                await fn();
-            } catch (e) {
-                console.error(`[DEBUG loadRomixBuhgalter] ${name} threw:`, e);
-            }
-        }
+        await Promise.allSettled(steps.map(([name, fn]) =>
+            fn().catch(e => console.error(`[DEBUG loadRomixBuhgalter] ${name} threw:`, e))
+        ));
     }
 
     // Auto-detect and set active Auto Clapak tab based on current URL path

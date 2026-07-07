@@ -105,6 +105,9 @@ export function derivePieces(items) {
             add(ramaMat, dH, '45°/45°', 2 * qty);  // 2ta vertikal
             add(ramaMat, dW, '45°/45°', 2 * qty);  // 2ta gorizontal
 
+            // "Faqat Ramka" rejimi — impost/stvorka/shtapik hisoblanmaydi, faqat tashqi ramka kesiladi
+            if (it.design.frameOnly) return;
+
             // ② IMPOST profillar — ichki o'lcham, 90° kesim
             const impostMat = baseMat + ' · Impost';
             out.imposts.forEach(im => {
