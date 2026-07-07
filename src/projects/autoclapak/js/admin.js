@@ -507,8 +507,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         localList = localList.filter(x => x.id !== id);
         localStorage.setItem(localKey, JSON.stringify(localList));
         try {
-            const { error } = await supabase.from(table).delete().eq('id', id);
+            // .select() bilan HAQIQATDA nechta qator o'chganini tekshiramiz — RLS siyosati
+            // DELETE'ga ruxsat bermasa, Supabase xato qaytarmaydi, shunchaki 0 qator o'chadi.
+            const { data, error } = await supabase.from(table).delete().eq('id', id).select();
             if (error) { console.warn(`Romix Buh delete failed on ${table}:`, error); return { ok: false, error }; }
+            if (!data || data.length === 0) {
+                const e = { message: "Bazada o'chmadi (0 qator) — RLS/ruxsat siyosati cheklayotgan bo'lishi mumkin." };
+                console.warn(`Romix Buh delete affected 0 rows on ${table} (id=${id})`);
+                return { ok: false, error: e };
+            }
             return { ok: true };
         } catch (e) { console.warn(`Romix Buh delete exception on ${table}:`, e); return { ok: false, error: e }; }
     }
@@ -961,9 +968,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Profil (romix_inventory) o'chirishga urinadi; agar mahsulotning eski kirim/chiqim tarixi
     // (romix_transactions.product_id) bo'lsa, Postgres FOREIGN KEY xatosi (23503) qaytaradi —
     // shu holatni aniqlab, foydalanuvchidan tarixi bilan birga o'chirishga ruxsat so'raymiz.
+    // MUHIM: Supabase RLS siyosati DELETE'ga ruxsat bermasa, XATO QAYTARMAYDI — shunchaki 0 qator
+    // o'chadi. Shuning uchun .select() bilan HAQIQATDA nechta qator o'chganini tekshiramiz.
     async function _buhDeleteInventoryCascade(id, name) {
-        const { error } = await supabase.from('romix_inventory').delete().eq('id', id);
-        if (!error) return { ok: true };
+        const { data, error } = await supabase.from('romix_inventory').delete().eq('id', id).select();
+        if (!error) {
+            if (data && data.length > 0) return { ok: true };
+            return { ok: false, error: { message: "Bazada o'chmadi (0 qator) — Supabase RLS/ruxsat siyosati DELETE'ni cheklayotgan bo'lishi mumkin." } };
+        }
 
         const isFk = error.code === '23503' || /foreign key|violates|referenced/i.test(error.message || '');
         if (!isFk) return { ok: false, error };
@@ -974,8 +986,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const { error: txErr } = await supabase.from('romix_transactions').delete().eq('product_id', id);
             if (txErr) return { ok: false, error: txErr };
-            const { error: err2 } = await supabase.from('romix_inventory').delete().eq('id', id);
+            const { data: data2, error: err2 } = await supabase.from('romix_inventory').delete().eq('id', id).select();
             if (err2) return { ok: false, error: err2 };
+            if (!data2 || data2.length === 0) return { ok: false, error: { message: "Bazada o'chmadi (0 qator) — RLS/ruxsat siyosati cheklayotgan bo'lishi mumkin." } };
             return { ok: true };
         } catch (e) { return { ok: false, error: e }; }
     }
