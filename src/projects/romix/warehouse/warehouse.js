@@ -1608,18 +1608,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     function omSafeKey(str) { return (str || '').replace(/[^a-zA-Z0-9]/g, '_'); }
 
     // ============================================================
-    // ==== OMBOR JAMI — Premium 3 bo'limli ko'rinish             ====
-    // (Profil / Aksesuvar / Qoldiq Profil — brend/kategoriya      ====
+    // ==== OMBOR JAMI — Premium 4 bo'limli ko'rinish             ====
+    // (Profil / Aksesuvar / Qoldiq Profil / Oynak — brend/kategoriya ====
     //  chip-filtri bilan, mm/brend/kategoriya/miqdor batafsil)   ====
     // ============================================================
     const _OJ_CATEGORY_META = {
         profil: { icon: '📦', label: 'Profil', title: '📦 Profil — Brend/Seriya Bo\'yicha' },
         aksesuvar: { icon: '🔩', label: 'Aksesuvar', title: '🔩 Aksesuvar — Kategoriya Bo\'yicha' },
-        qoldiq: { icon: '✂️', label: 'Qoldiq Profil', title: '✂️ Qoldiq Profil — Brend Bo\'yicha' }
+        qoldiq: { icon: '✂️', label: 'Qoldiq Profil', title: '✂️ Qoldiq Profil — Brend Bo\'yicha' },
+        oynak: { icon: '🪟', label: 'Oynak', title: '🪟 Oynak — Brend Bo\'yicha' }
     };
     window._ojData = null;
     window._ojActiveCategory = 'profil';
-    window._ojActiveBrand = { profil: 'barchasi', aksesuvar: 'barchasi', qoldiq: 'barchasi' };
+    window._ojActiveBrand = { profil: 'barchasi', aksesuvar: 'barchasi', qoldiq: 'barchasi', oynak: 'barchasi' };
     window._ojSearchTerm = '';
 
     async function loadOmborJami() {
@@ -1633,11 +1634,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (e) { console.warn('Ombor Jami profil fetch error:', e); }
         const accessories = await omGetAccessories();
         const qoldiqItems = await omGetQoldiq();
+        const oynakItems = await omGetOynak();
 
         window._ojData = {
             profil: { items: profilItems, groups: omGroupProfilByName(profilItems) },
             aksesuvar: { items: accessories, groups: omGroupAccessoriesByCategory(accessories) },
-            qoldiq: { items: qoldiqItems, groups: omGroupQoldiqByBrand(qoldiqItems) }
+            qoldiq: { items: qoldiqItems, groups: omGroupQoldiqByBrand(qoldiqItems) },
+            oynak: { items: oynakItems, groups: omGroupOynakByBrand(oynakItems) }
         };
 
         tabsEl.querySelectorAll('.om-brand-chip').forEach(chip => {
@@ -1740,7 +1743,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             tableWrap.innerHTML = `<table class="v2-table"><thead><tr>
                 <th>Mahsulot</th><th>Kategoriya</th><th style="text-align:right;">Miqdor</th><th style="text-align:right;">Narxi</th><th style="text-align:right;">Qiymati</th>
             </tr></thead><tbody>${rows}</tbody></table>`;
-        } else {
+        } else if (cat === 'qoldiq') {
             const rows = items.length ? items.map(qi => {
                 const qty = Number(qi.stock_quantity) || 0;
                 const len = Number(qi.length) || 0;
@@ -1755,6 +1758,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             }).join('') : `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Mahsulot topilmadi</td></tr>`;
             tableWrap.innerHTML = `<table class="v2-table"><thead><tr>
                 <th>Mahsulot</th><th>Brend</th><th style="text-align:right;">Uzunligi (mm)</th><th style="text-align:right;">Miqdor</th><th style="text-align:right;">Qiymati</th>
+            </tr></thead><tbody>${rows}</tbody></table>`;
+        } else if (cat === 'oynak') {
+            const rows = items.length ? items.map(o => {
+                const qty = Number(o.stock_quantity) || 0;
+                const price = Number(o.price) || 0;
+                return `<tr>
+                    <td>${o.product_name || "Noma'lum"}</td>
+                    <td>${o.brand || '-'}</td>
+                    <td>${o.size || '-'}</td>
+                    <td style="text-align:right;">${qty.toLocaleString('uz-UZ')} ${o.unit || 'dona'}</td>
+                    <td style="text-align:right;">${omFmt(price)}</td>
+                    <td style="text-align:right; font-weight:700; color:#00d2ff;">${omFmt(price * qty)}</td>
+                </tr>`;
+            }).join('') : `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Mahsulot topilmadi</td></tr>`;
+            tableWrap.innerHTML = `<table class="v2-table"><thead><tr>
+                <th>Mahsulot</th><th>Brend</th><th>O'lcham</th><th style="text-align:right;">Miqdor</th><th style="text-align:right;">Narxi</th><th style="text-align:right;">Qiymati</th>
             </tr></thead><tbody>${rows}</tbody></table>`;
         }
     }
