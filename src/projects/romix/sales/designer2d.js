@@ -126,10 +126,57 @@ export function createDesigner(host, opts = {}) {
                 <button type="button" class="d2-btn d2-btn-danger" id="d2-delete-btn">🗑️<br>O'chirish</button>
             </div>
         </div>
+
+        <!-- O'lcham kiritish oynasi (rasm/prompt o'rniga premium modal) -->
+        <div id="d2DimBackdrop" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(6px); z-index:3000; align-items:center; justify-content:center; padding:20px;">
+            <div style="width:300px; background:#0f1c2e; border:1px solid rgba(0,210,255,0.25); border-radius:22px; padding:28px; box-shadow:0 25px 60px rgba(0,0,0,0.55);">
+                <div id="d2DimTitle" style="font-size:0.9rem; font-weight:800; color:#fff; margin-bottom:20px; text-align:center;">O'lchamni kiriting</div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <button type="button" id="d2DimMinus" style="width:46px; height:46px; flex:none; border-radius:12px; border:none; background:rgba(255,255,255,0.08); color:#fff; font-size:1.4rem; font-weight:700; cursor:pointer;">−</button>
+                    <input type="number" id="d2DimInput" step="10" style="flex:1; min-width:0; height:46px; text-align:center; font-size:1.25rem; font-weight:800; color:#00d2ff; background:rgba(0,210,255,0.07); border:1px solid rgba(0,210,255,0.3); border-radius:12px;">
+                    <button type="button" id="d2DimPlus" style="width:46px; height:46px; flex:none; border-radius:12px; border:none; background:rgba(255,255,255,0.08); color:#fff; font-size:1.4rem; font-weight:700; cursor:pointer;">+</button>
+                </div>
+                <div style="text-align:center; font-size:0.66rem; color:rgba(255,255,255,0.35); margin-top:8px;">millimetrda (mm), kamida 100</div>
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button type="button" id="d2DimSave" style="flex:1; background:linear-gradient(135deg,#00d2ff,#00ff88); color:#000; border:none; padding:13px; border-radius:12px; font-weight:800; cursor:pointer;">Saqlash</button>
+                    <button type="button" id="d2DimCancel" style="flex:1; background:rgba(255,255,255,0.08); color:#fff; border:none; padding:13px; border-radius:12px; font-weight:700; cursor:pointer;">Bekor</button>
+                </div>
+            </div>
+        </div>
     `;
 
     const canvasDiv = host.querySelector('.d2-canvas');
     const leftSidebar = host.querySelector('.d2-left-sidebar');
+
+    // O'lcham kiritish oynasi (native prompt() o'rniga)
+    const dimBackdrop = host.querySelector('#d2DimBackdrop');
+    const dimTitle = host.querySelector('#d2DimTitle');
+    const dimInput = host.querySelector('#d2DimInput');
+    let dimOnSave = null;
+
+    function openDimModal(title, currentVal, onSave) {
+        dimTitle.textContent = title;
+        dimInput.value = currentVal;
+        dimOnSave = onSave;
+        dimBackdrop.style.display = 'flex';
+        setTimeout(() => { dimInput.focus(); dimInput.select(); }, 30);
+    }
+    function closeDimModal() {
+        dimBackdrop.style.display = 'none';
+        dimOnSave = null;
+    }
+    function confirmDimModal() {
+        const val = parseInt(dimInput.value);
+        if (!val || val < 100) { alert("Noto'g'ri qiymat kiritildi (kamida 100mm bo'lishi shart)!"); return; }
+        if (dimOnSave) dimOnSave(val);
+        closeDimModal();
+    }
+    host.querySelector('#d2DimMinus').onclick = () => { dimInput.value = Math.max(100, (parseInt(dimInput.value) || 0) - 10); };
+    host.querySelector('#d2DimPlus').onclick = () => { dimInput.value = (parseInt(dimInput.value) || 0) + 10; };
+    host.querySelector('#d2DimSave').onclick = confirmDimModal;
+    host.querySelector('#d2DimCancel').onclick = closeDimModal;
+    dimBackdrop.onclick = (e) => { if (e.target === dimBackdrop) closeDimModal(); };
+    dimInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') confirmDimModal(); });
 
     host.querySelector('#d2-split-v').onclick = () => addImpost('v');
     host.querySelector('#d2-split-h').onclick = () => addImpost('h');
@@ -366,19 +413,11 @@ export function createDesigner(host, opts = {}) {
                     ? (cellId === 'root' ? W : Math.round(out.cells.find(c => c.id === cellId).box.w))
                     : (cellId === 'root' ? H : Math.round(out.cells.find(c => c.id === cellId).box.h));
                 
-                const promptMsg = cellId === 'root' 
-                    ? (editDim === 'w' ? "Umumiy enini kiriting (mm):" : "Umumiy balandligini kiriting (mm):")
-                    : (editDim === 'w' ? "Tavaqa enini kiriting (mm):" : "Tavaqa balandligini kiriting (mm):");
-                
-                const res = prompt(promptMsg, currentVal);
-                if (res !== null) {
-                    const newVal = parseInt(res);
-                    if (newVal >= 100) {
-                        setSpecificCellSize(cellId, editDim, newVal);
-                    } else {
-                        alert("Noto'g'ri qiymat kiritildi (kamida 100mm bo'lishi shart)!");
-                    }
-                }
+                const title = cellId === 'root'
+                    ? (editDim === 'w' ? "Umumiy enini kiriting" : "Umumiy balandligini kiriting")
+                    : (editDim === 'w' ? "Tavaqa enini kiriting" : "Tavaqa balandligini kiriting");
+
+                openDimModal(title, currentVal, (newVal) => setSpecificCellSize(cellId, editDim, newVal));
                 return;
             }
 
