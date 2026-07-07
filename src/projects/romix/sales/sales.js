@@ -5,9 +5,12 @@ import { createDesigner } from './designer2d.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const user = JSON.parse(localStorage.getItem('currentUser'));
-    if (!user || (user.role !== 'sotuv' && user.role !== 'admin')) {
+    if (!user || !['sotuv', 'admin', 'sotuvchi'].includes(user.role)) {
         window.location.href = '/';
     }
+    // "sotuvchi" — Sozlamalarda qo'shilgan yordamchi sotuv xodimi: faqat buyurtma olish oynasini ko'radi,
+    // analitika/harakat grafigi/to'lovlar tarixi/sotuvchilar boshqaruviga kirmaydi.
+    const isLimitedAgent = user.role === 'sotuvchi';
 
     document.getElementById('userName').textContent = user.full_name || "Sotuv Menejeri";
 
@@ -20,7 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Values
     const PRODUCTION_COST = 1000000; // base production markup per window/door
-    const INSTALLATION_PRICE_PER_SQM = 250000;
+    const INSTALLATION_PRICE_PER_SQM = 0; // mijoz xonadonida o'rnatib berish — biznes qoidasi bo'yicha bepul (0 so'm)
 
     // Umumiy tushum kartochkasi bosilganda ochiladigan tafsilot uchun — loadOrders() to'ldiradi
     let allOrders = [];
@@ -35,7 +38,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById(`${tabId}-view`)?.classList.remove('hidden');
         navButtons.forEach(b => b.classList.remove('active'));
         document.querySelector(`[data-tab="${tabId}"]`)?.classList.add('active');
-        if (tabId === 'dashboard' || tabId === 'orders') loadOrders();
+        if (tabId === 'dashboard' || tabId === 'orders' || tabId === 'payments') loadOrders();
+        if (tabId === 'settings') {
+            document.getElementById('settingsUserName').textContent = user?.full_name || '---';
+            document.getElementById('settingsUserLogin').textContent = user?.username || '---';
+            document.getElementById('settingsUserRole').textContent = (user?.role || '---').toUpperCase();
+            if (!isLimitedAgent) {
+                document.getElementById('salesAgentsSection').classList.remove('hidden');
+                loadSalesAgents();
+            }
+        }
     }
 
     navButtons.forEach(btn => {
@@ -44,6 +56,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (tab) switchTab(tab);
         };
     });
+
+    // "sotuvchi" — faqat buyurtma olish oynasi ko'rinadi: boshqa tablar/analitika/ro'yxat berkitiladi,
+    // buyurtma yaratish oynasi darhol ochiladi.
+    if (isLimitedAgent) {
+        document.querySelectorAll('.nav-icon[data-tab]').forEach(el => {
+            if (el.getAttribute('data-tab') !== 'dashboard') el.style.display = 'none';
+        });
+        const kpiRow = document.getElementById('dashboardKpiRow');
+        const ordersList = document.getElementById('dashboardOrdersList');
+        if (kpiRow) kpiRow.style.display = 'none';
+        if (ordersList) ordersList.style.display = 'none';
+    }
 
     // Multi-item Order Constructor Settings
     const AVAILABLE_MATERIALS = {
@@ -377,6 +401,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     }
 
+    // Summa maydonlari (Avans) uchun — 1000000 o'rniga "1 000 000" ko'rinishida bo'shliq bilan ajratib ko'rsatish
+    function formatMoneyInput(el) {
+        const cursorFromEnd = el.value.length - el.selectionStart;
+        const digits = el.value.replace(/\D/g, '');
+        const formatted = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        el.value = formatted;
+        const pos = Math.max(0, formatted.length - cursorFromEnd);
+        el.setSelectionRange(pos, pos);
+    }
+    function parseMoneyInput(el) {
+        return parseFloat((el?.value || '').replace(/\s/g, '')) || 0;
+    }
+
     function calculateTotal() {
         let totalArea = 0;
         let totalMaterials = 0; // Tan narxi (materiallar narxi)
@@ -390,7 +427,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // 10% avto harajatlar
+        // Ishxona harajatlari — tan narxning 10%i (matnda foiz ko'rsatilmaydi, lekin hisobga qo'shiladi)
         const expenses = totalMaterials * 0.10;
 
         // Foyda foizi
@@ -421,7 +458,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const hint = document.getElementById('oAdvancePercentHint');
         if (!advInput || !hint) return;
         const grandTotal = knownGrandTotal !== undefined ? knownGrandTotal : calculateTotal().grandTotal;
-        const advance = parseFloat(advInput.value) || 0;
+        const advance = parseMoneyInput(advInput);
         const percent = grandTotal > 0 ? Math.round((advance / grandTotal) * 100) : 0;
         const ok = percent >= 50;
         hint.style.color = ok ? '#00ff88' : '#ef4444';
@@ -437,6 +474,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const profitInput = document.getElementById('oProfitPercent');
     if (profitInput) {
         profitInput.addEventListener('input', calculateTotal);
+    }
+    const oAdvanceInput = document.getElementById('oAdvance');
+    if (oAdvanceInput) {
+        oAdvanceInput.addEventListener('input', () => {
+            formatMoneyInput(oAdvanceInput);
+            window.updateAdvancePercent();
+        });
+    }
+    const eAdvanceInput = document.getElementById('eAdvance');
+    if (eAdvanceInput) {
+        eAdvanceInput.addEventListener('input', () => formatMoneyInput(eAdvanceInput));
     }
 
     async function loadOrders() {
@@ -594,12 +642,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Clear views
         const table = document.getElementById('ordersTable');
-        const procTable = document.getElementById('processOrdersTable');
-        const compTable = document.getElementById('completedOrdersTable');
-
         if (table) table.innerHTML = '';
-        if (procTable) procTable.innerHTML = '';
-        if (compTable) compTable.innerHTML = '';
 
         let totalSum = 0;
         let count = 0;
@@ -653,55 +696,97 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </div>
                     </div>
                 `;
+                card.style.cursor = 'pointer';
+                card.onclick = (e) => { if (e.target.closest('button')) return; openOrderDetail(o); };
                 table.appendChild(card);
-            }
-
-            // --- Installation / Production Board — premium kartochka ---
-            if (o.status !== 'Tayyor / Yetkazildi') {
-                if (procTable) {
-                    const ocard = document.createElement('div');
-                    ocard.style.cssText = `border-top:3px solid ${statusColor}; border-radius:16px; background:var(--adm-surface); border:1px solid var(--adm-border); border-top:3px solid ${statusColor}; padding:16px; display:flex; flex-direction:column; gap:10px; box-shadow:var(--adm-shadow);`;
-                    ocard.innerHTML = `
-                        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
-                            <div>
-                                <div style="font-weight:700; color:var(--adm-text); font-size:0.85rem;">#${o.id.slice(0, 6).toUpperCase()}</div>
-                                <div style="font-size:0.78rem; color:var(--adm-text-sec); margin-top:2px;">${o.customer_name}</div>
-                            </div>
-                            ${statusHtml}
-                        </div>
-                        <div style="font-size:0.76rem; color:var(--adm-text-sec); border-top:1px dashed var(--adm-border); padding-top:8px;">Ombor: ${o.ombor_confirmed_at ? `<strong style="color:#00ff88;">✅ Tasdiqlangan (${new Date(o.ombor_confirmed_at).toLocaleDateString('uz-UZ')})</strong>` : `<strong style="color:#ffaa00;">⏳ Tasdiq kutilmoqda</strong>`}</div>
-                        ${deadlineBadge}
-                        ${advanceBadgeHtml(o)}
-                        <div style="display:flex; gap:8px;">
-                            <button class="complete-btn" data-id="${o.id}" style="flex:1; background:#00ff88; color:#000; border:none; padding:9px 12px; border-radius:10px; font-weight:600; font-size:0.78rem; cursor:pointer;">✓ Bitirish</button>
-                        </div>
-                    `;
-                    procTable.appendChild(ocard);
-                }
-            } else {
-                // Completed — premium kartochka (arxiv)
-                if (compTable) {
-                    const ccard = document.createElement('div');
-                    ccard.style.cssText = `border-top:3px solid #00ff88; border-radius:16px; background:var(--adm-surface); border:1px solid var(--adm-border); border-top:3px solid #00ff88; padding:16px; display:flex; flex-direction:column; gap:8px; box-shadow:var(--adm-shadow);`;
-                    ccard.innerHTML = `
-                        <div style="font-weight:700; color:var(--adm-text); font-size:0.85rem;">#${o.id.slice(0, 6).toUpperCase()}</div>
-                        <div style="font-size:0.78rem; color:var(--adm-text-sec);">${o.customer_name}</div>
-                        <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed var(--adm-border); padding-top:8px; font-size:0.76rem;">
-                            <span style="color:var(--adm-text-sec);">Tugatilgan: ${new Date().toLocaleDateString()}</span>
-                            <strong style="color:#00ff88; font-family:monospace;">${Number(o.total_price).toLocaleString()} UZS</strong>
-                        </div>
-                    `;
-                    compTable.appendChild(ccard);
-                }
             }
         });
 
         allOrders = orders;
         updatePeriodKpis();
         if (!ordersSummaryModal.classList.contains('hidden')) renderOrdersSummary();
+        renderKanbanBoard();
+        renderPaymentsView();
 
         tickCountdowns(); // darhol bo'yash, 1 soniya kutmasdan
         bindActionButtons();
+    }
+
+    // ═══════════ Buyurtma Harakat Grafigi — "Ishlab Chiqarish va O'rnatish" Kanban taxtasi ═══════════
+    // Sotuv/Ombor/Ishlab Chiqarish/Showroom'dagi haqiqiy maydonlardan (status/paid_amount/ombor_confirmed_at/
+    // production_stage/install_group/install_status) buyurtmaning joriy bosqichini aniqlaydi — DB'da alohida
+    // "bosqich" ustuni yo'q, bularning barchasi mavjud maydonlar kombinatsiyasidan hisoblanadi.
+    const KANBAN_STAGES = [
+        { key: 'yangi', label: '🆕 Yangi Zakaz', color: '#94a3b8' },
+        { key: 'avans_kutmoqda', label: '⏳ Avans Kutayotgan', color: '#ffaa00' },
+        { key: 'ombor_tasdiqlamagan', label: '📦 Ombor Tasdiqlamagan', color: '#ef4444' },
+        { key: 'navbatida', label: '🗂️ Ishlab Chiqarish Navbatida', color: '#a855f7' },
+        { key: 'ishlab_chiqarilmoqda', label: '🏭 Ishlab Chiqarilmoqda', color: '#00d2ff' },
+        { key: 'tayyor', label: '✅ Buyurtma Tayyor', color: '#22c55e' },
+        { key: 'ornatilishda', label: "🚚 O'rnatilish Jarayonida", color: '#6366f1' },
+        { key: 'bajarilgan', label: '🏁 Bajarilgan', color: '#00ff88' }
+    ];
+
+    function getJourneyStage(o) {
+        if (o.status === 'Tayyor / Yetkazildi') return 'bajarilgan';
+        if (o.production_stage === 'tayyor_omborda') {
+            return (o.install_group && o.install_status !== 'Bajarildi') ? 'ornatilishda' : 'tayyor';
+        }
+        if (['kesish', 'payvandlash', 'yigish_qadoqlash'].includes(o.production_stage)) return 'ishlab_chiqarilmoqda';
+        if (o.status === 'Jarayonda') return 'navbatida'; // ombor tasdiqladi, ishlab chiqarish qabul qilishini kutmoqda
+        const total = Number(o.total_price) || 0;
+        const paid = Number(o.paid_amount) || 0;
+        if (total > 0 && paid / total >= 0.5) return 'ombor_tasdiqlamagan'; // avans yetarli, ombor tasdig'ini kutmoqda
+        if (paid > 0) return 'avans_kutmoqda';
+        return 'yangi';
+    }
+
+    function renderKanbanBoard() {
+        const board = document.getElementById('kanbanBoard');
+        if (!board) return;
+        board.innerHTML = '';
+        KANBAN_STAGES.forEach(stage => {
+            const stageOrders = allOrders.filter(o => getJourneyStage(o) === stage.key);
+            const col = document.createElement('div');
+            col.style.cssText = 'width:100%; display:flex; flex-direction:column; gap:10px;';
+            const cardsHtml = stageOrders.length
+                ? stageOrders.map(o => {
+                    const total = Number(o.total_price) || 0;
+                    const paid = Number(o.paid_amount) || 0;
+                    const percent = total > 0 ? Math.round((paid / total) * 100) : 0;
+                    const omborBadge = o.ombor_confirmed_at
+                        ? `<div style="font-size:0.66rem; color:#00ff88;">✅ Ombor tasdiqladi — ${new Date(o.ombor_confirmed_at).toLocaleDateString('uz-UZ')}</div>`
+                        : '';
+                    const installBadge = o.install_group
+                        ? `<div style="font-size:0.66rem; color:#6366f1;">🚚 Brigada: ${o.install_group}</div>`
+                        : '';
+                    return `
+                        <div class="kanban-card" data-id="${o.id}" style="border-top:3px solid ${stage.color}; border-radius:14px; background:var(--adm-surface); border:1px solid var(--adm-border); border-top:3px solid ${stage.color}; padding:12px; display:flex; flex-direction:column; gap:6px; box-shadow:var(--adm-shadow); cursor:pointer;">
+                            <div style="font-weight:700; color:var(--adm-text); font-size:0.82rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${o.customer_name}</div>
+                            <div style="font-size:0.7rem; color:var(--adm-text-sec);">${o.prod_type || ''}</div>
+                            <div style="font-size:0.7rem; color:var(--adm-text-sec);">💰 ${paid.toLocaleString()} / ${total.toLocaleString()} so'm (${percent}%)</div>
+                            ${omborBadge}
+                            ${installBadge}
+                            <div style="font-size:0.68rem; color:var(--adm-text-sec); border-top:1px dashed var(--adm-border); padding-top:5px;">⏳ Muddat: ${o.production_deadline ? new Date(o.production_deadline).toLocaleDateString('uz-UZ') : '---'}</div>
+                        </div>
+                    `;
+                }).join('')
+                : `<div style="grid-column:1/-1; text-align:center; color:var(--adm-text-sec); font-size:0.75rem; padding:14px 0;">Bo'sh</div>`;
+            col.innerHTML = `
+                <div style="background:${stage.color}1a; border-radius:12px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+                    <strong style="color:${stage.color}; font-size:0.78rem;">${stage.label}</strong>
+                    <span style="background:${stage.color}; color:#000; border-radius:10px; padding:2px 9px; font-size:0.72rem; font-weight:800;">${stageOrders.length}</span>
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px;">${cardsHtml}</div>
+            `;
+            col.querySelectorAll('.kanban-card').forEach(cardEl => {
+                cardEl.onclick = () => {
+                    const o = allOrders.find(x => x.id === cardEl.dataset.id);
+                    if (o) openOrderDetail(o);
+                };
+            });
+            board.appendChild(col);
+        });
     }
 
     // ═══════════ Kunlik/Haftalik/Oylik kartochkalar — bosilganda ochiladigan tafsilot (bosqich/to'lov tarixi bilan) ═══════════
@@ -826,28 +911,227 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // Eski buyurtmalarda (payment_history ustuni qo'shilishidan oldin yaratilgan/yozib bo'lmagan) birinchi
+    // to'lov tarixda bo'lmasligi mumkin — bu farqni advance_received_by/payment_date orqali tiklaymiz,
+    // aks holda birinchi to'lov "kim/qachon" ma'lumotisiz umuman ko'rinmay qolardi. Xronologik tartibda qaytaradi.
+    function getBackfilledPaymentHistory(o) {
+        const paid = Number(o.paid_amount) || 0;
+        const history = Array.isArray(o.payment_history) ? [...o.payment_history] : [];
+        const historySum = history.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+        const missing = paid - historySum;
+        if (missing > 0) {
+            history.unshift({ amount: missing, by: o.advance_received_by || "Noma'lum", at: o.payment_date || o.created_at });
+        }
+        return history;
+    }
+
+    // ═══════════ To'lovlar Tarixi — buyurtma bo'yicha umumiy/to'langan/qoldiq, holat filtri, joyida to'lov qabul qilish ═══════════
+    const PAYMENT_STATUS_META = {
+        yopilgan: { label: "✅ To'liq To'langan", color: '#00ff88' },
+        avans: { label: '💰 Avans Olindi (Qisman)', color: '#ffaa00' },
+        kutilmoqda: { label: "⏳ Hali To'lov Kutilmoqda", color: '#ef4444' }
+    };
+    function getPaymentStatus(o) {
+        const total = Number(o.total_price) || 0;
+        const paid = Number(o.paid_amount) || 0;
+        if (total > 0 && paid >= total) return 'yopilgan';
+        if (paid > 0) return 'avans';
+        return 'kutilmoqda';
+    }
+    let currentPaymentsFilter = 'all';
+
+    function renderPaymentsView() {
+        const tabs = document.getElementById('paymentsFilterTabs');
+        const grid = document.getElementById('paymentsOrdersGrid');
+        if (!tabs || !grid) return;
+
+        const buckets = { yopilgan: 0, avans: 0, kutilmoqda: 0 };
+        allOrders.forEach(o => buckets[getPaymentStatus(o)]++);
+
+        let chipsHtml = `<button class="payments-filter-chip" data-filter="all" style="border:none; background:${currentPaymentsFilter === 'all' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.05)'}; color:var(--adm-text); padding:9px 14px; border-radius:12px; font-size:0.78rem; font-weight:700; cursor:pointer;">Barchasi (${allOrders.length})</button>`;
+        Object.keys(PAYMENT_STATUS_META).forEach(key => {
+            const meta = PAYMENT_STATUS_META[key];
+            const active = currentPaymentsFilter === key;
+            chipsHtml += `<button class="payments-filter-chip" data-filter="${key}" style="border:none; background:${active ? meta.color + '2a' : 'rgba(255,255,255,0.05)'}; color:${meta.color}; padding:9px 14px; border-radius:12px; font-size:0.78rem; font-weight:700; cursor:pointer; ${active ? `box-shadow: inset 0 0 0 1.5px ${meta.color};` : ''}">${meta.label} (${buckets[key]})</button>`;
+        });
+        tabs.innerHTML = chipsHtml;
+        tabs.querySelectorAll('.payments-filter-chip').forEach(b => {
+            b.onclick = () => { currentPaymentsFilter = b.dataset.filter; renderPaymentsView(); };
+        });
+
+        const filtered = currentPaymentsFilter === 'all' ? allOrders : allOrders.filter(o => getPaymentStatus(o) === currentPaymentsFilter);
+
+        let collected = 0, pending = 0;
+        filtered.forEach(o => {
+            const total = Number(o.total_price) || 0;
+            const paid = Number(o.paid_amount) || 0;
+            collected += paid;
+            pending += Math.max(0, total - paid);
+        });
+        document.getElementById('paymentsCollectedTotal').textContent = collected.toLocaleString() + " so'm";
+        document.getElementById('paymentsPendingTotal').textContent = pending.toLocaleString() + " so'm";
+
+        grid.innerHTML = '';
+        if (filtered.length === 0) {
+            grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:30px; color:var(--adm-text-sec);">Bu holatda buyurtma yo'q</div>`;
+            return;
+        }
+        filtered.forEach(o => {
+            const status = getPaymentStatus(o);
+            const meta = PAYMENT_STATUS_META[status];
+            const total = Number(o.total_price) || 0;
+            const paid = Number(o.paid_amount) || 0;
+            const remaining = Math.max(0, total - paid);
+            const percent = total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0;
+            const card = document.createElement('div');
+            card.style.cssText = `border-top:3px solid ${meta.color}; border-radius:16px; background:var(--adm-surface); border:1px solid var(--adm-border); border-top:3px solid ${meta.color}; padding:14px; display:flex; flex-direction:column; gap:8px; box-shadow:var(--adm-shadow);`;
+            card.innerHTML = `
+                <div class="payments-card-info" style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; cursor:pointer;">
+                    <div style="min-width:0;">
+                        <div style="font-weight:700; color:var(--adm-text); font-size:0.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${o.customer_name}</div>
+                        <div style="font-size:0.7rem; color:var(--adm-text-sec);">${o.prod_type || ''}</div>
+                    </div>
+                    <span style="background:${meta.color}1a; color:${meta.color}; padding:3px 10px; border-radius:12px; font-size:0.62rem; font-weight:700; white-space:nowrap;">${meta.label}</span>
+                </div>
+                <div style="width:100%; height:8px; background:rgba(255,255,255,0.08); border-radius:6px; overflow:hidden;">
+                    <div style="width:${percent}%; height:100%; background:linear-gradient(90deg,#00d2ff,#00ff88);"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:0.74rem;">
+                    <span style="color:var(--adm-text-sec);">Umumiy: <strong style="color:var(--adm-text);">${total.toLocaleString()}</strong></span>
+                    <span style="color:var(--adm-text-sec);">To'langan: <strong style="color:#00ff88;">${paid.toLocaleString()}</strong></span>
+                </div>
+                <div style="font-size:0.74rem; color:${remaining > 0 ? '#ef4444' : '#00ff88'};">Qoldiq: <strong>${remaining.toLocaleString()} so'm</strong></div>
+                ${remaining > 0 ? `<button class="add-payment-btn" style="background:#00ff88; color:#000; border:none; padding:9px; border-radius:10px; font-weight:700; font-size:0.78rem; cursor:pointer; margin-top:4px;">+ To'lov Qabul Qilish</button>` : ''}
+            `;
+            card.querySelector('.payments-card-info').onclick = () => openOrderDetail(o);
+            const addBtn = card.querySelector('.add-payment-btn');
+            if (addBtn) addBtn.onclick = () => openAddPayment(o);
+            grid.appendChild(card);
+        });
+    }
+
+    function openAddPayment(o) {
+        window.addPaymentOrder = o;
+        const total = Number(o.total_price) || 0;
+        const paid = Number(o.paid_amount) || 0;
+        document.getElementById('apOrderInfo').innerHTML = `<strong style="color:var(--adm-text);">${o.customer_name}</strong><br>Umumiy: ${total.toLocaleString()} so'm — To'langan: ${paid.toLocaleString()} so'm — Qoldiq: <strong style="color:#ef4444;">${(total - paid).toLocaleString()} so'm</strong>`;
+        document.getElementById('apAmount').value = '';
+        document.getElementById('apNote').value = '';
+        document.getElementById('addPaymentModal').classList.remove('hidden');
+    }
+    const apAmountInput = document.getElementById('apAmount');
+    if (apAmountInput) apAmountInput.addEventListener('input', () => formatMoneyInput(apAmountInput));
+    const closeAddPaymentBtn = document.getElementById('closeAddPaymentModal');
+    if (closeAddPaymentBtn) closeAddPaymentBtn.onclick = () => document.getElementById('addPaymentModal').classList.add('hidden');
+    const saveAddPaymentBtn = document.getElementById('saveAddPaymentBtn');
+    if (saveAddPaymentBtn) {
+        saveAddPaymentBtn.onclick = async () => {
+            const o = window.addPaymentOrder;
+            if (!o) return;
+            const amount = parseMoneyInput(document.getElementById('apAmount'));
+            if (amount <= 0) return alert("To'g'ri summa kiriting!");
+            const note = document.getElementById('apNote').value.trim();
+            const receivedBy = user?.full_name || user?.username || 'Sotuv';
+            const receivedAt = new Date().toISOString();
+            const newPaid = (Number(o.paid_amount) || 0) + amount;
+            const prevHistory = Array.isArray(o.payment_history) ? o.payment_history : [];
+            const updatePayload = {
+                paid_amount: newPaid,
+                payment_date: receivedAt,
+                advance_received_by: receivedBy,
+                payment_history: [...prevHistory, { amount, by: receivedBy, at: receivedAt, note }]
+            };
+            try {
+                const { error } = await supabase.from('sales_orders').update(updatePayload).eq('id', o.id);
+                if (error) throw error;
+            } catch (err) {
+                console.warn('addPayment update failed:', err);
+            }
+            const localRaw = localStorage.getItem('romix_orders_local');
+            if (localRaw) {
+                const localOrders = JSON.parse(localRaw);
+                const ord = localOrders.find(x => x.id === o.id);
+                if (ord) {
+                    Object.assign(ord, updatePayload);
+                    localStorage.setItem('romix_orders_local', JSON.stringify(localOrders));
+                }
+            }
+            document.getElementById('addPaymentModal').classList.add('hidden');
+            loadOrders();
+        };
+    }
+
     // Buyurtma tafsiloti: shartnoma summasi, progress-bar va to'lovlar tarixi (premium ko'rinish)
     function openOrderDetail(o) {
         const total = Number(o.total_price) || 0;
         const paid = Number(o.paid_amount) || 0;
         const remaining = Math.max(0, total - paid);
         const percent = total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0;
-        const history = Array.isArray(o.payment_history) ? [...o.payment_history].reverse() : [];
+        const history = getBackfilledPaymentHistory(o).reverse(); // eng oxirgi to'lov tepada ko'rinadi
 
         const timelineHtml = history.length
             ? history.map(p => `
-                <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px dashed var(--adm-border);">
-                    <div>
-                        <div style="font-weight:700; color:var(--adm-text); font-size:0.85rem;">${p.by || "Noma'lum"}</div>
-                        <div style="font-size:0.7rem; color:var(--adm-text-sec);">${p.at ? new Date(p.at).toLocaleString('uz-UZ') : '---'}</div>
+                <div style="padding:10px 0; border-bottom:1px dashed var(--adm-border);">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="font-weight:700; color:var(--adm-text); font-size:0.85rem;">${p.by || "Noma'lum"}</div>
+                            <div style="font-size:0.7rem; color:var(--adm-text-sec);">${p.at ? new Date(p.at).toLocaleString('uz-UZ') : '---'}</div>
+                        </div>
+                        <strong style="color:#00ff88; font-family:monospace;">+${Number(p.amount || 0).toLocaleString()} so'm</strong>
                     </div>
-                    <strong style="color:#00ff88; font-family:monospace;">+${Number(p.amount || 0).toLocaleString()} so'm</strong>
+                    ${p.note ? `<div style="font-size:0.74rem; color:var(--adm-text-sec); margin-top:5px; font-style:italic;">💬 ${p.note}</div>` : ''}
                 </div>
             `).join('')
             : `<div style="text-align:center; padding:20px; color:var(--adm-text-sec); font-size:0.8rem;">Hali to'lov qabul qilinmagan</div>`;
 
+        // Buyurtma tarkibi — nechta va qanday mahsulot olingani (model_name'ga yozilgan JSON savatdan)
+        let items = [];
+        try { items = JSON.parse(o.model_name) || []; } catch (e) { items = []; }
+        // Item.width/height 'metr'da saqlanadi (hisob-kitob uchun), ko'rinishda mm'ga qaytarib beramiz —
+        // aks holda 1500x2000mm o'rniga chalkash "1.5x2mm" ko'rinar edi.
+        const itemsHtml = items.length
+            ? items.map(it => {
+                const wMM = Math.round((Number(it.width) || 0) * 1000);
+                const hMM = Math.round((Number(it.height) || 0) * 1000);
+                let sizeText = '';
+                if (['rom', 'rom_fortochka', 'eshik'].includes(it.type) && wMM > 0 && hMM > 0) {
+                    sizeText = ` (${wMM} x ${hMM} mm)`;
+                } else if (it.type === 'padakonnik' && wMM > 0) {
+                    sizeText = ` (${wMM} mm)`;
+                }
+                return `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px dashed var(--adm-border); font-size:0.78rem;">
+                        <span style="color:var(--adm-text);">${it.typeName || it.type || ''} — ${it.materialName || ''}${sizeText}</span>
+                        <strong style="color:var(--adm-text-sec); white-space:nowrap; margin-left:10px;">${it.quantity || 1} ta</strong>
+                    </div>
+                `;
+            }).join('')
+            : `<div style="font-size:0.78rem; color:var(--adm-text-sec);">${o.model_name || o.prod_type || "Ma'lumot yo'q"}</div>`;
+        const totalQty = items.length ? items.reduce((s, it) => s + (Number(it.quantity) || 0), 0) : (Number(o.quantity) || 1);
+
+        // Muddat vs bajarilgan sana — vaqtida (A'LO) yoki kechikkan (QONIQARSIZ)
+        let deliveryBadge;
+        if (o.status === 'Tayyor / Yetkazildi' && o.completed_at) {
+            const deadline = o.production_deadline ? new Date(o.production_deadline) : null;
+            if (deadline) deadline.setHours(23, 59, 59, 999);
+            const completedAt = new Date(o.completed_at);
+            const onTime = !deadline || completedAt <= deadline;
+            deliveryBadge = onTime
+                ? `<div style="background:rgba(0,255,136,0.1); color:#00ff88; padding:10px 14px; border-radius:12px; font-size:0.8rem; font-weight:700; margin-top:8px;">✅ A'LO — vaqtida topshirildi (${completedAt.toLocaleDateString('uz-UZ')})</div>`
+                : `<div style="background:rgba(239,68,68,0.1); color:#ef4444; padding:10px 14px; border-radius:12px; font-size:0.8rem; font-weight:700; margin-top:8px;">⚠️ QONIQARSIZ — muddatdan kechikib topshirildi (${completedAt.toLocaleDateString('uz-UZ')})</div>`;
+        } else if (o.production_deadline) {
+            const deadline = new Date(o.production_deadline);
+            deadline.setHours(23, 59, 59, 999);
+            const overdue = Date.now() > deadline.getTime();
+            deliveryBadge = overdue
+                ? `<div style="background:rgba(239,68,68,0.1); color:#ef4444; padding:10px 14px; border-radius:12px; font-size:0.8rem; font-weight:700; margin-top:8px;">⚠️ Muddati o'tgan, hali bajarilmagan</div>`
+                : `<div style="background:rgba(255,170,0,0.1); color:#ffaa00; padding:10px 14px; border-radius:12px; font-size:0.8rem; font-weight:700; margin-top:8px;">⏳ Hali bajarilmagan — muddat: ${deadline.toLocaleDateString('uz-UZ')}</div>`;
+        } else {
+            deliveryBadge = '';
+        }
+
         document.getElementById('orderDetailContent').innerHTML = `
-            <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+            <div style="display:flex; align-items:center; gap:15px; margin-bottom:16px;">
                 <span style="font-size:1.8rem;">📄</span>
                 <div>
                     <h2 style="color:var(--adm-text); margin:0;">${o.customer_name}</h2>
@@ -855,7 +1139,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
             </div>
 
-            <div style="background:rgba(0,210,255,0.05); border:1px solid rgba(0,210,255,0.15); border-radius:16px; padding:18px; margin-bottom:20px;">
+            <div style="font-size:0.78rem; color:var(--adm-text-sec); margin-bottom:4px;">
+                📋 Qabul qildi: <strong style="color:var(--adm-text);">${o.created_by || "Noma'lum"}</strong> — ${o.created_at ? new Date(o.created_at).toLocaleString('uz-UZ') : '---'}
+            </div>
+            ${deliveryBadge}
+
+            <h3 style="font-size:0.9rem; color:var(--adm-text); margin:16px 0 6px;">📦 Buyurtma tarkibi (${totalQty} ta)</h3>
+            <div>${itemsHtml}</div>
+
+            <div style="background:rgba(0,210,255,0.05); border:1px solid rgba(0,210,255,0.15); border-radius:16px; padding:18px; margin:16px 0;">
                 <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:var(--adm-text-sec); margin-bottom:10px;">
                     <span>Shartnoma summasi</span>
                     <strong style="color:var(--adm-text); font-size:0.95rem;">${total.toLocaleString()} so'm</strong>
@@ -870,8 +1162,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
 
             <h3 style="font-size:0.95rem; color:var(--adm-text); margin-bottom:8px;">💳 To'lovlar Tarixi</h3>
-            <div>${timelineHtml}</div>
+            <div style="margin-bottom:16px;">${timelineHtml}</div>
+
+            <div style="display:flex; gap:10px;">
+                <button id="detailViewContractBtn" style="flex:1; background:#00d2ff; color:#000; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">📄 Shartnomani Ko'rish</button>
+                <button id="detailCuttingPdfBtn" style="flex:1; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">✂️ Kesim PDF</button>
+            </div>
         `;
+        document.getElementById('detailViewContractBtn').onclick = () => showContractInvoice(o);
+        document.getElementById('detailCuttingPdfBtn').onclick = () => showCuttingPdfForOrder(o);
         orderDetailModal.classList.remove('hidden');
     }
 
@@ -927,7 +1226,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('eAddress').value = o.customer_address || '';
                 document.getElementById('eProdDeadline').value = o.production_deadline || '';
                 document.getElementById('eStatus').value = o.status;
-                document.getElementById('eAdvance').value = o.paid_amount || '';
+                document.getElementById('eAdvance').value = o.paid_amount ? o.paid_amount.toLocaleString().replace(/,/g, ' ') : '';
+                document.getElementById('ePaymentNote').value = '';
                 const ePercentHint = document.getElementById('eAdvancePercentHint');
                 const eTotal = Number(o.total_price) || 0;
                 const ePercent = eTotal > 0 ? Math.round(((Number(o.paid_amount) || 0) / eTotal) * 100) : 0;
@@ -938,8 +1238,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         document.querySelectorAll('.view-ord-btn').forEach(b => {
-            b.onclick = () => {
-                const o = JSON.parse(b.dataset.order);
+            b.onclick = () => showContractInvoice(JSON.parse(b.dataset.order));
+        });
+    }
+
+    // Shartnoma/Invoice ko'rinishi — buyurtmalar ro'yxatidagi 👁️ tugmasi va buyurtma tafsiloti oynasidan chaqiriladi
+    function showContractInvoice(o) {
                 const isDebt = o.payment_type === 'Qarz';
                 const createdDate = new Date(o.created_at || Date.now()).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
                 const dDate = new Date(o.deadline_date).toLocaleDateString('en-GB');
@@ -1043,7 +1347,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     <strong>${baseCost.toLocaleString()} UZS</strong>
                                 </div>
                                 <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                                    <span>Avto Harajatlar (10%):</span>
+                                    <span>Ishxona Harajatlari:</span>
                                     <strong>${autoExpenses.toLocaleString()} UZS</strong>
                                 </div>
                                 <div style="display:flex; justify-content:space-between; margin-bottom:4px; color:#10b981;">
@@ -1084,36 +1388,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </div>
                     </div>
                 `;
-                mainApp.classList.add('hidden');
-                printArea.classList.remove('hidden');
-            }
-        });
+        mainApp.classList.add('hidden');
+        printArea.classList.remove('hidden');
+    }
 
-        document.querySelectorAll('.complete-btn').forEach(b => {
-            b.onclick = async () => {
-                if (confirm("Haqiqatdan bu ish to'liq topshirildimi?")) {
-                    const id = b.dataset.id;
-                    const completedAt = new Date().toISOString();
-                    try {
-                        const { error } = await supabase.from('sales_orders').update({ status: 'Tayyor / Yetkazildi', completed_at: completedAt }).eq('id', id);
-                        if (error) throw error;
-                    } catch (err) {
-                        console.warn("Supabase complete order failed, applying to local storage:", err);
-                    }
-                    const localRaw = localStorage.getItem('romix_orders_local');
-                    if (localRaw) {
-                        const localOrders = JSON.parse(localRaw);
-                        const ord = localOrders.find(x => x.id === id);
-                        if (ord) {
-                            ord.status = 'Tayyor / Yetkazildi';
-                            ord.completed_at = completedAt;
-                            localStorage.setItem('romix_orders_local', JSON.stringify(localOrders));
-                        }
-                    }
-                    loadOrders();
-                }
-            };
-        });
+    // Kesim PDF — saqlangan buyurtmadagi rom/eshik elementlari uchun (model_name JSON'dan)
+    function showCuttingPdfForOrder(o) {
+        let items = [];
+        try { items = JSON.parse(o.model_name) || []; } catch (e) { items = []; }
+        const romlar = items.filter(it => ['rom', 'rom_fortochka', 'eshik'].includes(it.type));
+        if (romlar.length === 0) { alert("Bu buyurtmada kesim PDF uchun rom yoki eshik elementi yo'q."); return; }
+        generateCuttingPdf({ customer: o.customer_name || '', phone: o.customer_phone || '', items });
     }
 
     // Save New
@@ -1157,14 +1442,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         // Avans (boshlang'ich to'lov) — 50% dan kam bo'lsa ham saqlanadi, keyinroq to'ldirish mumkin
-        const advanceAmount = parseFloat(document.getElementById('oAdvance').value) || 0;
+        const advanceAmount = parseMoneyInput(document.getElementById('oAdvance'));
         if (advanceAmount > 0) {
             const receivedBy = user?.full_name || user?.username || 'Sotuv';
             const receivedAt = new Date().toISOString();
+            const note = document.getElementById('oPaymentNote').value.trim();
             newOrder.paid_amount = advanceAmount;
             newOrder.payment_date = receivedAt;
             newOrder.advance_received_by = receivedBy;
-            newOrder.payment_history = [{ amount: advanceAmount, by: receivedBy, at: receivedAt }];
+            newOrder.payment_history = [{ amount: advanceAmount, by: receivedBy, at: receivedAt, note }];
         }
 
         try {
@@ -1193,7 +1479,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const customer_address = document.getElementById('eAddress').value;
         const production_deadline = document.getElementById('eProdDeadline').value || null;
         const status = document.getElementById('eStatus').value;
-        const paid_amount = parseFloat(document.getElementById('eAdvance').value) || 0;
+        const paid_amount = parseMoneyInput(document.getElementById('eAdvance'));
 
         const updatePayload = {
             customer_name,
@@ -1208,12 +1494,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (paid_amount !== prevPaid && paid_amount > 0) {
             const receivedBy = user?.full_name || user?.username || 'Sotuv';
             const receivedAt = new Date().toISOString();
+            const note = document.getElementById('ePaymentNote').value.trim();
             updatePayload.payment_date = receivedAt;
             updatePayload.advance_received_by = receivedBy;
             const delta = paid_amount - prevPaid;
             if (delta > 0) {
                 const prevHistory = window.editingOrderPaymentHistory || [];
-                updatePayload.payment_history = [...prevHistory, { amount: delta, by: receivedBy, at: receivedAt }];
+                updatePayload.payment_history = [...prevHistory, { amount: delta, by: receivedBy, at: receivedAt, note }];
             }
         }
 
@@ -1238,6 +1525,100 @@ document.addEventListener('DOMContentLoaded', async () => {
         loadOrders();
     };
 
+    // ═══════════ Sozlamalar — Sotuvchilar (yordamchi login/parol) boshqaruvi ═══════════
+    async function loadSalesAgents() {
+        const list = document.getElementById('salesAgentsList');
+        if (!list) return;
+        list.innerHTML = '<div style="text-align:center; color:var(--adm-text-sec); padding:14px;">Yuklanmoqda...</div>';
+
+        // Supabase'dan o'qiladi + shu brauzerda saqlanib, hali sinxronlanmagan yozuvlar ham (mavjud bo'lsa)
+        // ko'rsatiladi — aks holda ular ro'yxatdan "yo'qolib qolgandek" ko'rinardi, holbuki ular boshqa
+        // qurilmadan LOGIN QILA OLMAYDI (chunki kirish faqat Supabase'dagi jadvalni tekshiradi).
+        let synced = [];
+        let dbReachable = true;
+        try {
+            const { data, error } = await supabase.from('system_users').select('*').eq('role', 'sotuvchi').order('full_name', { ascending: true });
+            if (error) throw error;
+            synced = data || [];
+        } catch (err) {
+            dbReachable = false;
+            console.warn('loadSalesAgents Supabase failed:', err);
+        }
+        const local = JSON.parse(localStorage.getItem('system_users_local') || '[]').filter(u => u.role === 'sotuvchi');
+        const unsynced = local.filter(l => !synced.some(s => s.username === l.username));
+        const agents = [...synced.map(a => ({ ...a, _synced: true })), ...unsynced.map(a => ({ ...a, _synced: false }))];
+
+        if (agents.length === 0) {
+            list.innerHTML = `<div style="text-align:center; color:var(--adm-text-sec); padding:14px; font-size:0.82rem;">Hali sotuvchi qo'shilmagan</div>`;
+            return;
+        }
+        const warnBanner = !dbReachable
+            ? `<div style="background:rgba(239,68,68,0.1); color:#ef4444; padding:10px 14px; border-radius:10px; font-size:0.76rem; font-weight:600; margin-bottom:10px;">⚠️ Bazaga ulanib bo'lmadi — pastdagi ro'yxat eski/lokal ma'lumot bo'lishi mumkin.</div>`
+            : '';
+        list.innerHTML = warnBanner + agents.map(a => `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:var(--adm-surface); border:1px solid var(--adm-border); border-radius:12px; padding:12px 16px;">
+                <div>
+                    <div style="font-weight:700; color:var(--adm-text); font-size:0.85rem;">${a.full_name}${a._synced ? '' : ' <span style="color:#ef4444; font-weight:700; font-size:0.68rem;">⚠️ sinxron emas — boshqa qurilmadan kira olmaydi</span>'}</div>
+                    <div style="font-size:0.72rem; color:var(--adm-text-sec); margin-top:2px;">${a.phone || '---'} — login: <code>${a.username}</code> / <code>${a.password}</code></div>
+                </div>
+                <button class="del-sales-agent-btn" data-id="${a.id}" style="background:rgba(255,77,79,0.1); border:1px solid rgba(255,77,79,0.2); color:#ff4d4f; padding:6px 10px; border-radius:8px; cursor:pointer; font-size:0.78rem;">🗑️</button>
+            </div>
+        `).join('');
+        list.querySelectorAll('.del-sales-agent-btn').forEach(b => {
+            b.onclick = async () => {
+                if (!confirm("Ushbu sotuvchini o'chirmoqchimisiz?")) return;
+                const id = b.dataset.id;
+                try { await supabase.from('system_users').delete().eq('id', id); } catch (e) { console.warn('delete sales agent failed:', e); }
+                const local = JSON.parse(localStorage.getItem('system_users_local') || '[]');
+                localStorage.setItem('system_users_local', JSON.stringify(local.filter(u => u.id !== id)));
+                loadSalesAgents();
+            };
+        });
+    }
+
+    const addSalesAgentModal = document.getElementById('addSalesAgentModal');
+    const openAddSalesAgentBtn = document.getElementById('openAddSalesAgentModal');
+    if (openAddSalesAgentBtn) {
+        openAddSalesAgentBtn.onclick = () => {
+            ['saName', 'saPhone', 'saUsername', 'saPassword'].forEach(id => document.getElementById(id).value = '');
+            addSalesAgentModal.classList.remove('hidden');
+        };
+    }
+    const closeAddSalesAgentBtn = document.getElementById('closeAddSalesAgentModal');
+    if (closeAddSalesAgentBtn) closeAddSalesAgentBtn.onclick = () => addSalesAgentModal.classList.add('hidden');
+
+    const saveSalesAgentBtn = document.getElementById('saveSalesAgentBtn');
+    if (saveSalesAgentBtn) {
+        saveSalesAgentBtn.onclick = async () => {
+            const full_name = document.getElementById('saName').value.trim();
+            const phone = document.getElementById('saPhone').value.trim();
+            const username = document.getElementById('saUsername').value.trim();
+            const password = document.getElementById('saPassword').value.trim();
+            if (!full_name || !username || !password) return alert("Ism, login va parolni to'ldiring!");
+
+            const payload = { full_name, phone, username, password, role: 'sotuvchi' };
+            let saved = false;
+            try {
+                const { error } = await supabase.from('system_users').insert([payload]);
+                if (error) throw error;
+                saved = true;
+            } catch (err) {
+                console.warn('Supabase insert sales agent failed, saving locally:', err);
+                const local = JSON.parse(localStorage.getItem('system_users_local') || '[]');
+                local.push({ ...payload, id: 'local-' + Date.now() });
+                localStorage.setItem('system_users_local', JSON.stringify(local));
+            }
+
+            addSalesAgentModal.classList.add('hidden');
+            loadSalesAgents();
+            if (saved) {
+                alert(`✅ Sotuvchi qo'shildi va bazaga saqlandi! Login: ${username} / Parol: ${password}`);
+            } else {
+                alert(`⚠️ DIQQAT: Bazaga saqlab bo'lmadi (internet yo'q yoki database/system_users_phone.sql hali RUN qilinmagan) — "${username}" faqat shu qurilmada saqlandi va HOZIRCHA boshqa joydan LOGIN QILA OLMAYDI. Internetni/SQL'ni tekshirib, sahifani yangilab qayta urinib ko'ring.`);
+            }
+        };
+    }
+
     // Assignments & Print Material Requisition
 
     // Close buttons
@@ -1259,6 +1640,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('oDeadline').value = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         document.getElementById('oProdDeadline').value = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         document.getElementById('oAdvance').value = '';
+        document.getElementById('oPaymentNote').value = '';
         window.updateAdvancePercent();
         orderModal.classList.remove('hidden');
         // 3D preview modal ochilгач o'lchamни oladi
@@ -1329,4 +1711,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     syncMaterialPrices();
     loadOrders();
+
+    // Yordamchi sotuvchi kirishi bilan darhol buyurtma olish oynasi ochiladi (yagona ko'radigan oynasi)
+    if (isLimitedAgent) document.getElementById('openOrderModal').click();
 });
