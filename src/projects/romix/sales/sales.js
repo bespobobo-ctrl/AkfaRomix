@@ -1472,25 +1472,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!list) return;
         list.innerHTML = '<div style="text-align:center; color:var(--adm-text-sec); padding:14px;">Yuklanmoqda...</div>';
 
-        let agents = [];
+        // Supabase'dan o'qiladi + shu brauzerda saqlanib, hali sinxronlanmagan yozuvlar ham (mavjud bo'lsa)
+        // ko'rsatiladi — aks holda ular ro'yxatdan "yo'qolib qolgandek" ko'rinardi, holbuki ular boshqa
+        // qurilmadan LOGIN QILA OLMAYDI (chunki kirish faqat Supabase'dagi jadvalni tekshiradi).
+        let synced = [];
+        let dbReachable = true;
         try {
             const { data, error } = await supabase.from('system_users').select('*').eq('role', 'sotuvchi').order('full_name', { ascending: true });
             if (error) throw error;
-            agents = data || [];
+            synced = data || [];
         } catch (err) {
-            console.warn('loadSalesAgents Supabase failed, using local storage:', err);
-            const local = JSON.parse(localStorage.getItem('system_users_local') || '[]');
-            agents = local.filter(u => u.role === 'sotuvchi');
+            dbReachable = false;
+            console.warn('loadSalesAgents Supabase failed:', err);
         }
+        const local = JSON.parse(localStorage.getItem('system_users_local') || '[]').filter(u => u.role === 'sotuvchi');
+        const unsynced = local.filter(l => !synced.some(s => s.username === l.username));
+        const agents = [...synced.map(a => ({ ...a, _synced: true })), ...unsynced.map(a => ({ ...a, _synced: false }))];
 
         if (agents.length === 0) {
             list.innerHTML = `<div style="text-align:center; color:var(--adm-text-sec); padding:14px; font-size:0.82rem;">Hali sotuvchi qo'shilmagan</div>`;
             return;
         }
-        list.innerHTML = agents.map(a => `
+        const warnBanner = !dbReachable
+            ? `<div style="background:rgba(239,68,68,0.1); color:#ef4444; padding:10px 14px; border-radius:10px; font-size:0.76rem; font-weight:600; margin-bottom:10px;">⚠️ Bazaga ulanib bo'lmadi — pastdagi ro'yxat eski/lokal ma'lumot bo'lishi mumkin.</div>`
+            : '';
+        list.innerHTML = warnBanner + agents.map(a => `
             <div style="display:flex; justify-content:space-between; align-items:center; background:var(--adm-surface); border:1px solid var(--adm-border); border-radius:12px; padding:12px 16px;">
                 <div>
-                    <div style="font-weight:700; color:var(--adm-text); font-size:0.85rem;">${a.full_name}</div>
+                    <div style="font-weight:700; color:var(--adm-text); font-size:0.85rem;">${a.full_name}${a._synced ? '' : ' <span style="color:#ef4444; font-weight:700; font-size:0.68rem;">⚠️ sinxron emas — boshqa qurilmadan kira olmaydi</span>'}</div>
                     <div style="font-size:0.72rem; color:var(--adm-text-sec); margin-top:2px;">${a.phone || '---'} — login: <code>${a.username}</code> / <code>${a.password}</code></div>
                 </div>
                 <button class="del-sales-agent-btn" data-id="${a.id}" style="background:rgba(255,77,79,0.1); border:1px solid rgba(255,77,79,0.2); color:#ff4d4f; padding:6px 10px; border-radius:8px; cursor:pointer; font-size:0.78rem;">🗑️</button>
@@ -1529,9 +1538,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!full_name || !username || !password) return alert("Ism, login va parolni to'ldiring!");
 
             const payload = { full_name, phone, username, password, role: 'sotuvchi' };
+            let saved = false;
             try {
                 const { error } = await supabase.from('system_users').insert([payload]);
                 if (error) throw error;
+                saved = true;
             } catch (err) {
                 console.warn('Supabase insert sales agent failed, saving locally:', err);
                 const local = JSON.parse(localStorage.getItem('system_users_local') || '[]');
@@ -1541,7 +1552,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             addSalesAgentModal.classList.add('hidden');
             loadSalesAgents();
-            alert(`Sotuvchi qo'shildi! Login: ${username} / Parol: ${password}`);
+            if (saved) {
+                alert(`✅ Sotuvchi qo'shildi va bazaga saqlandi! Login: ${username} / Parol: ${password}`);
+            } else {
+                alert(`⚠️ DIQQAT: Bazaga saqlab bo'lmadi (internet yo'q yoki database/system_users_phone.sql hali RUN qilinmagan) — "${username}" faqat shu qurilmada saqlandi va HOZIRCHA boshqa joydan LOGIN QILA OLMAYDI. Internetni/SQL'ni tekshirib, sahifani yangilab qayta urinib ko'ring.`);
+            }
         };
     }
 
