@@ -719,6 +719,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </div>
                     </div>
                 `;
+                card.style.cursor = 'pointer';
+                card.onclick = (e) => { if (e.target.closest('button')) return; openOrderDetail(o); };
                 table.appendChild(card);
             }
 
@@ -742,6 +744,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <button class="complete-btn" data-id="${o.id}" style="flex:1; background:#00ff88; color:#000; border:none; padding:9px 12px; border-radius:10px; font-weight:600; font-size:0.78rem; cursor:pointer;">✓ Bitirish</button>
                         </div>
                     `;
+                    ocard.style.cursor = 'pointer';
+                    ocard.onclick = (e) => { if (e.target.closest('button')) return; openOrderDetail(o); };
                     procTable.appendChild(ocard);
                 }
             } else {
@@ -757,6 +761,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <strong style="color:#00ff88; font-family:monospace;">${Number(o.total_price).toLocaleString()} UZS</strong>
                         </div>
                     `;
+                    ccard.style.cursor = 'pointer';
+                    ccard.onclick = () => openOrderDetail(o);
                     compTable.appendChild(ccard);
                 }
             }
@@ -898,7 +904,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const paid = Number(o.paid_amount) || 0;
         const remaining = Math.max(0, total - paid);
         const percent = total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0;
-        const history = Array.isArray(o.payment_history) ? [...o.payment_history].reverse() : [];
+
+        // Eski buyurtmalarda (payment_history ustuni qo'shilishidan oldin yaratilgan/yozib bo'lmagan) birinchi
+        // to'lov tarixda bo'lmasligi mumkin — bu farqni advance_received_by/payment_date orqali tiklaymiz,
+        // aks holda birinchi to'lov "kim/qachon" ma'lumotisiz umuman ko'rinmay qolardi.
+        const history = Array.isArray(o.payment_history) ? [...o.payment_history] : [];
+        const historySum = history.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+        const missing = paid - historySum;
+        if (missing > 0) {
+            history.unshift({ amount: missing, by: o.advance_received_by || "Noma'lum", at: o.payment_date || o.created_at });
+        }
+        history.reverse(); // eng oxirgi to'lov tepada ko'rinadi
 
         const timelineHtml = history.length
             ? history.map(p => `
@@ -912,8 +928,42 @@ document.addEventListener('DOMContentLoaded', async () => {
             `).join('')
             : `<div style="text-align:center; padding:20px; color:var(--adm-text-sec); font-size:0.8rem;">Hali to'lov qabul qilinmagan</div>`;
 
+        // Buyurtma tarkibi — nechta va qanday mahsulot olingani (model_name'ga yozilgan JSON savatdan)
+        let items = [];
+        try { items = JSON.parse(o.model_name) || []; } catch (e) { items = []; }
+        const itemsHtml = items.length
+            ? items.map(it => `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px dashed var(--adm-border); font-size:0.78rem;">
+                    <span style="color:var(--adm-text);">${it.typeName || it.type || ''} — ${it.materialName || ''}${it.width ? ` (${it.width}x${it.height || 0}mm)` : ''}</span>
+                    <strong style="color:var(--adm-text-sec); white-space:nowrap; margin-left:10px;">${it.quantity || 1} ta</strong>
+                </div>
+            `).join('')
+            : `<div style="font-size:0.78rem; color:var(--adm-text-sec);">${o.model_name || o.prod_type || "Ma'lumot yo'q"}</div>`;
+        const totalQty = items.length ? items.reduce((s, it) => s + (Number(it.quantity) || 0), 0) : (Number(o.quantity) || 1);
+
+        // Muddat vs bajarilgan sana — vaqtida (A'LO) yoki kechikkan (QONIQARSIZ)
+        let deliveryBadge;
+        if (o.status === 'Tayyor / Yetkazildi' && o.completed_at) {
+            const deadline = o.production_deadline ? new Date(o.production_deadline) : null;
+            if (deadline) deadline.setHours(23, 59, 59, 999);
+            const completedAt = new Date(o.completed_at);
+            const onTime = !deadline || completedAt <= deadline;
+            deliveryBadge = onTime
+                ? `<div style="background:rgba(0,255,136,0.1); color:#00ff88; padding:10px 14px; border-radius:12px; font-size:0.8rem; font-weight:700; margin-top:8px;">✅ A'LO — vaqtida topshirildi (${completedAt.toLocaleDateString('uz-UZ')})</div>`
+                : `<div style="background:rgba(239,68,68,0.1); color:#ef4444; padding:10px 14px; border-radius:12px; font-size:0.8rem; font-weight:700; margin-top:8px;">⚠️ QONIQARSIZ — muddatdan kechikib topshirildi (${completedAt.toLocaleDateString('uz-UZ')})</div>`;
+        } else if (o.production_deadline) {
+            const deadline = new Date(o.production_deadline);
+            deadline.setHours(23, 59, 59, 999);
+            const overdue = Date.now() > deadline.getTime();
+            deliveryBadge = overdue
+                ? `<div style="background:rgba(239,68,68,0.1); color:#ef4444; padding:10px 14px; border-radius:12px; font-size:0.8rem; font-weight:700; margin-top:8px;">⚠️ Muddati o'tgan, hali bajarilmagan</div>`
+                : `<div style="background:rgba(255,170,0,0.1); color:#ffaa00; padding:10px 14px; border-radius:12px; font-size:0.8rem; font-weight:700; margin-top:8px;">⏳ Hali bajarilmagan — muddat: ${deadline.toLocaleDateString('uz-UZ')}</div>`;
+        } else {
+            deliveryBadge = '';
+        }
+
         document.getElementById('orderDetailContent').innerHTML = `
-            <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+            <div style="display:flex; align-items:center; gap:15px; margin-bottom:16px;">
                 <span style="font-size:1.8rem;">📄</span>
                 <div>
                     <h2 style="color:var(--adm-text); margin:0;">${o.customer_name}</h2>
@@ -921,7 +971,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
             </div>
 
-            <div style="background:rgba(0,210,255,0.05); border:1px solid rgba(0,210,255,0.15); border-radius:16px; padding:18px; margin-bottom:20px;">
+            <div style="font-size:0.78rem; color:var(--adm-text-sec); margin-bottom:4px;">
+                📋 Qabul qildi: <strong style="color:var(--adm-text);">${o.created_by || "Noma'lum"}</strong> — ${o.created_at ? new Date(o.created_at).toLocaleString('uz-UZ') : '---'}
+            </div>
+            ${deliveryBadge}
+
+            <h3 style="font-size:0.9rem; color:var(--adm-text); margin:16px 0 6px;">📦 Buyurtma tarkibi (${totalQty} ta)</h3>
+            <div>${itemsHtml}</div>
+
+            <div style="background:rgba(0,210,255,0.05); border:1px solid rgba(0,210,255,0.15); border-radius:16px; padding:18px; margin:16px 0;">
                 <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:var(--adm-text-sec); margin-bottom:10px;">
                     <span>Shartnoma summasi</span>
                     <strong style="color:var(--adm-text); font-size:0.95rem;">${total.toLocaleString()} so'm</strong>
@@ -936,8 +994,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
 
             <h3 style="font-size:0.95rem; color:var(--adm-text); margin-bottom:8px;">💳 To'lovlar Tarixi</h3>
-            <div>${timelineHtml}</div>
+            <div style="margin-bottom:16px;">${timelineHtml}</div>
+
+            <div style="display:flex; gap:10px;">
+                <button id="detailViewContractBtn" style="flex:1; background:#00d2ff; color:#000; border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">📄 Shartnomani Ko'rish</button>
+                <button id="detailCuttingPdfBtn" style="flex:1; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">✂️ Kesim PDF</button>
+            </div>
         `;
+        document.getElementById('detailViewContractBtn').onclick = () => showContractInvoice(o);
+        document.getElementById('detailCuttingPdfBtn').onclick = () => showCuttingPdfForOrder(o);
         orderDetailModal.classList.remove('hidden');
     }
 
@@ -1004,8 +1069,38 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         document.querySelectorAll('.view-ord-btn').forEach(b => {
-            b.onclick = () => {
-                const o = JSON.parse(b.dataset.order);
+            b.onclick = () => showContractInvoice(JSON.parse(b.dataset.order));
+        });
+
+        document.querySelectorAll('.complete-btn').forEach(b => {
+            b.onclick = async () => {
+                if (confirm("Haqiqatdan bu ish to'liq topshirildimi?")) {
+                    const id = b.dataset.id;
+                    const completedAt = new Date().toISOString();
+                    try {
+                        const { error } = await supabase.from('sales_orders').update({ status: 'Tayyor / Yetkazildi', completed_at: completedAt }).eq('id', id);
+                        if (error) throw error;
+                    } catch (err) {
+                        console.warn("Supabase complete order failed, applying to local storage:", err);
+                    }
+                    const localRaw = localStorage.getItem('romix_orders_local');
+                    if (localRaw) {
+                        const localOrders = JSON.parse(localRaw);
+                        const ord = localOrders.find(x => x.id === id);
+                        if (ord) {
+                            ord.status = 'Tayyor / Yetkazildi';
+                            ord.completed_at = completedAt;
+                            localStorage.setItem('romix_orders_local', JSON.stringify(localOrders));
+                        }
+                    }
+                    loadOrders();
+                }
+            };
+        });
+    }
+
+    // Shartnoma/Invoice ko'rinishi — buyurtmalar ro'yxatidagi 👁️ tugmasi va buyurtma tafsiloti oynasidan chaqiriladi
+    function showContractInvoice(o) {
                 const isDebt = o.payment_type === 'Qarz';
                 const createdDate = new Date(o.created_at || Date.now()).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
                 const dDate = new Date(o.deadline_date).toLocaleDateString('en-GB');
@@ -1150,36 +1245,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </div>
                     </div>
                 `;
-                mainApp.classList.add('hidden');
-                printArea.classList.remove('hidden');
-            }
-        });
+        mainApp.classList.add('hidden');
+        printArea.classList.remove('hidden');
+    }
 
-        document.querySelectorAll('.complete-btn').forEach(b => {
-            b.onclick = async () => {
-                if (confirm("Haqiqatdan bu ish to'liq topshirildimi?")) {
-                    const id = b.dataset.id;
-                    const completedAt = new Date().toISOString();
-                    try {
-                        const { error } = await supabase.from('sales_orders').update({ status: 'Tayyor / Yetkazildi', completed_at: completedAt }).eq('id', id);
-                        if (error) throw error;
-                    } catch (err) {
-                        console.warn("Supabase complete order failed, applying to local storage:", err);
-                    }
-                    const localRaw = localStorage.getItem('romix_orders_local');
-                    if (localRaw) {
-                        const localOrders = JSON.parse(localRaw);
-                        const ord = localOrders.find(x => x.id === id);
-                        if (ord) {
-                            ord.status = 'Tayyor / Yetkazildi';
-                            ord.completed_at = completedAt;
-                            localStorage.setItem('romix_orders_local', JSON.stringify(localOrders));
-                        }
-                    }
-                    loadOrders();
-                }
-            };
-        });
+    // Kesim PDF — saqlangan buyurtmadagi rom/eshik elementlari uchun (model_name JSON'dan)
+    function showCuttingPdfForOrder(o) {
+        let items = [];
+        try { items = JSON.parse(o.model_name) || []; } catch (e) { items = []; }
+        const romlar = items.filter(it => ['rom', 'rom_fortochka', 'eshik'].includes(it.type));
+        if (romlar.length === 0) { alert("Bu buyurtmada kesim PDF uchun rom yoki eshik elementi yo'q."); return; }
+        generateCuttingPdf({ customer: o.customer_name || '', phone: o.customer_phone || '', items });
     }
 
     // Save New
