@@ -765,7 +765,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         KANBAN_STAGES.forEach(stage => {
             const stageOrders = allOrders.filter(o => getJourneyStage(o) === stage.key);
             const col = document.createElement('div');
-            col.style.cssText = 'flex:0 0 290px; display:flex; flex-direction:column; gap:10px;';
+            col.style.cssText = 'width:100%; display:flex; flex-direction:column; gap:10px;';
             const cardsHtml = stageOrders.length
                 ? stageOrders.map(o => {
                     const total = Number(o.total_price) || 0;
@@ -788,13 +788,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </div>
                     `;
                 }).join('')
-                : `<div style="text-align:center; color:var(--adm-text-sec); font-size:0.75rem; padding:20px 0;">Bo'sh</div>`;
+                : `<div style="grid-column:1/-1; text-align:center; color:var(--adm-text-sec); font-size:0.75rem; padding:14px 0;">Bo'sh</div>`;
             col.innerHTML = `
                 <div style="background:${stage.color}1a; border-radius:12px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
                     <strong style="color:${stage.color}; font-size:0.78rem;">${stage.label}</strong>
                     <span style="background:${stage.color}; color:#000; border-radius:10px; padding:2px 9px; font-size:0.72rem; font-weight:800;">${stageOrders.length}</span>
                 </div>
-                <div style="display:flex; flex-direction:column; gap:10px; max-height:70vh; overflow-y:auto; padding-right:2px;">${cardsHtml}</div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px;">${cardsHtml}</div>
             `;
             col.querySelectorAll('.kanban-card').forEach(cardEl => {
                 cardEl.onclick = () => {
