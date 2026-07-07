@@ -2353,19 +2353,36 @@ function stopScanner() {
 }
 
 // USB/Bluetooth "klaviatura" tipidagi skanerlar (Netum va h.k.) kamera ishlatmaydi —
-// ular skanerlagan matnni fokusda turgan inputga to'g'ridan-to'g'ri "teradi" va Enter yuboradi.
+// ular skanerlagan matnni fokusda turgan inputga to'g'ridan-to'g'ri "teradi". Ba'zi
+// skanerlar Enter (yoki Tab) bilan tugatadi, ba'zilari esa hech qanday tugatuvchi
+// belgi yubormaydi — shuning uchun ikkalasini ham qo'llab-quvvatlaymiz: Enter/Tab
+// kelsa darhol, kelmasa esa terish to'xtagandan ~250ms keyin avtomatik qayta ishlanadi.
 function initHwScanner() {
     const input = document.getElementById('hwScannerInput');
     if (!input) return;
 
     if (!hwScannerBound) {
         hwScannerBound = true;
-        input.addEventListener('keydown', (e) => {
-            if (e.key !== 'Enter') return;
-            e.preventDefault();
+        let debounceTimer = null;
+
+        const processScan = () => {
+            clearTimeout(debounceTimer);
             const val = input.value.trim();
+            if (!val) return;
             input.value = '';
-            if (val) onScanSuccess(val);
+            onScanSuccess(val);
+        };
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === 'Tab') {
+                e.preventDefault();
+                processScan();
+            }
+        });
+
+        input.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(processScan, 250);
         });
     }
 
@@ -2378,12 +2395,21 @@ function initHwScanner() {
     }, 800);
 }
 
-async function onScanSuccess(decodedText) {
-    // Expected: ROMIX-STAFF-{id}
-    if (!decodedText.startsWith('ROMIX-STAFF-')) return;
+async function onScanSuccess(rawText) {
+    // Expected: ROMIX-STAFF-{id} — ba'zi skanerlar boshiga/oxiriga ortiqcha bo'sh joy,
+    // qator ko'chirish (\r\n) yoki boshqa "ko'rinmas" belgilar qo'shib yuborishi mumkin,
+    // shuning uchun bunday belgilarni tozalab, keyin PREFIX'ni qidiramiz (nol pozitsiyada
+    // bo'lishi shart emas — boshida biror belgi qo'shilgan bo'lsa ham topiladi).
+    const decodedText = (rawText || '').replace(/[\r\n\t]/g, '').trim();
+    const prefixIdx = decodedText.indexOf('ROMIX-STAFF-');
+    if (prefixIdx === -1) {
+        showToastHR(`⚠️ Tanilmagan kod: "${decodedText}" — badj QR kodi ROMIX-STAFF- bilan boshlanishi kerak`, 'warn');
+        console.warn('Skanerlangan matn kutilgan formatga mos kelmadi:', JSON.stringify(rawText));
+        return;
+    }
 
     stopScanner(); // Pause scanner
-    const empId = decodedText.split('ROMIX-STAFF-')[1];
+    const empId = decodedText.slice(prefixIdx + 'ROMIX-STAFF-'.length);
     const emp = employeesData.find(e => e.id === empId);
 
     if (!emp) {
