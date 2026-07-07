@@ -151,10 +151,11 @@
                 </div>
 
                 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px;">
-                    <div class="kpi-card"><span style="font-size: 0.8rem; color: var(--adm-text-sec);">UMUMIY
+                    <div id="kpiTotalCard" class="kpi-card" style="cursor:pointer;" title="Batafsil ko'rish uchun bosing"><span style="font-size: 0.8rem; color: var(--adm-text-sec);">UMUMIY
                             TUSHUM</span>
                         <h2 style="font-size: 1.8rem; font-weight: 700;"><span id="kpiTotal">0</span> <small
                                 style="font-size: 0.8rem;">UZS</small></h2>
+                        <small style="font-size: 0.68rem; color: var(--adm-text-sec);">👁️ batafsil</small>
                     </div>
                     <div class="kpi-card"><span
                             style="font-size: 0.8rem; color: var(--adm-text-sec);">BUYURTMALAR</span>
@@ -513,6 +514,41 @@
                 <button id="closeEditOrderModal"
                     style="flex:1; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; border-radius:12px; cursor:pointer;">Yopish</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal: Umumiy Tushum bosilganda — buyurtmalar tafsiloti (holat/avans/kim-qachon + oylik jam' + filtr) -->
+    <div id="ordersSummaryModal" class="hidden"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:2000; display:flex; justify-content:center; padding:20px; align-items:center;">
+        <div class="user-form-modal" style="width: 1000px; max-height:90vh; overflow-y:auto; background:var(--adm-surface); padding: 30px; border-radius: 24px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <span style="font-size: 1.8rem;">💰</span>
+                    <h2 style="color:var(--adm-text); margin:0;">Buyurtmalar Tafsiloti</h2>
+                </div>
+                <select id="summaryStatusFilter" class="form-input-v2" style="width:220px;">
+                    <option value="all">Barcha holatlar</option>
+                    <option value="Kutilmoqda">Kutilmoqda</option>
+                    <option value="Jarayonda">Jarayonda</option>
+                    <option value="Tayyor / Yetkazildi">Tayyor / Yetkazildi</option>
+                </select>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:20px;">
+                <div class="kpi-card">
+                    <span style="font-size: 0.75rem; color: var(--adm-text-sec);">BU OY QABUL QILINGAN</span>
+                    <h3 id="summaryMonthReceived" style="font-size: 1.3rem; font-weight: 700; color:#00d2ff;">0 so'm</h3>
+                </div>
+                <div class="kpi-card">
+                    <span style="font-size: 0.75rem; color: var(--adm-text-sec);">BU OY BAJARILGAN</span>
+                    <h3 id="summaryMonthCompleted" style="font-size: 1.3rem; font-weight: 700; color:#00ff88;">0 so'm</h3>
+                </div>
+            </div>
+
+            <div id="summaryOrdersGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; margin-bottom:15px;"></div>
+
+            <button id="closeOrdersSummaryBtn"
+                style="width:100%; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; padding:12px; border-radius:12px; cursor:pointer; font-weight:600;">Yopish</button>
         </div>
     </div>
 

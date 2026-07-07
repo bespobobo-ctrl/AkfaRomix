@@ -373,7 +373,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 try {
                     const { error } = await supabase.from('sales_orders').update({
                         install_status: 'Bajarildi',
-                        status: 'Tayyor / Yetkazildi'
+                        status: 'Tayyor / Yetkazildi',
+                        completed_at: new Date().toISOString()
                     }).eq('id', btn.dataset.id);
                     if (error) throw error;
                 } catch (err) {
