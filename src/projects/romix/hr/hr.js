@@ -12,6 +12,8 @@ let activeDept = 'all';
 let activeAnaDept = 'all';
 let tempPhotoData = null;
 let html5QrCode = null;
+let hwScannerBound = false;
+let hwScannerRefocusTimer = null;
 let workInterval = null;
 let lunchInterval = null;
 let currentTab = 'dashboard';
@@ -191,13 +193,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     await loadInitialData();
+    bindGlobalHwScanner(); // Netum kabi USB/Bluetooth skaner butun panelda (bo'limdan qat'i nazar) darhol ishlaydi
 
-    // Fight aggressive browser autofill by clearing "hr" or "admin" from search bar programmatically if not focused
+    // Fight aggressive browser autofill by clearing "hr"/"admin"/login username from search bar
+    const _hrAutofillJunkValues = new Set(['hr', 'admin', (user.username || '').toLowerCase()]);
     const cleanAutofill = () => {
         const searchInput = document.getElementById('hrSearchPrimary');
         if (searchInput && document.activeElement !== searchInput) {
             const val = searchInput.value.toLowerCase().trim();
-            if (val === 'hr' || val === 'admin') {
+            if (_hrAutofillJunkValues.has(val)) {
                 searchInput.value = '';
                 filterAndRender();
             }
@@ -205,6 +209,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     for (let delay of [100, 300, 500, 1000, 2000]) {
         setTimeout(cleanAutofill, delay);
+    }
+    // Aniqroq usul: WebKit/Chromium avtomatik to'ldirganda maxsus CSS holatga o'tadi —
+    // buni CSS animatsiya orqali darhol (kechikishsiz) ushlab, tozalaymiz.
+    const hrSearchInputEl = document.getElementById('hrSearchPrimary');
+    if (hrSearchInputEl) {
+        hrSearchInputEl.addEventListener('animationstart', (e) => {
+            if (e.animationName === 'onAutoFillStart') cleanAutofill();
+        });
     }
 });
 
@@ -911,11 +923,11 @@ function showActionModal(cfg) {
     const inputBox = document.getElementById('actionInputBox');
     const inputField = document.getElementById('actionInput');
     const mainBtn = document.getElementById('actionMainBtn');
+    const defaultGrid = document.getElementById('actionDefaultGrid');
 
     title.textContent = cfg.title;
     desc.textContent = cfg.desc;
     iconInner.setAttribute('data-lucide', cfg.icon || 'check-circle');
-    mainBtn.textContent = cfg.confirmText || 'TASDIQLASH';
     lucide.createIcons();
 
     if (cfg.input) {
@@ -925,22 +937,42 @@ function showActionModal(cfg) {
         inputBox.style.display = 'none';
     }
 
-    // Handle Custom HTML content if needed
+    // Eski qo'shimcha kontentlarni tozalash (custom HTML yoki oldingi status-tugmalar to'plami)
     const oldContent = overlay.querySelector('.custom-modal-content');
     if (oldContent) oldContent.remove();
-    if (cfg.customContent) {
-        const div = document.createElement('div');
-        div.className = 'custom-modal-content';
-        div.innerHTML = cfg.customContent;
-        desc.after(div);
+    const oldStack = overlay.querySelector('.hr-status-btn-stack');
+    if (oldStack) oldStack.remove();
+
+    if (cfg.stackedActions) {
+        // Bir nechta teng darajadagi harakat (masalan davomat holatini belgilash) —
+        // premium vertikal tugmalar qatori sifatida, standart 2 ustunli grid o'rniga
+        defaultGrid.style.display = 'none';
+        const stack = document.createElement('div');
+        stack.className = 'hr-status-btn-stack';
+        stack.innerHTML = cfg.stackedActions.map((a, i) =>
+            `<button class="hr-status-btn hr-status-btn-${a.variant || 'primary'}" data-idx="${i}">${a.label}</button>`
+        ).join('') + `<button class="hr-status-btn hr-status-btn-ghost" data-cancel="1">Bekor qilish</button>`;
+        desc.after(stack);
+        cfg.stackedActions.forEach((a, i) => {
+            stack.querySelector(`[data-idx="${i}"]`).onclick = a.onClick;
+        });
+        stack.querySelector('[data-cancel]').onclick = () => closeActionModal();
+    } else {
+        defaultGrid.style.display = 'grid';
+        mainBtn.textContent = cfg.confirmText || 'TASDIQLASH';
+        mainBtn.onclick = () => {
+            if (cfg.onConfirm) cfg.onConfirm(inputField.value);
+        };
+        if (cfg.customContent) {
+            const div = document.createElement('div');
+            div.className = 'custom-modal-content';
+            div.innerHTML = cfg.customContent;
+            desc.after(div);
+        }
     }
 
     overlay.style.display = 'flex';
     gsap.fromTo(overlay.querySelector('.modal-content'), { y: -100, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "back.out(1.7)" });
-
-    mainBtn.onclick = () => {
-        if (cfg.onConfirm) cfg.onConfirm(inputField.value);
-    };
 
     lucide.createIcons();
 }
@@ -2328,23 +2360,112 @@ function startScanner() {
         { facingMode: "environment" },
         { fps: 10, qrbox: { width: 250, height: 250 } },
         onScanSuccess
-    );
+    ).catch(err => {
+        console.warn("Kamera skaneri ishga tushmadi (kamera yo'q bo'lishi mumkin) — USB/Bluetooth skaner baribir ishlayveradi:", err);
+    });
+    initHwScanner();
 }
 
 function stopScanner() {
     if (html5QrCode) {
-        html5QrCode.stop().then(() => {
-            html5QrCode = null;
-        }).catch(err => console.error("Scanner stop error:", err));
+        try {
+            const result = html5QrCode.stop();
+            if (result && typeof result.then === 'function') {
+                result.catch(err => console.warn("Scanner stop error (ignored — camera may not have been running):", err));
+            }
+        } catch (err) {
+            console.warn("Scanner stop error (ignored — camera may not have been running):", err);
+        }
+        html5QrCode = null;
     }
+    clearInterval(hwScannerRefocusTimer);
+    hwScannerRefocusTimer = null;
 }
 
-async function onScanSuccess(decodedText) {
-    // Expected: ROMIX-STAFF-{id}
-    if (!decodedText.startsWith('ROMIX-STAFF-')) return;
+// USB/Bluetooth "klaviatura" tipidagi skanerlar (Netum va h.k.) kamera ishlatmaydi —
+// ular skanerlagan matnni "teradi". Bu ushlagich butun HR panelida GLOBAL ishlaydi —
+// "QR Davomat" bo'limiga kirmasdan ham, istalgan bo'limda (Dashboard, Hisobotlar va h.k.)
+// turgan holda skanerlansa, xodim avtomatik topilib holat belgilash oynasi ochiladi.
+// Faqat foydalanuvchi biror matn maydoniga (input/textarea) qo'lda yozayotgan bo'lsa,
+// bunday holatlarni bo'zilib qo'ymaslik uchun aralashmaymiz.
+let hwScanBuffer = '';
+let hwScanDebounceTimer = null;
+
+function _hwScanIsEditableFocus() {
+    const el = document.activeElement;
+    if (!el || el.id === 'hwScannerInput') return false; // o'zimizning skaner maydoni — bo'gamaymiz
+    const tag = el.tagName;
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
+}
+
+function flushHwScanBuffer() {
+    clearTimeout(hwScanDebounceTimer);
+    const val = hwScanBuffer.trim();
+    hwScanBuffer = '';
+    const input = document.getElementById('hwScannerInput');
+    if (input) input.value = '';
+    if (val) onScanSuccess(val);
+}
+
+function bindGlobalHwScanner() {
+    if (hwScannerBound) return;
+    hwScannerBound = true;
+    document.addEventListener('keydown', (e) => {
+        if (_hwScanIsEditableFocus()) return; // foydalanuvchi qo'lda boshqa maydonga yozayapti — aralashmaymiz
+
+        if (e.key === 'Enter' || e.key === 'Tab') {
+            if (!hwScanBuffer) return; // bufer bo'sh bo'lsa — bu skaner emas, oddiy tugma bosilishi
+            e.preventDefault();
+            flushHwScanBuffer();
+            return;
+        }
+        if (e.key.length === 1) { // faqat bitta belgili tugmalar (harf/raqam/tire va h.k.), Shift/Ctrl/Arrow kabi emas
+            // Brauzerning o'ziga tabiiy terishga yo'l qo'ymaymiz — aks holda fokusda turgan
+            // maydon o'zi ham belgini qo'shib, bizning bufferimiz bilan to'qnashib qolar edi.
+            e.preventDefault();
+            hwScanBuffer += e.key;
+            const inp = document.getElementById('hwScannerInput');
+            if (inp) inp.value = hwScanBuffer;
+            clearTimeout(hwScanDebounceTimer);
+            hwScanDebounceTimer = setTimeout(flushHwScanBuffer, 250);
+        }
+    });
+}
+
+// "QR Davomat" bo'limiga kirilganda faqat vizual input (ko'rinadigan maydon) fokuslanadi —
+// haqiqiy skaner ushlash yuqoridagi global listener orqali (bo'limdan qat'i nazar) ishlaydi.
+function initHwScanner() {
+    bindGlobalHwScanner();
+    const input = document.getElementById('hwScannerInput');
+    if (!input) return;
+
+    hwScanBuffer = '';
+    clearTimeout(hwScanDebounceTimer);
+    input.value = '';
+    input.focus();
+    clearInterval(hwScannerRefocusTimer);
+    hwScannerRefocusTimer = setInterval(() => {
+        const section = document.getElementById('scannerSection');
+        if (!section || section.style.display === 'none') { clearInterval(hwScannerRefocusTimer); return; }
+        if (document.activeElement !== input) input.focus();
+    }, 800);
+}
+
+async function onScanSuccess(rawText) {
+    // Expected: ROMIX-STAFF-{id} — ba'zi skanerlar boshiga/oxiriga ortiqcha bo'sh joy,
+    // qator ko'chirish (\r\n) yoki boshqa "ko'rinmas" belgilar qo'shib yuborishi mumkin,
+    // shuning uchun bunday belgilarni tozalab, keyin PREFIX'ni qidiramiz (nol pozitsiyada
+    // bo'lishi shart emas — boshida biror belgi qo'shilgan bo'lsa ham topiladi).
+    const decodedText = (rawText || '').replace(/[\r\n\t]/g, '').trim();
+    const prefixIdx = decodedText.indexOf('ROMIX-STAFF-');
+    if (prefixIdx === -1) {
+        showToastHR(`⚠️ Tanilmagan kod: "${decodedText}" — badj QR kodi ROMIX-STAFF- bilan boshlanishi kerak`, 'warn');
+        console.warn('Skanerlangan matn kutilgan formatga mos kelmadi:', JSON.stringify(rawText));
+        return;
+    }
 
     stopScanner(); // Pause scanner
-    const empId = decodedText.split('ROMIX-STAFF-')[1];
+    const empId = decodedText.slice(prefixIdx + 'ROMIX-STAFF-'.length);
     const emp = employeesData.find(e => e.id === empId);
 
     if (!emp) {
@@ -2368,8 +2489,9 @@ async function onScanSuccess(decodedText) {
             title: emp.full_name,
             desc: "DAVOMATNI BELGILANG:",
             icon: "clock",
-            confirmText: "✅ ISHGA KELDI",
-            onConfirm: () => processAttendance(emp, 'in')
+            stackedActions: [
+                { label: "✅ ISHGA KELDI", variant: 'primary', onClick: () => processAttendance(emp, 'in') }
+            ]
         });
     } else if (!att.lunch_start && !att.check_out) {
         // Checked in, still working, hasn't gone to lunch yet
@@ -2377,13 +2499,10 @@ async function onScanSuccess(decodedText) {
             title: emp.full_name,
             desc: "DAVOMATNI BELGILANG:",
             icon: "clock",
-            confirmText: "🍔 TUSHLIKKA CHIQDI",
-            onConfirm: () => processAttendance(emp, 'lunch_out'),
-            customContent: `
-                <div style="display:grid; grid-template-columns:1fr; gap:10px; margin-top:20px;">
-                    <button onclick="window.processAttendanceExternal('${emp.id}', 'out')" class="mgmt-btn" style="background:#ff4d4f; color:#fff;">🚪 ISHDAN KETDI</button>
-                </div>
-            `
+            stackedActions: [
+                { label: "🍔 TUSHLIKKA CHIQDI", variant: 'primary', onClick: () => processAttendance(emp, 'lunch_out') },
+                { label: "🚪 ISHDAN KETDI", variant: 'danger', onClick: () => processAttendance(emp, 'out') }
+            ]
         });
     } else if (att.lunch_start && !att.lunch_end) {
         // Currently on lunch break
@@ -2391,8 +2510,9 @@ async function onScanSuccess(decodedText) {
             title: emp.full_name,
             desc: "DAVOMATNI BELGILANG:",
             icon: "clock",
-            confirmText: "🔙 TUSHLIKDAN QAYTDI",
-            onConfirm: () => processAttendance(emp, 'lunch_in')
+            stackedActions: [
+                { label: "🔙 TUSHLIKDAN QAYTDI", variant: 'primary', onClick: () => processAttendance(emp, 'lunch_in') }
+            ]
         });
     } else if (!att.check_out) {
         // Back from lunch, still working
@@ -2400,8 +2520,9 @@ async function onScanSuccess(decodedText) {
             title: emp.full_name,
             desc: "DAVOMATNI BELGILANG:",
             icon: "clock",
-            confirmText: "🚪 ISHDAN KETDI",
-            onConfirm: () => processAttendance(emp, 'out')
+            stackedActions: [
+                { label: "🚪 ISHDAN KETDI", variant: 'primary', onClick: () => processAttendance(emp, 'out') }
+            ]
         });
     } else {
         // Already checked out today — nothing left to do
@@ -2409,12 +2530,6 @@ async function onScanSuccess(decodedText) {
         startScanner();
     }
 }
-
-// Global hook for the custom button
-window.processAttendanceExternal = (id, type) => {
-    const emp = employeesData.find(e => e.id === id);
-    processAttendance(emp, type);
-};
 
 async function processAttendance(emp, type) {
     const today = new Date();

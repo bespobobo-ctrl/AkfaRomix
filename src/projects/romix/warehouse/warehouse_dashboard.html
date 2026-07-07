@@ -209,7 +209,8 @@
         <aside class="sidebar-slim">
             <div class="logo-icon-v2" style="font-size: 1.5rem; color: #007c52; margin-bottom: 40px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(0, 124, 82, 0.1); width: 45px; height: 45px; border-radius: 12px;" onclick="window.location.href='../romix_dashboard.html'" title="Asosiy Panelga Qaytish">
                 ↩️</div>
-            <div class="nav-icon active" data-tab="inventory" title="Ombor Qoldig'i">📦</div>
+            <div class="nav-icon active" data-tab="umumiy" title="Umumiy">📊</div>
+            <div class="nav-icon" data-tab="inventory" title="Ombor Qoldig'i">📦</div>
             <div class="nav-icon" data-tab="orders" title="Olingan Buyurtmalar">📋</div>
             <div class="nav-icon" data-tab="staff" title="Xodimlar">👥</div>
             <div class="nav-icon" data-tab="history" title="Amallar Tarixi">📑</div>
@@ -223,7 +224,8 @@
                     <button class="tab-btn" onclick="window.location.href='../romix_dashboard.html'" style="background: rgba(0, 210, 255, 0.1); color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.2); border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; padding: 8px 16px; margin-right: 10px;">
                         ⬅️ Panelga Qaytish
                     </button>
-                    <button class="tab-btn active" data-tab="inventory">Ombor Holati</button>
+                    <button class="tab-btn active" data-tab="umumiy">📊 Umumiy</button>
+                    <button class="tab-btn" data-tab="inventory">Ombor Holati</button>
                     <button class="tab-btn" data-tab="orders">📋 Olingan Buyurtmalar</button>
                     <button class="tab-btn" data-tab="staff">Xodimlar (Romix)</button>
                     <button class="tab-btn" data-tab="history">Hujjatlar Tarixi</button>
@@ -237,7 +239,63 @@
                 </div>
             </nav>
 
-            <section id="inventory-view" class="warehouse-section">
+            <!-- Section: Umumiy — Ombor CRM ko'rinishi -->
+            <section id="umumiy-view" class="warehouse-section">
+                <div style="margin-bottom: 25px;">
+                    <h1 style="font-size: 2.2rem; font-weight: 600;">📊 Umumiy Ombor Ko'rinishi</h1>
+                    <p style="color: var(--adm-text-sec);">Ombor umumiy holati, oylik kirim/chiqim va bo'limlar bo'yicha qiymat</p>
+                </div>
+                <style>
+                    .om-stat-row { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:16px; margin-bottom:22px; }
+                    .om-stat-card { background:var(--adm-surface); border:1px solid var(--adm-border); border-radius:20px; padding:20px; box-shadow:0 4px 20px rgba(0,0,0,0.03); }
+                    .om-stat-card .lbl { font-size:0.78rem; color:var(--adm-text-sec); font-weight:600; text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; gap:6px; }
+                    .om-stat-card .val { font-size:1.7rem; font-weight:800; margin-top:8px; font-family:'Outfit', sans-serif; }
+                    .om-brand-filter-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
+                    .om-brand-chip {
+                        display:flex; flex-direction:column; gap:3px; min-width:130px;
+                        padding:11px 16px; border-radius:14px; cursor:pointer;
+                        background:var(--adm-surface); border:1px solid var(--adm-border);
+                        transition:all 0.2s ease;
+                    }
+                    .om-brand-chip:hover { border-color:rgba(0,210,255,0.35); transform:translateY(-1px); }
+                    .om-brand-chip.active { background:rgba(0,210,255,0.1); border-color:#00d2ff; box-shadow:0 4px 14px rgba(0,210,255,0.18); }
+                    .om-brand-chip .chip-name { font-size:0.8rem; font-weight:700; color:var(--adm-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px; }
+                    .om-brand-chip .chip-meta { font-size:0.68rem; font-weight:600; color:var(--adm-text-sec); }
+                    .om-brand-chip.active .chip-meta { color:#00d2ff; }
+                    .om-section-card { background:var(--adm-surface); border:1px solid var(--adm-border); border-radius:20px; padding:22px; box-shadow:0 4px 20px rgba(0,0,0,0.03); }
+                    .om-group-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px,1fr)); gap:14px; }
+                    .om-group-card { background:rgba(0,0,0,0.02); border:1px solid var(--adm-border); border-radius:14px; padding:14px 16px; cursor:pointer; transition:all 0.2s ease; }
+                    .dark-mode .om-group-card { background:rgba(255,255,255,0.02); }
+                    .om-group-card:hover { border-color:rgba(0,210,255,0.3); transform:translateY(-1px); }
+                    .om-group-card .g-name { font-weight:700; color:var(--adm-text); font-size:0.88rem; }
+                    .om-group-card .g-qty { font-size:0.7rem; color:var(--adm-text-sec); margin-top:2px; }
+                    .om-group-card .g-value { font-size:1rem; font-weight:800; font-family:monospace; color:#00d2ff; margin-top:8px; }
+                </style>
+                <div class="om-stat-row">
+                    <div class="om-stat-card">
+                        <div class="lbl">💰 Ombor Umumiy Qiymati</div>
+                        <div class="val" id="omUmumiyTotalValue">--</div>
+                    </div>
+                    <div class="om-stat-card">
+                        <div class="lbl" style="color:#00ff88;">📥 Oylik Kirim</div>
+                        <div class="val" id="omUmumiyKirim" style="color:#00ff88;">--</div>
+                    </div>
+                    <div class="om-stat-card">
+                        <div class="lbl" style="color:#ff4d4f;">📤 Oylik Chiqim</div>
+                        <div class="val" id="omUmumiyChiqim" style="color:#ff4d4f;">--</div>
+                    </div>
+                </div>
+                <div class="om-brand-filter-row" id="omFilterPills">
+                    <div class="om-brand-chip active" data-om-filter="barchasi"><span class="chip-name">🗂️ Barchasi</span></div>
+                    <div class="om-brand-chip" data-om-filter="profil"><span class="chip-name">📦 Profil</span></div>
+                    <div class="om-brand-chip" data-om-filter="aksesuvar"><span class="chip-name">🔩 Aksesuvar</span></div>
+                    <div class="om-brand-chip" data-om-filter="qoldiq"><span class="chip-name">✂️ Qoldiq Profillar</span></div>
+                    <div class="om-brand-chip" data-om-filter="oynak"><span class="chip-name">🪟 Oynak</span></div>
+                </div>
+                <div class="om-section-card" id="omFilterContent"></div>
+            </section>
+
+            <section id="inventory-view" class="warehouse-section hidden">
                 <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px;">
                     <div>
                         <h1 style="font-size: 2.2rem; font-weight: 600;">Inventarizatsiya</h1>

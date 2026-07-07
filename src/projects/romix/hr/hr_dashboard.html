@@ -585,6 +585,27 @@
             }
         }
 
+        /* Brauzer avtomatik to'ldirishini (masalan login "hr" so'zini qidiruv maydoniga
+           yozib qo'yishi) darhol aniqlash uchun trik — WebKit/Chromium avtomatik
+           to'ldirilgan maydonga maxsus CSS holat qo'llaydi, buni animatsiya orqali ushlaymiz */
+        @keyframes onAutoFillStart {
+            from {}
+            to {}
+        }
+
+        @keyframes onAutoFillCancel {
+            from {}
+            to {}
+        }
+
+        #hrSearchPrimary:-webkit-autofill {
+            animation-name: onAutoFillStart;
+        }
+
+        #hrSearchPrimary:not(:-webkit-autofill) {
+            animation-name: onAutoFillCancel;
+        }
+
         /* MODALS */
         .modal-blur {
             position: fixed;
@@ -606,7 +627,7 @@
         }
 
         #actionModalOverlay {
-            z-index: 8000 !important;
+            z-index: 9500 !important;
         }
 
         #badgeModalOverlay {
@@ -956,6 +977,61 @@
             transition: 0.3s;
         }
 
+        /* 💎 Davomat holatini belgilash — premium vertikal tugmalar qatori */
+        .hr-status-btn-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .hr-status-btn {
+            padding: 18px 22px;
+            border-radius: 18px;
+            font-weight: 800;
+            font-size: 0.88rem;
+            letter-spacing: 0.3px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .hr-status-btn-primary {
+            background: linear-gradient(135deg, #00ff88, #00cc6e);
+            color: #03150c;
+            box-shadow: 0 10px 24px rgba(0, 255, 136, 0.25);
+        }
+
+        .hr-status-btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 14px 30px rgba(0, 255, 136, 0.35);
+        }
+
+        .hr-status-btn-danger {
+            background: rgba(255, 77, 79, 0.1);
+            color: #ff4d4f;
+            border: 1px solid rgba(255, 77, 79, 0.3);
+        }
+
+        .hr-status-btn-danger:hover {
+            background: rgba(255, 77, 79, 0.18);
+            transform: translateY(-3px);
+        }
+
+        .hr-status-btn-ghost {
+            background: rgba(255, 255, 255, 0.04);
+            color: rgba(255, 255, 255, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        .hr-status-btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+
         .qr-card-plate {
             background: rgba(255, 255, 255, 0.03);
             border-radius: 20px;
@@ -978,6 +1054,25 @@
             .profile-dashboard-grid {
                 grid-template-columns: 1fr;
                 overflow-y: auto;
+            }
+        }
+
+        /* Kichik ekranlar (masalan 17" POS monitor, 1280x1024 va pastroq) uchun
+           xodim profili oynasidagi 3 ustunli grid bitta ustunga tushiriladi */
+        @media (max-width: 1300px) {
+            #profileDetailGrid {
+                grid-template-columns: 1fr !important;
+            }
+        }
+
+        @media (max-width: 900px) {
+            #detailModalOverlay .modal-content {
+                max-width: 98%;
+            }
+
+            #profileDetail {
+                padding: 20px !important;
+                max-height: 95vh !important;
             }
         }
 
@@ -1147,7 +1242,7 @@
                 <div class="modal-content"
                     style="max-width:1300px; width:95%; background:transparent; border:none; box-shadow:none;">
                     <div id="profileDetail"
-                        style="display:none; flex-direction:column; gap:25px; width:100%; padding:40px; border-radius:45px; background:rgba(7, 10, 15, 0.95); border:1px solid rgba(255, 255, 255, 0.08); backdrop-filter:blur(30px); box-shadow:0 100px 200px rgba(0,0,0,0.8); position:relative; overflow:hidden;">
+                        style="display:none; flex-direction:column; gap:25px; width:100%; padding:40px; border-radius:45px; background:rgba(7, 10, 15, 0.95); border:1px solid rgba(255, 255, 255, 0.08); backdrop-filter:blur(30px); box-shadow:0 100px 200px rgba(0,0,0,0.8); position:relative; overflow-x:hidden; overflow-y:auto; max-height:90vh; box-sizing:border-box;">
 
                         <!-- Subtle Ambient FX -->
                         <div
@@ -1182,7 +1277,7 @@
                         </div>
 
                         <!-- 3-Column Elite Grid -->
-                        <div
+                        <div id="profileDetailGrid"
                             style="display:grid; grid-template-columns: 320px 1fr 320px; gap:25px; position:relative; z-index:1;">
 
                             <!-- COL 1: IDENTITY CORE -->
@@ -2046,7 +2141,7 @@
                 </div>
             </div>
 
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+            <div id="actionDefaultGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
                 <button onclick="window.closeActionModal()" class="action-btn"
                     style="background:rgba(255,255,255,0.05); color:#fff; height:50px; border-radius:15px; border:1px solid var(--border-glass); cursor:pointer;">BEKOR
                     QILISH</button>
@@ -2064,8 +2159,14 @@
             <div id="qrReader"
                 style="width:100%; border-radius:30px; overflow:hidden; border:2px solid rgba(255,255,255,0.1); background:#0c121e;">
             </div>
+            <div style="margin-top:16px; padding:16px; background:rgba(0,255,136,0.06); border:1px solid rgba(0,255,136,0.2); border-radius:20px;">
+                <p style="color:#00ff88; font-size:0.78rem; font-weight:800; letter-spacing:1px; margin:0 0 10px;">🖨️ USB / BLUETOOTH SKANER (Netum va h.k.)</p>
+                <input type="text" id="hwScannerInput" placeholder="Skaner shu yerga avtomatik yozadi..." autocomplete="off"
+                    style="width:100%; padding:14px 16px; border-radius:14px; border:1px solid rgba(255,255,255,0.15); background:#0c121e; color:#fff; font-size:1rem; text-align:center; box-sizing:border-box;">
+                <p style="color:rgba(255,255,255,0.4); font-size:0.68rem; margin:8px 0 0;">Badjdagi QR kodni skaner bilan o'qiting — kursor avtomatik shu maydonda turadi</p>
+            </div>
             <button onclick="window.switchTab('dashboard')" class="mgmt-btn"
-                style="margin-top:30px; background:rgba(255,255,255,0.05); color:#fff; width:100%;">ORQAGA
+                style="margin-top:20px; background:rgba(255,255,255,0.05); color:#fff; width:100%;">ORQAGA
                 QAYTISH</button>
         </div>
     </div>

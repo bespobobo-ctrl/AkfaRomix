@@ -1398,7 +1398,7 @@
                         flex-direction: column;
                         gap: 4px;
                     }
-                    .buh-mini-label { font-size: 0.65rem; color: rgba(255,255,255,0.4); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+                    .buh-mini-label { font-size: 0.65rem; color: var(--adm-text-sec); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
                     .buh-mini-value { font-size: 1.15rem; font-weight: 800; color: #fff; font-family: monospace; }
                     .buh-mini-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 18px; }
                     .buh-form-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 18px; }
@@ -1474,9 +1474,108 @@
                 <!-- ============ PANEL 1: UMUMIY ============ -->
                 <div id="buh-panel-umumiy" class="buh-tab-panel active">
                     <div class="hr-card">
-                        <h3 style="color:#fff; margin-bottom: 14px;">7 Kunlik Savdo va Ishlab Chiqarish Trendi</h3>
-                        <div class="buh-chart-wrap"><canvas id="buh-overview-chart"></canvas></div>
-                        <div class="buh-mini-row" id="buh-umumiy-stats"></div>
+                        <h3 style="color:var(--adm-text); margin-bottom: 4px;">💼 Umumiy Moliyaviy Ko'rinish</h3>
+                        <p style="font-size: 0.75rem; color: var(--adm-text-sec); margin: 0 0 14px;">Har bir kartani bosib tafsilotini ko'ring</p>
+                        <style>
+                            .buh-umumiy-card.active { border-color: rgba(0,210,255,0.4); background: rgba(0,210,255,0.05); }
+                            .buh-umumiy-card:hover { border-color: rgba(255,255,255,0.12); }
+                            .buh-drill-panel { display:none; margin-top:16px; background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.05); border-radius:16px; padding:18px; animation: fadeIn 0.3s ease; }
+                            .buh-export-btn { border: none; border-radius: 10px; padding: 9px 16px; font-weight: 700; font-size: 0.78rem; cursor: pointer; color: #fff; display:inline-flex; align-items:center; gap:6px; }
+                            .buh-brand-filter-row { display:flex; gap:10px; flex-wrap:wrap; }
+                            .buh-brand-chip {
+                                display:flex; flex-direction:column; gap:3px; min-width:130px;
+                                padding:10px 16px; border-radius:14px; cursor:pointer;
+                                background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06);
+                                transition:all 0.2s ease;
+                            }
+                            .buh-brand-chip:hover { border-color:rgba(0,210,255,0.35); background:rgba(0,210,255,0.05); transform:translateY(-1px); }
+                            .buh-brand-chip.active { background:rgba(0,210,255,0.1); border-color:#00d2ff; box-shadow:0 4px 14px rgba(0,210,255,0.18); }
+                            .buh-brand-chip .chip-name { font-size:0.8rem; font-weight:700; color:var(--adm-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px; }
+                            .buh-brand-chip .chip-meta { font-size:0.68rem; font-weight:600; color:var(--adm-text-sec); }
+                            .buh-brand-chip.active .chip-meta { color:#00d2ff; }
+
+                            .buh-income-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:14px; }
+                            .buh-income-card {
+                                background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:16px;
+                                padding:16px; display:flex; flex-direction:column; gap:12px; transition:all 0.2s ease;
+                            }
+                            .buh-income-card:hover { border-color:rgba(0,255,136,0.25); transform:translateY(-1px); }
+                            .buh-income-top { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+                            .buh-income-cust .name { font-weight:700; color:var(--adm-text); font-size:0.9rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:170px; }
+                            .buh-income-cust .meta { font-size:0.7rem; color:var(--adm-text-sec); margin-top:2px; }
+                            .buh-income-badge { font-size:0.62rem; font-weight:700; padding:3px 9px; border-radius:12px; white-space:nowrap; }
+                            .buh-income-badge.paid { background:rgba(0,255,136,0.12); color:#00ff88; }
+                            .buh-income-badge.partial { background:rgba(255,170,0,0.12); color:#ffaa00; }
+                            .buh-income-badge.unpaid { background:rgba(255,77,79,0.12); color:#ff4d4f; }
+                            .buh-income-money-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; background:rgba(255,255,255,0.02); border-radius:12px; padding:10px 4px; }
+                            .buh-income-money-grid .m-item { display:flex; flex-direction:column; gap:3px; text-align:center; padding:0 4px; }
+                            .buh-income-money-grid .m-item:not(:last-child) { border-right:1px dashed rgba(255,255,255,0.07); }
+                            .buh-income-money-grid .m-label { font-size:0.58rem; font-weight:700; color:var(--adm-text-sec); text-transform:uppercase; letter-spacing:0.3px; }
+                            .buh-income-money-grid .m-value { font-size:0.8rem; font-weight:800; font-family:monospace; }
+                            .buh-income-money-grid .m-value small { font-weight:600; opacity:0.75; }
+                            .buh-income-pay-bar { height:5px; border-radius:4px; background:rgba(255,255,255,0.06); overflow:hidden; }
+                            .buh-income-pay-bar .fill { height:100%; border-radius:4px; transition:width 0.3s ease; }
+                            .buh-income-pay-row { display:flex; justify-content:space-between; font-size:0.72rem; color:var(--adm-text-sec); }
+
+                            .buh-expense-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:14px; }
+                            .buh-expense-card {
+                                background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:16px;
+                                padding:14px 16px; display:flex; flex-direction:column; gap:10px; transition:all 0.2s ease;
+                            }
+                            .buh-expense-card:hover { border-color:rgba(255,77,79,0.25); transform:translateY(-1px); }
+                            .buh-expense-top { display:flex; align-items:center; gap:10px; }
+                            .buh-expense-top .cat-icon { font-size:1.3rem; }
+                            .buh-expense-top .cat-name { font-weight:700; color:var(--adm-text); font-size:0.85rem; }
+                            .buh-expense-top .cat-pct { font-size:0.65rem; color:var(--adm-text-sec); margin-top:1px; }
+                            .buh-expense-card .cat-sum { font-size:1.05rem; font-weight:800; font-family:monospace; color:#ff4d4f; }
+                            .buh-expense-bar { height:5px; border-radius:4px; background:rgba(255,77,79,0.1); overflow:hidden; }
+                            .buh-expense-bar .fill { height:100%; border-radius:4px; background:#ff4d4f; }
+
+                            .buh-cat-dropdown-btn {
+                                display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; min-width:220px;
+                                background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:var(--adm-text);
+                                padding:9px 12px; border-radius:10px; font-family:inherit; font-size:0.85rem; font-weight:600; cursor:pointer;
+                                transition:border-color 0.2s ease;
+                            }
+                            .buh-cat-dropdown-btn:hover { border-color:rgba(0,210,255,0.35); }
+                            .buh-cat-dropdown-btn.open { border-color:#00d2ff; }
+                            .buh-cat-dropdown-btn .dd-arrow { font-size:0.7rem; color:var(--adm-text-sec); transition:transform 0.2s ease; }
+                            .buh-cat-dropdown-btn.open .dd-arrow { transform:rotate(180deg); }
+                            .buh-cat-dropdown-menu {
+                                position:absolute; top:100%; left:0; margin-top:6px; z-index:30; min-width:240px; max-height:280px; overflow-y:auto;
+                                background:#141e2d; border:1px solid rgba(255,255,255,0.1); border-radius:12px;
+                                box-shadow:0 16px 36px rgba(0,0,0,0.45);
+                            }
+                            .buh-cat-dropdown-item { display:flex; align-items:center; gap:9px; padding:10px 14px; font-size:0.82rem; color:#fff; cursor:pointer; transition:background 0.15s ease; }
+                            .buh-cat-dropdown-item:hover { background:rgba(0,210,255,0.1); }
+                            .buh-cat-dropdown-item.active { background:rgba(0,210,255,0.14); color:#00d2ff; font-weight:700; }
+                            .buh-cat-dropdown-item .ico { font-size:0.95rem; }
+
+                            .buh-section-subtitle { color:var(--adm-text); font-size:0.85rem; font-weight:800; margin:4px 0 12px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.06); }
+                            .buh-util-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(270px, 1fr)); gap:14px; margin-bottom:22px; }
+                            .buh-util-card {
+                                background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-left:3px solid rgba(255,255,255,0.15);
+                                border-radius:14px; padding:16px; transition:all 0.2s ease;
+                            }
+                            .buh-util-card:hover { border-color:rgba(255,255,255,0.12); transform:translateY(-1px); }
+                            .buh-util-card.status-progress { border-left-color:#ffaa00; }
+                            .buh-util-card.status-done { border-left-color:#00ff88; }
+                            .buh-util-head { display:flex; align-items:center; gap:9px; margin-bottom:10px; }
+                            .buh-util-icon { font-size:1.35rem; }
+                            .buh-util-title { font-weight:800; color:var(--adm-text); font-size:0.9rem; }
+                            .buh-util-badge { margin-left:auto; font-size:0.62rem; font-weight:700; padding:3px 10px; border-radius:12px; white-space:nowrap; }
+                            .buh-util-badge.pending { background:rgba(255,255,255,0.06); color:var(--adm-text-sec); }
+                            .buh-util-badge.progress { background:rgba(255,170,0,0.12); color:#ffaa00; }
+                            .buh-util-badge.done { background:rgba(0,255,136,0.12); color:#00ff88; }
+                            .buh-util-hint { font-size:0.7rem; color:var(--adm-text-sec); margin:0 0 10px; line-height:1.4; }
+                            .buh-util-input-row { display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; }
+                            .buh-util-final { display:flex; justify-content:space-between; align-items:center; background:rgba(0,255,136,0.06); border:1px solid rgba(0,255,136,0.18); border-radius:10px; padding:9px 12px; margin-bottom:10px; }
+                            .buh-util-final span { font-size:0.72rem; color:var(--adm-text-sec); font-weight:600; }
+                            .buh-util-final b { font-size:0.92rem; color:#00ff88; font-family:monospace; }
+                            .buh-util-reset-btn { background:rgba(255,170,0,0.12); color:#ffaa00; width:100%; text-align:center; }
+                        </style>
+                        <div class="buh-mini-row" id="buh-umumiy-cards"></div>
+                        <div id="buh-umumiy-drill-panel" class="buh-drill-panel"></div>
                     </div>
                 </div>
 
@@ -1555,13 +1654,19 @@
                             <div class="buh-form-group">
                                 <label>Kategoriya</label>
                                 <select id="buh-exp-category" class="buh-input">
+                                    <option value="Xo'jalik Harajat">Xo'jalik Harajat</option>
+                                    <option value="Kommunal - Svet">Kommunal - Svet</option>
+                                    <option value="Kommunal - Suv">Kommunal - Suv</option>
+                                    <option value="Kommunal - Gaz">Kommunal - Gaz</option>
+                                    <option value="Avto Harajat">Avto Harajat</option>
+                                    <option value="Ofis Harajat">Ofis Harajat</option>
                                     <option value="Ijara">Ijara</option>
-                                    <option value="Kommunal">Kommunal (svet/gaz/suv)</option>
                                     <option value="Transport">Transport</option>
                                     <option value="Maosh">Maosh</option>
                                     <option value="Boshqa">Boshqa</option>
                                 </select>
                             </div>
+                            <p style="font-size:0.68rem; color:var(--adm-text-sec); margin:0 0 10px; flex-basis:100%;">💡 "Kommunal - Svet" uchun asosiy/AvtoClapak avtomatik hisoblash kerak bo'lsa, "📊 Umumiy" panelidagi "Oylik Harajat" bo'limidan kiriting.</p>
                             <div class="buh-form-group"><label>Summa (UZS)</label><input type="number" id="buh-exp-amount" class="buh-input" min="0" required></div>
                             <div class="buh-form-group"><label>Izoh</label><input type="text" id="buh-exp-note" class="buh-input" placeholder="Ixtiyoriy"></div>
                             <button type="submit" class="buh-save-btn">💾 Saqlash</button>
