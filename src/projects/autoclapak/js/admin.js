@@ -9949,3 +9949,70 @@ CREATE TABLE IF NOT EXISTS buh_sales (
             };
         }
     }, 1000);
+
+    // Xavfli Zona (Sozlamalar): Loyihani To'liq Tozalash — PIN (4567) + "TOZALASH" so'zi bilan
+    // ikki bosqichli himoyalangan. Barcha jadvallardagi QATORLARNI o'chiradi (strukturasi qoladi).
+    setTimeout(() => {
+        const pinInput = document.getElementById('wipePinInput');
+        const unlockBtn = document.getElementById('wipeUnlockBtn');
+        const confirmZone = document.getElementById('wipeConfirmZone');
+        const confirmWordInput = document.getElementById('wipeConfirmWordInput');
+        const executeBtn = document.getElementById('wipeExecuteBtn');
+        const statusMsg = document.getElementById('wipeStatusMsg');
+        if (!unlockBtn) return;
+
+        unlockBtn.onclick = () => {
+            if (!pinInput || pinInput.value.trim() !== '4567') {
+                alert("Noto'g'ri PIN kod!");
+                if (pinInput) pinInput.value = '';
+                return;
+            }
+            confirmZone.classList.remove('hidden');
+            pinInput.disabled = true;
+            unlockBtn.disabled = true;
+        };
+
+        executeBtn.onclick = async () => {
+            if (!confirmWordInput || confirmWordInput.value.trim().toUpperCase() !== 'TOZALASH') {
+                alert('Tasdiqlash so\'zi noto\'g\'ri — aynan "TOZALASH" deb yozing.');
+                return;
+            }
+            if (!confirm("OXIRGI OGOHLANTIRISH: butun loyiha ma'lumotlari (buyurtmalar, xodimlar, ombor, moliya, davomat va h.k.) BUTUNLAY o'chiriladi va TIKLAB BO'LMAYDI. Rostdan davom etasizmi?")) return;
+
+            // FAQAT Romix'ga tegishli jadvallar (AutoClapak'niki — clapak_*, buh_employees/
+            // transactions/utilities/recipes/sales, warehouse_products/transactions — ATAYIN
+            // KIRITILMAGAN, chunki bu tugma faqat Romix Sozlamalar panelida). Jadvalning o'zi
+            // qoladi, faqat qatorlari o'chadi.
+            const TABLES = [
+                'attendance', 'employees', 'material_requests', 'production_recipes', 'profile_requests',
+                'romix_accessories', 'romix_accessories_history', 'romix_bot_state', 'romix_brigade_members',
+                'romix_brigade_ratings', 'romix_brigades', 'romix_debts', 'romix_expenses',
+                'romix_installation_materials', 'romix_inventory', 'romix_oynak', 'romix_payment_log',
+                'romix_production_batches', 'romix_production_log', 'romix_qoldiq_profillar', 'romix_staff',
+                'romix_transactions', 'romix_utility_readings', 'sales_orders', 'showroom_products', 'system_users'
+            ];
+
+            executeBtn.disabled = true;
+            executeBtn.textContent = 'Tozalanmoqda...';
+            let doneCount = 0, failCount = 0;
+            for (const table of TABLES) {
+                try {
+                    const { error } = await supabase.from(table).delete().not('id', 'is', null);
+                    if (error) { failCount++; console.warn(`Wipe failed on ${table}:`, error); }
+                    else doneCount++;
+                } catch (e) { failCount++; console.warn(`Wipe exception on ${table}:`, e); }
+                if (statusMsg) statusMsg.textContent = `${doneCount + failCount}/${TABLES.length} jadval tekshirildi...`;
+            }
+
+            // Lokal keshlarni ham tozalash (romixBuh* yordamchi funksiyalar localStorage'ga ham yozadi)
+            Object.keys(localStorage).forEach(k => {
+                if (k.startsWith('romix_') || k === 'system_users_local') localStorage.removeItem(k);
+            });
+
+            executeBtn.disabled = false;
+            executeBtn.textContent = "🗑️ HAMMASINI O'CHIRISH";
+            if (statusMsg) statusMsg.textContent = `Tugadi: ${doneCount} jadval tozalandi, ${failCount} ta xato.`;
+            alert(`Tozalash tugadi. ${doneCount} jadval tozalandi${failCount ? `, ${failCount} tasida xato bo'ldi (konsolni tekshiring)` : ''}.\n\nSahifa qayta yuklanadi.`);
+            window.location.reload();
+        };
+    }, 1000);
