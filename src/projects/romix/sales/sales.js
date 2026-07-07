@@ -461,6 +461,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     }
 
+    // Summa maydonlari (Avans) uchun — 1000000 o'rniga "1 000 000" ko'rinishida bo'shliq bilan ajratib ko'rsatish
+    function formatMoneyInput(el) {
+        const cursorFromEnd = el.value.length - el.selectionStart;
+        const digits = el.value.replace(/\D/g, '');
+        const formatted = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        el.value = formatted;
+        const pos = Math.max(0, formatted.length - cursorFromEnd);
+        el.setSelectionRange(pos, pos);
+    }
+    function parseMoneyInput(el) {
+        return parseFloat((el?.value || '').replace(/\s/g, '')) || 0;
+    }
+
     function calculateTotal() {
         let totalArea = 0;
         let totalMaterials = 0; // Tan narxi (materiallar narxi)
@@ -505,7 +518,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const hint = document.getElementById('oAdvancePercentHint');
         if (!advInput || !hint) return;
         const grandTotal = knownGrandTotal !== undefined ? knownGrandTotal : calculateTotal().grandTotal;
-        const advance = parseFloat(advInput.value) || 0;
+        const advance = parseMoneyInput(advInput);
         const percent = grandTotal > 0 ? Math.round((advance / grandTotal) * 100) : 0;
         const ok = percent >= 50;
         hint.style.color = ok ? '#00ff88' : '#ef4444';
@@ -521,6 +534,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const profitInput = document.getElementById('oProfitPercent');
     if (profitInput) {
         profitInput.addEventListener('input', calculateTotal);
+    }
+    const oAdvanceInput = document.getElementById('oAdvance');
+    if (oAdvanceInput) {
+        oAdvanceInput.addEventListener('input', () => {
+            formatMoneyInput(oAdvanceInput);
+            window.updateAdvancePercent();
+        });
+    }
+    const eAdvanceInput = document.getElementById('eAdvance');
+    if (eAdvanceInput) {
+        eAdvanceInput.addEventListener('input', () => formatMoneyInput(eAdvanceInput));
     }
 
     async function loadOrders() {
@@ -975,7 +999,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const entries = [];
         allOrders.forEach(o => {
             getBackfilledPaymentHistory(o).forEach(p => {
-                entries.push({ amount: Number(p.amount) || 0, by: p.by || "Noma'lum", at: p.at, order: o });
+                entries.push({ amount: Number(p.amount) || 0, by: p.by || "Noma'lum", at: p.at, note: p.note || '', order: o });
             });
         });
         entries.sort((a, b) => new Date(b.at || 0) - new Date(a.at || 0));
@@ -993,6 +1017,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div style="min-width:0;">
                     <div style="font-weight:700; color:var(--adm-text); font-size:0.88rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${e.order.customer_name}</div>
                     <div style="font-size:0.72rem; color:var(--adm-text-sec); margin-top:2px;">${e.by} — ${e.at ? new Date(e.at).toLocaleString('uz-UZ') : '---'}</div>
+                    ${e.note ? `<div style="font-size:0.7rem; color:var(--adm-text-sec); margin-top:3px; font-style:italic;">💬 ${e.note}</div>` : ''}
                 </div>
                 <strong style="color:#00ff88; font-family:monospace; white-space:nowrap;">+${e.amount.toLocaleString()} so'm</strong>
             </div>
@@ -1015,12 +1040,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const timelineHtml = history.length
             ? history.map(p => `
-                <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px dashed var(--adm-border);">
-                    <div>
-                        <div style="font-weight:700; color:var(--adm-text); font-size:0.85rem;">${p.by || "Noma'lum"}</div>
-                        <div style="font-size:0.7rem; color:var(--adm-text-sec);">${p.at ? new Date(p.at).toLocaleString('uz-UZ') : '---'}</div>
+                <div style="padding:10px 0; border-bottom:1px dashed var(--adm-border);">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="font-weight:700; color:var(--adm-text); font-size:0.85rem;">${p.by || "Noma'lum"}</div>
+                            <div style="font-size:0.7rem; color:var(--adm-text-sec);">${p.at ? new Date(p.at).toLocaleString('uz-UZ') : '---'}</div>
+                        </div>
+                        <strong style="color:#00ff88; font-family:monospace;">+${Number(p.amount || 0).toLocaleString()} so'm</strong>
                     </div>
-                    <strong style="color:#00ff88; font-family:monospace;">+${Number(p.amount || 0).toLocaleString()} so'm</strong>
+                    ${p.note ? `<div style="font-size:0.74rem; color:var(--adm-text-sec); margin-top:5px; font-style:italic;">💬 ${p.note}</div>` : ''}
                 </div>
             `).join('')
             : `<div style="text-align:center; padding:20px; color:var(--adm-text-sec); font-size:0.8rem;">Hali to'lov qabul qilinmagan</div>`;
@@ -1167,7 +1195,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('eAddress').value = o.customer_address || '';
                 document.getElementById('eProdDeadline').value = o.production_deadline || '';
                 document.getElementById('eStatus').value = o.status;
-                document.getElementById('eAdvance').value = o.paid_amount || '';
+                document.getElementById('eAdvance').value = o.paid_amount ? o.paid_amount.toLocaleString().replace(/,/g, ' ') : '';
+                document.getElementById('ePaymentNote').value = '';
                 const ePercentHint = document.getElementById('eAdvancePercentHint');
                 const eTotal = Number(o.total_price) || 0;
                 const ePercent = eTotal > 0 ? Math.round(((Number(o.paid_amount) || 0) / eTotal) * 100) : 0;
@@ -1382,14 +1411,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         // Avans (boshlang'ich to'lov) — 50% dan kam bo'lsa ham saqlanadi, keyinroq to'ldirish mumkin
-        const advanceAmount = parseFloat(document.getElementById('oAdvance').value) || 0;
+        const advanceAmount = parseMoneyInput(document.getElementById('oAdvance'));
         if (advanceAmount > 0) {
             const receivedBy = user?.full_name || user?.username || 'Sotuv';
             const receivedAt = new Date().toISOString();
+            const note = document.getElementById('oPaymentNote').value.trim();
             newOrder.paid_amount = advanceAmount;
             newOrder.payment_date = receivedAt;
             newOrder.advance_received_by = receivedBy;
-            newOrder.payment_history = [{ amount: advanceAmount, by: receivedBy, at: receivedAt }];
+            newOrder.payment_history = [{ amount: advanceAmount, by: receivedBy, at: receivedAt, note }];
         }
 
         try {
@@ -1421,7 +1451,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const customer_address = document.getElementById('eAddress').value;
         const production_deadline = document.getElementById('eProdDeadline').value || null;
         const status = document.getElementById('eStatus').value;
-        const paid_amount = parseFloat(document.getElementById('eAdvance').value) || 0;
+        const paid_amount = parseMoneyInput(document.getElementById('eAdvance'));
 
         const updatePayload = {
             customer_name,
@@ -1436,12 +1466,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (paid_amount !== prevPaid && paid_amount > 0) {
             const receivedBy = user?.full_name || user?.username || 'Sotuv';
             const receivedAt = new Date().toISOString();
+            const note = document.getElementById('ePaymentNote').value.trim();
             updatePayload.payment_date = receivedAt;
             updatePayload.advance_received_by = receivedBy;
             const delta = paid_amount - prevPaid;
             if (delta > 0) {
                 const prevHistory = window.editingOrderPaymentHistory || [];
-                updatePayload.payment_history = [...prevHistory, { amount: delta, by: receivedBy, at: receivedAt }];
+                updatePayload.payment_history = [...prevHistory, { amount: delta, by: receivedBy, at: receivedAt, note }];
             }
         }
 
@@ -1581,6 +1612,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('oDeadline').value = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         document.getElementById('oProdDeadline').value = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         document.getElementById('oAdvance').value = '';
+        document.getElementById('oPaymentNote').value = '';
         window.updateAdvancePercent();
         orderModal.classList.remove('hidden');
         // 3D preview modal ochilгач o'lchamни oladi
