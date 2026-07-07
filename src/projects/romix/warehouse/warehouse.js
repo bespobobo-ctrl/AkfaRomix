@@ -634,6 +634,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // --- History Logic ---
+    let _histCache = [];
+    let _histActiveType = 'barchasi';
+
     async function loadHistory() {
         historyTable.innerHTML = '<tr><td colspan="5" style="text-align:center;">Yuklanmoqda...</td></tr>';
         const { data, error } = await supabase
@@ -646,8 +649,63 @@ document.addEventListener('DOMContentLoaded', async () => {
             historyTable.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Tarixni yuklashda xatolik!</td></tr>';
             return;
         }
+        _histCache = data || [];
+
+        document.querySelectorAll('#histTypeFilter .om-brand-chip').forEach(chip => {
+            chip.onclick = () => {
+                _histActiveType = chip.dataset.histType;
+                document.querySelectorAll('#histTypeFilter .om-brand-chip').forEach(c => c.classList.toggle('active', c === chip));
+                renderHistoryTable();
+            };
+        });
+        const searchInput = document.getElementById('histSearchInput');
+        if (searchInput) searchInput.oninput = renderHistoryTable;
+        const dateFrom = document.getElementById('histDateFrom');
+        const dateTo = document.getElementById('histDateTo');
+        if (dateFrom) dateFrom.onchange = renderHistoryTable;
+        if (dateTo) dateTo.onchange = renderHistoryTable;
+        const resetBtn = document.getElementById('histFilterResetBtn');
+        if (resetBtn) {
+            resetBtn.onclick = () => {
+                _histActiveType = 'barchasi';
+                if (searchInput) searchInput.value = '';
+                if (dateFrom) dateFrom.value = '';
+                if (dateTo) dateTo.value = '';
+                document.querySelectorAll('#histTypeFilter .om-brand-chip').forEach(c => c.classList.toggle('active', c.dataset.histType === 'barchasi'));
+                renderHistoryTable();
+            };
+        }
+
+        renderHistoryTable();
+    }
+
+    function renderHistoryTable() {
+        let rows = _histCache;
+
+        if (_histActiveType !== 'barchasi') {
+            rows = rows.filter(tx => tx.type === _histActiveType);
+        }
+        const q = (document.getElementById('histSearchInput')?.value || '').toLowerCase().trim();
+        if (q) {
+            rows = rows.filter(tx => (tx.romix_inventory?.product_name || "o'chirilgan mahsulot").toLowerCase().includes(q));
+        }
+        const dateFromVal = document.getElementById('histDateFrom')?.value;
+        const dateToVal = document.getElementById('histDateTo')?.value;
+        if (dateFromVal) {
+            const from = new Date(dateFromVal + 'T00:00:00');
+            rows = rows.filter(tx => new Date(tx.created_at) >= from);
+        }
+        if (dateToVal) {
+            const to = new Date(dateToVal + 'T23:59:59');
+            rows = rows.filter(tx => new Date(tx.created_at) <= to);
+        }
+
         historyTable.innerHTML = '';
-        data.forEach(tx => {
+        if (rows.length === 0) {
+            historyTable.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Filtrga mos yozuv topilmadi</td></tr>';
+            return;
+        }
+        rows.forEach(tx => {
             const date = new Date(tx.created_at).toLocaleString();
             const tr = document.createElement('tr');
             tr.innerHTML = `
