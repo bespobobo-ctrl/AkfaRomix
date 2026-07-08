@@ -478,6 +478,23 @@ export function createDesigner(host, opts = {}) {
     return {
         setSize(w, h) { W = Math.max(300, Math.round(w) || W); H = Math.max(300, Math.round(h) || H); render(); },
         getModel() { return { W, H, tree: JSON.parse(JSON.stringify(root)), frameOnly }; },
+        // Buyurtmaga qo'shilgach chizmani bo'sh holatga qaytaradi — keyingi elementni
+        // chizish uchun eski chizma qolib ketmasin.
+        reset(w, h) {
+            root = { id: uid(), kind: 'leaf', opening: 'kar' };
+            selected = root.id;
+            if (frameOnly) {
+                frameOnly = false;
+                frameOnlyBtn.classList.remove('active');
+                host.querySelectorAll('#d2-split-v, #d2-split-h, #d2-split-double').forEach(b => {
+                    b.disabled = false; b.style.opacity = ''; b.style.pointerEvents = '';
+                });
+                leftSidebar.querySelectorAll('[data-op]').forEach(b => { b.disabled = false; b.style.pointerEvents = ''; });
+            }
+            if (w) W = Math.max(300, Math.round(w) || W);
+            if (h) H = Math.max(300, Math.round(h) || H);
+            render();
+        },
         render
     };
 }
