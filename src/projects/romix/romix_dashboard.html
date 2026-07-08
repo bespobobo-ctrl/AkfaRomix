@@ -1767,17 +1767,131 @@
                 <!-- ============ PANEL 7: OMBOR HOLATI ============ -->
                 <div id="buh-panel-ombor" class="buh-tab-panel">
                     <div class="hr-card">
-                        <div class="buh-mini-row" id="buh-ombor-stats"></div>
-                        <div style="display:flex; align-items:center; gap:10px; margin:18px 0 12px; flex-wrap:wrap;">
-                            <input type="text" id="buh-ombor-search" placeholder="🔍 Mahsulot nomi bo'yicha qidirish..." style="flex:1; max-width:320px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:9px 14px; border-radius:12px; font-size:0.82rem;">
-                            <button onclick="window.openBuhKirimModal()" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(0,255,136,0.1); border:1px solid rgba(0,255,136,0.3); color:#00ff88; font-weight:700; font-size:0.8rem;">➕ Kirim Qilish</button>
-                            <button onclick="window.openBuhProfilKirimModal()" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(0,186,255,0.1); border:1px solid rgba(0,186,255,0.3); color:#00baff; font-weight:700; font-size:0.8rem;">📦 Profil Kirim</button>
-                            <button onclick="window.openBuhAccKirimModal()" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(186,104,200,0.1); border:1px solid rgba(186,104,200,0.3); color:#BA68C8; font-weight:700; font-size:0.8rem;">🔩 Aksessuar Kirim</button>
-                            <button onclick="window.openBuhSpiskaModal()" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(0,210,255,0.1); border:1px solid rgba(0,210,255,0.3); color:#00d2ff; font-weight:700; font-size:0.8rem;">📜 Spiska Kirim</button>
-                            <button onclick="window.openBuhVisionModal()" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:linear-gradient(135deg, rgba(255,105,180,0.12), rgba(0,210,255,0.12)); border:1px solid rgba(255,105,180,0.35); color:#ff69b4; font-weight:700; font-size:0.8rem;">📷 Rasmdan Kirim (AI)</button>
+                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:18px; flex-wrap:wrap;">
+                            <div class="buh-ombor-cat-tab active" data-ombor-cat="profil" onclick="window.switchBuhOmborCatTab('profil')" style="cursor:pointer; padding:9px 18px; border-radius:12px; background:rgba(0,186,255,0.15); border:1px solid rgba(0,186,255,0.4); color:#00baff; font-weight:700; font-size:0.82rem;">📦 Profil</div>
+                            <div class="buh-ombor-cat-tab" data-ombor-cat="aksesuvar" onclick="window.switchBuhOmborCatTab('aksesuvar')" style="cursor:pointer; padding:9px 18px; border-radius:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); font-weight:700; font-size:0.82rem;">🔩 Aksesuvar</div>
+                            <div class="buh-ombor-cat-tab" data-ombor-cat="qoldiq" onclick="window.switchBuhOmborCatTab('qoldiq')" style="cursor:pointer; padding:9px 18px; border-radius:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); font-weight:700; font-size:0.82rem;">✂️ Qoldiq Profillar</div>
+                            <div class="buh-ombor-cat-tab" data-ombor-cat="oynak" onclick="window.switchBuhOmborCatTab('oynak')" style="cursor:pointer; padding:9px 18px; border-radius:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); font-weight:700; font-size:0.82rem;">🪟 Oynak</div>
                         </div>
-                        <div id="buh-ombor-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:14px;">
-                            <div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Yuklanmoqda...</div>
+
+                        <!-- ===== Profil ===== -->
+                        <div id="buh-ombor-cat-panel-profil" class="buh-ombor-cat-panel">
+                            <div class="buh-mini-row" id="buh-ombor-stats"></div>
+                            <div style="display:flex; align-items:center; gap:10px; margin:18px 0 12px; flex-wrap:wrap;">
+                                <input type="text" id="buh-ombor-search" placeholder="🔍 Mahsulot nomi bo'yicha qidirish..." style="flex:1; max-width:320px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:9px 14px; border-radius:12px; font-size:0.82rem;">
+                                <button onclick="window.openBuhKirimModal()" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(0,255,136,0.1); border:1px solid rgba(0,255,136,0.3); color:#00ff88; font-weight:700; font-size:0.8rem;">➕ Kirim Qilish</button>
+                                <button onclick="window.openBuhProfilKirimModal()" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(0,186,255,0.1); border:1px solid rgba(0,186,255,0.3); color:#00baff; font-weight:700; font-size:0.8rem;">📦 Profil Kirim</button>
+                                <button onclick="window.openBuhVisionModal()" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:linear-gradient(135deg, rgba(255,105,180,0.12), rgba(0,210,255,0.12)); border:1px solid rgba(255,105,180,0.35); color:#ff69b4; font-weight:700; font-size:0.8rem;">📷 Rasmdan Kirim (AI)</button>
+                            </div>
+                            <div id="buh-ombor-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:14px;">
+                                <div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Yuklanmoqda...</div>
+                            </div>
+                        </div>
+
+                        <!-- ===== Aksesuvar ===== -->
+                        <div id="buh-ombor-cat-panel-aksesuvar" class="buh-ombor-cat-panel" style="display:none;">
+                            <div class="buh-mini-row" id="buh-ombor-acc-stats"></div>
+                            <div style="display:flex; align-items:center; gap:10px; margin:18px 0 12px; flex-wrap:wrap;">
+                                <input type="text" id="buh-ombor-acc-search" placeholder="🔍 Mahsulot nomi bo'yicha qidirish..." style="flex:1; max-width:320px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:9px 14px; border-radius:12px; font-size:0.82rem;">
+                                <button onclick="window.openBuhAccKirimModal()" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(186,104,200,0.1); border:1px solid rgba(186,104,200,0.3); color:#BA68C8; font-weight:700; font-size:0.8rem;">🔩 Aksessuar Kirim</button>
+                                <button onclick="window.openBuhSpiskaModal()" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(0,210,255,0.1); border:1px solid rgba(0,210,255,0.3); color:#00d2ff; font-weight:700; font-size:0.8rem;">📜 Spiska Kirim</button>
+                                <button onclick="window.openBuhVisionModal()" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:linear-gradient(135deg, rgba(255,105,180,0.12), rgba(0,210,255,0.12)); border:1px solid rgba(255,105,180,0.35); color:#ff69b4; font-weight:700; font-size:0.8rem;">📷 Rasmdan Kirim (AI)</button>
+                            </div>
+                            <div id="buh-ombor-acc-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:14px;">
+                                <div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Yuklanmoqda...</div>
+                            </div>
+                        </div>
+
+                        <!-- ===== Qoldiq Profillar ===== -->
+                        <div id="buh-ombor-cat-panel-qoldiq" class="buh-ombor-cat-panel" style="display:none;">
+                            <div class="buh-mini-row" id="buh-ombor-qoldiq-stats"></div>
+                            <div style="display:flex; align-items:center; gap:10px; margin:18px 0 12px; flex-wrap:wrap;">
+                                <input type="text" id="buh-ombor-qoldiq-search" placeholder="🔍 Mahsulot nomi bo'yicha qidirish..." style="flex:1; max-width:320px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:9px 14px; border-radius:12px; font-size:0.82rem;">
+                                <button onclick="window.openBuhQoldiqKirimModal()" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(255,170,0,0.1); border:1px solid rgba(255,170,0,0.3); color:#ffaa00; font-weight:700; font-size:0.8rem;">✂️ Qoldiq Kirim</button>
+                            </div>
+                            <div id="buh-ombor-qoldiq-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:14px;">
+                                <div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Yuklanmoqda...</div>
+                            </div>
+                        </div>
+
+                        <!-- ===== Oynak ===== -->
+                        <div id="buh-ombor-cat-panel-oynak" class="buh-ombor-cat-panel" style="display:none;">
+                            <div class="buh-mini-row" id="buh-ombor-oynak-stats"></div>
+                            <div style="display:flex; align-items:center; gap:10px; margin:18px 0 12px; flex-wrap:wrap;">
+                                <input type="text" id="buh-ombor-oynak-search" placeholder="🔍 Mahsulot nomi bo'yicha qidirish..." style="flex:1; max-width:320px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:9px 14px; border-radius:12px; font-size:0.82rem;">
+                                <button onclick="window.openBuhOynakKirimModal()" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(0,210,255,0.1); border:1px solid rgba(0,210,255,0.3); color:#00d2ff; font-weight:700; font-size:0.8rem;">🪟 Oynak Kirim</button>
+                            </div>
+                            <div id="buh-ombor-oynak-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:14px;">
+                                <div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Yuklanmoqda...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============ Buxgalteriya: Qoldiq Kirim Modal ============ -->
+                <div id="buh-qoldiq-kirim-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:10001; align-items:center; justify-content:center; padding:20px;">
+                    <div style="background:#141e2d; border:1px solid rgba(255,170,0,0.2); width:100%; max-width:500px; max-height:92vh; overflow-y:auto; border-radius:24px; padding:28px;">
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+                            <span style="font-size:1.8rem;">✂️</span>
+                            <h3 style="color:#fff; margin:0;">Qoldiq Profil Kirimi</h3>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:14px;">
+                            <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Mahsulot Nomi</label>
+                                <input type="text" id="buhQkName" placeholder="Masalan: Akfa 60 Series Profil" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                                <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Brend</label>
+                                    <input type="text" id="buhQkBrand" placeholder="AKFA Plastik" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                                <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Seriya</label>
+                                    <input type="text" id="buhQkSeries" placeholder="6000 QVT" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                                <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Rangi</label>
+                                    <input type="text" id="buhQkColor" placeholder="Oq" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                                <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Profil turi</label>
+                                    <input type="text" id="buhQkProfileType" placeholder="Rama / Impost / Stvorka" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                                <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Uzunligi (mm)</label>
+                                    <input type="number" id="buhQkLength" min="0" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                                <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Soni (dona)</label>
+                                    <input type="number" id="buhQkQty" min="1" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:12px; margin-top:22px;">
+                            <button onclick="window.saveBuhQoldiqKirim()" class="buh-save-btn" style="flex:1;">💾 Tasdiqlash va Saqlash</button>
+                            <button onclick="window.closeBuhQoldiqKirimModal()" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); padding:13px; border-radius:14px; font-weight:700; cursor:pointer;">Bekor qilish</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============ Buxgalteriya: Oynak Kirim Modal ============ -->
+                <div id="buh-oynak-kirim-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:10001; align-items:center; justify-content:center; padding:20px;">
+                    <div style="background:#141e2d; border:1px solid rgba(0,210,255,0.2); width:100%; max-width:500px; max-height:92vh; overflow-y:auto; border-radius:24px; padding:28px;">
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+                            <span style="font-size:1.8rem;">🪟</span>
+                            <h3 style="color:#fff; margin:0;">Oynak Kirimi</h3>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:14px;">
+                            <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Mahsulot Nomi</label>
+                                <input type="text" id="buhOkName" placeholder="Masalan: Energiya tejamkor shisha paket" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                                <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Brend</label>
+                                    <input type="text" id="buhOkBrand" placeholder="Brend nomi" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                                <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">O'lcham</label>
+                                    <input type="text" id="buhOkSize" placeholder="1200x1500 mm" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;">
+                                <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Soni</label>
+                                    <input type="number" id="buhOkQty" min="1" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                                <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Birlik</label>
+                                    <input type="text" id="buhOkUnit" placeholder="dona / kv.m" value="dona" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                                <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Narx (birlik)</label>
+                                    <input type="number" id="buhOkPrice" min="0" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:12px; margin-top:22px;">
+                            <button onclick="window.saveBuhOynakKirim()" class="buh-save-btn" style="flex:1;">💾 Tasdiqlash va Saqlash</button>
+                            <button onclick="window.closeBuhOynakKirimModal()" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); padding:13px; border-radius:14px; font-weight:700; cursor:pointer;">Bekor qilish</button>
                         </div>
                     </div>
                 </div>
