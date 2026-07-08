@@ -312,7 +312,26 @@ export async function materialRequestsReport() {
     };
 }
 
+// Excel hisoboti uchun ma'lumotlar
+export async function excelReport(oy) {
+    const [orders, exp, payments] = await Promise.all([
+        sbGet("sales_orders", "select=created_at,customer_name,customer_phone,total_price,paid_amount,status&order=created_at.asc"),
+        sbGet("romix_expenses", "select=date,category,amount,note&order=date.asc"),
+        sbGet("romix_payment_log", "select=date,creditor,amount,note&order=date.asc")
+    ]);
+
+    const filteredOrders = orders.filter(o => (o.created_at || "").startsWith(oy));
+    const filteredExp = exp.filter(e => (e.date || "").startsWith(oy));
+    const filteredPayments = payments.filter(p => (p.date || "").startsWith(oy));
+
+    return {
+        orders: filteredOrders,
+        expenses: filteredExp,
+        payments: filteredPayments
+    };
+}
+
 export default { 
     overview, ordersReport, warehouse, expensesReport, debtsReport, hrReport, addExpense, payDebt, payOrder,
-    searchOrder, searchProduct, searchEmployee, productionReport, brigadesReport, materialRequestsReport
+    searchOrder, searchProduct, searchEmployee, productionReport, brigadesReport, materialRequestsReport, excelReport
 };
