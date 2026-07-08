@@ -1450,6 +1450,27 @@
                         <button style="width: 100%; padding: 12px; margin-top: 15px; border-radius: 12px; background: rgba(66, 165, 245, 0.15); border: 1px solid rgba(66, 165, 245, 0.3); color: #42a5f5; font-weight: bold; cursor: pointer;">Omborga Kirish &rarr;</button>
                     </div>
                 </div>
+
+                <!-- Ombor Boshqaruv Paneli — "ombor/123" (manager) roli ko'radigan barcha bo'limlar
+                     (Umumiy, Ombor Holati, Olingan Buyurtmalar, Xodimlar, Hujjatlar Tarixi) shu yerga
+                     joylashtirilgan — yuqoridagi 4 ta navigatsiya kartasiga tegilmagan. -->
+                <div style="position: relative; margin-top: 8px; border-radius: 28px; padding: 1px; background: linear-gradient(135deg, rgba(0,210,255,0.35), rgba(66,165,245,0.12), rgba(255,255,255,0.04));">
+                    <div style="background: var(--adm-surface); border-radius: 27px; overflow: hidden;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 26px; border-bottom: 1px solid rgba(255,255,255,0.06); background: linear-gradient(90deg, rgba(0,210,255,0.06), transparent);">
+                            <div style="display: flex; align-items: center; gap: 14px;">
+                                <div style="width: 44px; height: 44px; border-radius: 14px; background: rgba(0,210,255,0.12); border: 1px solid rgba(0,210,255,0.25); display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">🏢</div>
+                                <div>
+                                    <div style="font-weight: 800; font-size: 1.05rem; color: var(--adm-text);">Ombor Boshqaruv Paneli</div>
+                                    <div style="font-size: 0.78rem; color: var(--adm-text-sec);">Umumiy holat, ombor qoldig'i, olingan buyurtmalar, xodimlar va hujjatlar tarixi</div>
+                                </div>
+                            </div>
+                            <span style="font-size: 0.65rem; background: rgba(0, 255, 136, 0.1); color: #00ff88; padding: 5px 12px; border-radius: 20px; font-weight: 800; display: flex; align-items: center; gap: 5px;"><span class="pulse-dot" style="color: #00ff88; width: 6px; height: 6px;"></span>JONLI</span>
+                        </div>
+                        <div style="height: calc(100vh - 400px); min-height: 620px;">
+                            <iframe src="warehouse/warehouse_dashboard.html" style="width: 100%; height: 100%; border: none; background: transparent; display: block;"></iframe>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- Section: Ishlab Chiqarish -->
