@@ -56,6 +56,71 @@ function layoutTree(node, box, out) {
     });
 }
 
+// ══════════════════════════════════════════════════════
+// 0) Buyurtma elementi chizmasi — 2D dizaynerdagi ko'rinish, faqat
+//    o'lchamlar (narxsiz). layoutTree() bilan bir xil model ishlatadi.
+// ══════════════════════════════════════════════════════
+function drawItemDiagram(doc, item, top, pageW, margin) {
+    const dW = Math.round((item.design && item.design.W) || (item.width || 0) * 1000);
+    const dH = Math.round((item.design && item.design.H) || (item.height || 0) * 1000);
+    if (!dW || !dH) return top;
+
+    const labelPad = 26; // chap tomonda balandlik yozuvi uchun joy
+    const areaW = pageW - 2 * margin - labelPad;
+    const areaH = 95; // bitta chizma uchun maksimal balandlik
+    const scale = Math.min(areaW / dW, areaH / dH);
+    const drawW = dW * scale, drawH = dH * scale;
+    const startX = margin + labelPad + (areaW - drawW) / 2;
+    const startY = top + 14;
+
+    // Rama (tashqi chegara)
+    doc.setDrawColor(30); doc.setLineWidth(0.6);
+    doc.setFillColor(246, 249, 251);
+    doc.rect(startX, startY, drawW, drawH, 'FD');
+
+    let out = { cells: [], imposts: [] };
+    if (item.design && item.design.tree && !item.design.frameOnly) {
+        layoutTree(item.design.tree, { x: 0, y: 0, w: dW, h: dH }, out);
+    } else {
+        out.cells.push({ opening: 'kar', box: { x: 0, y: 0, w: dW, h: dH } });
+    }
+
+    // Impostlar
+    doc.setDrawColor(110); doc.setLineWidth(0.45);
+    out.imposts.forEach(im => {
+        doc.line(startX + im.x1 * scale, startY + im.y1 * scale, startX + im.x2 * scale, startY + im.y2 * scale);
+    });
+
+    // Bo'limlar + ochilish belgisi (diagonal) + o'lcham yozuvi
+    out.cells.forEach(c => {
+        const cx = startX + c.box.x * scale, cy = startY + c.box.y * scale;
+        const cw = c.box.w * scale, ch = c.box.h * scale;
+        doc.setDrawColor(170); doc.setLineWidth(0.25);
+        doc.rect(cx, cy, cw, ch);
+        if (c.opening && c.opening !== 'kar' && cw > 4 && ch > 4) {
+            doc.setDrawColor(190); doc.setLineWidth(0.2);
+            doc.line(cx + 1.5, cy + 1.5, cx + cw - 1.5, cy + ch - 1.5);
+            doc.line(cx + 1.5, cy + ch - 1.5, cx + cw - 1.5, cy + 1.5);
+        }
+        if (cw > 14 && ch > 8) {
+            doc.setFontSize(6.5); doc.setTextColor(90); doc.setFont(undefined, 'normal');
+            doc.text(`${Math.round(c.box.w)}×${Math.round(c.box.h)}`, cx + cw / 2, cy + ch / 2 + 1.5, { align: 'center' });
+        }
+    });
+
+    // Umumiy o'lchamlar (pastda — eni, chapda — bo'yi)
+    doc.setDrawColor(20); doc.setLineWidth(0.3);
+    doc.line(startX, startY + drawH + 4, startX + drawW, startY + drawH + 4);
+    doc.setFontSize(8); doc.setFont(undefined, 'bold'); doc.setTextColor(20);
+    doc.text(`${dW} mm`, startX + drawW / 2, startY + drawH + 9, { align: 'center' });
+
+    doc.line(startX - 4, startY, startX - 4, startY + drawH);
+    doc.text(`${dH} mm`, startX - 6, startY + drawH / 2, { align: 'center', angle: 90 });
+
+    doc.setFont(undefined, 'normal'); doc.setTextColor(20);
+    return startY + drawH + 16;
+}
+
 // Arra zazorini aniqlash (qo'shni bo'laklar burchagiga qarab)
 function kerfBetween(angleA, angleB) {
     const a45 = angleA && angleA.includes('45');
@@ -267,18 +332,6 @@ export function optimize(pieces, bar = BAR_LEN) {
 }
 
 const fmtMm = n => Number(n).toLocaleString('ru-RU');
-const fmtSom = n => Number(Math.round(n)).toLocaleString('ru-RU') + " so'm";
-
-// Profil narxini aniqlash: Rama/Impost/Stvorka = asosiy seriya narxi, Shtapik = 35%
-const SHTAPIK_PRICE_FACTOR = 0.35;
-function resolvePricePerM(mat, priceOf) {
-    // " · Rama/Impost/Stvorka/Shtapik" suffiksini ajratamiz (o'rta nuqta bayti muhim emas)
-    const m = mat.match(/^(.*?) . (Rama|Impost|Stvorka|Shtapik)$/);
-    const base = m ? m[1] : mat;
-    const part = m ? m[2] : '';
-    const pricePerM = priceOf[base] || priceOf[mat] || 0;
-    return part === 'Shtapik' ? pricePerM * SHTAPIK_PRICE_FACTOR : pricePerM;
-}
 
 // ══════════════════════════════════════════════════════
 // 3) PDF yaratish
@@ -301,29 +354,35 @@ export function generateCuttingPdf(order) {
         return;
     }
 
-    let first = true;
-    const visualPages = [];
+    // ══════════════════════════════════════════════════════
+    // BUYURTMA CHIZMALARI — 2D dizaynerdagi ko'rinish + o'lchamlar (narxsiz)
+    // ══════════════════════════════════════════════════════
+    const romlar = (order.items || []).filter(it => ['rom', 'rom_fortochka', 'eshik'].includes(it.type));
+    if (romlar.length > 0) {
+        doc.setFontSize(15); doc.setFont(undefined, 'bold');
+        doc.text('AKFA Romix — Buyurtma Chizmalari', M, 14);
+        doc.setFontSize(9); doc.setFont(undefined, 'normal');
+        doc.text(dateStr, PW - M, 14, { align: 'right' });
+        doc.text(`Mijoz: ${order.customer || '—'}${order.phone ? ' · ' + order.phone : ''}`, M, 20);
 
-    // Profil narxlari (harajat hisobi) — order itemlaridan
-    const priceOf = {};
-    (order.items || []).forEach(it => { if (it && it.materialName) priceOf[it.materialName] = Number(it.profPricePerM) || 0; });
-    const costRows = [];
-    let grandCost = 0, grandBars = 0;
+        let dy = 26;
+        romlar.forEach((it, idx) => {
+            if (dy > 245) { doc.addPage(); dy = 16; }
+            doc.setFontSize(9); doc.setFont(undefined, 'bold'); doc.setTextColor(20);
+            const label = it.type === 'eshik' ? 'Eshik' : it.type === 'rom_fortochka' ? 'Rom (fortochkali)' : 'Rom';
+            doc.text(`${idx + 1}. ${label} — ${it.materialName || ''} × ${it.quantity || 1} dona`, M, dy);
+            dy = drawItemDiagram(doc, it, dy, PW, M) + 6;
+        });
+    }
+
+    const visualPages = [];
 
     mats.forEach(mat => {
         const pieces = groups[mat];
         const result = optimize(pieces);
         visualPages.push({ mat, result, pieces });
 
-        // ── Harajat (narx) hisobi ──
-        const pricePerM = resolvePricePerM(mat, priceOf);
-        const matMeters = result.totalBars * BAR_LEN / 1000;
-        const matCost = Math.round(pricePerM * matMeters);
-        costRows.push([mat, result.totalBars, matMeters.toFixed(1) + ' m', fmtSom(pricePerM), fmtSom(matCost)]);
-        grandCost += matCost; grandBars += result.totalBars;
-
-        if (!first) doc.addPage();
-        first = false;
+        doc.addPage();
 
         // ── Sarlavha ──
         doc.setFontSize(15); doc.setFont(undefined, 'bold');
@@ -398,8 +457,6 @@ export function generateCuttingPdf(order) {
                 ["Bo'laklar umumiy uzunligi", (result.piecesLen / 1000).toFixed(2) + ' m'],
                 ['Chiqit (Off-Cut)', (result.offcut / 1000).toFixed(2) + ' m'],
                 ['Chiqit foizi', result.offcutRate.toFixed(2) + ' %'],
-                ['Profil narxi (1 m)', fmtSom(pricePerM)],
-                ['Profil harajati', fmtSom(matCost)],
             ],
             styles: { fontSize: 8.5, cellPadding: 1.5 },
             headStyles: { fillColor: [80, 80, 80] },
@@ -407,36 +464,6 @@ export function generateCuttingPdf(order) {
             margin: { left: M, right: M }
         });
     });
-
-    // ══════════════════════════════════════════════════════
-    // PROFIL HARAJATI — UMUMIY XULOSA (barcha profillar)
-    // ══════════════════════════════════════════════════════
-    doc.addPage();
-    doc.setFontSize(15); doc.setFont(undefined, 'bold');
-    doc.text('AKFA Romix — Profil Harajati (Xulosa)', M, 14);
-    doc.setFontSize(9); doc.setFont(undefined, 'normal');
-    doc.text(dateStr, PW - M, 14, { align: 'right' });
-    doc.text(`Mijoz: ${order.customer || '—'}${order.phone ? ' · ' + order.phone : ''}`, M, 20);
-    doc.autoTable({
-        startY: 26,
-        head: [['Profil', 'Profil (dona)', 'Uzunlik (m)', 'Narx (1 m)', 'Harajat']],
-        body: costRows,
-        foot: [['JAMI', grandBars + ' dona', (grandBars * BAR_LEN / 1000).toFixed(1) + ' m', '', fmtSom(grandCost)]],
-        styles: { fontSize: 8.5, cellPadding: 2 },
-        headStyles: { fillColor: [14, 28, 46] },
-        footStyles: { fillColor: [16, 122, 124], textColor: 255, fontStyle: 'bold' },
-        columnStyles: { 0: { cellWidth: 68 }, 4: { halign: 'right' } },
-        margin: { left: M, right: M }
-    });
-    let cy = doc.lastAutoTable.finalY + 8;
-    doc.setFillColor(16, 122, 124);
-    doc.roundedRect(M, cy, PW - 2 * M, 16, 2, 2, 'F');
-    doc.setTextColor(255); doc.setFont(undefined, 'bold'); doc.setFontSize(13);
-    doc.text('UMUMIY PROFIL HARAJATI:', M + 4, cy + 10);
-    doc.text(fmtSom(grandCost), PW - M - 4, cy + 10, { align: 'right' });
-    doc.setTextColor(20); doc.setFont(undefined, 'normal'); doc.setFontSize(7.5);
-    doc.text('* Harajat = kerakli butun profillar soni × standart uzunlik × 1 metr narxi (chiqit bilan).', M, cy + 22);
-    doc.text('* Stvorka (ochiladigan) va shtapik alohida qatorlarda. Shtapik narxi asosiy profilning 35%.', M, cy + 26);
 
     // ══════════════════════════════════════════════════════
     // Vizual kesim chizmalari — OptiCut Usulida (Greyscale)
