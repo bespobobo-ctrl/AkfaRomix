@@ -47,6 +47,20 @@ async function tg(method, payload) {
 }
 const esc = s => String(s == null ? "" : s).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 async function send(chatId, text, extra = {}) { return tg("sendMessage", { chat_id: chatId, text, parse_mode: "HTML", disable_web_page_preview: true, ...extra }); }
+
+async function sendVoice(chatId, audioBuffer) {
+    const formData = new FormData();
+    formData.append('chat_id', chatId);
+    const blob = new Blob([audioBuffer], { type: 'audio/mpeg' });
+    formData.append('voice', blob, 'voice.mp3');
+
+    const r = await fetch(TG('sendVoice'), {
+        method: 'POST',
+        body: formData
+    });
+    return await r.json();
+}
+
 const YESNO = { inline_keyboard: [[{ text: "✅ Ha, bajar", callback_data: "romix:yes" }, { text: "❌ Bekor", callback_data: "romix:no" }]] };
 
 // ── Menyu tugmalari (doimiy klaviatura) ──
@@ -134,7 +148,7 @@ VAZIFANG:
 5. Markdown sarlavha ishlatma — oddiy matn, <b>qalin</b> va emoji. Javoblar qisqa, Telegram uchun mos.`;
 
 // ── AI suhbat (tool-loop) ──
-async function handleAI(chatId, userText) {
+async function handleAI(chatId, userText, shouldReplyVoice = false) {
     if (!ai.isConfigured()) { await send(chatId, "🤖 AI miya ulanmagan. Administrator GEMINI_API_KEY ni qo'shsa ishlaydi."); return; }
     const histKey = "hist_" + chatId;
     let hist = (await stGet(histKey, [])) || [];
@@ -164,6 +178,19 @@ async function handleAI(chatId, userText) {
             hist.push({ role: "user", text: userText }); hist.push({ role: "model", text });
             await stSet(histKey, hist.slice(-16));
             await send(chatId, text);
+
+            const apiKey = process.env.ELEVENLABS_API_KEY;
+            if (shouldReplyVoice && apiKey) {
+                try {
+                    // Strip HTML tags for clean text-to-speech input
+                    const plainText = text.replace(/<[^>]*>/g, '');
+                    const voiceId = process.env.ELEVENLABS_VOICE_ID || 'EXAVITQu4vr4xnSDxMaL';
+                    const audioBuffer = await ai.textToSpeechElevenLabs(plainText, apiKey, voiceId);
+                    await sendVoice(chatId, audioBuffer);
+                } catch (ttsErr) {
+                    console.error('[TTS ERROR]', ttsErr);
+                }
+            }
         }
         return;
     }
@@ -285,7 +312,7 @@ export async function handleUpdate(update) {
             const heard = await ai.transcribeAudio(b64, mime, "AKFA Romix deraza korxonasi");
             if (!heard) { await send(chatId, "⚠️ Ovozni tushunolmadim, qaytadan ayting."); return; }
             await send(chatId, "🎤 Eshitdim: «" + esc(heard) + "»");
-            return handleAI(chatId, heard);
+            return handleAI(chatId, heard, true);
         } catch (e) { await send(chatId, "⚠️ Ovoz xatosi: " + esc(e.message || e)); return; }
     }
 
