@@ -340,6 +340,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Reset item qty
             document.getElementById('itemQty').value = '1';
+
+            // 2D dizaynerni bo'sh holatga qaytarish — element savatga qo'shilgach,
+            // eski chizma qolib ketmasdan, keyingi elementni yangidan chizish uchun
+            if (['rom', 'rom_fortochka', 'eshik'].includes(type) && _designer) {
+                _designer.reset(parseInt(itemWidthInput.value) || 1500, parseInt(itemHeightInput.value) || 2000);
+            }
         };
     }
 
