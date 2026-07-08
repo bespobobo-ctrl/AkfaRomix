@@ -390,16 +390,128 @@ export async function handleUpdate(update) {
     if (text) return handleText(chatId, text);
 }
 
+// ── Supabase Database Webhook handler ──
+async function handleSupabaseWebhook(payload) {
+    const { table, type, record, old_record } = payload;
+    const auth = (await stGet("auth", [])) || [];
+    if (!auth || !auth.length) return;
+
+    let msg = "";
+
+    if (table === "sales_orders") {
+        if (type === "INSERT") {
+            msg = `🛒 <b>Yangi buyurtma qabul qilindi!</b>\n\n` +
+                  `• Mijoz: <b>${esc(record.customer_name)}</b>\n` +
+                  `• Telefon: ${esc(record.customer_phone || "—")}\n` +
+                  `• Summa: <b>${fmtSom(record.total_price)}</b>\n` +
+                  `• Avans: ${fmtSom(record.paid_amount || 0)}\n` +
+                  `• Muddat: ${esc(record.deadline_date || "—")}`;
+        } else if (type === "UPDATE" && old_record) {
+            if (record.status !== old_record.status) {
+                msg = `🔄 <b>Buyurtma holati o'zgardi!</b>\n\n` +
+                      `• Mijoz: <b>${esc(record.customer_name)}</b>\n` +
+                      `• Eski holat: <s>${esc(old_record.status || "Kutilmoqda")}</s>\n` +
+                      `• Yangi holat: <b>${esc(record.status)}</b>`;
+            } else if (Number(record.paid_amount) > Number(old_record.paid_amount)) {
+                const diff = Number(record.paid_amount) - Number(old_record.paid_amount);
+                const qoldiq = Math.max(0, Number(record.total_price) - Number(record.paid_amount));
+                msg = `💰 <b>Mijozdan yangi to'lov qabul qilindi!</b>\n\n` +
+                      `• Mijoz: <b>${esc(record.customer_name)}</b>\n` +
+                      `• Qabul qilingan summa: <b>${fmtSom(diff)}</b>\n` +
+                      `• Jami to'langan: ${fmtSom(record.paid_amount)}\n` +
+                      `• Qolgan qarz: <b>${fmtSom(qoldiq)}</b>`;
+            }
+        }
+    } 
+    
+    else if (table === "romix_expenses") {
+        if (type === "INSERT") {
+            msg = `💸 <b>Yangi harajat qo'shildi!</b>\n\n` +
+                  `• Summa: <b>${fmtSom(record.amount)}</b>\n` +
+                  `• Kategoriya: <b>${esc(record.category || "Boshqa")}</b>\n` +
+                  `• Izoh: <i>${esc(record.note || "—")}</i>\n` +
+                  `• Sana: ${esc(record.date || "bugun")}`;
+        }
+    } 
+    
+    else if (table === "romix_payment_log") {
+        if (type === "INSERT") {
+            msg = `💳 <b>Tashqi qarzga to'lov qilindi!</b>\n\n` +
+                  `• Kreditor: <b>${esc(record.creditor)}</b>\n` +
+                  `• To'langan summa: <b>${fmtSom(record.amount)}</b>\n` +
+                  `• Izoh: <i>${esc(record.note || "—")}</i>\n` +
+                  `• Sana: ${esc(record.date || "bugun")}`;
+        }
+    }
+
+    else if (table === "romix_transactions") {
+        if (type === "INSERT") {
+            let productName = "Profil";
+            try {
+                const p = await stGet(`prod_name_${record.product_id}`);
+                if (p) {
+                    productName = p;
+                } else {
+                    const res = await fetch(`${SUPABASE_URL}/rest/v1/romix_inventory?id=eq.${record.product_id}&select=product_name`, { headers: SBH });
+                    const data = await res.json();
+                    if (data && data[0]) {
+                        productName = data[0].product_name;
+                        await stSet(`prod_name_${record.product_id}`, productName);
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to fetch product name for transaction alert:', e);
+            }
+
+            const action = record.type === "IN" ? "📥 KIRIM (Keltirildi)" : "📤 CHIQIM (Ishlatildi)";
+            msg = `📦 <b>Omborda harakat (Profil):</b>\n\n` +
+                  `• Turi: <b>${action}</b>\n` +
+                  `• Mahsulot: <b>${esc(productName)}</b>\n` +
+                  `• Miqdor: <b>${record.quantity} kg/metr</b>\n` +
+                  `• Izoh: <i>${esc(record.note || "Bosh panel orqali")}</i>`;
+        }
+    }
+
+    else if (table === "romix_accessories_history") {
+        if (type === "INSERT") {
+            msg = `⚙️ <b>Aksessuarlar ombori harakati:</b>\n\n` +
+                  `• Amal: <b>${esc(record.action || "O'zgarish")}</b>\n` +
+                  `• Tafsilotlar: <b>${esc(record.details || "—")}</b>\n` +
+                  `• Mas'ul: ${esc(record.operator || "Tizim")}`;
+        }
+    }
+
+    if (msg) {
+        for (const chatId of auth) {
+            try {
+                await send(chatId, msg);
+            } catch (err) {
+                console.error(`Failed to send webhook notification to ${chatId}:`, err);
+            }
+        }
+    }
+}
+
 // ── Vercel serverless entrypoint ──
 export default async function handler(req, res) {
     if (req.method === "GET") { return res.status(200).json({ ok: true, bot: "AKFA Romix Yordamchi", configured: !!TOKEN, version: "maftuna-v1" }); }
     if (req.method !== "POST") { return res.status(405).json({ ok: false }); }
-    if (WEBHOOK_SECRET && req.headers["x-telegram-bot-api-secret-token"] !== WEBHOOK_SECRET) {
-        return res.status(401).json({ ok: false, error: "bad secret" });
-    }
+    
     try {
         const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+        
+        // Check if it is a Supabase webhook
+        if (body && body.table && body.type && body.record) {
+            await handleSupabaseWebhook(body);
+            return res.status(200).json({ ok: true, source: "supabase" });
+        }
+        
+        if (WEBHOOK_SECRET && req.headers["x-telegram-bot-api-secret-token"] !== WEBHOOK_SECRET) {
+            return res.status(401).json({ ok: false, error: "bad secret" });
+        }
         await handleUpdate(body || {});
-    } catch (e) { /* Telegram'ga doim 200 qaytaramiz — qayta yubormasin */ }
+    } catch (e) {
+        console.error('[HANDLER ERROR]', e);
+    }
     return res.status(200).json({ ok: true });
 }

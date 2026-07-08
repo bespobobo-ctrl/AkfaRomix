@@ -108,13 +108,33 @@
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
         }
     </style>
+    <script>
+        // Anti-Flash & RBAC Role Protection (Ultimate Sync Edition)
+        try {
+            var savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                var u = JSON.parse(savedUser);
+                if (u.role !== 'manager' && u.role !== 'admin') {
+                    window.location.replace('/index.html');
+                } else if (u.role !== 'admin') {
+                    var style = document.createElement('style');
+                    style.innerHTML = `
+                        #sidebarBackBtn, #topNavBackBtn { display: none !important; }
+                    `;
+                    document.head.appendChild(style);
+                }
+            } else {
+                window.location.replace('/index.html');
+            }
+        } catch(e) {}
+    </script>
 </head>
 
 <body class="warehouse-body">
     <div id="mainApp" class="admin-layout">
         <!-- Sidebar -->
         <aside class="sidebar-slim">
-            <div class="logo-icon-v2" style="font-size: 1.5rem; color: #007c52; margin-bottom: 40px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(0, 124, 82, 0.1); width: 45px; height: 45px; border-radius: 12px;" onclick="window.location.href='../romix_dashboard.html'" title="Asosiy Panelga Qaytish">
+            <div id="sidebarBackBtn" class="logo-icon-v2" style="font-size: 1.5rem; color: #007c52; margin-bottom: 40px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(0, 124, 82, 0.1); width: 45px; height: 45px; border-radius: 12px;" onclick="window.location.href='../romix_dashboard.html'" title="Asosiy Panelga Qaytish">
                 ↩️</div>
             <div class="nav-icon active" title="Ombor Tizimi">📦</div>
             <div class="nav-icon" onclick="window.location.href='romix_ombor_profil.html'" title="Profil Ombori">👥</div>
@@ -125,7 +145,7 @@
             <!-- Top Nav -->
             <nav class="top-nav-v2">
                 <div class="nav-links-v2" style="display: flex; align-items: center; gap: 8px;">
-                    <a href="../romix_dashboard.html" class="btn-glass" style="background: rgba(0, 210, 255, 0.1); color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.2); border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; padding: 8px 16px; margin-right: 10px;">
+                    <a id="topNavBackBtn" href="../romix_dashboard.html" class="btn-glass" style="background: rgba(0, 210, 255, 0.1); color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.2); border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; padding: 8px 16px; margin-right: 10px;">
                         ⬅️ Panelga Qaytish
                     </a>
                     <button class="tab-btn active">Romix Ombori</button>

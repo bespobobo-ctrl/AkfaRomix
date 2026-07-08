@@ -44,24 +44,33 @@ async function sbPatch(table, id, patch) {
 
 // Umumiy holat (dashboard)
 export async function overview() {
-    const [orders, inv, exp, debts] = await Promise.all([
+    const [orders, inv, exp, debts, acc, qoldiq, oynak] = await Promise.all([
         sbGet("sales_orders", "select=id,customer_name,total_price,paid_amount,status,created_at&order=created_at.desc&limit=200"),
         sbGet("romix_inventory", "select=product_name,stock_quantity,price,unit"),
         sbGet("romix_expenses", "select=amount,date,category"),
-        sbGet("romix_debts", "select=amount,paid_amount,creditor")
+        sbGet("romix_debts", "select=amount,paid_amount,creditor"),
+        sbGet("romix_accessories", "select=qty,price"),
+        sbGet("romix_qoldiq_profillar", "select=stock_quantity,length"),
+        sbGet("romix_oynak", "select=stock_quantity,price")
     ]);
     const mk = monthKey(today());
     const jamiZakaz = orders.length;
     const faolZakaz = orders.filter(o => o.status && !/yetkaz/i.test(o.status)).length;
     const oylikSavdo = orders.filter(o => monthKey(o.created_at) === mk).reduce((s, o) => s + (Number(o.total_price) || 0), 0);
     const tolanmagan = orders.reduce((s, o) => s + Math.max(0, (Number(o.total_price) || 0) - (Number(o.paid_amount) || 0)), 0);
-    const omborQiymat = inv.reduce((s, p) => s + (Number(p.stock_quantity) || 0) * (Number(p.price) || 0), 0);
+
+    const profilVal = inv.reduce((s, p) => s + (Number(p.stock_quantity) || 0) * (Number(p.price) || 0), 0);
+    const accVal = acc.reduce((s, a) => s + (Number(a.qty) || 0) * (Number(a.price) || 0), 0);
+    const qoldiqVal = qoldiq.reduce((s, q) => s + (Number(q.stock_quantity) || 0) * (Number(q.length) || 0) * 25, 0);
+    const oynakVal = oynak.reduce((s, o) => s + (Number(o.stock_quantity) || 0) * (Number(o.price) || 0), 0);
+    const omborQiymat = profilVal + accVal + qoldiqVal + oynakVal;
+
     const oylikHarajat = exp.filter(e => monthKey(e.date) === mk).reduce((s, e) => s + (Number(e.amount) || 0), 0);
     const qarz = debts.reduce((s, d) => s + Math.max(0, (Number(d.amount) || 0) - (Number(d.paid_amount) || 0)), 0);
     return {
         jami_zakaz: jamiZakaz, faol_zakaz: faolZakaz,
         oylik_savdo: fmt(oylikSavdo), tolanmagan_qarz_mijoz: fmt(tolanmagan),
-        ombor_qiymati: fmt(omborQiymat), mahsulot_turlari: inv.length,
+        ombor_qiymati: fmt(omborQiymat), mahsulot_turlari: inv.length + acc.length + oynak.length,
         shu_oy_harajat: fmt(oylikHarajat), tashqi_qarz: fmt(qarz)
     };
 }
@@ -84,13 +93,42 @@ export async function ordersReport(status) {
 
 // Ombor (zaxira)
 export async function warehouse() {
-    const inv = await sbGet("romix_inventory", "select=product_name,stock_quantity,price,unit&order=stock_quantity.asc");
-    const jami = inv.reduce((s, p) => s + (Number(p.stock_quantity) || 0) * (Number(p.price) || 0), 0);
-    const kam = inv.filter(p => (Number(p.stock_quantity) || 0) <= 5);
+    const [inv, acc, qoldiq, oynak] = await Promise.all([
+        sbGet("romix_inventory", "select=product_name,stock_quantity,price,unit&order=stock_quantity.asc"),
+        sbGet("romix_accessories", "select=name,qty,price,unit"),
+        sbGet("romix_qoldiq_profillar", "select=product_name,stock_quantity,length"),
+        sbGet("romix_oynak", "select=product_name,stock_quantity,price,unit")
+    ]);
+
+    const profilQty = inv.reduce((s, p) => s + (Number(p.stock_quantity) || 0), 0);
+    const profilVal = inv.reduce((s, p) => s + (Number(p.stock_quantity) || 0) * (Number(p.price) || 0), 0);
+
+    const accQty = acc.reduce((s, a) => s + (Number(a.qty) || 0), 0);
+    const accVal = acc.reduce((s, a) => s + (Number(a.qty) || 0) * (Number(a.price) || 0), 0);
+
+    const qoldiqQty = qoldiq.reduce((s, q) => s + (Number(q.stock_quantity) || 0), 0);
+    const qoldiqVal = qoldiq.reduce((s, q) => s + (Number(q.stock_quantity) || 0) * (Number(q.length) || 0) * 25, 0);
+
+    const oynakQty = oynak.reduce((s, o) => s + (Number(o.stock_quantity) || 0), 0);
+    const oynakVal = oynak.reduce((s, o) => s + (Number(o.stock_quantity) || 0) * (Number(o.price) || 0), 0);
+
+    const jamiVal = profilVal + accVal + qoldiqVal + oynakVal;
+
+    const kamProfil = inv.filter(p => (Number(p.stock_quantity) || 0) <= 5).map(p => ({ nomi: p.product_name, qoldiq: (Number(p.stock_quantity) || 0) + " " + (p.unit || "kg"), narx: fmt(p.price) }));
+    const kamAcc = acc.filter(a => (Number(a.qty) || 0) <= 20).map(a => ({ nomi: a.name, qoldiq: (Number(a.qty) || 0) + " " + (a.unit || "dona"), narx: fmt(a.price) }));
+    const kamOynak = oynak.filter(o => (Number(o.stock_quantity) || 0) <= 5).map(o => ({ nomi: o.product_name, qoldiq: (Number(o.stock_quantity) || 0) + " " + (o.unit || "dona"), narx: fmt(o.price) }));
+
     return {
-        mahsulot_turlari: inv.length, ombor_qiymati: fmt(jami),
-        kam_qolganlar: kam.slice(0, 15).map(p => ({ nomi: p.product_name, qoldiq: (Number(p.stock_quantity) || 0) + " " + (p.unit || ""), narx: fmt(p.price) })),
-        royxat: inv.slice(0, 25).map(p => ({ nomi: p.product_name, qoldiq: (Number(p.stock_quantity) || 0) + " " + (p.unit || ""), narx: fmt(p.price) }))
+        mahsulot_turlari: inv.length + acc.length + oynak.length,
+        ombor_qiymati: fmt(jamiVal),
+        bolimlar: [
+            { nomi: "1. Profil ombori", miqdor: profilQty + " kg / dona", qiymat: fmt(profilVal) },
+            { nomi: "2. Aksessuarlar ombori", miqdor: accQty + " dona", qiymat: fmt(accVal) },
+            { nomi: "3. Qoldiq (parcha) profillar", miqdor: qoldiqQty + " dona", qiymat: fmt(qoldiqVal) },
+            { nomi: "4. Oynak (shisha) ombori", miqdor: oynakQty + " dona", qiymat: fmt(oynakVal) }
+        ],
+        kam_qolganlar: [...kamProfil, ...kamAcc, ...kamOynak].slice(0, 15),
+        royxat: inv.slice(0, 15).map(p => ({ nomi: p.product_name, qoldiq: (Number(p.stock_quantity) || 0) + " " + (p.unit || ""), narx: fmt(p.price) }))
     };
 }
 
