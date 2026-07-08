@@ -1145,11 +1145,11 @@
 
                 <div class="nav-links-v2 executive-tabs">
                     <a href="#" class="nav-link-item active" data-tab="dashboard">Asosiy panel</a>
+                    <a href="#" class="nav-link-item" data-tab="buhgalter">Buhgalter</a>
                     <a href="#" class="nav-link-item" data-tab="ombor">Ombor</a>
                     <a href="#" class="nav-link-item" data-tab="sotuv">Sotuv</a>
                     <a href="#" class="nav-link-item" data-tab="ishlab_chiqarish">Ishlab chiqarish</a>
                     <a href="#" class="nav-link-item" data-tab="tayyor_mahsulot">Tayyor Buyurtmalar Ro'yxati</a>
-                    <a href="#" class="nav-link-item" data-tab="buhgalter">Buhgalter</a>
                     <a href="#" class="nav-link-item" data-tab="xodimlar">Xodimlar</a>
                     <a href="#" class="nav-link-item" data-tab="logins">Sozlamalar</a>
                 </div>
@@ -1312,6 +1312,50 @@
                         </div>
                     </div>
 
+                    <!-- Savdo va Foyda Card -->
+                    <div class="premium-card glow-green" style="grid-column: span 2; display: flex; flex-direction: column;">
+                        <h3 style="color: #fff; font-weight: 700; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <span>📈 Savdo va Foyda</span>
+                            <span style="font-size: 0.65rem; background: rgba(0, 255, 136, 0.1); color: #00ff88; padding: 4px 10px; border-radius: 20px; font-weight: 800;">SHU OY</span>
+                        </h3>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                            <div style="background: rgba(0,255,136,0.03); border: 1px solid rgba(0,255,136,0.08); border-radius: 12px; padding: 12px 10px; text-align: center; display: flex; flex-direction: column; gap: 4px;">
+                                <div style="font-size: 0.6rem; color: rgba(255,255,255,0.4); font-weight: 700;">OYLIK SAVDO</div>
+                                <div id="dashboard-sales-month" style="font-weight: 800; color: #00ff88; font-size: 0.95rem; font-family: monospace;">-- UZS</div>
+                            </div>
+                            <div style="background: rgba(0,210,255,0.03); border: 1px solid rgba(0,210,255,0.08); border-radius: 12px; padding: 12px 10px; text-align: center; display: flex; flex-direction: column; gap: 4px;">
+                                <div style="font-size: 0.6rem; color: rgba(255,255,255,0.4); font-weight: 700;">SOF FOYDA</div>
+                                <div id="dashboard-profit-month" style="font-weight: 800; color: #00d2ff; font-size: 0.95rem; font-family: monospace;">-- UZS</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.06); padding-top: 8px; font-size: 0.76rem;">
+                            <span style="color: rgba(255,255,255,0.4); font-weight: 600;">Bugungi savdo:</span>
+                            <strong id="dashboard-sales-today" style="color: #fff; font-weight: 800;">-- UZS</strong>
+                        </div>
+                    </div>
+
+                    <!-- Ishlab Chiqarish Holati Card -->
+                    <div class="premium-card" style="grid-column: span 2; display: flex; flex-direction: column;">
+                        <h3 style="color: #fff; font-weight: 700; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <span>🏭 Ishlab Chiqarish Holati</span>
+                            <span style="font-size: 0.65rem; background: rgba(0, 210, 255, 0.1); color: #00d2ff; padding: 4px 10px; border-radius: 20px; font-weight: 800; display: flex; align-items: center; gap: 4px;"><span class="pulse-dot" style="color: #00d2ff; width: 6px; height: 6px;"></span>JONLI</span>
+                        </h3>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                            <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.03); border-radius: 12px; padding: 12px 8px; text-align: center; display: flex; flex-direction: column; gap: 4px;">
+                                <div style="font-size: 0.58rem; color: rgba(255,255,255,0.4); font-weight: 700;">BUGUNGI ISHLAB CHIQARISH</div>
+                                <div id="dashboard-prod-today" style="font-weight: 800; color: #00d2ff; font-size: 0.95rem; font-family: monospace;">--</div>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.03); border-radius: 12px; padding: 12px 8px; text-align: center; display: flex; flex-direction: column; gap: 4px;">
+                                <div style="font-size: 0.58rem; color: rgba(255,255,255,0.4); font-weight: 700;">FAOL PARTIYALAR</div>
+                                <div id="dashboard-prod-batches" style="font-weight: 800; color: #a855f7; font-size: 0.95rem; font-family: monospace;">--</div>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.03); border-radius: 12px; padding: 12px 8px; text-align: center; display: flex; flex-direction: column; gap: 4px;">
+                                <div style="font-size: 0.58rem; color: rgba(255,255,255,0.4); font-weight: 700;">FAOL BRIGADALAR</div>
+                                <div id="dashboard-prod-brigades" style="font-weight: 800; color: #22c55e; font-size: 0.95rem; font-family: monospace;">--</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Harajatlar Card -->
                     <div class="premium-card" style="grid-column: span 2; display: flex; flex-direction: column;">
                         <h3 style="color: #fff; font-weight: 700; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -1353,6 +1397,28 @@
                         <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.06); padding-top: 8px; font-size: 0.76rem;">
                             <span style="color: rgba(255,255,255,0.4); font-weight: 600;">Shu oy to'langan:</span>
                             <strong id="dashboard-pay-month" style="color: #fff; font-weight: 800;">-- UZS</strong>
+                        </div>
+                    </div>
+
+                    <!-- Kechikkan Buyurtmalar Card -->
+                    <div class="premium-card" style="grid-column: span 2; display: flex; flex-direction: column; border: 1px solid rgba(239,68,68,0.18);">
+                        <h3 style="color: #fff; font-weight: 700; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <span>⚠️ Kechikkan Buyurtmalar</span>
+                            <span id="dashboard-overdue-count" style="font-size: 0.65rem; background: rgba(239,68,68,0.12); color: #ef4444; padding: 4px 10px; border-radius: 20px; font-weight: 800;">0</span>
+                        </h3>
+                        <div id="dashboard-overdue-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; padding-right: 2px;">
+                            <div style="text-align: center; color: rgba(255,255,255,0.25); font-size: 0.75rem; padding: 20px 0;">Yuklanmoqda...</div>
+                        </div>
+                    </div>
+
+                    <!-- Eng Katta Qarzdorlar Card -->
+                    <div class="premium-card" style="grid-column: span 2; display: flex; flex-direction: column;">
+                        <h3 style="color: #fff; font-weight: 700; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <span>🧾 Eng Katta Qarzdorlar</span>
+                            <span style="font-size: 0.65rem; background: rgba(255, 170, 0, 0.1); color: #ffaa00; padding: 4px 10px; border-radius: 20px; font-weight: 800;">TOP 5</span>
+                        </h3>
+                        <div id="dashboard-top-debtors" style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; padding-right: 2px;">
+                            <div style="text-align: center; color: rgba(255,255,255,0.25); font-size: 0.75rem; padding: 20px 0;">Yuklanmoqda...</div>
                         </div>
                     </div>
                 </div>

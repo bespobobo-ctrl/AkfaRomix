@@ -6868,27 +6868,31 @@ CREATE TABLE IF NOT EXISTS romix_oynak (
         let emps = [];
         let att = [];
         try {
-            const { data: eData } = await supabase.from('employees').select('id, full_name, role, salary_info');
-            const { data: aData } = await supabase.from('attendance').select('status, check_in, check_out, employee_id').eq('date', todayStr);
-            
+            // MUHIM: faqat HAQIQIY so'rov xatosida (masalan internet uzilganda) localStorage
+            // keshiga qaytamiz — bo'sh (lekin xatosiz) natijani "internet yo'q" deb noto'g'ri
+            // talqin qilib, boshqa qurilmadagi eski keshni tiklab yubormaslik uchun (Tozalash
+            // tugmasi faqat joriy qurilma keshini tozalaydi, boshqalarini emas).
+            const { data: eData, error: eErr } = await supabase.from('employees').select('id, full_name, role, salary_info');
+            const { data: aData, error: aErr } = await supabase.from('attendance').select('status, check_in, check_out, employee_id').eq('date', todayStr);
+
             let finalEmps = eData;
-            if (!finalEmps || finalEmps.length === 0) {
+            if (eErr) {
                 const localEmps = localStorage.getItem('romix_db_employees');
                 if (localEmps) finalEmps = JSON.parse(localEmps);
             }
             if (finalEmps) emps = finalEmps;
 
             let finalAtt = aData;
-            if (!finalAtt || finalAtt.length === 0) {
+            if (aErr) {
                 const dbAtt = localStorage.getItem('romix_db_attendance');
                 if (dbAtt) {
                     const parsed = JSON.parse(dbAtt);
                     finalAtt = parsed.filter(a => a.date === todayStr);
                 }
-            }
-            if (!finalAtt || finalAtt.length === 0) {
-                const localAtt = localStorage.getItem('romix_attendance_local');
-                if (localAtt) finalAtt = JSON.parse(localAtt);
+                if (!finalAtt || finalAtt.length === 0) {
+                    const localAtt = localStorage.getItem('romix_attendance_local');
+                    if (localAtt) finalAtt = JSON.parse(localAtt);
+                }
             }
             if (finalAtt) att = finalAtt;
         } catch (err) {
@@ -6927,9 +6931,9 @@ CREATE TABLE IF NOT EXISTS romix_oynak (
         // 2. Warehouse Stats Aggregation
         let plastStock = 0, plastVal = 0, accStock = 0, accVal = 0, qoldiqStock = 0, qoldiqVal = 0, qoldiqLength = 0;
         try {
-            const { data: plastData } = await supabase.from('romix_inventory').select('stock_quantity, price');
+            const { data: plastData, error: plastErr } = await supabase.from('romix_inventory').select('stock_quantity, price');
             let finalPlastData = plastData;
-            if (!finalPlastData || finalPlastData.length === 0) {
+            if (plastErr) {
                 const localPlast = localStorage.getItem('romix_db_romix_inventory');
                 if (localPlast) finalPlastData = JSON.parse(localPlast);
             }
@@ -7007,9 +7011,9 @@ CREATE TABLE IF NOT EXISTS romix_oynak (
         // 3. Orders Live Feed
         let orders = [];
         try {
-            const { data: oData } = await supabase.from('sales_orders').select('*').order('created_at', { ascending: false });
-            if (oData && oData.length > 0) {
-                orders = oData;
+            const { data: oData, error: oErr } = await supabase.from('sales_orders').select('*').order('created_at', { ascending: false });
+            if (!oErr) {
+                orders = oData || [];
                 localStorage.setItem('romix_orders_local', JSON.stringify(orders));
             } else {
                 const localRaw = localStorage.getItem('romix_orders_local');
@@ -7096,9 +7100,90 @@ CREATE TABLE IF NOT EXISTS romix_oynak (
             if (payTotalEl) payTotalEl.textContent = payTotal.toLocaleString() + ' UZS';
             if (payDebtEl) payDebtEl.textContent = remainingDebt.toLocaleString() + ' UZS';
             if (payMonthEl) payMonthEl.textContent = payMonth.toLocaleString() + ' UZS';
-        } catch (err) { console.error("Harajat/To'lov statistikasi xatosi:", err); }
 
-        // 5. Live Payroll ticking logic
+            // Savdo va Foyda — Buxgalteriya'dagi updateBuhHeroKPIs bilan bir xil formula
+            const salesToday = orders.filter(o => (o.created_at || '').startsWith(todayStr)).reduce((s, o) => s + (Number(o.total_price) || 0), 0);
+            const salesMonth = orders.filter(o => (o.created_at || '').startsWith(monthKey)).reduce((s, o) => s + (Number(o.total_price) || 0), 0);
+            const netProfitMonth = salesMonth - expMonth;
+
+            const salesTodayEl = document.getElementById('dashboard-sales-today');
+            const salesMonthEl = document.getElementById('dashboard-sales-month');
+            const profitMonthEl = document.getElementById('dashboard-profit-month');
+            if (salesTodayEl) salesTodayEl.textContent = salesToday.toLocaleString() + ' UZS';
+            if (salesMonthEl) salesMonthEl.textContent = salesMonth.toLocaleString() + ' UZS';
+            if (profitMonthEl) {
+                profitMonthEl.textContent = netProfitMonth.toLocaleString() + ' UZS';
+                profitMonthEl.style.color = netProfitMonth >= 0 ? '#00d2ff' : '#ff4d4f';
+            }
+        } catch (err) { console.error("Harajat/To'lov/Savdo statistikasi xatosi:", err); }
+
+        // 5. Ishlab Chiqarish Holati
+        try {
+            const prodLog = await romixBuhSelect('romix_production_log', ROMIX_BUH_KEYS.production);
+            const prodToday = prodLog.filter(p => p.date === todayStr).reduce((s, p) => s + (Number(p.quantity) || 0), 0);
+
+            const { data: batchesData } = await supabase.from('romix_production_batches').select('quantity').gt('quantity', 0);
+            const { data: brigadesData } = await supabase.from('romix_brigades').select('id');
+
+            const prodTodayEl = document.getElementById('dashboard-prod-today');
+            const prodBatchesEl = document.getElementById('dashboard-prod-batches');
+            const prodBrigadesEl = document.getElementById('dashboard-prod-brigades');
+            if (prodTodayEl) prodTodayEl.textContent = prodToday.toLocaleString() + ' ta';
+            if (prodBatchesEl) prodBatchesEl.textContent = (batchesData || []).length;
+            if (prodBrigadesEl) prodBrigadesEl.textContent = (brigadesData || []).length;
+        } catch (err) { console.error("Ishlab chiqarish statistikasi xatosi:", err); }
+
+        // 6. Kechikkan Buyurtmalar + Eng Katta Qarzdorlar (sales_orders'dan, section 3'da yuklangan)
+        try {
+            const overdueList = document.getElementById('dashboard-overdue-list');
+            const overdueCountEl = document.getElementById('dashboard-overdue-count');
+            const notDone = orders.filter(o => getOrderJourneyStage(o) !== 'bajarilgan');
+            const overdueOrders = notDone
+                .filter(o => o.production_deadline && o.production_deadline < todayStr)
+                .sort((a, b) => a.production_deadline.localeCompare(b.production_deadline));
+
+            if (overdueCountEl) overdueCountEl.textContent = overdueOrders.length;
+            if (overdueList) {
+                if (overdueOrders.length === 0) {
+                    overdueList.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.25); font-size: 0.75rem; padding: 20px 0;">Kechikkan buyurtma yo\'q</div>';
+                } else {
+                    overdueList.innerHTML = overdueOrders.slice(0, 8).map(o => {
+                        const daysLate = Math.max(1, Math.round((new Date(todayStr) - new Date(o.production_deadline)) / 86400000));
+                        return `
+                            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.15); border-radius: 10px; padding: 8px 12px;">
+                                <div style="overflow: hidden;">
+                                    <div style="font-size: 0.78rem; color: #fff; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px;">${o.customer_name || 'Mijoz'}</div>
+                                    <div style="font-size: 0.65rem; color: rgba(255,255,255,0.4);">Muddat: ${new Date(o.production_deadline).toLocaleDateString('uz-UZ')}</div>
+                                </div>
+                                <span style="font-size: 0.68rem; color: #ef4444; font-weight: 800; white-space: nowrap;">${daysLate} kun kech</span>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+
+            const debtorsList = document.getElementById('dashboard-top-debtors');
+            const topDebtors = orders
+                .map(o => ({ name: o.customer_name || 'Mijoz', remaining: (Number(o.total_price) || 0) - (Number(o.paid_amount) || 0) }))
+                .filter(o => o.remaining > 0)
+                .sort((a, b) => b.remaining - a.remaining)
+                .slice(0, 5);
+
+            if (debtorsList) {
+                if (topDebtors.length === 0) {
+                    debtorsList.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.25); font-size: 0.75rem; padding: 20px 0;">Qarzdor mijoz yo\'q</div>';
+                } else {
+                    debtorsList.innerHTML = topDebtors.map(d => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,170,0,0.05); border: 1px solid rgba(255,170,0,0.12); border-radius: 10px; padding: 8px 12px;">
+                            <span style="font-size: 0.78rem; color: #fff; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px;">${d.name}</span>
+                            <span style="font-size: 0.78rem; color: #ffaa00; font-weight: 800; white-space: nowrap;">${d.remaining.toLocaleString()} UZS</span>
+                        </div>
+                    `).join('');
+                }
+            }
+        } catch (err) { console.error("Kechikkan/Qarzdorlar statistikasi xatosi:", err); }
+
+        // 7. Live Payroll ticking logic
         let activeWorkers = [];
         let employeesMap = {};
         emps.forEach(emp => {

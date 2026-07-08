@@ -64,8 +64,30 @@ async function sendVoice(chatId, audioBuffer) {
 const YESNO = { inline_keyboard: [[{ text: "✅ Ha, bajar", callback_data: "romix:yes" }, { text: "❌ Bekor", callback_data: "romix:no" }]] };
 
 // ── Menyu tugmalari (doimiy klaviatura) ──
-const B = { hr: "👥 Xodimlar", ombor: "📦 Ombor", tayyor: "✅ Tayyor mahsulot", bux: "📊 Buxgalteriya", harajat: "💸 Harajatlar", tolov: "💰 To'lovlar", qarz: "🔴 Tashqi qarz" };
-const MENU_KB = { keyboard: [[B.hr, B.ombor], [B.tayyor, B.bux], [B.harajat, B.tolov], [B.qarz]], resize_keyboard: true, is_persistent: true };
+const B = { 
+    hr: "👥 Xodimlar", 
+    ombor: "📦 Ombor", 
+    tayyor: "✅ Tayyor mahsulot", 
+    bux: "📊 Buxgalteriya", 
+    harajat: "💸 Harajatlar", 
+    tolov: "💰 To'lovlar", 
+    qarz: "🔴 Tashqi qarz",
+    voiceMaftuna: "🎙️ Ovoz: Maftuna",
+    voiceBobur: "🎙️ Ovoz: Bobur",
+    modeText: "✍️ Faqat matn"
+};
+const MENU_KB = { 
+    keyboard: [
+        [B.hr, B.ombor], 
+        [B.tayyor, B.bux], 
+        [B.harajat, B.tolov], 
+        [B.qarz],
+        [B.voiceMaftuna, B.voiceBobur],
+        [B.modeText]
+    ], 
+    resize_keyboard: true, 
+    is_persistent: true 
+};
 
 async function tgFilePath(fileId) {
     const d = await tg("getFile", { file_id: fileId });
@@ -151,6 +173,7 @@ VAZIFANG:
 // ── AI suhbat (tool-loop) ──
 async function handleAI(chatId, userText, shouldReplyVoice = false) {
     if (!ai.isConfigured()) { await send(chatId, "🤖 AI miya ulanmagan. Administrator GEMINI_API_KEY ni qo'shsa ishlaydi."); return; }
+    const voiceMode = await stGet("voice_" + chatId); // "maftuna", "bobur", or null
     const histKey = "hist_" + chatId;
     let hist = (await stGet(histKey, [])) || [];
     const contents = hist.slice(-12).map(h => ({ role: h.role, parts: [{ text: h.text }] }));
@@ -182,11 +205,12 @@ async function handleAI(chatId, userText, shouldReplyVoice = false) {
 
             const muxlisaApiKey = process.env.MUXLISA_API_KEY || 'rzCxQLxbC0ayEzkKOsdIjnZ-vruLCgH_enc0QKfS';
             const elevenLabsApiKey = process.env.ELEVENLABS_API_KEY;
-            if (shouldReplyVoice) {
+            const activeVoiceReply = shouldReplyVoice || !!voiceMode;
+            if (activeVoiceReply) {
                 if (muxlisaApiKey) {
                     try {
                         const plainText = text.replace(/<[^>]*>/g, '');
-                        const speakerId = process.env.MUXLISA_SPEAKER_ID || '0'; // 0 - Maftuna (Female)
+                        const speakerId = (voiceMode === "bobur") ? "1" : "0";
                         const audioBuffer = await ai.textToSpeechMuxlisa(plainText, muxlisaApiKey, speakerId);
                         await sendVoice(chatId, audioBuffer);
                     } catch (ttsErr) {
@@ -269,6 +293,21 @@ async function handleButton(chatId, t) {
         const d = await db.debtsReport();
         await send(chatId, `🔴 <b>Tashqi qarz</b>\nJami qoldiq: <b>${esc(d.jami_qarz)}</b> · ${d.soni} ta\n\n` +
             (d.qarzlar.length ? d.qarzlar.slice(0, 15).map((x, i) => `${i + 1}. ${esc(x.kimga)} — qoldiq <b>${esc(x.qoldiq)}</b>${x.muddat && x.muddat !== "—" ? " · muddat " + esc(x.muddat) : ""}`).join("\n") : "Tashqi qarz yo'q ✅"));
+        return true;
+    }
+    if (t === B.voiceMaftuna) {
+        await stSet("voice_" + chatId, "maftuna");
+        await send(chatId, "🎙️ Ovozli rejim: <b>Maftuna (ayol)</b> faollashtirildi! Endi har qanday xabarga Maftuna ovozi bilan javob qaytaraman. (Matnga qaytish uchun '✍️ Faqat matn' ni bosing)");
+        return true;
+    }
+    if (t === B.voiceBobur) {
+        await stSet("voice_" + chatId, "bobur");
+        await send(chatId, "🎙️ Ovozli rejim: <b>Bobur (erkak)</b> faollashtirildi! Endi har qanday xabarga Bobur ovozi bilan javob qaytaraman. (Matnga qaytish uchun '✍️ Faqat matn' ni bosing)");
+        return true;
+    }
+    if (t === B.modeText) {
+        await stDel("voice_" + chatId);
+        await send(chatId, "✍️ <b>Matnli rejim</b> faollashtirildi. Savol-javoblar faqat matn ko'rinishida bo'ladi.");
         return true;
     }
     return false;
