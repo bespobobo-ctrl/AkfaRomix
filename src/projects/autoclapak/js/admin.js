@@ -776,24 +776,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         return { totalEmp, monthlyPayrollFund };
     }
 
-    // Aksesuar/Qoldiq/Oynak — endi Supabase'da (avval faqat brauzer localStorage'da edi).
-    // Birinchi o'qishda: Supabase jadvali bo'sh VA localStorage'da eski ma'lumot bo'lsa,
-    // bir martalik avtomatik ko'chiriladi (haqiqiy ombor kompyuteridagi ma'lumot yo'qolmasin).
-    let _buhOmborMigrationChecked = { accessories: false, qoldiq: false, oynak: false };
-    async function _buhOmborMigrateOnce(key, table, localKey, mapFn) {
-        if (_buhOmborMigrationChecked[key]) return;
-        _buhOmborMigrationChecked[key] = true;
-        try {
-            const { count, error } = await supabase.from(table).select('id', { count: 'exact', head: true });
-            if (error) throw error;
-            if (count > 0) return;
-            const local = JSON.parse(localStorage.getItem(localKey) || '[]');
-            if (!local.length) return;
-            const rows = local.map(mapFn);
-            const { error: insErr } = await supabase.from(table).insert(rows);
-            if (insErr) throw insErr;
-        } catch (e) { console.warn(`Buh ombor migratsiya xatosi (${table}):`, e); }
-    }
+    // Aksesuar/Qoldiq/Oynak — Supabase'ga migratsiya (localStorage'dan) allaqachon ko'p yildan
+    // beri bajarilgan va yakunlangan. Bu funksiya avval "Supabase jadvali bo'sh bo'lsa,
+    // brauzer localStorage'idagi eski keshdan qayta to'ldir" deb ishlar edi — lekin bu "Xavfli
+    // Zona: Tozalash" tugmasi bilan to'g'ridan-to'g'ri ziddiyatga kiradi: tozalashdan keyin
+    // jadval ATAYIN bo'sh, lekin islar boshqa qurilma/brauzerda hali eski localStorage keshi
+    // qolgan bo'lsa, shu funksiya uni yana bazaga qayta yozib qo'yar edi (aynan shu sabab
+    // romix_accessories'da tozalashdan keyin bitta soxta yozuv paydo bo'lgan edi). Endi
+    // o'chirilgan — migratsiya vazifasi allaqachon bajarilgan, bu xavf endi keraksiz.
+    async function _buhOmborMigrateOnce() { /* no-op — bir martalik migratsiya yakunlangan */ }
 
     async function _buhGetAccessories() {
         await _buhOmborMigrateOnce('accessories', 'romix_accessories', ROMIX_BUH_KEYS.accessories, (a, i) => ({
@@ -6679,25 +6670,14 @@ CREATE TABLE IF NOT EXISTS romix_oynak (
         // Aksesuvar/Qoldiq endi Supabase'da — bir martalik migratsiya _buhGetAccessories()/
         // _buhGetQoldiqProfillar() ichida avtomatik amalga oshadi (pastda, statistika hisoblashda).
 
+        // MUHIM: bu yerda avval "agar localStorage kaliti bo'lmasa — soxta demo ma'lumot bilan
+        // qayta yarat" degan kod bor edi. Bu "Tozalash" tugmasi bilan ziddiyatga kirar edi:
+        // tozalashdan keyin sahifa qayta yuklanganda shu kod darhol soxta profil/tranzaksiya
+        // to'plamini qaytadan yaratib, pastdagi "bo'sh bo'lsa localStorage'dan o'qi" fallback
+        // ana shu soxta summani ko'rsatib yuborardi (ombor ro'yxati bo'sh ko'rinsa ham, "Ombor
+        // qiymati" summasi soxta demo-narxlardan hisoblanardi). Endi bunday avtomatik qayta
+        // urug'lantirish yo'q — haqiqiy jadval bo'sh bo'lsa, summa ham chinakam nolga tushadi.
         const plastLocalKey = 'romix_db_romix_inventory';
-        if (!localStorage.getItem(plastLocalKey)) {
-            const defaultPlast = [
-                { id: "p1", product_name: "AKFA Plastik 6000 QVT Oq", brand: "AKFA", series: "6000 QVT", color: "Oq", price: 150000, stock_quantity: 450, unit: "kg", created_at: new Date().toISOString() },
-                { id: "p2", product_name: "AKFA Plastik 6000 TRIO Mocha", brand: "AKFA", series: "6000 TRIO", color: "Mocha", price: 180000, stock_quantity: 320, unit: "kg", created_at: new Date().toISOString() },
-                { id: "p3", product_name: "Ekopen Plastik 5800 TRIO Oq", brand: "Ekopen", series: "5800 TRIO", color: "Oq", price: 140000, stock_quantity: 600, unit: "kg", created_at: new Date().toISOString() },
-                { id: "p4", product_name: "AKFA Alyuminiy 5200 QVT Qora", brand: "AKFA", series: "5200 QVT", color: "Qora", price: 220000, stock_quantity: 210, unit: "kg", created_at: new Date().toISOString() }
-            ];
-            localStorage.setItem(plastLocalKey, JSON.stringify(defaultPlast));
-        }
-        const transLocalKey = 'romix_db_romix_transactions';
-        if (!localStorage.getItem(transLocalKey)) {
-            const defaultTrans = [
-                { id: "t1", product_id: "p1", type: "IN", quantity: 150, operator: "Admin", created_at: new Date(Date.now() - 2*3600*1000).toISOString() },
-                { id: "t2", product_id: "p3", type: "OUT", quantity: 80, operator: "Sotuv", created_at: new Date(Date.now() - 5*3600*1000).toISOString() },
-                { id: "t3", product_id: "p4", type: "IN", quantity: 45, operator: "Admin", created_at: new Date(Date.now() - 24*3600*1000).toISOString() }
-            ];
-            localStorage.setItem(transLocalKey, JSON.stringify(defaultTrans));
-        }
 
         // 1. Employee Stats
         let emps = [];
@@ -9995,8 +9975,12 @@ CREATE TABLE IF NOT EXISTS buh_sales (
             const blocked = [];
             for (const table of TABLES) {
                 try {
+                    // romix_bot_state'ning asosiy kaliti "id" emas, "key" (TEXT) — shu jadval uchun
+                    // filtrni moslashtiramiz, aks holda "column id does not exist" xatosi chiqadi
+                    // (va hybrid client uni jimgina yutib, hech narsa o'chirmay "muvaffaqiyat" deb ko'rsatadi).
+                    const pkCol = table === 'romix_bot_state' ? 'key' : 'id';
                     const { count: beforeCount } = await supabase.from(table).select('*', { count: 'exact', head: true });
-                    const { error } = await supabase.from(table).delete().not('id', 'is', null);
+                    const { error } = await supabase.from(table).delete().not(pkCol, 'is', null);
                     if (error) { failCount++; console.warn(`Wipe failed on ${table}:`, error); continue; }
                     const { count: afterCount } = await supabase.from(table).select('*', { count: 'exact', head: true });
                     if ((beforeCount || 0) > 0 && (afterCount || 0) > 0) {
