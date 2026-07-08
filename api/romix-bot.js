@@ -115,7 +115,8 @@ const READ_TOOLS = [
     { name: "xodim_qidirish", description: "Xodimlarni ismi bo'yicha qidirish.", parameters: OBJ({ qidiruv: STR("Xodim ismi") }, ["qidiruv"]) },
     { name: "ishlab_chiqarish_holati", description: "Ishlab chiqarish (kesish, payvandlash, yig'ish, qadoqlash) bosqichlari bo'yicha faol partiyalar (batches) holati hisoboti." },
     { name: "brigadalar_tarkibi", description: "Montajchilar va ishchilar brigadalari hamda ularga biriktirilgan xodimlar tarkibi." },
-    { name: "material_sorovlari", description: "Buyurtmalar bo'yicha ishlab chiqarishga yuborilgan material so'rovlari va ularning tasdiqlanish holatlari." }
+    { name: "material_sorovlari", description: "Buyurtmalar bo'yicha ishlab chiqarishga yuborilgan material so'rovlari va ularning tasdiqlanish holatlari." },
+    { name: "excel_hisobot", description: "Muayyan oy uchun barcha sotuvlar, harajatlar va qarz to'lovlarini Excel (CSV) fayli shaklida generatsiya qilish.", parameters: OBJ({ oy: STR("Yil va oy, masalan '2026-06' yoki '2026-07'. Bo'sh bo'lsa joriy oy. (ixtiyoriy)") }) }
 ];
 const WRITE_TOOLS = [
     { name: "harajat_qoshish", description: "Yangi HARAJAT (chiqim) qo'shish. Tizim avval tasdiq so'raydi.", parameters: OBJ({ summa: NUM("Harajat summasi (so'm)"), kategoriya: STR("Kategoriya, masalan Ijara, Maosh, Kommunal, Material, Boshqa"), izoh: STR("Izoh (ixtiyoriy)"), sana: STR("Sana YYYY-MM-DD (ixtiyoriy, default bugun)") }, ["summa"]) },
@@ -131,7 +132,7 @@ const ALL_TOOLS = [...READ_TOOLS, ...WRITE_TOOLS].map(t => {
 const fmtSom = n => Math.round(Number(n) || 0).toLocaleString("uz-UZ") + " so'm";
 
 // ── Toolni bajarish (o'qish darhol) ──
-async function execRead(name, a) {
+async function execRead(name, a, chatId) {
     switch (name) {
         case "umumiy_holat": return await db.overview();
         case "zakazlar": return await db.ordersReport(a.holat);
@@ -145,6 +146,54 @@ async function execRead(name, a) {
         case "ishlab_chiqarish_holati": return await db.productionReport();
         case "brigadalar_tarkibi": return await db.brigadesReport();
         case "material_sorovlari": return await db.materialRequestsReport();
+        case "excel_hisobot": {
+            const oy = a.oy || new Date(new Date().getTime() + 5*3600*1000).toISOString().slice(0, 7);
+            const data = await db.excelReport(oy);
+            
+            let csv = "\ufeff";
+            csv += `=== SOTUV BUYURTMALARI (${oy}) ===\n`;
+            csv += `Sana,Mijoz,Telefon,Summa,Tolangan,Qoldiq,Status\n`;
+            (data.orders || []).forEach(o => {
+                const total = Number(o.total_price) || 0;
+                const paid = Number(o.paid_amount) || 0;
+                const qoldiq = Math.max(0, total - paid);
+                csv += `"${(o.created_at || '').slice(0,10)}","${(o.customer_name || '').replace(/"/g, '""')}","${o.customer_phone || ''}",${total},${paid},${qoldiq},"${o.status || ''}"\n`;
+            });
+            csv += `\n`;
+
+            csv += `=== HARAJATLAR (${oy}) ===\n`;
+            csv += `Sana,Kategoriya,Summa,Izoh\n`;
+            (data.expenses || []).forEach(e => {
+                csv += `"${e.date || ''}","${(e.category || '').replace(/"/g, '""')}",${Number(e.amount) || 0},"${(e.note || '').replace(/"/g, '""')}"\n`;
+            });
+            csv += `\n`;
+
+            csv += `=== TASHQI QARZ TO'LOVLARI (${oy}) ===\n`;
+            csv += `Sana,Kreditor,Summa,Izoh\n`;
+            (data.payments || []).forEach(p => {
+                csv += `"${p.date || ''}","${(p.creditor || '').replace(/"/g, '""')}",${Number(p.amount) || 0},"${(p.note || '').replace(/"/g, '""')}"\n`;
+            });
+
+            try {
+                const formData = new FormData();
+                formData.append('chat_id', chatId);
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                formData.append('document', blob, `romix_hisobot_${oy}.csv`);
+                formData.append('caption', `📊 <b>${oy}</b> oyi uchun moliyaviy hisobot (Excel formatida).`);
+                formData.append('parse_mode', 'HTML');
+
+                const r = await fetch(TG('sendDocument'), {
+                    method: 'POST',
+                    body: formData
+                });
+                const resData = await r.json();
+                if (!resData.ok) throw new Error(JSON.stringify(resData));
+                return `Hisobot generatsiya qilindi va Telegram orqali yuborildi.`;
+            } catch (err) {
+                console.error('[EXCEL SEND ERROR]', err);
+                return `Xato: Hisobot faylini yuborib bo'lmadi.`;
+            }
+        }
         default: return { xato: "Noma'lum: " + name };
     }
 }
@@ -180,6 +229,7 @@ VAZIFANG:
    - Ishlab chiqarish jarayonidagi partiyalar, kesish, payvandlash bosqichlari uchun 'ishlab_chiqarish_holati' toolini chaqir.
    - Ustalar va montajchilar guruhlari/brigadalari uchun 'brigadalar_tarkibi' toolini chaqir.
    - Buyurtmalar uchun jo'natilgan material so'rovlari holatini bilish uchun 'material_sorovlari' toolini chaqir.
+   - Excel (CSV) moliyaviy hisobotini olish uchun 'excel_hisobot' toolidan foydalan (masalan: 'iyun hisoboti Excel', 'oylik hisobotni Excel qilib ber' -> oy='2026-06').
    - Agar biron holat bo'yicha filtrlanmagan oxirgi zakazlar/ombor/xodimlar ro'yxati kerak bo'lsa, mos ravishda 'zakazlar', 'ombor', 'xodimlar', 'harajatlar', 'qarzlar' toollarini chaqir.
 2. Egasi FAQAT ikki xil amalni kirita oladi: HARAJAT (chiqim) va TO'LOV. Boshqa hech narsa yozma/o'zgartirma — faqat ma'lumot ber.
    - Harajat uchun 'harajat_qoshish', to'lov uchun 'tolov_qoshish' toolini chaqir.
@@ -212,7 +262,7 @@ async function handleAI(chatId, userText, shouldReplyVoice = false) {
                 await send(chatId, writeSummary(name, args) + "\n\nTasdiqlaysizmi?", { reply_markup: YESNO });
                 return;
             }
-            const result = await execRead(name, args);
+            const result = await execRead(name, args, chatId);
             contents.push({ role: "model", parts: [{ functionCall: fc.functionCall }] });
             contents.push({ role: "user", parts: [{ functionResponse: { name, response: { natija: result } } }] });
             continue;
@@ -390,16 +440,128 @@ export async function handleUpdate(update) {
     if (text) return handleText(chatId, text);
 }
 
+// ── Supabase Database Webhook handler ──
+async function handleSupabaseWebhook(payload) {
+    const { table, type, record, old_record } = payload;
+    const auth = (await stGet("auth", [])) || [];
+    if (!auth || !auth.length) return;
+
+    let msg = "";
+
+    if (table === "sales_orders") {
+        if (type === "INSERT") {
+            msg = `🛒 <b>Yangi buyurtma qabul qilindi!</b>\n\n` +
+                  `• Mijoz: <b>${esc(record.customer_name)}</b>\n` +
+                  `• Telefon: ${esc(record.customer_phone || "—")}\n` +
+                  `• Summa: <b>${fmtSom(record.total_price)}</b>\n` +
+                  `• Avans: ${fmtSom(record.paid_amount || 0)}\n` +
+                  `• Muddat: ${esc(record.deadline_date || "—")}`;
+        } else if (type === "UPDATE" && old_record) {
+            if (record.status !== old_record.status) {
+                msg = `🔄 <b>Buyurtma holati o'zgardi!</b>\n\n` +
+                      `• Mijoz: <b>${esc(record.customer_name)}</b>\n` +
+                      `• Eski holat: <s>${esc(old_record.status || "Kutilmoqda")}</s>\n` +
+                      `• Yangi holat: <b>${esc(record.status)}</b>`;
+            } else if (Number(record.paid_amount) > Number(old_record.paid_amount)) {
+                const diff = Number(record.paid_amount) - Number(old_record.paid_amount);
+                const qoldiq = Math.max(0, Number(record.total_price) - Number(record.paid_amount));
+                msg = `💰 <b>Mijozdan yangi to'lov qabul qilindi!</b>\n\n` +
+                      `• Mijoz: <b>${esc(record.customer_name)}</b>\n` +
+                      `• Qabul qilingan summa: <b>${fmtSom(diff)}</b>\n` +
+                      `• Jami to'langan: ${fmtSom(record.paid_amount)}\n` +
+                      `• Qolgan qarz: <b>${fmtSom(qoldiq)}</b>`;
+            }
+        }
+    } 
+    
+    else if (table === "romix_expenses") {
+        if (type === "INSERT") {
+            msg = `💸 <b>Yangi harajat qo'shildi!</b>\n\n` +
+                  `• Summa: <b>${fmtSom(record.amount)}</b>\n` +
+                  `• Kategoriya: <b>${esc(record.category || "Boshqa")}</b>\n` +
+                  `• Izoh: <i>${esc(record.note || "—")}</i>\n` +
+                  `• Sana: ${esc(record.date || "bugun")}`;
+        }
+    } 
+    
+    else if (table === "romix_payment_log") {
+        if (type === "INSERT") {
+            msg = `💳 <b>Tashqi qarzga to'lov qilindi!</b>\n\n` +
+                  `• Kreditor: <b>${esc(record.creditor)}</b>\n` +
+                  `• To'langan summa: <b>${fmtSom(record.amount)}</b>\n` +
+                  `• Izoh: <i>${esc(record.note || "—")}</i>\n` +
+                  `• Sana: ${esc(record.date || "bugun")}`;
+        }
+    }
+
+    else if (table === "romix_transactions") {
+        if (type === "INSERT") {
+            let productName = "Profil";
+            try {
+                const p = await stGet(`prod_name_${record.product_id}`);
+                if (p) {
+                    productName = p;
+                } else {
+                    const res = await fetch(`${SUPABASE_URL}/rest/v1/romix_inventory?id=eq.${record.product_id}&select=product_name`, { headers: SBH });
+                    const data = await res.json();
+                    if (data && data[0]) {
+                        productName = data[0].product_name;
+                        await stSet(`prod_name_${record.product_id}`, productName);
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to fetch product name for transaction alert:', e);
+            }
+
+            const action = record.type === "IN" ? "📥 KIRIM (Keltirildi)" : "📤 CHIQIM (Ishlatildi)";
+            msg = `📦 <b>Omborda harakat (Profil):</b>\n\n` +
+                  `• Turi: <b>${action}</b>\n` +
+                  `• Mahsulot: <b>${esc(productName)}</b>\n` +
+                  `• Miqdor: <b>${record.quantity} kg/metr</b>\n` +
+                  `• Izoh: <i>${esc(record.note || "Bosh panel orqali")}</i>`;
+        }
+    }
+
+    else if (table === "romix_accessories_history") {
+        if (type === "INSERT") {
+            msg = `⚙️ <b>Aksessuarlar ombori harakati:</b>\n\n` +
+                  `• Amal: <b>${esc(record.action || "O'zgarish")}</b>\n` +
+                  `• Tafsilotlar: <b>${esc(record.details || "—")}</b>\n` +
+                  `• Mas'ul: ${esc(record.operator || "Tizim")}`;
+        }
+    }
+
+    if (msg) {
+        for (const chatId of auth) {
+            try {
+                await send(chatId, msg);
+            } catch (err) {
+                console.error(`Failed to send webhook notification to ${chatId}:`, err);
+            }
+        }
+    }
+}
+
 // ── Vercel serverless entrypoint ──
 export default async function handler(req, res) {
     if (req.method === "GET") { return res.status(200).json({ ok: true, bot: "AKFA Romix Yordamchi", configured: !!TOKEN, version: "maftuna-v1" }); }
     if (req.method !== "POST") { return res.status(405).json({ ok: false }); }
-    if (WEBHOOK_SECRET && req.headers["x-telegram-bot-api-secret-token"] !== WEBHOOK_SECRET) {
-        return res.status(401).json({ ok: false, error: "bad secret" });
-    }
+    
     try {
         const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+        
+        // Check if it is a Supabase webhook
+        if (body && body.table && body.type && body.record) {
+            await handleSupabaseWebhook(body);
+            return res.status(200).json({ ok: true, source: "supabase" });
+        }
+        
+        if (WEBHOOK_SECRET && req.headers["x-telegram-bot-api-secret-token"] !== WEBHOOK_SECRET) {
+            return res.status(401).json({ ok: false, error: "bad secret" });
+        }
         await handleUpdate(body || {});
-    } catch (e) { /* Telegram'ga doim 200 qaytaramiz — qayta yubormasin */ }
+    } catch (e) {
+        console.error('[HANDLER ERROR]', e);
+    }
     return res.status(200).json({ ok: true });
 }

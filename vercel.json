@@ -3,7 +3,8 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "crons": [
-    { "path": "/api/keepalive", "schedule": "0 6 * * *" }
+    { "path": "/api/keepalive", "schedule": "0 6 * * *" },
+    { "path": "/api/daily-report", "schedule": "0 15 * * *" }
   ],
   "rewrites": [
     { "source": "/akfa_hr_mini.html", "destination": "/src/projects/romix/hr/akfa_hr_mini.html" },

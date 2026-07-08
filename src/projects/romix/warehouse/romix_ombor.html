@@ -63,11 +63,6 @@
             box-shadow: 0 15px 35px rgba(79, 195, 247, 0.15);
         }
 
-        .bento-item.oynak:hover {
-            border-color: #42a5f5;
-            box-shadow: 0 15px 35px rgba(66, 165, 245, 0.15);
-        }
-
         .bento-title {
             font-size: 1.8rem;
             font-weight: 700;
@@ -87,10 +82,6 @@
 
         .qoldiq .bento-title {
             color: #4fc3f7;
-        }
-
-        .oynak .bento-title {
-            color: #42a5f5;
         }
 
         /* --- Premium Buttons --- */
@@ -125,6 +116,12 @@
                 var u = JSON.parse(savedUser);
                 if (u.role !== 'manager' && u.role !== 'admin') {
                     window.location.replace('/index.html');
+                } else if (u.role !== 'admin') {
+                    var style = document.createElement('style');
+                    style.innerHTML = `
+                        #sidebarBackBtn, #topNavBackBtn { display: none !important; }
+                    `;
+                    document.head.appendChild(style);
                 }
             } else {
                 window.location.replace('/index.html');
@@ -137,7 +134,7 @@
     <div id="mainApp" class="admin-layout">
         <!-- Sidebar -->
         <aside class="sidebar-slim">
-            <div class="logo-icon-v2" style="font-size: 1.5rem; color: #007c52; margin-bottom: 40px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(0, 124, 82, 0.1); width: 45px; height: 45px; border-radius: 12px;" onclick="window.location.href='../romix_dashboard.html'" title="Asosiy Panelga Qaytish">
+            <div id="sidebarBackBtn" class="logo-icon-v2" style="font-size: 1.5rem; color: #007c52; margin-bottom: 40px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(0, 124, 82, 0.1); width: 45px; height: 45px; border-radius: 12px;" onclick="window.location.href='../romix_dashboard.html'" title="Asosiy Panelga Qaytish">
                 ↩️</div>
             <div class="nav-icon active" title="Ombor Tizimi">📦</div>
             <div class="nav-icon" onclick="window.location.href='romix_ombor_profil.html'" title="Profil Ombori">👥</div>
@@ -148,7 +145,7 @@
             <!-- Top Nav -->
             <nav class="top-nav-v2">
                 <div class="nav-links-v2" style="display: flex; align-items: center; gap: 8px;">
-                    <a href="../romix_dashboard.html" class="btn-glass" style="background: rgba(0, 210, 255, 0.1); color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.2); border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; padding: 8px 16px; margin-right: 10px;">
+                    <a id="topNavBackBtn" href="../romix_dashboard.html" class="btn-glass" style="background: rgba(0, 210, 255, 0.1); color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.2); border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; padding: 8px 16px; margin-right: 10px;">
                         ⬅️ Panelga Qaytish
                     </a>
                     <button class="tab-btn active">Romix Ombori</button>
@@ -209,21 +206,6 @@
                         Oyna va rom ishlab chiqarishdan ortib qolgan profil qoldiqlari (o'lchamlari mm larda), kesimlar balansi va qoldiqlar qayta ishlatilishi nazorati.
                     </p>
                     <button style="width: 100%; padding: 14px; margin-top: 25px; border-radius: 16px; background: rgba(79, 195, 247, 0.15); border: 1px solid rgba(79, 195, 247, 0.3); color: #4fc3f7; font-weight: 800; cursor: pointer; transition: 0.2s;">
-                        Omborga Kirish &rarr;
-                    </button>
-                </a>
-
-                <!-- Card 4: Oynak (Shisha) Ombori -->
-                <a href="romix_ombor_oynak.html" class="bento-item oynak" style="grid-column: span 4;">
-                    <div style="font-size: 3rem;">🪟</div>
-                    <div class="bento-title">
-                        Oynak (Shisha) Ombori
-                        <span>&rarr;</span>
-                    </div>
-                    <p style="color: var(--adm-text-sec); font-size: 1rem; line-height: 1.5; margin-top: 10px;">
-                        Oynak/shisha turlari, o'lchamlari va zaxira miqdori bo'yicha nazorat va kirim tarixi.
-                    </p>
-                    <button style="width: 100%; padding: 14px; margin-top: 25px; border-radius: 16px; background: rgba(66, 165, 245, 0.15); border: 1px solid rgba(66, 165, 245, 0.3); color: #42a5f5; font-weight: 800; cursor: pointer; transition: 0.2s;">
                         Omborga Kirish &rarr;
                     </button>
                 </a>
