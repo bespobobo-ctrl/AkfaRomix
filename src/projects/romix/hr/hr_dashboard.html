@@ -1626,7 +1626,7 @@
                                         <!-- Tushlik Qaytish -->
                                         <div
                                             style="padding:15px 10px; background:rgba(255,255,255,0.02); border-radius:18px; border:1px solid rgba(255,255,255,0.04); text-align:center;">
-                                            <i data-lucide="clock-cw" size="14"
+                                            <i data-lucide="rotate-ccw" size="14"
                                                 style="color:#ffa940; opacity:0.5; margin-bottom:5px;"></i>
                                             <div
                                                 style="font-size:0.5rem; color:var(--text-s); font-weight:900; opacity:0.5; margin-bottom:4px;">
@@ -2056,6 +2056,50 @@
                 cursor: pointer;
                 transition: 0.3s;
             }
+
+            /* Chop etishda faqat badj o'zi chiqsin — sahifaning qolgan qismi
+               (qora fon, tugmalar, orqadagi xodimlar jadvali) chop etilmasin.
+               Aks holda badj juda kichik bo'lib, ichidagi QR kod kamerada
+               o'qilmaydigan darajada mayda chiqib qolardi. */
+            @media print {
+                body {
+                    background: #fff !important;
+                    height: auto !important;
+                    overflow: visible !important;
+                }
+                body * {
+                    visibility: hidden !important;
+                }
+                #badgeModalOverlay, #badgeModalOverlay * {
+                    visibility: visible !important;
+                }
+                /* Badj tagida ochiq turgan xodim tafsiloti oynasi ham qog'ozga chiqib
+                   ketmasin — u faqat orqa fonda ekranda ko'rinib turibdi, xolos. */
+                #detailModalOverlay {
+                    display: none !important;
+                }
+                #badgeModalOverlay {
+                    position: absolute !important;
+                    inset: 0;
+                    background: #fff !important;
+                    backdrop-filter: none !important;
+                    padding: 0;
+                }
+                #badgeModalOverlay h3,
+                #badgeModalOverlay .badge-modal-actions {
+                    display: none !important;
+                }
+                .badge-presentation {
+                    gap: 20px;
+                    page-break-inside: avoid;
+                }
+                .id-badge {
+                    box-shadow: none;
+                    border: 1px solid #ccc;
+                    width: 380px;
+                    height: 620px;
+                }
+            }
         </style>
 
         <h3 style="text-align:center; color:#fff; font-weight:900; margin-bottom:30px; letter-spacing:5px;">SHAXSIY
@@ -2108,7 +2152,7 @@
             </div>
         </div>
 
-        <div style="margin-top:40px; display:flex; gap:15px;">
+        <div class="badge-modal-actions" style="margin-top:40px; display:flex; gap:15px;">
             <button onclick="window.closeBadgeModal()" class="mgmt-btn"
                 style="background:#444; color:#fff;">YOPISH</button>
             <button onclick="window.printBadgeReal()" class="mgmt-btn" style="background:#fff; color:#000;">CHOP
