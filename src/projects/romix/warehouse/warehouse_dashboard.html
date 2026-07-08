@@ -381,36 +381,65 @@
             <section id="history-view" class="warehouse-section hidden">
                 <div style="margin-bottom: 25px;">
                     <h1 style="font-size: 2.2rem; font-weight: 600;">Hujjatlar Tarixi</h1>
-                    <p style="color: var(--adm-text-sec);">Barcha qilingan kirim/chiqim amallari arxivi</p>
+                    <p style="color: var(--adm-text-sec);">Barcha qilingan kirim/chiqim amallari va buyurtma shartnomalari arxivi</p>
                 </div>
-                <div class="om-brand-filter-row" id="histTypeFilter" style="margin-bottom:14px;">
-                    <div class="om-brand-chip active" data-hist-type="barchasi"><span class="chip-name">🗂️ Barchasi</span></div>
-                    <div class="om-brand-chip" data-hist-type="IN"><span class="chip-name">📥 Kirim</span></div>
-                    <div class="om-brand-chip" data-hist-type="OUT"><span class="chip-name">📤 Chiqim</span></div>
+
+                <div class="om-brand-filter-row" id="histModeFilter" style="margin-bottom:18px;">
+                    <div class="om-brand-chip active" data-hist-mode="tx"><span class="chip-name">🗂️ Ombor Tranzaksiyalari</span></div>
+                    <div class="om-brand-chip" data-hist-mode="orders"><span class="chip-name">📄 Buyurtma Shartnomalari</span></div>
                 </div>
-                <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:18px;">
-                    <input type="text" id="histSearchInput" class="form-input-v2" placeholder="🔍 Mahsulot nomi bo'yicha qidirish..." style="flex:1; min-width:220px; margin-bottom:0;">
-                    <label style="font-size:0.78rem; color:var(--adm-text-sec); display:flex; align-items:center; gap:6px;">Sanadan
-                        <input type="date" id="histDateFrom" class="form-input-v2" style="margin-bottom:0; width:150px;">
-                    </label>
-                    <label style="font-size:0.78rem; color:var(--adm-text-sec); display:flex; align-items:center; gap:6px;">Sanagacha
-                        <input type="date" id="histDateTo" class="form-input-v2" style="margin-bottom:0; width:150px;">
-                    </label>
-                    <button id="histFilterResetBtn" class="btn-glass" style="white-space:nowrap;">✖️ Tozalash</button>
+
+                <div id="histTxSection">
+                    <div class="om-brand-filter-row" id="histTypeFilter" style="margin-bottom:14px;">
+                        <div class="om-brand-chip active" data-hist-type="barchasi"><span class="chip-name">🗂️ Barchasi</span></div>
+                        <div class="om-brand-chip" data-hist-type="IN"><span class="chip-name">📥 Kirim</span></div>
+                        <div class="om-brand-chip" data-hist-type="OUT"><span class="chip-name">📤 Chiqim</span></div>
+                    </div>
+                    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:18px;">
+                        <input type="text" id="histSearchInput" class="form-input-v2" placeholder="🔍 Mahsulot nomi bo'yicha qidirish..." style="flex:1; min-width:220px; margin-bottom:0;">
+                        <label style="font-size:0.78rem; color:var(--adm-text-sec); display:flex; align-items:center; gap:6px;">Sanadan
+                            <input type="date" id="histDateFrom" class="form-input-v2" style="margin-bottom:0; width:150px;">
+                        </label>
+                        <label style="font-size:0.78rem; color:var(--adm-text-sec); display:flex; align-items:center; gap:6px;">Sanagacha
+                            <input type="date" id="histDateTo" class="form-input-v2" style="margin-bottom:0; width:150px;">
+                        </label>
+                        <button id="histFilterResetBtn" class="btn-glass" style="white-space:nowrap;">✖️ Tozalash</button>
+                    </div>
+                    <div class="bento-card" style="grid-column: span 4;">
+                        <table class="v2-table">
+                            <thead>
+                                <tr>
+                                    <th>Sana / ID</th>
+                                    <th>Mahsulot</th>
+                                    <th>Tur</th>
+                                    <th>Miqdor / Birlik</th>
+                                    <th>Harakat</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTable"></tbody>
+                        </table>
+                    </div>
                 </div>
-                <div class="bento-card" style="grid-column: span 4;">
-                    <table class="v2-table">
-                        <thead>
-                            <tr>
-                                <th>Sana / ID</th>
-                                <th>Mahsulot</th>
-                                <th>Tur</th>
-                                <th>Miqdor / Birlik</th>
-                                <th>Harakat</th>
-                            </tr>
-                        </thead>
-                        <tbody id="historyTable"></tbody>
-                    </table>
+
+                <div id="histOrdersSection" class="hidden">
+                    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:18px;">
+                        <input type="text" id="histOrdersSearchInput" class="form-input-v2" placeholder="🔍 Buyurtmachi ismi yoki telefon bo'yicha qidirish..." style="flex:1; min-width:260px; margin-bottom:0;">
+                    </div>
+                    <div class="bento-card" style="grid-column: span 4;">
+                        <table class="v2-table">
+                            <thead>
+                                <tr>
+                                    <th>Tasdiqlangan sana</th>
+                                    <th>Buyurtmachi</th>
+                                    <th>Telefon</th>
+                                    <th>Buyurtma turi</th>
+                                    <th>Tasdiqlagan</th>
+                                    <th>Hujjat</th>
+                                </tr>
+                            </thead>
+                            <tbody id="histOrdersTable"></tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
         </main>

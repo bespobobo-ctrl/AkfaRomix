@@ -728,6 +728,83 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // ============================================================
+    // ==== HUJJATLAR TARIXI — "Buyurtma Shartnomalari" rejimi   ====
+    // Har bir tasdiqlangan buyurtma uchun ombordan chiqarilgan   ====
+    // profil/aksesuvar/qoldiq/oynak + ikki tomonlama (Omborchi + ====
+    // Ishlab Chiqaruvchi) tasdiqnomani istalgan vaqt qayta chiqarish ====
+    // ============================================================
+    let _histOrdersCache = [];
+
+    document.querySelectorAll('#histModeFilter .om-brand-chip').forEach(chip => {
+        chip.onclick = () => {
+            document.querySelectorAll('#histModeFilter .om-brand-chip').forEach(c => c.classList.toggle('active', c === chip));
+            const mode = chip.dataset.histMode;
+            document.getElementById('histTxSection').classList.toggle('hidden', mode !== 'tx');
+            document.getElementById('histOrdersSection').classList.toggle('hidden', mode !== 'orders');
+            if (mode === 'orders' && _histOrdersCache.length === 0) loadOrderDocuments();
+        };
+    });
+
+    async function loadOrderDocuments() {
+        const tbody = document.getElementById('histOrdersTable');
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Yuklanmoqda...</td></tr>';
+        const { data, error } = await supabase.from('sales_orders').select('*')
+            .not('ombor_confirmed_at', 'is', null)
+            .order('ombor_confirmed_at', { ascending: false });
+        if (error) {
+            console.error('Order documents fetch error:', error);
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">Yuklashda xatolik!</td></tr>';
+            return;
+        }
+        _histOrdersCache = data || [];
+
+        const searchInput = document.getElementById('histOrdersSearchInput');
+        if (searchInput) searchInput.oninput = renderOrderDocumentsTable;
+        renderOrderDocumentsTable();
+    }
+
+    function renderOrderDocumentsTable() {
+        const tbody = document.getElementById('histOrdersTable');
+        if (!tbody) return;
+        const q = (document.getElementById('histOrdersSearchInput')?.value || '').toLowerCase().trim();
+        let rows = _histOrdersCache;
+        if (q) {
+            rows = rows.filter(o => (o.customer_name || '').toLowerCase().includes(q) || (o.customer_phone || '').toLowerCase().includes(q));
+        }
+
+        tbody.innerHTML = '';
+        if (rows.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Tasdiqlangan buyurtma topilmadi</td></tr>';
+            return;
+        }
+        rows.forEach(o => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><small>${new Date(o.ombor_confirmed_at).toLocaleString('uz-UZ')}</small></td>
+                <td>${o.customer_name || "Noma'lum"}</td>
+                <td>${o.customer_phone || '---'}</td>
+                <td>${o.prod_type || '---'}</td>
+                <td>${o.ombor_confirmed_by || '---'}</td>
+                <td><button class="view-order-doc-btn" data-id="${o.id}" style="background:#eee; border:none; padding:5px 12px; border-radius:10px; cursor:pointer;">📄 Hujjatni qayta chiqarish</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.querySelectorAll('.view-order-doc-btn').forEach(b => {
+            b.onclick = () => {
+                const order = _histOrdersCache.find(o => o.id === b.dataset.id);
+                if (!order) return;
+                // ombor_confirmed_materials yangi ustun — shu funksiya joriy etilishidan oldin
+                // tasdiqlangan buyurtmalarda bo'sh bo'ladi, o'sha holda material_estimate'ga
+                // qaytamiz (faqat profil/aksesuvar; qoldiq/oynak tarixi eski buyurtmalarda yo'q).
+                const m = order.ombor_confirmed_materials || order.material_estimate || {};
+                generateOrderConfirmationPdf(order, m.profiles || [], m.accessories || [], m.qoldiqPicks || [], m.oynakPicks || [], order.ombor_confirmed_by);
+            };
+        });
+    }
+
     function showInvoice(tx, directProduct = null) {
         const prod = directProduct || tx.romix_inventory || { product_name: "Mahsulot", unit: "" };
 
@@ -1380,11 +1457,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await supabase.from('romix_oynak').update({ stock_quantity: newQty }).eq('id', pick.id);
             }
 
-            await supabase.from('sales_orders').update({
+            const confirmPatch = {
                 status: 'Jarayonda',
                 ombor_confirmed_at: new Date().toISOString(),
-                ombor_confirmed_by: operatorName
-            }).eq('id', orderId);
+                ombor_confirmed_by: operatorName,
+                ombor_confirmed_materials: { profiles, accessories, qoldiqPicks, oynakPicks }
+            };
+            // MUHIM: agar ustun mavjud bo'lmasa, Supabase/PostgREST XATO QAYTARMAYDI — shunchaki
+            // `data: null` bilan hech narsa yozmasdan "muvaffaqiyatli" javob beradi. Shu sabab xatoni
+            // emas, balki `.select()` orqali qaytgan `data`ning bo'shligini tekshiramiz.
+            const { data: confirmData, error: confirmErr } = await supabase.from('sales_orders').update(confirmPatch).eq('id', orderId).select();
+            if (confirmErr || !confirmData || confirmData.length === 0) {
+                // ombor_confirmed_materials ustuni hali yaratilmagan bo'lishi mumkin (SQL migratsiya
+                // ishga tushirilmagan) — asosiy tasdiqlash oqimi buzilmasin deb shu maydonsiz qayta urinamiz.
+                console.warn('sales_orders update with ombor_confirmed_materials failed, retrying without it:', confirmErr);
+                delete confirmPatch.ombor_confirmed_materials;
+                const { data: retryData, error: retryErr } = await supabase.from('sales_orders').update(confirmPatch).eq('id', orderId).select();
+                if (retryErr || !retryData || retryData.length === 0) {
+                    throw new Error("Buyurtma holatini yangilab bo'lmadi: " + (retryErr?.message || "noma'lum xatolik"));
+                }
+            }
 
             generateOrderConfirmationPdf(order, profiles, accessories, qoldiqPicks, oynakPicks, operatorName);
 
