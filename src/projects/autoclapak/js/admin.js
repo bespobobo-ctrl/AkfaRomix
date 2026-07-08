@@ -3512,7 +3512,10 @@ CREATE TABLE IF NOT EXISTS romix_qoldiq_profillar (
 CREATE TABLE IF NOT EXISTS romix_oynak (
     id TEXT PRIMARY KEY, brand TEXT, product_name TEXT, size TEXT,
     stock_quantity NUMERIC DEFAULT 0, unit TEXT, price NUMERIC DEFAULT 0, created_at TIMESTAMPTZ DEFAULT now()
-);`;
+);
+
+-- Xodimga joriy oy uchun berilgan avans (HR > Yangi Xodim / Xodimlar ro'yxati)
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS advance_paid NUMERIC DEFAULT 0;`;
 
     window.openRomixBuhDbSetupModal = () => {
         const ta = document.getElementById('romix-buh-sql-text');
