@@ -109,7 +109,13 @@ const READ_TOOLS = [
     { name: "ombor", description: "Ombor zaxirasi: mahsulot turlari, umumiy qiymat, kam qolgan mahsulotlar." },
     { name: "harajatlar", description: "Harajatlar hisoboti.", parameters: OBJ({ davr: STR("'oy' = shu oy, bo'sh = hammasi (ixtiyoriy)") }) },
     { name: "qarzlar", description: "Tashqi qarzlar (ta'minotchi/kreditorlarga): kimga, qancha, qoldiq, muddat." },
-    { name: "xodimlar", description: "Xodimlar (HR): jami/faol xodim, bugun kelganlar, oylik fond, ro'yxat." }
+    { name: "xodimlar", description: "Xodimlar (HR): jami/faol xodim, bugun kelganlar, oylik fond, ro'yxat." },
+    { name: "zakaz_qidirish", description: "Buyurtmalarni mijoz ismi yoki telefoni bo'yicha to'liq ma'lumotlar bazasidan qidirish.", parameters: OBJ({ qidiruv: STR("Mijoz ismi yoki telefon raqami") }, ["qidiruv"]) },
+    { name: "mahsulot_qidirish", description: "Omborda bor mahsulotlarni nomi bo'yicha to'liq qidirish.", parameters: OBJ({ qidiruv: STR("Mahsulot nomi yoki kalit so'zi") }, ["qidiruv"]) },
+    { name: "xodim_qidirish", description: "Xodimlarni ismi bo'yicha qidirish.", parameters: OBJ({ qidiruv: STR("Xodim ismi") }, ["qidiruv"]) },
+    { name: "ishlab_chiqarish_holati", description: "Ishlab chiqarish (kesish, payvandlash, yig'ish, qadoqlash) bosqichlari bo'yicha faol partiyalar (batches) holati hisoboti." },
+    { name: "brigadalar_tarkibi", description: "Montajchilar va ishchilar brigadalari hamda ularga biriktirilgan xodimlar tarkibi." },
+    { name: "material_sorovlari", description: "Buyurtmalar bo'yicha ishlab chiqarishga yuborilgan material so'rovlari va ularning tasdiqlanish holatlari." }
 ];
 const WRITE_TOOLS = [
     { name: "harajat_qoshish", description: "Yangi HARAJAT (chiqim) qo'shish. Tizim avval tasdiq so'raydi.", parameters: OBJ({ summa: NUM("Harajat summasi (so'm)"), kategoriya: STR("Kategoriya, masalan Ijara, Maosh, Kommunal, Material, Boshqa"), izoh: STR("Izoh (ixtiyoriy)"), sana: STR("Sana YYYY-MM-DD (ixtiyoriy, default bugun)") }, ["summa"]) },
@@ -133,6 +139,12 @@ async function execRead(name, a) {
         case "harajatlar": return await db.expensesReport(a.davr);
         case "qarzlar": return await db.debtsReport();
         case "xodimlar": return await db.hrReport();
+        case "zakaz_qidirish": return await db.searchOrder(a.qidiruv);
+        case "mahsulot_qidirish": return await db.searchProduct(a.qidiruv);
+        case "xodim_qidirish": return await db.searchEmployee(a.qidiruv);
+        case "ishlab_chiqarish_holati": return await db.productionReport();
+        case "brigadalar_tarkibi": return await db.brigadesReport();
+        case "material_sorovlari": return await db.materialRequestsReport();
         default: return { xato: "Noma'lum: " + name };
     }
 }
@@ -160,7 +172,15 @@ LOYIHA HAQIDA:
 AKFA Romix — PVC/aluminiy deraza-eshik ishlab chiqaruvchi korxona (HR + Sotuv + Ombor + Ishlab chiqarish + Showroom + Buxgalteriya). Sotuv buyurtmalari pipeline: Kutilmoqda → Jarayonda → Tayyor → Yetkazildi.
 
 VAZIFANG:
-1. Egasi loyiha haqida so'rasa (zakazlar, ombor, moliya, xodimlar, qarzlar) — MOS o'qish toolini chaqirib JONLI raqamlarni ber. Xotiradan to'qima.
+1. Egasi muayyan ma'lumotlarni so'rasa, tegishli o'qish toolini chaqir.
+   - Umumiy holat uchun 'umumiy_holat'.
+   - Muayyan bir mijozning zakazini bilish uchun 'zakaz_qidirish' toolidan foydalan (masalan: "Ali zakazi nima bo'ldi?", "Maftuna opa zakazi").
+   - Omborda muayyan mahsulot borligini bilish uchun 'mahsulot_qidirish' toolidan foydalan (masalan: "oyna qancha qolgan", "ruchka bormi").
+   - Xodimni qidirish uchun 'xodim_qidirish' toolidan foydalan.
+   - Ishlab chiqarish jarayonidagi partiyalar, kesish, payvandlash bosqichlari uchun 'ishlab_chiqarish_holati' toolini chaqir.
+   - Ustalar va montajchilar guruhlari/brigadalari uchun 'brigadalar_tarkibi' toolini chaqir.
+   - Buyurtmalar uchun jo'natilgan material so'rovlari holatini bilish uchun 'material_sorovlari' toolini chaqir.
+   - Agar biron holat bo'yicha filtrlanmagan oxirgi zakazlar/ombor/xodimlar ro'yxati kerak bo'lsa, mos ravishda 'zakazlar', 'ombor', 'xodimlar', 'harajatlar', 'qarzlar' toollarini chaqir.
 2. Egasi FAQAT ikki xil amalni kirita oladi: HARAJAT (chiqim) va TO'LOV. Boshqa hech narsa yozma/o'zgartirma — faqat ma'lumot ber.
    - Harajat uchun 'harajat_qoshish', to'lov uchun 'tolov_qoshish' toolini chaqir.
    - MUHIM: tizim bu amalni DARHOL bajarmaydi — avval ✅/❌ tugma bilan tasdiq so'raydi. Shuning uchun "tasdiqlaysizmi?" deb yozma, to'g'ridan toolni chaqiraver.

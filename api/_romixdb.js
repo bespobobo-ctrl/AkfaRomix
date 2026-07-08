@@ -159,7 +159,7 @@ export async function payDebt({ creditor, amount }) {
 
 // 2b) TO'LOV — mijoz zakaziga (sales_orders.paid_amount)
 export async function payOrder({ customer, amount }) {
-    const orders = await sbGet("sales_orders", `select=id,customer_name,total_price,paid_amount&customer_name=ilike.*${encodeURIComponent(customer)}*&order=created_at.desc`);
+    const orders = await sbGet("sales_orders", `customer_name=ilike.*${encodeURIComponent(customer)}*&order=created_at.desc`);
     if (!orders.length) return { xato: `"${customer}" mijoz zakazi topilmadi.` };
     const o = orders[0];
     const rem = Math.max(0, (Number(o.total_price) || 0) - (Number(o.paid_amount) || 0));
@@ -169,4 +169,112 @@ export async function payOrder({ customer, amount }) {
     return { ok: true, mijoz: o.customer_name, tolandi: fmt(pay), qolgan_qarz: fmt(Math.max(0, (Number(o.total_price) || 0) - newPaid)) };
 }
 
-export default { overview, ordersReport, warehouse, expensesReport, debtsReport, hrReport, addExpense, payDebt, payOrder };
+// ── YANGI KUCHAYTIRILGAN FUNKSIYALAR (QIDIRUV VA HISOBOTLAR) ──
+
+// Zakaz qidirish
+export async function searchOrder(query) {
+    const q = `or=(customer_name.ilike.*${encodeURIComponent(query)}*,customer_phone.ilike.*${encodeURIComponent(query)}*)&order=created_at.desc&limit=15`;
+    const orders = await sbGet("sales_orders", q);
+    return {
+        topildi: orders.length,
+        zakazlar: orders.map(o => ({
+            mijoz: o.customer_name, tel: o.customer_phone || "", holat: o.status || "Kutilmoqda", muddat: o.deadline_date || "—",
+            summa: fmt(o.total_price), tolangan: fmt(o.paid_amount || 0),
+            qoldiq: fmt(Math.max(0, (Number(o.total_price) || 0) - (Number(o.paid_amount) || 0))),
+            brigada: o.worker_group || "—"
+        }))
+    };
+}
+
+// Mahsulot qidirish
+export async function searchProduct(query) {
+    const inv = await sbGet("romix_inventory", `product_name=ilike.*${encodeURIComponent(query)}*&limit=15`);
+    return {
+        topildi: inv.length,
+        royxat: inv.map(p => ({ nomi: p.product_name, qoldiq: (Number(p.stock_quantity) || 0) + " " + (p.unit || ""), narx: fmt(p.price) }))
+    };
+}
+
+// Xodim qidirish
+export async function searchEmployee(query) {
+    const emp = await sbGet("employees", `full_name=ilike.*${encodeURIComponent(query)}*&limit=15`);
+    return {
+        topildi: emp.length,
+        xodimlar: emp.map(e => ({ ism: e.full_name, lavozim: e.role || e.department || "", holat: e.status || "Faol", oylik: e.salary_info || "" }))
+    };
+}
+
+// Ishlab chiqarish hisoboti
+export async function productionReport() {
+    const [batches, emp, orders] = await Promise.all([
+        sbGet("romix_production_batches", "select=stage,quantity,employee_id,order_id&quantity=gt.0"),
+        sbGet("employees", "select=id,full_name"),
+        sbGet("sales_orders", "select=id,customer_name")
+    ]);
+    const empMap = Object.fromEntries(emp.map(e => [e.id, e.full_name]));
+    const orderMap = Object.fromEntries(orders.map(o => [o.id, o.customer_name]));
+
+    const stages = { kesish: [], payvandlash: [], yigish_qadoqlash: [], boshqa: [] };
+    batches.forEach(b => {
+        const st = b.stage || "boshqa";
+        const item = {
+            mijoz: orderMap[b.order_id] || "Noma'lum",
+            miqdor: b.quantity,
+            xodim: empMap[b.employee_id] || "Biriktirilmagan"
+        };
+        if (stages[st]) stages[st].push(item);
+        else stages.boshqa.push(item);
+    });
+
+    return {
+        kesish_soni: stages.kesish.length,
+        kesish_royxat: stages.kesish.slice(0, 10),
+        payvandlash_soni: stages.payvandlash.length,
+        payvandlash_royxat: stages.payvandlash.slice(0, 10),
+        yigish_qadoqlash_soni: stages.yigish_qadoqlash.length,
+        yigish_qadoqlash_royxat: stages.yigish_qadoqlash.slice(0, 10)
+    };
+}
+
+// Brigadalar tarkibi
+export async function brigadesReport() {
+    const [brigades, members, emp] = await Promise.all([
+        sbGet("romix_brigades", "select=id,name"),
+        sbGet("romix_brigade_members", "select=brigade_id,employee_id"),
+        sbGet("employees", "select=id,full_name")
+    ]);
+    const empMap = Object.fromEntries(emp.map(e => [e.id, e.full_name]));
+    const bMap = {};
+    brigades.forEach(b => { bMap[b.id] = { nomi: b.name, azolar: [] }; });
+    members.forEach(m => {
+        if (bMap[m.brigade_id]) {
+            bMap[m.brigade_id].azolar.push(empMap[m.employee_id] || "Noma'lum");
+        }
+    });
+    return {
+        soni: brigades.length,
+        brigadalar: Object.values(bMap)
+    };
+}
+
+// Material so'rovlari hisoboti
+export async function materialRequestsReport() {
+    const [reqs, orders] = await Promise.all([
+        sbGet("material_requests", "select=order_id,status,created_at&order=created_at.desc&limit=30"),
+        sbGet("sales_orders", "select=id,customer_name")
+    ]);
+    const orderMap = Object.fromEntries(orders.map(o => [o.id, o.customer_name]));
+    return {
+        soni: reqs.length,
+        sorovlar: reqs.map(r => ({
+            sana: r.created_at ? r.created_at.slice(0, 10) : "—",
+            mijoz: orderMap[r.order_id] || "Noma'lum",
+            holat: r.status || "Kutilmoqda"
+        }))
+    };
+}
+
+export default { 
+    overview, ordersReport, warehouse, expensesReport, debtsReport, hrReport, addExpense, payDebt, payOrder,
+    searchOrder, searchProduct, searchEmployee, productionReport, brigadesReport, materialRequestsReport
+};
