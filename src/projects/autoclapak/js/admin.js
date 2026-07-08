@@ -6791,31 +6791,15 @@ CREATE TABLE IF NOT EXISTS romix_oynak (
             });
         } catch (err) { console.error("Remnants stock calculation issue:", err); }
 
-        const grandStock = plastStock + accStock + qoldiqStock;
-        const grandVal = plastVal + accVal + qoldiqVal;
-
-        const valEl = document.getElementById('stat-total-warehouse-val');
-        const stockEl = document.getElementById('stat-total-warehouse-stock');
-        if (valEl) valEl.textContent = grandVal.toLocaleString() + ' UZS';
-        if (stockEl) stockEl.textContent = grandStock.toLocaleString() + ' dona / kg / m';
-
-        // Redesigned mini breakdown values
-        const miniPlast = document.getElementById('dashboard-mini-plast-val');
-        const miniAcc = document.getElementById('dashboard-mini-acc-val');
-        const miniQoldiq = document.getElementById('dashboard-mini-qoldiq-val');
-        if (miniPlast) miniPlast.textContent = plastVal.toLocaleString() + ' UZS';
-        if (miniAcc) miniAcc.textContent = accVal.toLocaleString() + ' UZS';
-        if (miniQoldiq) miniQoldiq.textContent = qoldiqVal.toLocaleString() + ' UZS';
-
-        // Capacity radial ring
-        const capacityPct = Math.min(100, Math.round((grandStock / 20000) * 100)) || 78;
-        const capacityPercentEl = document.getElementById('warehouse-capacity-percent');
-        const capacityRingEl = document.getElementById('warehouse-capacity-ring');
-        if (capacityPercentEl) capacityPercentEl.textContent = capacityPct + '%';
-        if (capacityRingEl) {
-            const offset = 251.2 - (251.2 * capacityPct) / 100;
-            capacityRingEl.style.strokeDashoffset = offset;
-        }
+        let oynakStock = 0, oynakVal = 0;
+        try {
+            const oynakData = await _buhGetOynak();
+            oynakData.forEach(o => {
+                const qty = parseInt(o.stock_quantity) || 0;
+                oynakStock += qty;
+                oynakVal += qty * (Number(o.price) || 0);
+            });
+        } catch (err) { console.error("Oynak stock calculation issue:", err); }
 
         const dbPlastVal = document.getElementById('dashboard-plast-val');
         const dbPlastStock = document.getElementById('dashboard-plast-stock');
@@ -6823,6 +6807,8 @@ CREATE TABLE IF NOT EXISTS romix_oynak (
         const dbAccStock = document.getElementById('dashboard-acc-stock');
         const dbQoldiqVal = document.getElementById('dashboard-qoldiq-val');
         const dbQoldiqStock = document.getElementById('dashboard-qoldiq-stock');
+        const dbOynakVal = document.getElementById('dashboard-oynak-val');
+        const dbOynakStock = document.getElementById('dashboard-oynak-stock');
 
         if (dbPlastVal) dbPlastVal.textContent = plastVal.toLocaleString() + ' UZS';
         if (dbPlastStock) dbPlastStock.textContent = plastStock.toLocaleString() + ' kg / dona';
@@ -6830,6 +6816,8 @@ CREATE TABLE IF NOT EXISTS romix_oynak (
         if (dbAccStock) dbAccStock.textContent = accStock.toLocaleString() + ' dona';
         if (dbQoldiqVal) dbQoldiqVal.textContent = qoldiqVal.toLocaleString() + ' UZS';
         if (dbQoldiqStock) dbQoldiqStock.textContent = qoldiqStock.toLocaleString() + ` ta (${(qoldiqLength / 1000).toFixed(1)} metr)`;
+        if (dbOynakVal) dbOynakVal.textContent = oynakVal.toLocaleString() + ' UZS';
+        if (dbOynakStock) dbOynakStock.textContent = oynakStock.toLocaleString() + ' dona';
 
         // 3. Orders Live Feed
         let orders = [];
@@ -6848,64 +6836,84 @@ CREATE TABLE IF NOT EXISTS romix_oynak (
         const readyOrders = orders.filter(o => o.status === 'Tayyor / Yetkazildi' || o.status === 'Tayyor / O\'rnatildi' || o.status === 'Tayyor');
         const newCountEl = document.getElementById('badge-new-orders-count');
         const readyCountEl = document.getElementById('badge-ready-orders-count');
-        const ordersListEl = document.getElementById('dashboard-orders-list');
+        const orderStagesEl = document.getElementById('dashboard-order-stages');
 
         if (newCountEl) newCountEl.textContent = pendingOrders.length;
         if (readyCountEl) readyCountEl.textContent = readyOrders.length;
 
-        if (ordersListEl) {
+        // Buyurtma Harakat Grafigi — Sotuv bo'limidagi KANBAN_STAGES/getJourneyStage bilan
+        // bir xil mantiq (sales.js), bosh panelda ixcham "bosqich bo'yicha son" ko'rinishida.
+        const ORDER_STAGES = [
+            { key: 'yangi', label: '🆕 Yangi Zakaz', color: '#94a3b8' },
+            { key: 'avans_kutmoqda', label: '⏳ Avans Kutmoqda', color: '#ffaa00' },
+            { key: 'ombor_tasdiqlamagan', label: '📦 Ombor Tasdiqlamagan', color: '#ef4444' },
+            { key: 'navbatida', label: "🗂️ I.Ch. Navbatida", color: '#a855f7' },
+            { key: 'ishlab_chiqarilmoqda', label: '🏭 Ishlab Chiqarilmoqda', color: '#00d2ff' },
+            { key: 'tayyor', label: '✅ Tayyor', color: '#22c55e' },
+            { key: 'ornatilishda', label: "🚚 O'rnatilishda", color: '#6366f1' },
+            { key: 'bajarilgan', label: '🏁 Bajarilgan', color: '#00ff88' }
+        ];
+        function getOrderJourneyStage(o) {
+            if (o.status === 'Tayyor / Yetkazildi') return 'bajarilgan';
+            if (o.production_stage === 'tayyor_omborda') {
+                return (o.install_group && o.install_status !== 'Bajarildi') ? 'ornatilishda' : 'tayyor';
+            }
+            if (['kesish', 'payvandlash', 'yigish_qadoqlash'].includes(o.production_stage)) return 'ishlab_chiqarilmoqda';
+            if (o.status === 'Jarayonda') return 'navbatida';
+            const total = Number(o.total_price) || 0;
+            const paid = Number(o.paid_amount) || 0;
+            if (total > 0 && paid / total >= 0.5) return 'ombor_tasdiqlamagan';
+            if (paid > 0) return 'avans_kutmoqda';
+            return 'yangi';
+        }
+
+        if (orderStagesEl) {
             if (orders.length === 0) {
-                ordersListEl.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.25); font-size: 0.75rem; margin: auto; grid-column: span 2;">Buyurtmalar topilmadi</div>';
+                orderStagesEl.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.25); font-size: 0.75rem; grid-column: 1/-1; padding: 20px 0;">Buyurtmalar topilmadi</div>';
             } else {
-                ordersListEl.innerHTML = orders.slice(0, 3).map(o => {
-                    let statusColor = '#ffaa00';
-                    let statusBg = 'rgba(255,170,0,0.1)';
-                    if (o.status === 'Jarayonda') {
-                        statusColor = '#00d2ff';
-                        statusBg = 'rgba(0,210,255,0.1)';
-                    } else if (o.status.includes('Tayyor') || o.status.includes('o\'rnatildi') || o.status.includes('Yetkazildi')) {
-                        statusColor = '#00ff88';
-                        statusBg = 'rgba(0,255,136,0.1)';
-                    }
-
-                    // Elegant SVG Profile window icon
-                    const productSvg = `
-                        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="${statusColor}" stroke-width="1.8" style="filter: drop-shadow(0 0 5px ${statusColor}30);">
-                            <rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2"/>
-                            <line x1="12" y1="3" x2="12" y2="21" stroke-dasharray="2 2"/>
-                            <line x1="3" y1="11" x2="21" y2="11"/>
-                        </svg>
-                    `;
-
+                orderStagesEl.innerHTML = ORDER_STAGES.map(stage => {
+                    const count = orders.filter(o => getOrderJourneyStage(o) === stage.key).length;
                     return `
-                        <div class="premium-product-card glow-card" style="border-top: 3px solid ${statusColor}; border-radius: 16px; background: rgba(255, 255, 255, 0.015); border-left: 1px solid rgba(255,255,255,0.03); border-right: 1px solid rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.03); padding: 12px 14px; position: relative; transition: all 0.25s; display: flex; flex-direction: column; justify-content: space-between; min-height: 160px;" onmouseenter="this.style.transform='translateY(-3px)'; this.style.background='rgba(255,255,255,0.03)';" onmouseleave="this.style.transform='translateY(0)'; this.style.background='rgba(255,255,255,0.015)';">
-                            <div>
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-                                    <span style="font-family: monospace; font-size: 0.65rem; color: rgba(255,255,255,0.4); font-weight: 700;">#${o.id.toUpperCase()}</span>
-                                    <span style="font-size: 0.6rem; color: ${statusColor}; background: ${statusBg}; padding: 2px 6px; border-radius: 12px; font-weight: 700;">${o.status}</span>
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 10px; margin: 10px 0;">
-                                    ${productSvg}
-                                    <div style="flex-grow: 1; overflow: hidden;">
-                                        <div style="font-weight: 700; color: #fff; font-size: 0.76rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${o.prod_type}">${o.prod_type || 'Mahsulot'}</div>
-                                        <div style="font-size: 0.65rem; color: rgba(255,255,255,0.4); margin-top: 2px;">Soni: ${o.quantity || 1} ta</div>
-                                    </div>
-                                </div>
-                                <div style="font-size: 0.72rem; color: rgba(255,255,255,0.5); font-weight: 600; display: flex; align-items: center; gap: 4px; margin-top: 8px; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 8px;">
-                                    <span>👤</span> <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${o.customer_name}</span>
-                                </div>
-                            </div>
-                            <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 2px;">
-                                <div style="font-size: 0.58rem; color: rgba(255,255,255,0.3); font-weight: 700; text-transform: uppercase;">SUMMASI</div>
-                                <div style="font-weight: 900; color: #00ff88; font-size: 0.95rem; font-family: monospace;">${Number(o.total_price || 0).toLocaleString()} UZS</div>
-                            </div>
+                        <div style="background: ${stage.color}14; border: 1px solid ${stage.color}33; border-radius: 14px; padding: 12px 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;">
+                            <span style="font-size: 0.68rem; color: ${stage.color}; font-weight: 700;">${stage.label}</span>
+                            <span style="font-size: 1.3rem; font-weight: 900; color: #fff; font-family: monospace;">${count}</span>
                         </div>
                     `;
                 }).join('');
             }
         }
 
-        // 4. Live Payroll ticking logic
+        // 4. Harajatlar va To'lovlar (Buxgalteriya umumiy ko'rsatkichlari, bosh panelda)
+        try {
+            const expList = await romixBuhSelect('romix_expenses', ROMIX_BUH_KEYS.expenses);
+            const monthKey = _buhToday().slice(0, 7);
+            const expToday = expList.filter(e => e.date === todayStr).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+            const expMonth = expList.filter(e => (e.date || '').startsWith(monthKey)).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+            const expTotal = expList.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+
+            const expTodayEl = document.getElementById('dashboard-exp-today');
+            const expMonthEl = document.getElementById('dashboard-exp-month');
+            const expTotalEl = document.getElementById('dashboard-exp-total');
+            if (expTodayEl) expTodayEl.textContent = expToday.toLocaleString() + ' UZS';
+            if (expMonthEl) expMonthEl.textContent = expMonth.toLocaleString() + ' UZS';
+            if (expTotalEl) expTotalEl.textContent = expTotal.toLocaleString() + ' UZS';
+
+            const paymentList = await romixBuhSelect('romix_payment_log', ROMIX_BUH_KEYS.payments);
+            const payTotal = paymentList.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+            const payMonth = paymentList.filter(p => (p.date || '').startsWith(monthKey)).reduce((s, p) => s + (Number(p.amount) || 0), 0);
+
+            const debtList = await romixBuhSelect('romix_debts', ROMIX_BUH_KEYS.debts);
+            const remainingDebt = debtList.reduce((s, d) => s + Math.max(0, (Number(d.amount) || 0) - (Number(d.paid_amount) || 0)), 0);
+
+            const payTotalEl = document.getElementById('dashboard-pay-total');
+            const payDebtEl = document.getElementById('dashboard-pay-debt');
+            const payMonthEl = document.getElementById('dashboard-pay-month');
+            if (payTotalEl) payTotalEl.textContent = payTotal.toLocaleString() + ' UZS';
+            if (payDebtEl) payDebtEl.textContent = remainingDebt.toLocaleString() + ' UZS';
+            if (payMonthEl) payMonthEl.textContent = payMonth.toLocaleString() + ' UZS';
+        } catch (err) { console.error("Harajat/To'lov statistikasi xatosi:", err); }
+
+        // 5. Live Payroll ticking logic
         let activeWorkers = [];
         let employeesMap = {};
         emps.forEach(emp => {

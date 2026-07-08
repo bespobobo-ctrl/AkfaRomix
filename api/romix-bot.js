@@ -145,7 +145,8 @@ VAZIFANG:
    - To'lov: kreditorga/ta'minotchiga bo'lsa tur='qarz'; mijoz o'z zakazini to'lasa tur='zakaz'. Noaniq bo'lsa qisqa so'ra.
 3. Summa/ism yetishmasa yoki so'rov (ayniqsa ovozdan) tushunarsiz bo'lsa — toolni chaqirma, nimani aniqlashtirish kerakligini qisqa so'ra.
 4. Pul summalarini minglarni probel bilan yoz, "so'm" qo'sh (masalan 1 250 000 so'm). "mln"=million, "ming"=1000.
-5. Markdown sarlavha ishlatma — oddiy matn, <b>qalin</b> va emoji. Javoblar qisqa, Telegram uchun mos.`;
+5. Sen matnli va ovozli muloqot qila olasan. Agar egasi "gapir", "ovozli javob ber" desa yoki ovozli xabar yuborsa, tizim sening javobingni avtomatik ravishda ovozga aylantirib yuboradi. Hech qachon "ovoz yubora olmayman" deb aytma.
+6. Markdown sarlavha ishlatma — oddiy matn, <b>qalin</b> va emoji. Javoblar qisqa, Telegram uchun mos.`;
 
 // ── AI suhbat (tool-loop) ──
 async function handleAI(chatId, userText, shouldReplyVoice = false) {
@@ -179,13 +180,13 @@ async function handleAI(chatId, userText, shouldReplyVoice = false) {
             await stSet(histKey, hist.slice(-16));
             await send(chatId, text);
 
-            const muxlisaApiKey = process.env.MUXLISA_API_KEY;
+            const muxlisaApiKey = process.env.MUXLISA_API_KEY || 'rzCxQLxbC0ayEzkKOsdIjnZ-vruLCgH_enc0QKfS';
             const elevenLabsApiKey = process.env.ELEVENLABS_API_KEY;
             if (shouldReplyVoice) {
                 if (muxlisaApiKey) {
                     try {
                         const plainText = text.replace(/<[^>]*>/g, '');
-                        const speakerId = process.env.MUXLISA_SPEAKER_ID || '1';
+                        const speakerId = process.env.MUXLISA_SPEAKER_ID || '0'; // 0 - Maftuna (Female)
                         const audioBuffer = await ai.textToSpeechMuxlisa(plainText, muxlisaApiKey, speakerId);
                         await sendVoice(chatId, audioBuffer);
                     } catch (ttsErr) {
@@ -332,7 +333,7 @@ export async function handleUpdate(update) {
 
 // ── Vercel serverless entrypoint ──
 export default async function handler(req, res) {
-    if (req.method === "GET") { return res.status(200).json({ ok: true, bot: "AKFA Romix Yordamchi", configured: !!TOKEN }); }
+    if (req.method === "GET") { return res.status(200).json({ ok: true, bot: "AKFA Romix Yordamchi", configured: !!TOKEN, version: "maftuna-v1" }); }
     if (req.method !== "POST") { return res.status(405).json({ ok: false }); }
     if (WEBHOOK_SECRET && req.headers["x-telegram-bot-api-secret-token"] !== WEBHOOK_SECRET) {
         return res.status(401).json({ ok: false, error: "bad secret" });
