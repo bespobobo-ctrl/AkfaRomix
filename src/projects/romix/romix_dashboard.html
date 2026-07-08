@@ -29,7 +29,7 @@
                     window.location.replace('warehouse/warehouse_dashboard.html');
                 } else if (u.role === 'sotuv') {
                     window.location.replace('sales/sales_dashboard.html');
-                } else if (u.role !== 'admin') {
+                } else if (u.role !== 'admin' && u.role !== 'buxgalter') {
                     window.location.replace('/index.html');
                 }
             } else {
