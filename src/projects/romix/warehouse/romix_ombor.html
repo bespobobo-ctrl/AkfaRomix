@@ -63,6 +63,11 @@
             box-shadow: 0 15px 35px rgba(79, 195, 247, 0.15);
         }
 
+        .bento-item.oynak:hover {
+            border-color: #42a5f5;
+            box-shadow: 0 15px 35px rgba(66, 165, 245, 0.15);
+        }
+
         .bento-title {
             font-size: 1.8rem;
             font-weight: 700;
@@ -82,6 +87,10 @@
 
         .qoldiq .bento-title {
             color: #4fc3f7;
+        }
+
+        .oynak .bento-title {
+            color: #42a5f5;
         }
 
         /* --- Premium Buttons --- */
@@ -108,6 +117,20 @@
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
         }
     </style>
+    <script>
+        // Anti-Flash & RBAC Role Protection (Ultimate Sync Edition)
+        try {
+            var savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                var u = JSON.parse(savedUser);
+                if (u.role !== 'manager' && u.role !== 'admin') {
+                    window.location.replace('/index.html');
+                }
+            } else {
+                window.location.replace('/index.html');
+            }
+        } catch(e) {}
+    </script>
 </head>
 
 <body class="warehouse-body">
@@ -186,6 +209,21 @@
                         Oyna va rom ishlab chiqarishdan ortib qolgan profil qoldiqlari (o'lchamlari mm larda), kesimlar balansi va qoldiqlar qayta ishlatilishi nazorati.
                     </p>
                     <button style="width: 100%; padding: 14px; margin-top: 25px; border-radius: 16px; background: rgba(79, 195, 247, 0.15); border: 1px solid rgba(79, 195, 247, 0.3); color: #4fc3f7; font-weight: 800; cursor: pointer; transition: 0.2s;">
+                        Omborga Kirish &rarr;
+                    </button>
+                </a>
+
+                <!-- Card 4: Oynak (Shisha) Ombori -->
+                <a href="romix_ombor_oynak.html" class="bento-item oynak" style="grid-column: span 4;">
+                    <div style="font-size: 3rem;">🪟</div>
+                    <div class="bento-title">
+                        Oynak (Shisha) Ombori
+                        <span>&rarr;</span>
+                    </div>
+                    <p style="color: var(--adm-text-sec); font-size: 1rem; line-height: 1.5; margin-top: 10px;">
+                        Oynak/shisha turlari, o'lchamlari va zaxira miqdori bo'yicha nazorat va kirim tarixi.
+                    </p>
+                    <button style="width: 100%; padding: 14px; margin-top: 25px; border-radius: 16px; background: rgba(66, 165, 245, 0.15); border: 1px solid rgba(66, 165, 245, 0.3); color: #42a5f5; font-weight: 800; cursor: pointer; transition: 0.2s;">
                         Omborga Kirish &rarr;
                     </button>
                 </a>
