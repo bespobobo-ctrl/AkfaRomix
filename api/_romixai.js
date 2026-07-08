@@ -136,7 +136,7 @@ export async function textToSpeechMuxlisa(text, apiKey, speakerId) {
         },
         body: JSON.stringify({
             text,
-            speaker_id: Number(speakerId != null ? speakerId : 1)
+            speaker: Number(speakerId != null ? speakerId : 0)
         })
     });
     if (!r.ok) {
