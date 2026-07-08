@@ -102,4 +102,29 @@ export async function transcribeAudio(base64, mimeType, hint = "") {
     return cand ? (cand.content.parts || []).map(p => p.text || "").join("").trim() : "";
 }
 
-export default { isConfigured, chatWithTools, chatText, transcribeAudio };
+export async function textToSpeechElevenLabs(text, apiKey, voiceId) {
+    const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId || 'EXAVITQu4vr4xnSDxMaL'}`;
+    const r = await fetch(url, {
+        method: "POST",
+        headers: {
+            "xi-api-key": apiKey,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            text,
+            model_id: "eleven_multilingual_v2",
+            voice_settings: {
+                stability: 0.5,
+                similarity_boost: 0.75
+            }
+        })
+    });
+    if (!r.ok) {
+        throw new Error(`ElevenLabs error: ${r.status} ${await r.text()}`);
+    }
+    const arrayBuffer = await r.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+}
+
+export default { isConfigured, chatWithTools, chatText, transcribeAudio, textToSpeechElevenLabs };
+
