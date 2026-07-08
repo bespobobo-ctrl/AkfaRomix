@@ -4,8 +4,8 @@
 //  profillarni eng kam chiqit bilan kesish rejasini PDF qiladi.
 //
 //  Arra zazori:
-//    45° kesim (2 arra uchrashganda) = 4 mm
-//    90° kesim (1 arra)              = 2 mm
+//    45° kesim (2 arra uchrashganda) = 8mm arra rasxodi + 4mm zazor = 12 mm
+//    90° kesim (1 arra)              = 4mm arra rasxodi + 2mm zazor = 6 mm
 // ═══════════════════════════════════════════════════════════
 
 const FRAME_PROFILE = 60; // rama profil eni (mm)
@@ -15,8 +15,8 @@ const SASH_GAP = 3;       // rama–stvorka orasidagi zazor (mm)
 const IMPOST_MM = 30;     // impost eni (2D dizayner bilan bir xil)
 const BAR_LEN = 6000;     // standart profil uzunligi (mm)
 
-const KERF_45 = 4;  // 2 ta arra uchrashganda (45° burchak kesim) → 4mm zazor
-const KERF_90 = 2;  // 1 ta arra (90° to'g'ri kesim) → 2mm zazor
+const KERF_45 = 12; // 2 ta arra uchrashganda (45°/45°): 8mm arra rasxodi (2 ta o'tish x 4mm) + 4mm zazor = 12mm
+const KERF_90 = 6;  // 1 ta arra (90° to'g'ri kesim): 4mm arra rasxodi + 2mm zazor = 6mm
 const TRIM = 5;     // profil chetidan qirqim (mm)
 
 // 2D dizayner daraxti layout (bo'lim kataklari + impostlar)
