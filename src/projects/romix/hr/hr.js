@@ -771,7 +771,6 @@ async function saveWorker() {
     };
 
     payload.department = dept;
-    payload.dept = dept;
     payload.joined_year = joinedYear ? parseInt(joinedYear) : null;
 
     let res = null;
@@ -806,7 +805,6 @@ async function saveWorker() {
         localEmployees.unshift(newEmp);
     }
     localStorage.setItem('romix_employees_local', JSON.stringify(localEmployees));
-    savedSuccessfully = true; // Mark as saved because local save succeeded
 
     if (savedSuccessfully) {
         logActivity('admin', currentEditId ? 'Xodim tahrirlandi' : 'Yangi xodim qo\'shildi', fullName);
