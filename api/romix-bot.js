@@ -186,7 +186,7 @@ async function handleAI(chatId, userText, shouldReplyVoice = false) {
                 if (muxlisaApiKey) {
                     try {
                         const plainText = text.replace(/<[^>]*>/g, '');
-                        const speakerId = process.env.MUXLISA_SPEAKER_ID || '0'; // 0 - Maftuna (Female)
+                        const speakerId = '0'; // Force Maftuna (Female)
                         const audioBuffer = await ai.textToSpeechMuxlisa(plainText, muxlisaApiKey, speakerId);
                         await sendVoice(chatId, audioBuffer);
                     } catch (ttsErr) {
