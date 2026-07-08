@@ -126,5 +126,26 @@ export async function textToSpeechElevenLabs(text, apiKey, voiceId) {
     return Buffer.from(arrayBuffer);
 }
 
-export default { isConfigured, chatWithTools, chatText, transcribeAudio, textToSpeechElevenLabs };
+export async function textToSpeechMuxlisa(text, apiKey, speakerId) {
+    const url = 'https://service.muxlisa.uz/api/v2/tts';
+    const r = await fetch(url, {
+        method: "POST",
+        headers: {
+            "x-api-key": apiKey,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            text,
+            speaker_id: Number(speakerId != null ? speakerId : 1)
+        })
+    });
+    if (!r.ok) {
+        throw new Error(`Muxlisa error: ${r.status} ${await r.text()}`);
+    }
+    const arrayBuffer = await r.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+}
+
+export default { isConfigured, chatWithTools, chatText, transcribeAudio, textToSpeechElevenLabs, textToSpeechMuxlisa };
+
 
