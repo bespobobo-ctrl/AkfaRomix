@@ -333,7 +333,7 @@ export async function handleUpdate(update) {
 
 // ── Vercel serverless entrypoint ──
 export default async function handler(req, res) {
-    if (req.method === "GET") { return res.status(200).json({ ok: true, bot: "AKFA Romix Yordamchi", configured: !!TOKEN }); }
+    if (req.method === "GET") { return res.status(200).json({ ok: true, bot: "AKFA Romix Yordamchi", configured: !!TOKEN, version: "maftuna-v1" }); }
     if (req.method !== "POST") { return res.status(405).json({ ok: false }); }
     if (WEBHOOK_SECRET && req.headers["x-telegram-bot-api-secret-token"] !== WEBHOOK_SECRET) {
         return res.status(401).json({ ok: false, error: "bad secret" });
