@@ -179,16 +179,27 @@ async function handleAI(chatId, userText, shouldReplyVoice = false) {
             await stSet(histKey, hist.slice(-16));
             await send(chatId, text);
 
-            const apiKey = process.env.ELEVENLABS_API_KEY;
-            if (shouldReplyVoice && apiKey) {
-                try {
-                    // Strip HTML tags for clean text-to-speech input
-                    const plainText = text.replace(/<[^>]*>/g, '');
-                    const voiceId = process.env.ELEVENLABS_VOICE_ID || 'EXAVITQu4vr4xnSDxMaL';
-                    const audioBuffer = await ai.textToSpeechElevenLabs(plainText, apiKey, voiceId);
-                    await sendVoice(chatId, audioBuffer);
-                } catch (ttsErr) {
-                    console.error('[TTS ERROR]', ttsErr);
+            const muxlisaApiKey = process.env.MUXLISA_API_KEY;
+            const elevenLabsApiKey = process.env.ELEVENLABS_API_KEY;
+            if (shouldReplyVoice) {
+                if (muxlisaApiKey) {
+                    try {
+                        const plainText = text.replace(/<[^>]*>/g, '');
+                        const speakerId = process.env.MUXLISA_SPEAKER_ID || '1';
+                        const audioBuffer = await ai.textToSpeechMuxlisa(plainText, muxlisaApiKey, speakerId);
+                        await sendVoice(chatId, audioBuffer);
+                    } catch (ttsErr) {
+                        console.error('[MUXLISA TTS ERROR]', ttsErr);
+                    }
+                } else if (elevenLabsApiKey) {
+                    try {
+                        const plainText = text.replace(/<[^>]*>/g, '');
+                        const voiceId = process.env.ELEVENLABS_VOICE_ID || 'EXAVITQu4vr4xnSDxMaL';
+                        const audioBuffer = await ai.textToSpeechElevenLabs(plainText, elevenLabsApiKey, voiceId);
+                        await sendVoice(chatId, audioBuffer);
+                    } catch (ttsErr) {
+                        console.error('[ELEVENLABS TTS ERROR]', ttsErr);
+                    }
                 }
             }
         }
