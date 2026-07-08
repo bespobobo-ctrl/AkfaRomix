@@ -6683,27 +6683,31 @@ CREATE TABLE IF NOT EXISTS romix_oynak (
         let emps = [];
         let att = [];
         try {
-            const { data: eData } = await supabase.from('employees').select('id, full_name, role, salary_info');
-            const { data: aData } = await supabase.from('attendance').select('status, check_in, check_out, employee_id').eq('date', todayStr);
-            
+            // MUHIM: faqat HAQIQIY so'rov xatosida (masalan internet uzilganda) localStorage
+            // keshiga qaytamiz — bo'sh (lekin xatosiz) natijani "internet yo'q" deb noto'g'ri
+            // talqin qilib, boshqa qurilmadagi eski keshni tiklab yubormaslik uchun (Tozalash
+            // tugmasi faqat joriy qurilma keshini tozalaydi, boshqalarini emas).
+            const { data: eData, error: eErr } = await supabase.from('employees').select('id, full_name, role, salary_info');
+            const { data: aData, error: aErr } = await supabase.from('attendance').select('status, check_in, check_out, employee_id').eq('date', todayStr);
+
             let finalEmps = eData;
-            if (!finalEmps || finalEmps.length === 0) {
+            if (eErr) {
                 const localEmps = localStorage.getItem('romix_db_employees');
                 if (localEmps) finalEmps = JSON.parse(localEmps);
             }
             if (finalEmps) emps = finalEmps;
 
             let finalAtt = aData;
-            if (!finalAtt || finalAtt.length === 0) {
+            if (aErr) {
                 const dbAtt = localStorage.getItem('romix_db_attendance');
                 if (dbAtt) {
                     const parsed = JSON.parse(dbAtt);
                     finalAtt = parsed.filter(a => a.date === todayStr);
                 }
-            }
-            if (!finalAtt || finalAtt.length === 0) {
-                const localAtt = localStorage.getItem('romix_attendance_local');
-                if (localAtt) finalAtt = JSON.parse(localAtt);
+                if (!finalAtt || finalAtt.length === 0) {
+                    const localAtt = localStorage.getItem('romix_attendance_local');
+                    if (localAtt) finalAtt = JSON.parse(localAtt);
+                }
             }
             if (finalAtt) att = finalAtt;
         } catch (err) {
@@ -6742,9 +6746,9 @@ CREATE TABLE IF NOT EXISTS romix_oynak (
         // 2. Warehouse Stats Aggregation
         let plastStock = 0, plastVal = 0, accStock = 0, accVal = 0, qoldiqStock = 0, qoldiqVal = 0, qoldiqLength = 0;
         try {
-            const { data: plastData } = await supabase.from('romix_inventory').select('stock_quantity, price');
+            const { data: plastData, error: plastErr } = await supabase.from('romix_inventory').select('stock_quantity, price');
             let finalPlastData = plastData;
-            if (!finalPlastData || finalPlastData.length === 0) {
+            if (plastErr) {
                 const localPlast = localStorage.getItem('romix_db_romix_inventory');
                 if (localPlast) finalPlastData = JSON.parse(localPlast);
             }
@@ -6822,9 +6826,9 @@ CREATE TABLE IF NOT EXISTS romix_oynak (
         // 3. Orders Live Feed
         let orders = [];
         try {
-            const { data: oData } = await supabase.from('sales_orders').select('*').order('created_at', { ascending: false });
-            if (oData && oData.length > 0) {
-                orders = oData;
+            const { data: oData, error: oErr } = await supabase.from('sales_orders').select('*').order('created_at', { ascending: false });
+            if (!oErr) {
+                orders = oData || [];
                 localStorage.setItem('romix_orders_local', JSON.stringify(orders));
             } else {
                 const localRaw = localStorage.getItem('romix_orders_local');
