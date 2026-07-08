@@ -482,125 +482,109 @@ export function generateCuttingPdf(order) {
         let yy = 32;
 
         result.maps.forEach((mp, mi) => {
-            if (yy > 255) { doc.addPage(); yy = 22; }
+            if (yy > 235) { doc.addPage(); yy = 22; }
 
             // Xarita sarlavhasi / Tavsifi
             doc.setFontSize(9); doc.setFont(undefined, 'bold'); doc.setTextColor(40);
             doc.text(`${mi + 1}/${result.maps.length} -- ${mat} -- ${fmtMm(BAR_LEN)} mm -- Soni: ${mp.count} dona`, M, yy);
-            yy += 8; // Joy qoldiramiz o'lchamlar uchun
+            yy += 6;
 
-            const barH = 10;
-            const bevel = 6 * scale; // 45 gradusli kesimning diagonal eni
+            const rulerH = 5;   // yuqoridagi o'lchov chizig'i (ruler) balandligi
+            const barH = 13;    // asosiy (qalin) profil balandligi — arra kesimi shu yerda ko'rinadi
+            const bevel = 7;    // 45° diagonalning gorizontal cho'zilishi (mm, ekranda)
+            const rulerY = yy + 6;
+            const barY = rulerY + rulerH + 3;
 
-            // 1) Profil konturi (fon)
-            doc.setDrawColor(180); doc.setLineWidth(0.25);
-            doc.setFillColor(250, 250, 250);
-            doc.rect(M, yy, barW, barH, 'FD');
+            // ── 1) Ruler (yupqa o'lchov chizig'i) — har bir bo'lak chegarasida tick + raqam ──
+            doc.setDrawColor(140); doc.setLineWidth(0.2);
+            doc.setFillColor(255, 255, 255);
+            doc.rect(M, rulerY, barW, rulerH, 'FD');
 
-            // Trim chizig'i va yozuvi
+            // ── 2) Asosiy profil (qalin, kulrang fon) ──
+            doc.setDrawColor(60); doc.setLineWidth(0.35);
+            doc.setFillColor(238, 240, 243);
+            doc.rect(M, barY, barW, barH, 'FD');
+
             const trimW = TRIM * scale;
-            doc.setDrawColor(120); doc.setLineWidth(0.4);
-            doc.line(M + trimW, yy - 1, M + trimW, yy + barH + 1); // trim kesim chizig'i
-            doc.setFontSize(5.5); doc.setFont(undefined, 'normal'); doc.setTextColor(100);
-            doc.text(TRIM.toFixed(2), M + trimW / 2, yy + barH + 4, { align: 'center' });
-
             let x = M + trimW;
+
+            // Trim (boshlang'ich qirqim)
+            doc.setDrawColor(130); doc.setLineWidth(0.3);
+            doc.line(M + trimW, rulerY - 1, M + trimW, barY + barH + 1);
+            doc.setFontSize(5); doc.setFont(undefined, 'normal'); doc.setTextColor(110);
+            doc.text(TRIM.toFixed(2), M + trimW / 2, rulerY - 1.5, { align: 'center' });
 
             mp.pieces.forEach((p, pi) => {
                 const w = p.len * scale;
                 const nextPiece = mp.pieces[pi + 1];
-
-                // Burchaklarni tahlil qilish
-                // Masalan, angles string: "45°/45°" yoki "45°/90°" va h.k.
                 const angles = p.angle ? p.angle.split('/') : ['90°', '90°'];
                 const left45 = angles[0] && angles[0].includes('45');
                 const right45 = angles[1] && angles[1].includes('45');
+                const bevelW = Math.min(bevel, w / 2.2);
 
-                // Bo'lak to'rtburchagi (oq/och-kulrang)
+                // ── Ruler'da bo'lak chegarasi (tick + o'lcham) ──
+                doc.setDrawColor(120); doc.setLineWidth(0.25);
+                doc.line(x, rulerY, x, rulerY - 2);
+                doc.line(x + w, rulerY, x + w, rulerY - 2);
+                doc.setFontSize(6.5); doc.setFont(undefined, 'bold'); doc.setTextColor(30);
+                if (w > 10) doc.text(fmtMm(p.len), x + w / 2, rulerY + rulerH / 2 + 1, { align: 'center' });
+
+                // ── Bo'lak (oq, aniq chegarali) ──
                 doc.setFillColor(255, 255, 255);
-                doc.rect(x, yy, w, barH, 'F');
-                doc.setDrawColor(50); doc.setLineWidth(0.3);
-                doc.rect(x, yy, w, barH);
+                doc.rect(x, barY, w, barH, 'F');
+                doc.setDrawColor(40); doc.setLineWidth(0.35);
+                doc.rect(x, barY, w, barH);
 
-                // Diagonal kesim liniyalari (OptiCut uslubidagi ko'rinish)
-                doc.setDrawColor(120); doc.setLineWidth(0.3);
+                // ── Kesim burchagi — 45° bo'lsa TO'LDIRILGAN uchburchak ("arra izi"), 90° bo'lsa to'g'ri chiziq ──
+                doc.setFillColor(165, 170, 178);
+                doc.setDrawColor(70); doc.setLineWidth(0.25);
                 if (left45) {
-                    // Chap tomondagi diagonal
-                    doc.line(x, yy + barH, x + bevel, yy);
-                    // Kesilgan joyni soya qilish
-                    doc.setDrawColor(210);
-                    doc.line(x + 0.5, yy + barH - 1, x + bevel - 0.5, yy + 1);
-                    doc.setDrawColor(120);
+                    doc.triangle(x, barY, x + bevelW, barY, x, barY + barH, 'FD');
                 } else {
-                    // 90 darajali kesik chizig'i
-                    doc.line(x, yy, x, yy + barH);
+                    doc.line(x, barY, x, barY + barH);
                 }
-
                 if (right45) {
-                    // O'ng tomondagi diagonal
-                    doc.line(x + w, yy, x + w - bevel, yy + barH);
-                    // Kesilgan joyni soya qilish
-                    doc.setDrawColor(210);
-                    doc.line(x + w - 0.5, yy + 1, x + w - bevel + 0.5, yy + barH - 1);
-                    doc.setDrawColor(120);
+                    doc.triangle(x + w, barY, x + w - bevelW, barY, x + w, barY + barH, 'FD');
                 } else {
-                    // 90 darajali o'ng kesik chizig'i
-                    doc.line(x + w, yy, x + w, yy + barH);
+                    doc.line(x + w, barY, x + w, barY + barH);
                 }
 
                 // Reference kodi (masalan: P-01 / 2)
-                doc.setFontSize(6.5); doc.setTextColor(40); doc.setFont(undefined, 'normal');
-                if (w > 12) {
-                    doc.text(p.ref, x + w / 2, yy + barH / 2 + 1.5, { align: 'center' });
+                doc.setFontSize(6.5); doc.setTextColor(35); doc.setFont(undefined, 'normal');
+                if (w > 14) {
+                    doc.text(p.ref, x + w / 2, barY + barH / 2 + 1.5, { align: 'center' });
                 }
-
-                // O'lcham belgisi (tepasida tick-mark va o'lcham matni)
-                doc.setDrawColor(120); doc.setLineWidth(0.25);
-                doc.line(x + w / 2, yy, x + w / 2, yy - 3); // Tick mark
-                doc.setFontSize(7); doc.setTextColor(30); doc.setFont(undefined, 'bold');
-                doc.text(fmtMm(p.len), x + w / 2, yy - 4, { align: 'center' });
 
                 x += w;
 
-                // Arra zazori (kerf gap)
+                // Arra zazori (kerf gap) — ikki bo'lak orasidagi bo'shliq, arra kengligi
                 if (nextPiece) {
                     const kerf = kerfBetween(p.angle, nextPiece.angle);
                     const kerfW = kerf * scale;
-
-                    // Arra kesik chizig'i (rangsiz, faqat bo'shliq)
-                    doc.setDrawColor(150); doc.setLineWidth(0.3);
-                    doc.line(x, yy - 1, x, yy + barH + 1);
-                    doc.line(x + kerfW, yy - 1, x + kerfW, yy + barH + 1);
-
+                    doc.setFillColor(120, 122, 128);
+                    doc.rect(x, barY - 0.5, Math.max(kerfW, 0.3), barH + 1, 'F');
                     x += kerfW;
                 }
             });
 
-            // Chiqit (off-cut) — kulrang va shtrixlangan (hatch lines)
+            // Chiqit (off-cut) — bir rangli quyuq kulrang blok
             if (mp.remaining > 0) {
                 const remW = barW - (x - M);
-                doc.setFillColor(230, 230, 230);
-                doc.rect(x, yy, remW, barH, 'F');
-                doc.setDrawColor(100); doc.setLineWidth(0.3);
-                doc.rect(x, yy, remW, barH);
+                doc.setFillColor(205, 208, 213);
+                doc.rect(x, barY, remW, barH, 'F');
+                doc.setDrawColor(90); doc.setLineWidth(0.3);
+                doc.rect(x, barY, remW, barH);
 
-                // Hatch lines
-                doc.setDrawColor(170); doc.setLineWidth(0.2);
-                for (let lx = x; lx < x + remW; lx += 4) {
-                    doc.line(lx, yy + barH, Math.min(lx + 3, x + remW), yy);
-                }
-
-                // Chiqit o'lchami va yozuvi
-                doc.setFontSize(6.5); doc.setTextColor(80); doc.setFont(undefined, 'bold');
-                if (remW > 18) {
-                    doc.text(`Chiqit: ${fmtMm(mp.remaining)}`, x + remW / 2, yy + barH / 2 + 1.5, { align: 'center' });
+                doc.setFontSize(6.5); doc.setTextColor(60); doc.setFont(undefined, 'bold');
+                if (remW > 20) {
+                    doc.text(`Chiqit: ${fmtMm(mp.remaining)}`, x + remW / 2, barY + barH / 2 + 1.5, { align: 'center' });
                 } else if (remW > 8) {
-                    doc.text(fmtMm(mp.remaining), x + remW / 2, yy + barH / 2 + 1.5, { align: 'center' });
+                    doc.text(fmtMm(mp.remaining), x + remW / 2, barY + barH / 2 + 1.5, { align: 'center' });
                 }
             }
 
             doc.setTextColor(20);
-            yy += barH + 15; // Keyingi chizmagacha masofa
+            yy = barY + barH + 14; // Keyingi chizmagacha masofa
         });
     });
 
