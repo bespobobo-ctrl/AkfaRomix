@@ -83,6 +83,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     });
 
+    // "inventory" HTML'da boshidanoq active/ko'rinadigan qilib belgilangan, lekin
+    // ma'lumot faqat switchTab() chaqirilganda (ya'ni tugma bosilganda) yuklanardi —
+    // shuning uchun sahifa yangi ochilganda "--" bo'sh holatda qolib ketardi, foydalanuvchi
+    // boshqa bo'limga o'tib qaytmaguncha. Endi shu bo'lim uchun ham darhol yuklanadi.
+    loadInventory();
+    loadOmborJami();
+
     // --- Inventory Logic ---
     // Global filter states
     window.activeBrand = 'AKFA';
