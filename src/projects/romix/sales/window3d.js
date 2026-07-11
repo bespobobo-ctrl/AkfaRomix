@@ -1,7 +1,6 @@
 // ═══════════════════════════════════════════════════════════
 //  AKFA Romix — Premium 3D Rom / Eshik ko'rinishi (Three.js)
-//  Jonli 3D model, shisha paketlar, metall tutqichlar (ruchka),
-//  oshqovoqlar (hinges) va silliq ochilib-yopilish animatsiyasi.
+//  Engelberg stepped profiles, Akfa premium locks, 3D hinges.
 // ═══════════════════════════════════════════════════════════
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -105,6 +104,19 @@ export function createViewer(canvas) {
         return m;
     }
 
+    // Engelberg stepped (bevelled) profil chizuvchi helper funksiya
+    function boxEngelberg(w, h, dp, mat, x = 0, y = 0, z = 0) {
+        // Asosiy profil (Base box)
+        box(w, h, dp, mat, x, y, z);
+        
+        // Engelberg ko'p kamerali faska/bevel detallari (ustma-ust chiroyli qalin qatlam)
+        if (Math.min(w, h) > 0.03) {
+            const stepW = w > 0.04 ? w - 0.015 : w * 0.8;
+            const stepH = h > 0.04 ? h - 0.015 : h * 0.8;
+            box(stepW, stepH, dp * 0.22, mat, x, y, z + dp * 0.42);
+        }
+    }
+
     // Modelga o'rnatiladigan ochiq ramkali rezina (Gasket) chizuvchi
     function gasketFrameOnModel(w, h, th, dp, mat, x, y, z) {
         box(w, th, dp, mat, x, y + h / 2 - th / 2, z);
@@ -166,9 +178,10 @@ export function createViewer(canvas) {
         const scale = 3.2 / maxDim;
         W *= scale; H *= scale;
 
-        const f = Math.max(0.08, 0.06 * scale);  // profil eni (~60mm)
-        const d = Math.max(0.06, 0.05 * scale);  // profil chuqurligi
-        const impF = f * 0.75;                   // impost eni
+        // Engelberg Qalin profillari uchun o'lchamlarni oshiramiz (~76-80mm chuqurlik)
+        const f = Math.max(0.09, 0.075 * scale);  // profil eni (qalin)
+        const d = Math.max(0.08, 0.07 * scale);   // profil chuqurligi (qalin)
+        const impF = f * 0.75;                    // impost eni
 
         // Arka (yarim doira tepa)
         const arch = !!params.arch && type !== 'eshik';
@@ -177,12 +190,12 @@ export function createViewer(canvas) {
         const cyRect = -H / 2 + rectH / 2;
         const springY = -H / 2 + rectH;        // arka boshlanishi
 
-        // Tashqi ramka
-        box(f, rectH, d, frameMat, -W / 2 + f / 2, cyRect, 0); // chap
-        box(f, rectH, d, frameMat, W / 2 - f / 2, cyRect, 0);  // o'ng
-        box(W - 2 * f, f, d, frameMat, 0, -H / 2 + f / 2, 0);  // past
+        // Tashqi ramka - Engelberg stepped profil ko'rinishida
+        boxEngelberg(f, rectH, d, frameMat, -W / 2 + f / 2, cyRect, 0); // chap
+        boxEngelberg(f, rectH, d, frameMat, W / 2 - f / 2, cyRect, 0);  // o'ng
+        boxEngelberg(W - 2 * f, f, d, frameMat, 0, -H / 2 + f / 2, 0);  // past
         if (!arch) {
-            box(W - 2 * f, f, d, frameMat, 0, H / 2 - f / 2, 0); // to'g'ri tepa
+            boxEngelberg(W - 2 * f, f, d, frameMat, 0, H / 2 - f / 2, 0); // to'g'ri tepa
         } else {
             // Arka ramkasi
             const R = W / 2;
@@ -216,6 +229,16 @@ export function createViewer(canvas) {
                 group.add(mesh);
             }
 
+            // Engelberg stepped sash profile chizish
+            function groupBoxEngelberg(w_b, h_b, d_b, mat, lx, ly, lz) {
+                groupBox(w_b, h_b, d_b, mat, lx, ly, lz);
+                if (Math.min(w_b, h_b) > 0.03) {
+                    const stepW = w_b > 0.04 ? w_b - 0.015 : w_b * 0.8;
+                    const stepH = h_b > 0.04 ? h_b - 0.015 : h_b * 0.8;
+                    groupBox(stepW, stepH, d_b * 0.22, mat, lx, ly, lz + d_b * 0.42);
+                }
+            }
+
             // Guruh ichidagi ochiq ramkali rezina (Gasket) chizish helperi
             function gasketFrame(w, h, th, dp, mat, lx, ly, lz) {
                 groupBox(w, th, dp, mat, lx, ly + h / 2 - th / 2, lz);
@@ -242,64 +265,84 @@ export function createViewer(canvas) {
             // Hollow EPDM rubber gasket behind the sash (seam seal) - prevents blocking glass!
             gasketFrame(sw + sf * 0.12, sh + sf * 0.12, sf * 0.12, d * 0.15, gasketMat, glassW_loc, glassY_loc, -d * 0.45);
 
+            // Premium Akfa 3D Sozlanuvchan Og'ir Oshiq-moshiqlari (3D Hinge block)
+            const draw3DHinge = (hy_pos) => {
+                const hx_frame = isLeftHinge ? -sf * 0.35 : sf * 0.35;
+                const hx_sash = isLeftHinge ? sf * 0.35 : -sf * 0.35;
+                
+                // Rama qismi blocki
+                groupBox(sf * 0.26, sf * 0.42, d * 0.36, handleMat, hx_frame, hy_pos, d * 0.46);
+                // Sash qismi blocki
+                groupBox(sf * 0.26, sf * 0.42, d * 0.36, handleMat, hx_sash, hy_pos, d * 0.46);
+                // Markaziy birlashtiruvchi metall silindr (PIN)
+                groupBox(sf * 0.13, sf * 0.55, sf * 0.13, handleMat, 0, hy_pos, d * 0.62);
+            };
+
             if (isLeftHinge) {
                 groupX = cx - sw / 2;
-                groupBox(sf, sh, d * 0.8, frameMat, sf / 2, 0, 0); // chap
-                groupBox(sf, sh, d * 0.8, frameMat, sw - sf / 2, 0, 0); // o'ng
-                groupBox(sw, sf, d * 0.8, frameMat, sw / 2, sh / 2 - sf / 2, 0); // tepa
-                groupBox(sw, sf, d * 0.8, frameMat, sw / 2, -sh / 2 + sf / 2, 0); // past
-                
-                // Cylinder Hinges (Oshiq-moshiqlar) on front face
-                groupBox(sf * 0.22, sh * 0.08, sf * 0.22, handleMat, -sf * 0.12, sh * 0.35, d * 0.45);
-                groupBox(sf * 0.22, sh * 0.08, sf * 0.22, handleMat, -sf * 0.12, -sh * 0.35, d * 0.45);
+                groupBoxEngelberg(sf, sh, d * 0.8, frameMat, sf / 2, 0, 0); // chap
+                groupBoxEngelberg(sf, sh, d * 0.8, frameMat, sw - sf / 2, 0, 0); // o'ng
+                groupBoxEngelberg(sw, sf, d * 0.8, frameMat, sw / 2, sh / 2 - sf / 2, 0); // tepa
+                groupBoxEngelberg(sw, sf, d * 0.8, frameMat, sw / 2, -sh / 2 + sf / 2, 0); // past
                 
                 rotationAxis = 'y';
                 rotationVal = 0.7; // Swing outward
             } else if (isRightHinge) {
                 groupX = cx + sw / 2;
-                groupBox(sf, sh, d * 0.8, frameMat, -sf / 2, 0, 0); // o'ng
-                groupBox(sf, sh, d * 0.8, frameMat, -sw + sf / 2, 0, 0); // chap
-                groupBox(sw, sf, d * 0.8, frameMat, -sw / 2, sh / 2 - sf / 2, 0); // tepa
-                groupBox(sw, sf, d * 0.8, frameMat, -sw / 2, -sh / 2 + sf / 2, 0); // past
-                
-                // Cylinder Hinges
-                groupBox(sf * 0.22, sh * 0.08, sf * 0.22, handleMat, sf * 0.12, sh * 0.35, d * 0.45);
-                groupBox(sf * 0.22, sh * 0.08, sf * 0.22, handleMat, sf * 0.12, -sh * 0.35, d * 0.45);
+                groupBoxEngelberg(sf, sh, d * 0.8, frameMat, -sf / 2, 0, 0); // o'ng
+                groupBoxEngelberg(sf, sh, d * 0.8, frameMat, -sw + sf / 2, 0, 0); // chap
+                groupBoxEngelberg(sw, sf, d * 0.8, frameMat, -sw / 2, sh / 2 - sf / 2, 0); // tepa
+                groupBoxEngelberg(sw, sf, d * 0.8, frameMat, -sw / 2, -sh / 2 + sf / 2, 0); // past
                 
                 rotationAxis = 'y';
                 rotationVal = -0.7; // Swing outward
             } else if (isTiltTop) {
                 groupY = cy - sh / 2;
-                groupBox(sw, sf, d * 0.8, frameMat, 0, sf / 2, 0); // past
-                groupBox(sw, sf, d * 0.8, frameMat, 0, sh - sf / 2, 0); // tepa
-                groupBox(sf, sh, d * 0.8, frameMat, -sw / 2 + sf / 2, sh / 2, 0); // chap
-                groupBox(sf, sh, d * 0.8, frameMat, sw / 2 - sf / 2, sh / 2, 0); // o'ng
-                
-                // Cylinder Hinges (bottom-left and bottom-right on front face)
-                groupBox(sw * 0.08, sf * 0.22, sf * 0.22, handleMat, -sw * 0.35, sf * 0.12, d * 0.45);
-                groupBox(sw * 0.08, sf * 0.22, sf * 0.22, handleMat, sw * 0.35, sf * 0.12, d * 0.45);
+                groupBoxEngelberg(sw, sf, d * 0.8, frameMat, 0, sf / 2, 0); // past
+                groupBoxEngelberg(sw, sf, d * 0.8, frameMat, 0, sh - sf / 2, 0); // tepa
+                groupBoxEngelberg(sf, sh, d * 0.8, frameMat, -sw / 2 + sf / 2, sh / 2, 0); // chap
+                groupBoxEngelberg(sf, sh, d * 0.8, frameMat, sw / 2 - sf / 2, sh / 2, 0); // o'ng
                 
                 rotationAxis = 'x';
                 rotationVal = -0.22; // Tilt outward
             } else if (isTiltBottom) {
                 groupY = cy + sh / 2;
-                groupBox(sw, sf, d * 0.8, frameMat, 0, -sf / 2, 0); // tepa
-                groupBox(sw, sf, d * 0.8, frameMat, 0, -sh + sf / 2, 0); // past
-                groupBox(sf, sh, d * 0.8, frameMat, -sw / 2 + sf / 2, -sh / 2, 0); // chap
-                groupBox(sf, sh, d * 0.8, frameMat, sw / 2 - sf / 2, -sh / 2, 0); // o'ng
-                
-                // Cylinder Hinges (top-left and top-right on front face)
-                groupBox(sw * 0.08, sf * 0.22, sf * 0.22, handleMat, -sw * 0.35, -sf * 0.12, d * 0.45);
-                groupBox(sw * 0.08, sf * 0.22, sf * 0.22, handleMat, sw * 0.35, -sf * 0.12, d * 0.45);
+                groupBoxEngelberg(sw, sf, d * 0.8, frameMat, 0, -sf / 2, 0); // tepa
+                groupBoxEngelberg(sw, sf, d * 0.8, frameMat, 0, -sh + sf / 2, 0); // past
+                groupBoxEngelberg(sf, sh, d * 0.8, frameMat, -sw / 2 + sf / 2, -sh / 2, 0); // chap
+                groupBoxEngelberg(sf, sh, d * 0.8, frameMat, sw / 2 - sf / 2, -sh / 2, 0); // o'ng
                 
                 rotationAxis = 'x';
                 rotationVal = 0.22; // Tilt outward
             } else {
                 // Fixed/fallback
-                groupBox(sf, sh, d * 0.8, frameMat, 0, 0, 0);
-                groupBox(sf, sh, d * 0.8, frameMat, 0, 0, 0);
-                groupBox(sw, sf, d * 0.8, frameMat, 0, 0, 0);
-                groupBox(sw, sf, d * 0.8, frameMat, 0, 0, 0);
+                groupBoxEngelberg(sf, sh, d * 0.8, frameMat, 0, 0, 0);
+                groupBoxEngelberg(sf, sh, d * 0.8, frameMat, 0, 0, 0);
+                groupBoxEngelberg(sw, sf, d * 0.8, frameMat, 0, 0, 0);
+                groupBoxEngelberg(sw, sf, d * 0.8, frameMat, 0, 0, 0);
+            }
+
+            // 3D Oshiq-moshiqlarni (hinges) joylashtirish
+            if (isLeftHinge || isRightHinge) {
+                const hingeCount = type === 'eshik' ? 3 : 2;
+                if (hingeCount === 3) {
+                    draw3DHinge(sh * 0.36);
+                    draw3DHinge(0);
+                    draw3DHinge(-sh * 0.36);
+                } else {
+                    draw3DHinge(sh * 0.35);
+                    draw3DHinge(-sh * 0.35);
+                }
+            } else if (isTiltTop) {
+                // Bottom horizontal hinges
+                const hx_left = -sw * 0.33, hx_right = sw * 0.33;
+                groupBox(sf * 0.42, sf * 0.26, d * 0.36, handleMat, hx_left, sf * 0.12, d * 0.46);
+                groupBox(sf * 0.42, sf * 0.26, d * 0.36, handleMat, hx_right, sf * 0.12, d * 0.46);
+            } else if (isTiltBottom) {
+                // Top horizontal hinges
+                const hx_left = -sw * 0.33, hx_right = sw * 0.33;
+                groupBox(sf * 0.42, sf * 0.26, d * 0.36, handleMat, hx_left, -sf * 0.12, d * 0.46);
+                groupBox(sf * 0.42, sf * 0.26, d * 0.36, handleMat, hx_right, -sf * 0.12, d * 0.46);
             }
 
             // Eshik yoki Deraza to'ldiruvchisini chizish (Panel yoki Shisha)
@@ -320,12 +363,24 @@ export function createViewer(canvas) {
                 gasketFrame(sw - sf * 2 + sf * 0.12, gh + sf * 0.12, sf * 0.08, d * 0.03, gasketMat, glassW_loc, gcy, -d * 0.09);
                 gasketFrame(sw - sf * 2 + sf * 0.12, gh + sf * 0.12, sf * 0.08, d * 0.03, gasketMat, glassW_loc, gcy, d * 0.09);
                 
-                // Premium Eshik tutqichi (Chrome cylindrical bar handle)
+                // Premium Akfa Door Lever Handle with Rosette and Keyhole Cylinder Lock (Zamok va Ruchka)
                 const hx = isLeftHinge ? sw - sf * 0.8 : -sw + sf * 0.8;
                 const hy = 0;
-                groupBox(sf * 0.2, sh * 0.35, d * 0.1, handleMat, hx, hy, d * 0.6);
-                groupBox(sf * 0.1, sf * 0.1, d * 0.5, handleMat, hx, hy + sh * 0.12, d * 0.35);
-                groupBox(sf * 0.1, sf * 0.1, d * 0.5, handleMat, hx, hy - sh * 0.12, d * 0.35);
+                const hz = d * 0.45;
+                
+                // 1) Asosiy Tutqich Rozetkasi (Plate)
+                groupBox(sf * 0.26, sf * 0.85, d * 0.12, handleMat, hx, hy + sf * 0.1, hz + d * 0.08);
+                
+                // 2) Gorizontal Bosiladigan Tutqich (Lever)
+                const handleLength = sw * 0.24;
+                const hDir = isLeftHinge ? -1 : 1; // Ichkariga qarab yo'naladi
+                groupBox(sf * 0.12, sf * 0.12, d * 0.35, handleMat, hx, hy + sf * 0.28, hz + d * 0.22); // dasta asosi
+                groupBox(handleLength, sf * 0.14, sf * 0.2, handleMat, hx + (handleLength / 2) * hDir, hy + sf * 0.28, hz + d * 0.38); // dasta tutqichi
+                
+                // 3) Kalit teshigi Rozetkasi (Lock cylinder rosette)
+                groupBox(sf * 0.24, sf * 0.48, d * 0.1, handleMat, hx, hy - sf * 0.6, hz + d * 0.06);
+                // 4) Kalit teshigi (Chrome cylinder lock core)
+                groupBox(sf * 0.08, sf * 0.18, d * 0.18, handleMat, hx, hy - sf * 0.58, hz + d * 0.12);
             } else {
                 // Deraza shishasi (Double glazing, spacer & glass gaskets)
                 const gw = sw - sf * 2;
@@ -338,7 +393,7 @@ export function createViewer(canvas) {
                 gasketFrame(gw + sf * 0.12, gh + sf * 0.12, sf * 0.08, d * 0.03, gasketMat, glassW_loc, glassY_loc, -d * 0.09);
                 gasketFrame(gw + sf * 0.12, gh + sf * 0.12, sf * 0.08, d * 0.03, gasketMat, glassW_loc, glassY_loc, d * 0.09);
 
-                // L-shaklidagi deraza tutqichi (Ruchka)
+                // Premium Akfa Deraza Tutqichi (Ergonomik rozetkali eshikdastasi)
                 let hx = 0, hy = 0;
                 let showHandle = true;
                 if (isLeftHinge) {
@@ -355,9 +410,9 @@ export function createViewer(canvas) {
 
                 if (showHandle) {
                     const hz = d * 0.45;
-                    groupBox(sf * 0.32, sf * 0.55, d * 0.25, handleMat, hx, hy, hz);
-                    groupBox(sf * 0.14, sf * 0.14, d * 0.5, handleMat, hx, hy, hz + d * 0.2);
-                    groupBox(sf * 0.14, sf * 0.9, sf * 0.25, handleMat, hx, hy - sf * 0.35, hz + d * 0.45);
+                    groupBox(sf * 0.25, sf * 0.8, d * 0.12, handleMat, hx, hy, hz + d * 0.08); // rozetka
+                    groupBox(sf * 0.12, sf * 0.12, d * 0.35, handleMat, hx, hy, hz + d * 0.22); // dasta asosi
+                    groupBox(sf * 0.14, sf * 0.9, sf * 0.22, handleMat, hx, hy - sf * 0.35, hz + d * 0.38); // ergonomik dasta
                 }
             }
 
@@ -458,7 +513,7 @@ export function createViewer(canvas) {
             const out = { cells: [], imposts: [] };
             layoutTree3D(params.design.tree, { x: 0, y: 0, w: dW, h: dH }, out);
 
-            // 1) Impostlar chizish
+            // 1) Impostlar chizish (Engelberg uslubida)
             out.imposts.forEach(im => {
                 const imW_mm = im.dir === 'v' ? IMPOST_MM : im.len;
                 const imH_mm = im.dir === 'v' ? im.len : IMPOST_MM;
@@ -470,7 +525,7 @@ export function createViewer(canvas) {
                 const imX_world = -W / 2 + ((imX_mm + imW_mm / 2) / 1000) * scale;
                 const imY_world = H / 2 - ((imY_mm + imH_mm / 2) / 1000) * scale;
 
-                box(imW_world, imH_world, d, frameMat, imX_world, imY_world, 0);
+                boxEngelberg(imW_world, imH_world, d, frameMat, imX_world, imY_world, 0);
             });
 
             // 2) Kataklar chizish
@@ -546,11 +601,11 @@ export function createViewer(canvas) {
                 const hDiv = Math.max(0, Math.min(6, parseInt(params.hDiv) || 0));
                 for (let i = 1; i <= vDiv; i++) {
                     const x = innerLeft + (innerW * i) / (vDiv + 1);
-                    box(impF, glassH, d, frameMat, x, glassBottom + glassH / 2, 0);
+                    boxEngelberg(impF, glassH, d, frameMat, x, glassBottom + glassH / 2, 0);
                 }
                 for (let j = 1; j <= hDiv; j++) {
                     const y = glassBottom + (glassH * j) / (hDiv + 1);
-                    box(innerW, impF, d, frameMat, 0, y, 0);
+                    boxEngelberg(innerW, impF, d, frameMat, 0, y, 0);
                 }
 
                 // Stvorkalar
@@ -575,10 +630,10 @@ export function createViewer(canvas) {
                 const fw = innerW * 0.4, fh = glassH * 0.32;
                 const cx = innerLeft + fw / 2 + f * 0.2;
                 const cy = glassBottom + glassH - fh / 2 - f * 0.2;
-                box(impF, fh, d * 1.1, frameMat, cx - fw / 2, cy, d * 0.2);
-                box(impF, fh, d * 1.1, frameMat, cx + fw / 2, cy, d * 0.2);
-                box(fw, impF, d * 1.1, frameMat, cx, cy + fh / 2, d * 0.2);
-                box(fw, impF, d * 1.1, frameMat, cx, cy - fh / 2, d * 0.2);
+                boxEngelberg(impF, fh, d * 1.1, frameMat, cx - fw / 2, cy, d * 0.2);
+                boxEngelberg(impF, fh, d * 1.1, frameMat, cx + fw / 2, cy, d * 0.2);
+                boxEngelberg(fw, impF, d * 1.1, frameMat, cx, cy + fh / 2, d * 0.2);
+                boxEngelberg(fw, impF, d * 1.1, frameMat, cx, cy - fh / 2, d * 0.2);
             }
         }
 
