@@ -1683,12 +1683,56 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Kesim PDF — saqlangan buyurtmadagi rom/eshik elementlari uchun (model_name JSON'dan)
-    function showCuttingPdfForOrder(o) {
+    async function showCuttingPdfForOrder(o) {
         let items = [];
         try { items = JSON.parse(o.model_name) || []; } catch (e) { items = []; }
         const romlar = items.filter(it => ['rom', 'rom_fortochka', 'eshik'].includes(it.type));
         if (romlar.length === 0) { alert("Bu buyurtmada kesim PDF uchun rom yoki eshik elementi yo'q."); return; }
-        generateCuttingPdf({ customer: o.customer_name || '', phone: o.customer_phone || '', items });
+
+        // Smart Remnant AI: Ombordagi qoldiq profillarni Supabase'dan yuklash
+        let remnants = [];
+        try {
+            const { data: rData } = await supabase
+                .from('romix_qoldiq_profillar')
+                .select('*')
+                .eq('is_used', false)
+                .order('stock_quantity', { ascending: true });
+            if (rData) {
+                remnants = rData.map(r => ({
+                    id: r.id,
+                    profile_type: r.profile_name || r.profile_type || r.product_name || '',
+                    length: Math.round((r.stock_quantity || r.length || 0) * 1000), // metrdan mm ga
+                    color: r.color || ''
+                })).filter(r => r.length >= 800);
+            }
+        } catch (e) { console.warn('Qoldiq profillar yuklanmadi:', e); }
+
+        const result = generateCuttingPdf({ customer: o.customer_name || '', phone: o.customer_phone || '', items, remnants });
+
+        // Smart Remnant AI: Ishlatilgan qoldiqlarni bazadan o'chirish va yangilarini saqlash
+        if (result && supabase) {
+            try {
+                // Ishlatilgan qoldiqlarni bazadan o'chirish
+                if (result.usedRemnantIds.length > 0) {
+                    await supabase.from('romix_qoldiq_profillar').delete().in('id', result.usedRemnantIds);
+                    console.log(`✅ ${result.usedRemnantIds.length} ta qoldiq profil ishlatildi va o'chirildi.`);
+                }
+                // Yangi qoldiqlarni bazaga saqlash
+                for (const nr of result.newRemnants) {
+                    await supabase.from('romix_qoldiq_profillar').insert([{
+                        profile_name: nr.mat ? nr.mat.split(' ·')[0].trim() : 'Qoldiq profil',
+                        stock_quantity: +(nr.length / 1000).toFixed(3), // mm dan metrga
+                        unit: 'm',
+                        is_used: false,
+                        created_at: new Date().toISOString()
+                    }]);
+                }
+                if (result.newRemnants.length > 0) {
+                    console.log(`✅ ${result.newRemnants.length} ta yangi qoldiq profil omborga yozildi.`);
+                    setTimeout(() => alert(`♻️ Smart Remnant AI:\n${result.newRemnants.length} ta yangi qoldiq profil omborga saqlandi.\nBu qoldiqlar keyingi buyurtmalarda ishlatiladi.`), 500);
+                }
+            } catch (e) { console.warn('Smart Remnant DB sync xatosi:', e); }
+        }
     }
 
     // Save New

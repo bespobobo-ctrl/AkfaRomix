@@ -14,6 +14,7 @@ const BEAD_W = 20;        // shtapik eni (mm)
 const SASH_GAP = 3;       // rama–stvorka orasidagi zazor (mm)
 const IMPOST_MM = 30;     // impost eni (2D dizayner bilan bir xil)
 const BAR_LEN = 6000;     // standart profil uzunligi (mm)
+const MIN_REUSABLE = 800; // qoldiq profil minimal saqlash uzunligi (mm)
 
 const KERF_45 = 12; // 2 ta arra uchrashganda (45°/45°): 8mm arra rasxodi (2 ta o'tish x 4mm) + 4mm zazor = 12mm
 const KERF_90 = 6;  // 1 ta arra (90° to'g'ri kesim): 4mm arra rasxodi + 2mm zazor = 6mm
@@ -312,10 +313,12 @@ export function derivePieces(items) {
 }
 
 // ══════════════════════════════════════════════════════
-// 2) Kesim-stok optimizatsiya (First-Fit-Decreasing)
-//    Arra zazori: 45° → 4mm, 90° → 2mm
+// 2) Smart Remnant AI — Kesim-stok optimizatsiya
+//    Avval ombordagi qoldiqlardan foydalanadi, keyin yangi profil
+//    Arra zazori: 45° → 12mm, 90° → 6mm
+//    Chiqit ≥ MIN_REUSABLE bo'lsa — bazaga qaytarib yoziladi
 // ══════════════════════════════════════════════════════
-export function optimize(pieces, bar = BAR_LEN) {
+export function optimize(pieces, bar = BAR_LEN, existingRemnants = []) {
     const units = [];
     pieces.forEach(p => {
         for (let i = 0; i < p.qty; i++) {
@@ -324,12 +327,51 @@ export function optimize(pieces, bar = BAR_LEN) {
     });
     units.sort((a, b) => b.len - a.len);
 
-    const usable = bar - TRIM;
+    // Ombordagi qoldiq profillarni uzunligiga ko'ra kattadan kichikka saralaymiz
+    const availableRemnants = [...existingRemnants].sort((a, b) => b.length - a.length);
+
     const bars = [];
+    const usedRemnantIds = [];   // Ishlatilgan qoldiqlar ID lari (DB dan o'chirish uchun)
+    const newRemnants = [];      // Yangi paydo bo'lgan qoldiqlar (DB ga saqlash uchun)
+    let totalWaste = 0;
 
     units.forEach(u => {
         let placed = false;
+
+        // 1-QADAM: Avval mavjud qoldiq profillardan mosini qidiramiz (Smart Remnant)
+        for (let i = 0; i < availableRemnants.length; i++) {
+            const remnant = availableRemnants[i];
+            const kerf = kerfBetween(remnant.lastAngle || u.angle, u.angle);
+            const spaceNeeded = remnant.isFirst ? u.len : u.len + kerf;
+            if (remnant.length >= spaceNeeded) {
+                // Bu qoldiqqa sig'adi
+                if (!remnant._bar) {
+                    remnant._bar = {
+                        type: 'REMNANT',
+                        remnantId: remnant.id,
+                        remnantProfile: remnant.profile_type || 'Qoldiq profil',
+                        initial_length: remnant.length,
+                        remaining: remnant.length,
+                        pieces: []
+                    };
+                    bars.push(remnant._bar);
+                    usedRemnantIds.push(remnant.id);
+                }
+                remnant._bar.pieces.push(u);
+                remnant._bar.remaining -= spaceNeeded;
+                remnant.length -= spaceNeeded;
+                remnant.lastAngle = u.angle;
+                remnant.isFirst = false;
+                placed = true;
+                break;
+            }
+        }
+
+        if (placed) return;
+
+        // 2-QADAM: Qoldiqdan sig'masa — mavjud ochiq yangi profilga joylashtiramiz
         for (const b of bars) {
+            if (b.type === 'REMNANT') continue; // qoldiq profillarga faqat uning hajmida sig'adiganlar qo'shiladi
             const lastAngle = b.pieces[b.pieces.length - 1].angle;
             const kerf = kerfBetween(lastAngle, u.angle);
             const need = u.len + kerf;
@@ -340,28 +382,51 @@ export function optimize(pieces, bar = BAR_LEN) {
                 break;
             }
         }
+
+        // 3-QADAM: Hech qaerga sig'masa — yangi standart profil ochamiz
         if (!placed) {
-            bars.push({ pieces: [u], remaining: usable - u.len });
+            bars.push({ type: 'NEW', pieces: [u], remaining: BAR_LEN - TRIM - u.len });
         }
     });
 
-    const totalBars = bars.length;
+    // Qoldiq profillardan foydalanilmaganlarning '_bar' ni tozalaymiz
+    availableRemnants.forEach(r => { delete r._bar; });
+
+    // Har bir yopilgan profilning qoldig'ini tekshiramiz
+    bars.forEach(b => {
+        if (b.remaining >= MIN_REUSABLE) {
+            newRemnants.push({ length: Math.round(b.remaining), source: b.type });
+        } else {
+            totalWaste += b.remaining;
+        }
+    });
+
+    const newBars = bars.filter(b => b.type === 'NEW');
+    const remnantBars = bars.filter(b => b.type === 'REMNANT');
+
+    const totalBars = newBars.length;
     const totalPieces = units.length;
-    const totalBarLen = totalBars * bar;
+    const totalBarLen = newBars.length * bar + remnantBars.reduce((s, b) => s + b.initial_length, 0);
     const piecesLen = units.reduce((s, u) => s + u.len, 0);
     const offcut = totalBarLen - piecesLen;
     const offcutRate = totalBarLen ? (offcut / totalBarLen * 100) : 0;
 
-    // Bir xil kesim namunalarini guruhlaymiz
+    // Bir xil kesim namunalarini guruhlaymiz (faqat NEW barlar)
     const mapObj = {};
     bars.forEach(b => {
-        const key = b.pieces.map(p => p.len + ':' + p.angle).sort().join(',');
-        if (!mapObj[key]) mapObj[key] = { pieces: b.pieces, count: 0, remaining: b.remaining };
+        const key = (b.type || 'NEW') + '|' + b.pieces.map(p => p.len + ':' + p.angle).sort().join(',');
+        if (!mapObj[key]) mapObj[key] = { pieces: b.pieces, count: 0, remaining: b.remaining, type: b.type, initial_length: b.initial_length, remnantProfile: b.remnantProfile };
         mapObj[key].count++;
     });
     const maps = Object.values(mapObj);
 
-    return { bars, maps, totalBars, totalPieces, totalBarLen, piecesLen, offcut, offcutRate };
+    return {
+        bars, maps, totalBars, totalPieces, totalBarLen, piecesLen, offcut, offcutRate,
+        usedRemnantIds,   // Ombordan o'chiriladigan qoldiqlar ID lari
+        newRemnants,      // Omborga saqlanadigan yangi qoldiqlar
+        totalWaste,       // Chiqit (saqlash uchun ham yetarli bo'lmagan bo'laklar)
+        remnantBarsUsed: remnantBars.length  // Nechta qoldiq profil ishlatildi
+    };
 }
 
 const fmtMm = n => Number(n).toLocaleString('ru-RU');
@@ -386,6 +451,11 @@ export function generateCuttingPdf(order) {
         alert("Zakazda rom/eshik yo'q — kesim uchun profil bo'lagi topilmadi.");
         return;
     }
+
+    // Ombordagi qoldiq profillar (Smart Remnant AI)
+    const existingRemnants = order.remnants || [];
+    const allUsedRemnantIds = [];
+    const allNewRemnants = [];
 
     // ══════════════════════════════════════════════════════
     // BUYURTMA CHIZMALARI — 2D dizaynerdagi ko'rinish + o'lchamlar (narxsiz)
@@ -412,7 +482,15 @@ export function generateCuttingPdf(order) {
 
     mats.forEach(mat => {
         const pieces = groups[mat];
-        const result = optimize(pieces);
+        // Ushbu material turiga mos qoldiq profillarni filtrlash
+        const matchingRemnants = existingRemnants.filter(r => {
+            const rMat = (r.profile_type || '').toLowerCase();
+            const matKey = mat.toLowerCase();
+            return matKey.includes(rMat) || rMat.includes(matKey.split(' ·')[0].trim());
+        });
+        const result = optimize(pieces, BAR_LEN, matchingRemnants);
+        result.usedRemnantIds.forEach(id => allUsedRemnantIds.push(id));
+        result.newRemnants.forEach(r => allNewRemnants.push({ ...r, mat }));
         visualPages.push({ mat, result, pieces });
 
         doc.addPage();
@@ -464,17 +542,27 @@ export function generateCuttingPdf(order) {
         doc.setFont(undefined, 'bold'); doc.setFontSize(10);
         doc.text('Kesim xaritalari (Cutting Maps)', M, y); y += 2;
         const mapRows = result.maps.map((mp, i) => [
-            i + 1, mp.count, mp.pieces.length,
+            i + 1,
+            mp.type === 'REMNANT' ? `★ QOLDIQ (${mp.remnantProfile || ''})` : 'Yangi profil',
+            mp.count,
+            mp.pieces.length,
             mp.pieces.map(p => fmtMm(p.len)).join(' + '),
             fmtMm(mp.remaining) + ' mm'
         ]);
         doc.autoTable({
             startY: y,
-            head: [['#', 'Profil soni', "Bo'lak", 'Kesim (mm)', 'Chiqit']],
+            head: [['#', 'Profil turi', 'Soni', "Bo'lak", 'Kesim (mm)', 'Chiqit']],
             body: mapRows,
             styles: { fontSize: 7.5, cellPadding: 1.3 },
             headStyles: { fillColor: [14, 28, 46] },
-            columnStyles: { 3: { cellWidth: 85 } },
+            bodyStyles: {},
+            didParseCell: (data) => {
+                if (data.section === 'body' && data.row.raw[1] && String(data.row.raw[1]).startsWith('★')) {
+                    data.cell.styles.fillColor = [220, 252, 220];
+                    data.cell.styles.textColor = [0, 120, 0];
+                }
+            },
+            columnStyles: { 4: { cellWidth: 80 } },
             margin: { left: M, right: M }
         });
 
@@ -484,16 +572,18 @@ export function generateCuttingPdf(order) {
             startY: y,
             head: [['Xulosa', '']],
             body: [
-                ['Kerakli profillar', result.totalBars + ' dona'],
-                ['Kesim xaritalari', result.maps.length + ' xil'],
+                ['Yangi kerakli profillar', result.totalBars + ' dona'],
+                ['★ Ishlatilgan qoldiq profillar', result.remnantBarsUsed + ' dona (IQTISOD)'],
+                ['Kesim xaritalari (jami)', result.maps.length + ' xil'],
                 ['Umumiy profil uzunligi', (result.totalBarLen / 1000).toFixed(2) + ' m'],
                 ["Bo'laklar umumiy uzunligi", (result.piecesLen / 1000).toFixed(2) + ' m'],
-                ['Chiqit (Off-Cut)', (result.offcut / 1000).toFixed(2) + ' m'],
+                ['Chiqit (saqlash uchun qoldiq)', result.newRemnants.length + ' ta (' + result.newRemnants.map(r => fmtMm(r.length) + ' mm').join(', ') + ')'],
+                ['Chiqit (foydasiz)', (result.totalWaste / 1000).toFixed(2) + ' m'],
                 ['Chiqit foizi', result.offcutRate.toFixed(2) + ' %'],
             ],
             styles: { fontSize: 8.5, cellPadding: 1.5 },
             headStyles: { fillColor: [80, 80, 80] },
-            columnStyles: { 0: { fontStyle: 'bold', cellWidth: 70 } },
+            columnStyles: { 0: { fontStyle: 'bold', cellWidth: 80 } },
             margin: { left: M, right: M }
         });
     });
@@ -623,5 +713,11 @@ export function generateCuttingPdf(order) {
 
     const fname = `AKFA_Kesim_${(order.customer || 'zakaz').replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
     doc.save(fname);
+
+    // Smart Remnant AI: Omborni yangilash uchun ma'lumotlarni qaytaramiz
+    return {
+        usedRemnantIds: allUsedRemnantIds,    // Ombordan o'chiriladigan qoldiq profil IDlari
+        newRemnants: allNewRemnants            // Omborga qo'shiladigan yangi qoldiq profillar
+    };
 }
 
