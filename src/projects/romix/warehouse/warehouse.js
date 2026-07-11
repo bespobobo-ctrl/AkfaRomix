@@ -183,7 +183,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const { data, error } = await supabase.from('romix_inventory').select('*').order('created_at', { ascending: false });
         if (error) {
             console.error("Inventory error:", error);
-            inventoryTable.innerHTML = '<div style="text-align:center; color:red; padding:40px; font-weight:700;">Hujjatlar yuklanishida xatolik yuz berdi!</div>';
+            if (inventoryTable) inventoryTable.innerHTML = '<div style="text-align:center; color:red; padding:40px; font-weight:700;">Hujjatlar yuklanishida xatolik yuz berdi!</div>';
             return;
         }
 
@@ -923,6 +923,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             showInvoice(virtualTx, product);
             kirimModal.classList.add('hidden');
             loadInventory();
+            loadOmborJami();
 
         } catch (err) {
             console.error("Kirim Error:", err);
@@ -1048,6 +1049,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             profilKirimModal.classList.add('hidden');
             if (window.resetProfilKirimForm) window.resetProfilKirimForm();
             loadInventory();
+            loadOmborJami();
         } catch (err) {
             console.error("Profil Kirim Error:", err);
             alert("Xatolik yuz berdi: " + err.message);
@@ -1866,6 +1868,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             items = items.filter(it => (it.product_name || it.name || '').toLowerCase().includes(q));
         }
 
+        const isAdmin = user && user.role === 'admin';
+
         if (cat === 'profil') {
             const rows = items.length ? items.map(p => {
                 const meta = p.metadata || {};
@@ -1878,11 +1882,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <td>${meta.shakli || '-'}</td>
                     <td>${meta.rangi || '-'}</td>
                     <td style="text-align:right; font-weight:700; color:#00d2ff;">${qty.toLocaleString('uz-UZ')} ${p.unit || ''}</td>
+                    ${isAdmin ? `
+                    <td>
+                        <div style="display:flex; gap:6px; justify-content:center;">
+                            <button class="oj-edit-btn" data-id="${p.id}" style="background:none; border:none; cursor:pointer;" title="Tahrirlash">✏️</button>
+                            <button class="oj-delete-btn" data-id="${p.id}" style="background:none; border:none; cursor:pointer; color:#ff4d4f;" title="O'chirish">🗑️</button>
+                        </div>
+                    </td>` : ''}
                 </tr>`;
-            }).join('') : `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Mahsulot topilmadi</td></tr>`;
+            }).join('') : `<tr><td colspan="${isAdmin ? 8 : 7}" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Mahsulot topilmadi</td></tr>`;
             tableWrap.innerHTML = `<table class="v2-table"><thead><tr>
                 <th>Mahsulot</th><th>Brend</th><th>Seriya</th><th style="text-align:right;">Uzunligi (mm)</th><th>Shakli</th><th>Rangi</th>
                 <th style="text-align:right;">Miqdor</th>
+                ${isAdmin ? '<th style="text-align:center;">Harakat</th>' : ''}
             </tr></thead><tbody>${rows}</tbody></table>`;
         } else if (cat === 'aksesuvar') {
             const rows = items.length ? items.map(a => {
@@ -1891,10 +1903,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <td>${a.name || "Noma'lum"}</td>
                     <td>${a.category || '-'}</td>
                     <td style="text-align:right; font-weight:700; color:#00d2ff;">${qty.toLocaleString('uz-UZ')} ${a.unit || ''}</td>
+                    ${isAdmin ? `
+                    <td>
+                        <div style="display:flex; gap:6px; justify-content:center;">
+                            <button class="oj-edit-btn" data-id="${a.id}" style="background:none; border:none; cursor:pointer;" title="Tahrirlash">✏️</button>
+                            <button class="oj-delete-btn" data-id="${a.id}" style="background:none; border:none; cursor:pointer; color:#ff4d4f;" title="O'chirish">🗑️</button>
+                        </div>
+                    </td>` : ''}
                 </tr>`;
-            }).join('') : `<tr><td colspan="3" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Mahsulot topilmadi</td></tr>`;
+            }).join('') : `<tr><td colspan="${isAdmin ? 4 : 3}" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Mahsulot topilmadi</td></tr>`;
             tableWrap.innerHTML = `<table class="v2-table"><thead><tr>
                 <th>Mahsulot</th><th>Kategoriya</th><th style="text-align:right;">Miqdor</th>
+                ${isAdmin ? '<th style="text-align:center;">Harakat</th>' : ''}
             </tr></thead><tbody>${rows}</tbody></table>`;
         } else if (cat === 'qoldiq') {
             const rows = items.length ? items.map(qi => {
@@ -1905,10 +1925,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <td>${qi.brand || '-'}</td>
                     <td style="text-align:right;">${len.toLocaleString('uz-UZ')}</td>
                     <td style="text-align:right; font-weight:700; color:#00d2ff;">${qty.toLocaleString('uz-UZ')} dona</td>
+                    ${isAdmin ? `
+                    <td>
+                        <div style="display:flex; gap:6px; justify-content:center;">
+                            <button class="oj-delete-qoldiq-btn" data-id="${qi.id}" style="background:none; border:none; cursor:pointer; color:#ff4d4f;" title="O'chirish">🗑️</button>
+                        </div>
+                    </td>` : ''}
                 </tr>`;
-            }).join('') : `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Mahsulot topilmadi</td></tr>`;
+            }).join('') : `<tr><td colspan="${isAdmin ? 5 : 4}" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Mahsulot topilmadi</td></tr>`;
             tableWrap.innerHTML = `<table class="v2-table"><thead><tr>
                 <th>Mahsulot</th><th>Brend</th><th style="text-align:right;">Uzunligi (mm)</th><th style="text-align:right;">Miqdor</th>
+                ${isAdmin ? '<th style="text-align:center;">Harakat</th>' : ''}
             </tr></thead><tbody>${rows}</tbody></table>`;
         } else if (cat === 'oynak') {
             const rows = items.length ? items.map(o => {
@@ -1918,11 +1945,69 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <td>${o.brand || '-'}</td>
                     <td>${o.size || '-'}</td>
                     <td style="text-align:right; font-weight:700; color:#00d2ff;">${qty.toLocaleString('uz-UZ')} ${o.unit || 'dona'}</td>
+                    ${isAdmin ? `
+                    <td>
+                        <div style="display:flex; gap:6px; justify-content:center;">
+                            <button class="oj-delete-oynak-btn" data-id="${o.id}" style="background:none; border:none; cursor:pointer; color:#ff4d4f;" title="O'chirish">🗑️</button>
+                        </div>
+                    </td>` : ''}
                 </tr>`;
-            }).join('') : `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Mahsulot topilmadi</td></tr>`;
+            }).join('') : `<tr><td colspan="${isAdmin ? 5 : 4}" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Mahsulot topilmadi</td></tr>`;
             tableWrap.innerHTML = `<table class="v2-table"><thead><tr>
                 <th>Mahsulot</th><th>Brend</th><th>O'lcham</th><th style="text-align:right;">Miqdor</th>
+                ${isAdmin ? '<th style="text-align:center;">Harakat</th>' : ''}
             </tr></thead><tbody>${rows}</tbody></table>`;
+        }
+
+        if (isAdmin) {
+            // Edit binding
+            document.querySelectorAll('.oj-edit-btn').forEach(btn => {
+                btn.onclick = () => {
+                    const prodId = btn.dataset.id;
+                    const allItems = [
+                        ...(window._ojData.profil.items || []),
+                        ...(window._ojData.aksesuvar.items || [])
+                    ];
+                    const p = allItems.find(x => x.id === prodId);
+                    if (p) {
+                        window.editingProdId = p.id;
+                        document.getElementById('eName').value = p.product_name || p.name || '';
+                        document.getElementById('eQty').value = p.stock_quantity || p.qty || 0;
+                        if (document.getElementById('ePrice')) document.getElementById('ePrice').value = p.price || 0;
+                        document.getElementById('editProductModal').classList.remove('hidden');
+                    }
+                };
+            });
+
+            // Delete inventory binding
+            document.querySelectorAll('.oj-delete-btn').forEach(btn => {
+                btn.onclick = async () => {
+                    if (confirm("Ushbu mahsulotni o'chirmoqchimisiz?")) {
+                        await supabase.from('romix_inventory').delete().eq('id', btn.dataset.id);
+                        loadOmborJami();
+                    }
+                };
+            });
+
+            // Delete qoldiq binding
+            document.querySelectorAll('.oj-delete-qoldiq-btn').forEach(btn => {
+                btn.onclick = async () => {
+                    if (confirm("Ushbu qoldiq profilni o'chirmoqchimisiz?")) {
+                        await supabase.from('romix_qoldiq_profillar').delete().eq('id', btn.dataset.id);
+                        loadOmborJami();
+                    }
+                };
+            });
+
+            // Delete oynak binding
+            document.querySelectorAll('.oj-delete-oynak-btn').forEach(btn => {
+                btn.onclick = async () => {
+                    if (confirm("Ushbu oynakni o'chirmoqchimisiz?")) {
+                        await supabase.from('romix_oynak').delete().eq('id', btn.dataset.id);
+                        loadOmborJami();
+                    }
+                };
+            });
         }
     }
 

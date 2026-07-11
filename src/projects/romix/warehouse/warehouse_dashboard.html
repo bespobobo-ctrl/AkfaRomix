@@ -7,6 +7,9 @@
     <title>AKFA WMS - Romix Enterprise Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/css/style.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         .warehouse-body {
             background: var(--adm-bg);
@@ -200,6 +203,95 @@
             transform: translateY(-3px);
             box-shadow: 0 8px 20px rgba(0, 210, 255, 0.2);
         }
+
+        /* --- Premium Brand Chips & Categories --- */
+        .brand-selector-row, .category-tabs-row, .om-brand-filter-row {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding: 8px 2px;
+            scroll-behavior: smooth;
+        }
+        .brand-selector-row::-webkit-scrollbar,
+        .category-tabs-row::-webkit-scrollbar,
+        .om-brand-filter-row::-webkit-scrollbar {
+            height: 4px;
+        }
+        .brand-selector-row::-webkit-scrollbar-thumb,
+        .category-tabs-row::-webkit-scrollbar-thumb,
+        .om-brand-filter-row::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+        }
+
+        .om-brand-chip, .category-tab {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--adm-border);
+            border-radius: 12px;
+            padding: 8px 18px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--adm-text-sec);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        .om-brand-chip:hover, .category-tab:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--adm-text);
+            transform: translateY(-2px);
+        }
+
+        .om-brand-chip.active, .category-tab.active {
+            background: linear-gradient(135deg, var(--adm-accent), #00d2ff);
+            color: #fff !important;
+            border-color: transparent;
+            box-shadow: 0 4px 15px rgba(0, 124, 82, 0.2);
+            font-weight: 700;
+        }
+        
+        .dark-mode .om-brand-chip.active, .dark-mode .category-tab.active {
+            box-shadow: 0 4px 20px rgba(0, 210, 255, 0.25);
+        }
+
+        .chip-meta {
+            font-size: 0.72rem;
+            opacity: 0.7;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 2px 6px;
+            border-radius: 6px;
+            margin-left: 4px;
+        }
+
+        .om-stat-card {
+            flex: 1;
+            min-width: 180px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--adm-border);
+            padding: 16px;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            box-shadow: var(--adm-shadow);
+        }
+        .om-stat-card .lbl {
+            font-size: 0.75rem;
+            color: var(--adm-text-sec);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        .om-stat-card .val {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--adm-text);
+        }
     </style>
     <script>
         // Anti-Flash & RBAC Role Protection (Ultimate Sync Edition)
@@ -344,30 +436,49 @@
                         </div>
                     </div>
 
-                    <!-- Main Inventory Table -->
-                    <div class="bento-item" style="grid-column: span 12;">
-                        <div class="bento-header">
-                            <h3 style="font-weight: 700;">Inventarizatsiya Ro'yxati</h3>
-                            <div class="auto-layout-row">
-                                <input type="text" id="inventorySearch" placeholder="Qidiruv..." class="form-input-v2"
-                                    style="width: 250px; margin-bottom:0;">
-                                <button class="icon-btn">🔃</button>
+                    <!-- Premium Inventory Sub-System (Ombor Jami) -->
+                    <div class="bento-item" style="grid-column: span 12; display: flex; flex-direction: column; gap: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                            <h3 style="font-weight: 700; margin: 0; font-size: 1.25rem; color: var(--adm-text);" id="ojCategoryTitle">📦 Profil — Brend/Seriya Bo'yicha</h3>
+                            
+                            <!-- Search & Export Cluster -->
+                            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                <input type="text" id="ojSearchInput" placeholder="Mahsulotlardan qidirish..." class="form-input-v2" style="width: 220px; margin-bottom: 0;">
+                                <button id="ojExportExcelBtn" class="btn-glass" style="background: rgba(0, 210, 255, 0.05); border-color: rgba(0, 210, 255, 0.15); color: #00d2ff; padding: 10px 18px; border-radius: 12px; font-size: 0.85rem; font-weight: 700; cursor: pointer;">📊 Excel</button>
+                                <button id="ojExportPdfBtn" class="btn-glass" style="background: rgba(245, 158, 11, 0.05); border-color: rgba(245, 158, 11, 0.15); color: #f59e0b; padding: 10px 18px; border-radius: 12px; font-size: 0.85rem; font-weight: 700; cursor: pointer;">📄 PDF</button>
                             </div>
                         </div>
-                        <table class="v2-table">
-                            <thead>
-                                <tr>
-                                    <th>Mahsulot</th>
-                                    <th>Kategoriya</th>
-                                    <th>Mavjud</th>
-                                    <th>Birlik</th>
-                                    <th>Narxi</th>
-                                    <th>Status</th>
-                                    <th>Harakat</th>
-                                </tr>
-                            </thead>
-                            <tbody id="inventoryTable"></tbody>
-                        </table>
+
+                        <!-- 4 Bo'limli Premium Tab Switcher -->
+                        <div id="ojCategoryTabs" class="category-tabs-row" style="margin-bottom: 0; padding-bottom: 10px; border-bottom: 1px solid var(--adm-border);">
+                            <div class="category-tab active" data-oj-cat="profil" style="display: flex; align-items: center; gap: 6px;">
+                                <span>📦</span> Profillar
+                            </div>
+                            <div class="category-tab" data-oj-cat="aksesuvar" style="display: flex; align-items: center; gap: 6px;">
+                                <span>🔩</span> Aksessuarlar
+                            </div>
+                            <div class="category-tab" data-oj-cat="qoldiq" style="display: flex; align-items: center; gap: 6px;">
+                                <span>✂️</span> Qoldiq Profillar
+                            </div>
+                            <div class="category-tab" data-oj-cat="oynak" style="display: flex; align-items: center; gap: 6px;">
+                                <span>🪟</span> Oynaklar
+                            </div>
+                        </div>
+
+                        <!-- Category mini-stats row -->
+                        <div id="ojStatRow" style="display: flex; gap: 15px; flex-wrap: wrap;">
+                            <!-- Stats cards will load here -->
+                        </div>
+
+                        <!-- Brand Filter Chips Row -->
+                        <div id="ojBrandFilter" class="brand-selector-row" style="margin-bottom: 0; padding-bottom: 10px; border-bottom: 1px solid var(--adm-border);">
+                            <!-- Brand chips will load here -->
+                        </div>
+
+                        <!-- Main Table Content -->
+                        <div id="ojItemsTableWrap" style="overflow-x: auto; width: 100%; border-radius: 16px; border: 1px solid var(--adm-border); background: rgba(0,0,0,0.01);">
+                            <!-- Table will be injected here -->
+                        </div>
                     </div>
                 </div>
             </section>
