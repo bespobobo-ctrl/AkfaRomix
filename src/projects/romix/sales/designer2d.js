@@ -221,6 +221,40 @@ export function createDesigner(host, opts = {}) {
         return null;
     }
 
+    function findFirstLeafId(node) {
+        if (node.kind === 'leaf') return node.id;
+        if (node.kind === 'split' && node.children.length > 0) {
+            return findFirstLeafId(node.children[0].node);
+        }
+        return node.id;
+    }
+
+    function findEditableNode(cellId, dim) {
+        if (cellId === 'root') return { id: 'root', node: root };
+        const f = findNode(root, cellId);
+        if (!f) return null;
+        
+        const dir = dim === 'w' ? 'v' : 'h';
+        if (f.parent && f.parent.kind === 'split' && f.parent.dir === dir) {
+            return { id: cellId, node: f.node };
+        }
+        
+        let curr = f;
+        while (curr && curr.parent) {
+            if (curr.parent.kind === 'split' && curr.parent.dir === dir) {
+                const child = curr.parent.children.find(ch => {
+                    const found = findNode(ch.node, curr.node.id);
+                    return !!found || ch.node.id === curr.node.id;
+                });
+                if (child) {
+                    return { id: child.node.id, node: child.node };
+                }
+            }
+            curr = findNode(root, curr.parent.id);
+        }
+        return { id: 'root', node: root };
+    }
+
     function ancestorSplit(id, dir) {
         function walk(node, parent) {
             if (node.id === id) return null;
@@ -394,7 +428,11 @@ export function createDesigner(host, opts = {}) {
             const sel = c.id === selected;
             s += `<rect data-id="${c.id}" x="${c.box.x}" y="${c.box.y}" width="${c.box.w}" height="${c.box.h}" fill="${sel ? 'rgba(0,210,255,0.18)' : 'rgba(0,186,255,0.04)'}" stroke="${sel ? '#00d2ff' : 'rgba(0,186,255,0.2)'}" stroke-width="${sel ? 12 : 5}" style="cursor:pointer; transition: all 0.2s;" rx="4"/>`;
             s += openingSvg(c.box, c.opening, sel);
-            s += `<text x="${c.box.x + c.box.w / 2}" y="${c.box.y + c.box.h / 2 + 20}" fill="rgba(255,255,255,0.25)" font-size="65" font-weight="700" text-anchor="middle" pointer-events="none">${Math.round(c.box.w)}×${Math.round(c.box.h)}</text>`;
+            s += `<text x="${c.box.x + c.box.w / 2}" y="${c.box.y + c.box.h / 2 + 20}" font-size="65" font-weight="700" text-anchor="middle">` +
+                 `<tspan data-cell-id="${c.id}" data-edit-dim="w" fill="#00d2ff" style="cursor:pointer; text-decoration: underline;" title="Enini o'zgartirish">${Math.round(c.box.w)}</tspan>` +
+                 `<tspan fill="rgba(255,255,255,0.25)">×</tspan>` +
+                 `<tspan data-cell-id="${c.id}" data-edit-dim="h" fill="#00d2ff" style="cursor:pointer; text-decoration: underline;" title="Bo'yini o'zgartirish">${Math.round(c.box.h)}</tspan>` +
+                 `</text>`;
         });
         
         // Imposts
@@ -431,17 +469,24 @@ export function createDesigner(host, opts = {}) {
         if (!el) return;
         el.addEventListener('click', e => {
             const editDim = e.target.getAttribute('data-edit-dim');
-            const cellId = e.target.getAttribute('data-cell-id');
+            let cellId = e.target.getAttribute('data-cell-id');
             if (editDim && cellId) {
-                const currentVal = editDim === 'w' 
-                    ? (cellId === 'root' ? W : Math.round(out.cells.find(c => c.id === cellId).box.w))
-                    : (cellId === 'root' ? H : Math.round(out.cells.find(c => c.id === cellId).box.h));
-                
-                const title = cellId === 'root'
-                    ? (editDim === 'w' ? "Umumiy enini kiriting" : "Umumiy balandligini kiriting")
-                    : (editDim === 'w' ? "Tavaqa enini kiriting" : "Tavaqa balandligini kiriting");
+                const target = findEditableNode(cellId, editDim);
+                if (target) {
+                    cellId = target.id;
+                    const firstLeafId = findFirstLeafId(target.node);
+                    const leafCellBox = out.cells.find(c => c.id === firstLeafId)?.box;
+                    
+                    const currentVal = editDim === 'w' 
+                        ? (cellId === 'root' ? W : Math.round(leafCellBox?.w || W))
+                        : (cellId === 'root' ? H : Math.round(leafCellBox?.h || H));
+                    
+                    const title = cellId === 'root'
+                        ? (editDim === 'w' ? "Umumiy enini kiriting" : "Umumiy balandligini kiriting")
+                        : (editDim === 'w' ? "Tavaqa enini kiriting" : "Tavaqa balandligini kiriting");
 
-                openDimModal(title, currentVal, (newVal) => setSpecificCellSize(cellId, editDim, newVal));
+                    openDimModal(title, currentVal, (newVal) => setSpecificCellSize(cellId, editDim, newVal));
+                }
                 return;
             }
 
