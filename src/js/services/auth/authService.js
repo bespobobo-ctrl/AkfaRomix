@@ -159,15 +159,15 @@ export const authService = {
         }
 
         switch (role) {
-            case 'admin': return base + 'src/projects/romix/romix_dashboard.html';
-            case 'hr': return base + 'src/projects/romix/hr/hr_dashboard.html';
-            case 'employee': return base + 'src/projects/romix/hr/akfa_hr_mini.html';
-            case 'manager': return base + 'src/projects/romix/warehouse/warehouse_dashboard.html';
-            case 'sotuv': return base + 'src/projects/romix/sales/sales_dashboard.html';
-            case 'sotuvchi': return base + 'src/projects/romix/sales/sales_dashboard.html';
-            case 'showroom': return base + 'src/projects/romix/showroom/showroom_dashboard.html';
-            case 'ishlab_chiqarish': return base + 'src/projects/romix/production/production_dashboard.html';
-            case 'buxgalter': return base + 'src/projects/romix/romix_dashboard.html';
+            case 'admin': return base + 'src/projects/romix/romix_dashboard.html?v=2026.pdf_fix';
+            case 'hr': return base + 'src/projects/romix/hr/hr_dashboard.html?v=2026.pdf_fix';
+            case 'employee': return base + 'src/projects/romix/hr/akfa_hr_mini.html?v=2026.pdf_fix';
+            case 'manager': return base + 'src/projects/romix/warehouse/warehouse_dashboard.html?v=2026.pdf_fix';
+            case 'sotuv': return base + 'src/projects/romix/sales/sales_dashboard.html?v=2026.pdf_fix';
+            case 'sotuvchi': return base + 'src/projects/romix/sales/sales_dashboard.html?v=2026.pdf_fix';
+            case 'showroom': return base + 'src/projects/romix/showroom/showroom_dashboard.html?v=2026.pdf_fix';
+            case 'ishlab_chiqarish': return base + 'src/projects/romix/production/production_dashboard.html?v=2026.pdf_fix';
+            case 'buxgalter': return base + 'src/projects/romix/romix_dashboard.html?v=2026.pdf_fix';
             case 'ac_manager': return base + 'src/projects/autoclapak/pages/admin_dashboard.html';
             case 'stanok': return base + 'src/projects/autoclapak/mini-app/stanok-app/index.html';
             case 'kraska': return base + 'src/projects/autoclapak/mini-app/kraska-app/index.html';
