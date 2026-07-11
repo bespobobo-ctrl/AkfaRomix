@@ -181,12 +181,12 @@ export function createViewer(canvas) {
                 groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, sw / 2, 0, -d * 0.08);
                 groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, sw / 2, 0, d * 0.08);
                 
-                // Cylinder Hinges (Oshiq-moshiqlar)
-                groupBox(sf * 0.16, sf * 0.5, sf * 0.16, handleMat, 0, sh * 0.35, 0);
-                groupBox(sf * 0.16, sf * 0.5, sf * 0.16, handleMat, 0, -sh * 0.35, 0);
+                // Cylinder Hinges (Oshiq-moshiqlar) - Adjusted Z and X to be on the front face edge
+                groupBox(sf * 0.22, sh * 0.08, sf * 0.22, handleMat, -sf * 0.12, sh * 0.35, d * 0.45);
+                groupBox(sf * 0.22, sh * 0.08, sf * 0.22, handleMat, -sf * 0.12, -sh * 0.35, d * 0.45);
                 
                 rotationAxis = 'y';
-                rotationVal = -0.7; // Swing angle
+                rotationVal = 0.7; // Swing outward (towards camera)
             } else if (isRightHinge) {
                 groupX = cx + sw / 2;
                 groupBox(sf, sh, d * 0.8, frameMat, -sf / 2, 0, 0); // o'ng
@@ -199,11 +199,11 @@ export function createViewer(canvas) {
                 groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, -sw / 2, 0, d * 0.08);
                 
                 // Cylinder Hinges
-                groupBox(sf * 0.16, sf * 0.5, sf * 0.16, handleMat, 0, sh * 0.35, 0);
-                groupBox(sf * 0.16, sf * 0.5, sf * 0.16, handleMat, 0, -sh * 0.35, 0);
+                groupBox(sf * 0.22, sh * 0.08, sf * 0.22, handleMat, sf * 0.12, sh * 0.35, d * 0.45);
+                groupBox(sf * 0.22, sh * 0.08, sf * 0.22, handleMat, sf * 0.12, -sh * 0.35, d * 0.45);
                 
                 rotationAxis = 'y';
-                rotationVal = 0.7;
+                rotationVal = -0.7; // Swing outward (towards camera)
             } else if (isTiltTop) {
                 groupY = cy - sh / 2;
                 groupBox(sw, sf, d * 0.8, frameMat, 0, sf / 2, 0); // past
@@ -215,12 +215,12 @@ export function createViewer(canvas) {
                 groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, 0, sh / 2, -d * 0.08);
                 groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, 0, sh / 2, d * 0.08);
                 
-                // Cylinder Hinges (bottom-left and bottom-right)
-                groupBox(sf * 0.4, sf * 0.16, sf * 0.16, handleMat, -sw * 0.38, 0, 0);
-                groupBox(sf * 0.4, sf * 0.16, sf * 0.16, handleMat, sw * 0.38, 0, 0);
+                // Cylinder Hinges (bottom-left and bottom-right on front face)
+                groupBox(sw * 0.08, sf * 0.22, sf * 0.22, handleMat, -sw * 0.35, sf * 0.12, d * 0.45);
+                groupBox(sw * 0.08, sf * 0.22, sf * 0.22, handleMat, sw * 0.35, sf * 0.12, d * 0.45);
                 
                 rotationAxis = 'x';
-                rotationVal = 0.22;
+                rotationVal = -0.22; // Tilt outward (towards camera)
             } else if (isTiltBottom) {
                 groupY = cy + sh / 2;
                 groupBox(sw, sf, d * 0.8, frameMat, 0, -sf / 2, 0); // tepa
@@ -232,12 +232,12 @@ export function createViewer(canvas) {
                 groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, 0, -sh / 2, -d * 0.08);
                 groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, 0, -sh / 2, d * 0.08);
                 
-                // Cylinder Hinges (top-left and top-right)
-                groupBox(sf * 0.4, sf * 0.16, sf * 0.16, handleMat, -sw * 0.38, 0, 0);
-                groupBox(sf * 0.4, sf * 0.16, sf * 0.16, handleMat, sw * 0.38, 0, 0);
+                // Cylinder Hinges (top-left and top-right on front face)
+                groupBox(sw * 0.08, sf * 0.22, sf * 0.22, handleMat, -sw * 0.35, -sf * 0.12, d * 0.45);
+                groupBox(sw * 0.08, sf * 0.22, sf * 0.22, handleMat, sw * 0.35, -sf * 0.12, d * 0.45);
                 
                 rotationAxis = 'x';
-                rotationVal = -0.22;
+                rotationVal = 0.22; // Tilt outward (towards camera)
             } else {
                 // Fixed/fallback
                 groupBox(sf, sh, d * 0.8, frameMat, 0, 0, 0);
@@ -248,8 +248,8 @@ export function createViewer(canvas) {
                 groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, 0, 0, d * 0.08);
             }
 
-            // L-shaklidagi premium metal tutqich (Ruchka) joylashtirish
-            let hx = 0, hy = 0, hz = d * 0.4;
+            // L-shaklidagi premium metal tutqich (Ruchka) - positioned on the front face (Z-shifted)
+            let hx = 0, hy = 0;
             let showHandle = true;
             if (isLeftHinge) {
                 hx = sw - sf * 0.7; hy = 0;
@@ -264,12 +264,13 @@ export function createViewer(canvas) {
             }
 
             if (showHandle) {
-                // Rozetka (base)
-                groupBox(sf * 0.24, sf * 0.44, d * 0.18, handleMat, hx, hy, hz);
+                const hz = d * 0.45; // Placed clearly on front face of sash
+                // Rosette (base)
+                groupBox(sf * 0.32, sf * 0.55, d * 0.25, handleMat, hx, hy, hz);
                 // Tutqich bo'yni (shaft)
-                groupBox(sf * 0.1, sf * 0.1, d * 0.42, handleMat, hx, hy, hz + d * 0.12);
-                // Tutqich dastasining o'zi (lever) - pastga yo'nalgan
-                groupBox(sf * 0.1, sf * 0.8, sf * 0.1, handleMat, hx, hy - sf * 0.3, hz + d * 0.32);
+                groupBox(sf * 0.14, sf * 0.14, d * 0.5, handleMat, hx, hy, hz + d * 0.2);
+                // Tutqich dastasining o'zi (lever) - chunky pointing down
+                groupBox(sf * 0.14, sf * 0.9, sf * 0.25, handleMat, hx, hy - sf * 0.35, hz + d * 0.45);
             }
 
             group.position.set(groupX, groupY, zf);
