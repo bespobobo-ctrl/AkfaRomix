@@ -553,7 +553,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // va aksessuar ro'yxatini avtomatik hisoblaydi — Sotuv qo'lda BOM kiritmaydi,
     // Ombor shu hisobga qarab tasdiqlaydi/ombordan ajratadi.
     function computeMaterialEstimate(items) {
-        const profilesByName = {};
+        // profilesById: key = product_id (real romix_inventory id), value = {name, meters}
+        const profilesById = {};
         const accessoriesByName = {};
         (items || []).forEach(it => {
             if (it.type === 'rom' || it.type === 'rom_fortochka' || it.type === 'eshik') {
@@ -562,16 +563,36 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const impostLen = (it.vDiv || 0) * it.height + (it.hDiv || 0) * it.width;
                 const perUnit = (perimeter + impostLen) * 1.10;
                 const meters = perUnit * it.quantity;
-                profilesByName[it.materialName] = (profilesByName[it.materialName] || 0) + meters;
+                const key = it.materialId || it.materialName;
+                if (!profilesById[key]) {
+                    profilesById[key] = {
+                        material_name: it.materialName,
+                        // romix_inventory real id ("ombor-" prefiksi olib tashlanadi)
+                        product_id: it.materialId ? it.materialId.replace('ombor-', '') : null,
+                        meters: 0
+                    };
+                }
+                profilesById[key].meters += meters;
             } else if (it.type === 'padakonnik') {
                 const meters = it.width * it.quantity;
-                profilesByName[it.materialName] = (profilesByName[it.materialName] || 0) + meters;
+                const key = it.materialId || it.materialName;
+                if (!profilesById[key]) {
+                    profilesById[key] = {
+                        material_name: it.materialName,
+                        product_id: it.materialId ? it.materialId.replace('ombor-', '') : null,
+                        meters: 0
+                    };
+                }
+                profilesById[key].meters += meters;
             } else if (it.type === 'aksesuar_rom' || it.type === 'aksesuar_eshik') {
                 accessoriesByName[it.materialName] = (accessoriesByName[it.materialName] || 0) + it.quantity;
             }
         });
         return {
-            profiles: Object.entries(profilesByName).map(([material_name, meters]) => ({ material_name, meters: Math.round(meters * 100) / 100 })),
+            profiles: Object.values(profilesById).map(p => ({
+                ...p,
+                meters: Math.round(p.meters * 100) / 100
+            })),
             accessories: Object.entries(accessoriesByName).map(([name, qty]) => ({ name, qty }))
         };
     }

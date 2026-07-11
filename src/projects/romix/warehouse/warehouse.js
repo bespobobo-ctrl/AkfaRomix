@@ -1241,7 +1241,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return total > 0 && (paid / total) >= 0.5;
             });
         } catch (err) {
-            grid.innerHTML = '<div style="text-align:center; color:#ef4444; padding:20px; grid-column:1/-1;">Xatolik: buyurtmalarni yuklab bo\'lmadi (production_deadline_tracking/ombor_confirmation_flow SQL ustunlari mavjudligini tekshiring)</div>';
+            grid.innerHTML = '<div style="text-align:center; color:#ef4444; padding:20px; grid-column:1/-1;">Xatolik: buyurtmalarni yuklab bo\'lmadi</div>';
             console.warn('loadOrdersConfirmation fetch failed:', err);
             return;
         }
@@ -1253,12 +1253,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         let profileStock = [];
         try {
-            const { data } = await supabase.from('romix_inventory').select('id, product_name, stock_quantity, unit');
+            const { data } = await supabase.from('romix_inventory').select('id, product_name, stock_quantity, unit, metadata');
             profileStock = data || [];
         } catch (err) { console.warn('profile stock fetch failed:', err); }
         const accStock = await omGetAccessories();
 
-        const findProfileStock = (name) => profileStock.find(p => (p.product_name || '').toLowerCase() === (name || '').toLowerCase());
+        // ID bo'yicha aniq qidirish; yo'q bo'lsa nom bo'yicha fallback
+        const findProfileStock = (p) => {
+            if (p.product_id) {
+                const byId = profileStock.find(s => String(s.id) === String(p.product_id));
+                if (byId) return byId;
+            }
+            // fallback: nom bo'yicha qidirish
+            return profileStock.find(s => (s.product_name || '').toLowerCase().trim() === (p.material_name || '').toLowerCase().trim());
+        };
         const findAccStock = (name) => accStock.find(a => (a.name || '').toLowerCase() === (name || '').toLowerCase());
 
         grid.innerHTML = orders.map(o => {
@@ -1266,36 +1274,70 @@ document.addEventListener('DOMContentLoaded', async () => {
             const profiles = est.profiles || [];
             const accessories = est.accessories || [];
             let allSufficient = true;
+            const shortages = [];
 
             const profRows = profiles.map(p => {
-                const stock = findProfileStock(p.material_name);
+                const stock = findProfileStock(p);
+                const meta = stock?.metadata || {};
+                const stockName = stock ? (stock.product_name || p.material_name) : p.material_name;
                 const have = stock ? Number(stock.stock_quantity) || 0 : 0;
-                const ok = have >= p.meters;
-                if (!ok) allSufficient = false;
-                return `<div style="display:flex; justify-content:space-between; font-size:0.78rem; padding:4px 0;">
-                    <span>📏 ${p.material_name}</span>
-                    <span style="color:${ok ? '#00ff88' : '#ef4444'}; font-weight:700;">${p.meters}m kerak / ${have.toFixed(1)}m bor ${ok ? '✅' : '❌'}</span>
+                const need = Number(p.meters) || 0;
+                const ok = have >= need;
+                if (!ok) { allSufficient = false; shortages.push(`${stockName}: ${need}m kerak, ${have.toFixed(1)}m bor`); }
+                return `<div style="display:flex; justify-content:space-between; font-size:0.78rem; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.04);">
+                    <span style="color:var(--adm-text);">📏 ${stockName}</span>
+                    <span style="color:${ok ? '#00ff88' : '#ef4444'}; font-weight:700;">${need.toFixed(1)}m / ${have.toFixed(1)}m bor ${ok ? '✅' : '❌ YETMAYDI'}</span>
                 </div>`;
             }).join('');
+
             const accRows = accessories.map(a => {
                 const stock = findAccStock(a.name);
                 const have = stock ? Number(stock.qty) || 0 : 0;
                 const ok = have >= a.qty;
-                if (!ok) allSufficient = false;
-                return `<div style="display:flex; justify-content:space-between; font-size:0.78rem; padding:4px 0;">
-                    <span>🔩 ${a.name}</span>
-                    <span style="color:${ok ? '#00ff88' : '#ef4444'}; font-weight:700;">${a.qty} kerak / ${have} bor ${ok ? '✅' : '❌'}</span>
+                if (!ok) { allSufficient = false; shortages.push(`${a.name}: ${a.qty} kerak, ${have} bor`); }
+                return `<div style="display:flex; justify-content:space-between; font-size:0.78rem; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.04);">
+                    <span style="color:var(--adm-text);">🔩 ${a.name}</span>
+                    <span style="color:${ok ? '#00ff88' : '#ef4444'}; font-weight:700;">${a.qty} kerak / ${have} bor ${ok ? '✅' : '❌ YETMAYDI'}</span>
                 </div>`;
             }).join('');
 
-            return `<div style="background:var(--adm-surface); border:1px solid var(--adm-border); border-top:3px solid ${allSufficient ? '#00ff88' : '#ef4444'}; border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:8px; box-shadow:var(--adm-shadow);">
-                <div style="font-weight:700; color:var(--adm-text); font-size:0.95rem;">${o.customer_name || 'Noma\'lum'}</div>
-                <div style="font-size:0.76rem; color:var(--adm-text-sec);">${o.customer_phone ? '📞 ' + o.customer_phone + ' — ' : ''}${o.prod_type || ''} — Muddat: ${o.production_deadline ? new Date(o.production_deadline).toLocaleDateString('uz-UZ') : '—'}</div>
-                <div style="border-top:1px dashed var(--adm-border); padding-top:8px;">
+            const nothingNeeded = profiles.length === 0 && accessories.length === 0;
+            if (nothingNeeded) allSufficient = true;
+
+            const shortageBlock = !allSufficient ? `
+                <div style="background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.3); border-radius:10px; padding:10px; margin-top:6px;">
+                    <div style="font-size:0.72rem; font-weight:700; color:#ef4444; margin-bottom:6px;">⚠️ Yetishmayotgan materiallar:</div>
+                    ${shortages.map(s => `<div style="font-size:0.72rem; color:#fca5a5; padding:2px 0;">• ${s}</div>`).join('')}
+                </div>` : '';
+
+            const totalPaid = Number(o.paid_amount) || 0;
+            const totalPrice = Number(o.total_price) || 0;
+            const advPercent = totalPrice > 0 ? Math.round((totalPaid / totalPrice) * 100) : 0;
+
+            return `<div style="background:var(--adm-surface); border:1px solid var(--adm-border); border-top:3px solid ${allSufficient ? '#00ff88' : '#ef4444'}; border-radius:16px; padding:18px; display:flex; flex-direction:column; gap:8px; box-shadow:var(--adm-shadow);">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div>
+                        <div style="font-weight:800; color:var(--adm-text); font-size:1rem;">${o.customer_name || "Noma'lum"}</div>
+                        <div style="font-size:0.74rem; color:var(--adm-text-sec); margin-top:2px;">${o.customer_phone ? '📞 ' + o.customer_phone : ''}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:0.72rem; color:var(--adm-text-sec);">Muddat: <b style="color:#ffb800;">${o.production_deadline ? new Date(o.production_deadline).toLocaleDateString('uz-UZ') : '—'}</b></div>
+                        <div style="font-size:0.72rem; color:#00d2ff;">Avans: ${advPercent}%</div>
+                    </div>
+                </div>
+                <div style="border-top:1px dashed var(--adm-border); padding-top:8px; display:flex; flex-direction:column; gap:2px;">
                     ${profRows || '<div style="color:var(--adm-text-sec); font-size:0.76rem;">Profil kerak emas</div>'}
                     ${accRows}
+                    ${nothingNeeded ? '<div style="font-size:0.76rem; color:#00d2ff;">ℹ️ Faqat qoldiq profil / oynak biriktirish kerak</div>' : ''}
                 </div>
-                <button class="ombor-confirm-btn" data-id="${o.id}" ${allSufficient ? '' : 'disabled'} style="margin-top:8px; background:${allSufficient ? '#00ff88' : 'rgba(255,255,255,0.08)'}; color:${allSufficient ? '#000' : 'var(--adm-text-sec)'}; border:none; padding:10px; border-radius:10px; font-weight:700; cursor:${allSufficient ? 'pointer' : 'not-allowed'};">${allSufficient ? '✅ Tasdiqlash va Ishlab Chiqarishga O\'tkazish' : '❌ Yetarli emas'}</button>
+                ${shortageBlock}
+                <button class="ombor-confirm-btn" data-id="${o.id}" ${allSufficient ? '' : 'disabled'}
+                    style="margin-top:8px; background:${allSufficient ? 'linear-gradient(135deg,#00ff88,#00d2ff)' : 'rgba(255,255,255,0.06)'};
+                    color:${allSufficient ? '#000' : 'var(--adm-text-sec)'};
+                    border:none; padding:12px; border-radius:12px; font-weight:800; cursor:${allSufficient ? 'pointer' : 'not-allowed'};
+                    font-size:0.88rem; letter-spacing:0.3px;">
+                    ${allSufficient ? '✅ Materiallarni Tayyorlab Ishlab Chiqarishga O\'tkazish' : '🔒 Materiallar yetarli emas — kirim qiling'}
+                </button>
             </div>`;
         }).join('');
 
@@ -1428,10 +1470,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             // Hammasi yetarli — endi haqiqatan ombordan ayiramiz
+            // Profil: product_id bo'yicha aniq qidiruv, yo'q bo'lsa nom bo'yicha
             for (const p of profiles) {
-                const { data: stock } = await supabase.from('romix_inventory').select('id, stock_quantity').eq('product_name', p.material_name).maybeSingle();
+                let stock = null;
+                if (p.product_id) {
+                    const { data } = await supabase.from('romix_inventory').select('id, stock_quantity').eq('id', p.product_id).maybeSingle();
+                    stock = data;
+                }
+                if (!stock) {
+                    // fallback: nom bo'yicha
+                    const { data } = await supabase.from('romix_inventory').select('id, stock_quantity').ilike('product_name', p.material_name).maybeSingle();
+                    stock = data;
+                }
                 if (stock) {
-                    await supabase.from('romix_inventory').update({ stock_quantity: (Number(stock.stock_quantity) || 0) - p.meters }).eq('id', stock.id);
+                    const newQty = Math.max(0, (Number(stock.stock_quantity) || 0) - p.meters);
+                    await supabase.from('romix_inventory').update({ stock_quantity: newQty }).eq('id', stock.id);
                     await supabase.from('romix_transactions').insert([{ product_id: stock.id, type: 'OUT', quantity: p.meters, note: `Buyurtma uchun ajratildi: ${order.customer_name} (#${orderId.slice(0, 8)})` }]);
                 }
             }
