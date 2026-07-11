@@ -1,18 +1,6 @@
-// ═══════════════════════════════════════════════════════════
-//  AKFA Romix — Kesim PDF (Smart Remnant AI + 3 Xil Variant)
-//  Buyurtmadagi rom/eshiklarni profilga bo'lib, chiqitni kamaytiradi
-//
-//  Profil turlari:
-//    Rama   — tashqi ramka (45°/45° kesim)
-//    Impost — o'rta bo'linma (90°/90° kesim)
-//    Stvorka— qanot (ochiluvchi bo'lak, 45°/45° kesim)
-//    Shtapik— shisha ushlagich (45°/45° kesim)
-//
-//  Arra zazori:
-//    45° kesim = 12mm  (2 arra yuzasi × 4mm + 4mm zazor)
-//    90° kesim =  6mm  (1 arra yuzasi × 4mm + 2mm zazor)
-//    Har profil boshi: 5mm trim (sarflanadi)
-// ═══════════════════════════════════════════════════════════
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
+
 
 const FP   = 60;   // Rama profil kengligi (mm)
 const SP   = 50;   // Stvorka/Qanot profil kengligi (mm)
@@ -414,15 +402,7 @@ function ensurePage(doc, y, needed = 40) {
 const fmt  = n => Number(n).toLocaleString('ru-RU');
 const fmtM = n => (n / 1000).toFixed(3);
 
-// ═══════════════════════════════════════════════════════════
-// 3) Asosiy PDF generatsiya funksiyasi
-// ═══════════════════════════════════════════════════════════
-export function generateCuttingPdf(order) {
-    if (!window.jspdf || !window.jspdf.jsPDF) {
-        alert('jsPDF kutubxonasi yuklanmadi. Sahifani yangilang (Ctrl+F5).');
-        return null;
-    }
-    const { jsPDF } = window.jspdf;
+export async function generateCuttingPdf(order) {
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const PW  = doc.internal.pageSize.getWidth();
     const M   = 12;

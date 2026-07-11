@@ -337,7 +337,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const prodHistCloseBtn = document.getElementById('productionHistoryCloseBtn');
     if (prodHistCloseBtn) prodHistCloseBtn.onclick = () => document.getElementById('productionHistoryModal').classList.add('hidden');
 
-    function showCuttingPdfForOrder(o) {
+    async function showCuttingPdfForOrder(o) {
         let items = [];
         try { items = JSON.parse(o.model_name) || []; } catch (e) { items = []; }
         const romlar = items.filter(it => ['rom', 'rom_fortochka', 'eshik'].includes(it.type));
@@ -345,7 +345,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             alert("Bu buyurtmada kesim PDF uchun rom yoki eshik elementi yo'q.");
             return;
         }
-        generateCuttingPdf({ customer: o.customer_name || '', phone: o.customer_phone || '', items });
+        let remnants = [];
+        try {
+            const { data: rData } = await supabase
+                .from('romix_qoldiq_profillar')
+                .select('*')
+                .eq('is_used', false)
+                .order('stock_quantity', { ascending: true });
+            if (rData) {
+                remnants = rData.map(r => ({
+                    id: r.id,
+                    profile_type: r.profile_name || r.profile_type || r.product_name || '',
+                    length: Math.round((r.stock_quantity || r.length || 0) * 1000),
+                    color: r.color || ''
+                })).filter(r => r.length >= 800);
+            }
+        } catch (e) { console.warn('Qoldiq profillar yuklanmadi:', e); }
+        await generateCuttingPdf({ customer: o.customer_name || '', phone: o.customer_phone || '', items, remnants });
     }
 
     async function loadProductionPipeline() {

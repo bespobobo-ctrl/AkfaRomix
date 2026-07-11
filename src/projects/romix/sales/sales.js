@@ -2019,13 +2019,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Kesim optimizatsiya PDF — joriy savatdan
     const cuttingBtn = document.getElementById('cuttingPdfBtn');
     if (cuttingBtn) {
-        cuttingBtn.onclick = () => {
+        cuttingBtn.onclick = async () => {
             const romlar = orderItems.filter(it => ['rom', 'rom_fortochka', 'eshik'].includes(it.type));
             if (romlar.length === 0) { alert("Kesim PDF uchun savatga rom yoki eshik qo'shing."); return; }
-            generateCuttingPdf({
+
+            let remnants = [];
+            try {
+                const { data: rData } = await supabase
+                    .from('romix_qoldiq_profillar')
+                    .select('*')
+                    .eq('is_used', false)
+                    .order('stock_quantity', { ascending: true });
+                if (rData) {
+                    remnants = rData.map(r => ({
+                        id: r.id,
+                        profile_type: r.profile_name || r.profile_type || r.product_name || '',
+                        length: Math.round((r.stock_quantity || r.length || 0) * 1000), // metrdan mm ga
+                        color: r.color || ''
+                    })).filter(r => r.length >= 800);
+                }
+            } catch (e) { console.warn('Qoldiq profillar yuklanmadi:', e); }
+
+            await generateCuttingPdf({
                 customer: document.getElementById('oCustomer')?.value || '',
                 phone: document.getElementById('oPhone')?.value || '',
-                items: orderItems
+                items: orderItems,
+                remnants
             });
         };
     }
