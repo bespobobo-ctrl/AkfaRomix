@@ -105,6 +105,14 @@ export function createViewer(canvas) {
         return m;
     }
 
+    // Modelga o'rnatiladigan ochiq ramkali rezina (Gasket) chizuvchi
+    function gasketFrameOnModel(w, h, th, dp, mat, x, y, z) {
+        box(w, th, dp, mat, x, y + h / 2 - th / 2, z);
+        box(w, th, dp, mat, x, y - h / 2 + th / 2, z);
+        box(th, h - th * 2, dp, mat, x - w / 2 + th / 2, y, z);
+        box(th, h - th * 2, dp, mat, x + w / 2 - th / 2, y, z);
+    }
+
     // Billboarding 3D matn sprayti yaratish (CAD o'lchamlari uchun)
     function createTextSprite(text) {
         const canvasSprite = document.createElement('canvas');
@@ -207,6 +215,14 @@ export function createViewer(canvas) {
                 mesh.position.set(lx, ly, lz);
                 group.add(mesh);
             }
+
+            // Guruh ichidagi ochiq ramkali rezina (Gasket) chizish helperi
+            function gasketFrame(w, h, th, dp, mat, lx, ly, lz) {
+                groupBox(w, th, dp, mat, lx, ly + h / 2 - th / 2, lz);
+                groupBox(w, th, dp, mat, lx, ly - h / 2 + th / 2, lz);
+                groupBox(th, h - th * 2, dp, mat, lx - w / 2 + th / 2, ly, lz);
+                groupBox(th, h - th * 2, dp, mat, lx + w / 2 - th / 2, ly, lz);
+            }
             
             let rotationAxis = '';
             let rotationVal = 0;
@@ -223,8 +239,8 @@ export function createViewer(canvas) {
             
             const B = (isTiltTop) ? 0 : ((isTiltBottom) ? -sh : -sh/2);
             
-            // Black Rubber Gasket behind the sash (EPDM seam seal)
-            groupBox(sw + sf * 0.12, sh + sf * 0.12, d * 0.15, gasketMat, glassW_loc, glassY_loc, -d * 0.45);
+            // Hollow EPDM rubber gasket behind the sash (seam seal) - prevents blocking glass!
+            gasketFrame(sw + sf * 0.12, sh + sf * 0.12, sf * 0.12, d * 0.15, gasketMat, glassW_loc, glassY_loc, -d * 0.45);
 
             if (isLeftHinge) {
                 groupX = cx - sw / 2;
@@ -300,9 +316,9 @@ export function createViewer(canvas) {
                 groupBox(sw - sf * 2, gh, d * 0.05, glassMat, glassW_loc, gcy, d * 0.08);
                 groupBox(sw - sf * 2 - sf * 0.06, gh - sf * 0.06, d * 0.11, spacerMat, glassW_loc, gcy, 0);
                 
-                // Glass rubber gasket (EPDM)
-                groupBox(sw - sf * 2 + sf * 0.12, gh + sf * 0.12, d * 0.03, gasketMat, glassW_loc, gcy, -d * 0.09);
-                groupBox(sw - sf * 2 + sf * 0.12, gh + sf * 0.12, d * 0.03, gasketMat, glassW_loc, gcy, d * 0.09);
+                // Glass rubber gasket (EPDM hollow frame) - does not block glass center!
+                gasketFrame(sw - sf * 2 + sf * 0.12, gh + sf * 0.12, sf * 0.08, d * 0.03, gasketMat, glassW_loc, gcy, -d * 0.09);
+                gasketFrame(sw - sf * 2 + sf * 0.12, gh + sf * 0.12, sf * 0.08, d * 0.03, gasketMat, glassW_loc, gcy, d * 0.09);
                 
                 // Premium Eshik tutqichi (Chrome cylindrical bar handle)
                 const hx = isLeftHinge ? sw - sf * 0.8 : -sw + sf * 0.8;
@@ -318,9 +334,9 @@ export function createViewer(canvas) {
                 groupBox(gw, gh, d * 0.05, glassMat, glassW_loc, glassY_loc, d * 0.08);
                 groupBox(gw - sf * 0.06, gh - sf * 0.06, d * 0.11, spacerMat, glassW_loc, glassY_loc, 0);
                 
-                // Glass rubber gasket (EPDM)
-                groupBox(gw + sf * 0.15, gh + sf * 0.15, d * 0.03, gasketMat, glassW_loc, glassY_loc, -d * 0.09);
-                groupBox(gw + sf * 0.15, gh + sf * 0.15, d * 0.03, gasketMat, glassW_loc, glassY_loc, d * 0.09);
+                // Glass rubber gasket (EPDM hollow frame) - does not block glass center!
+                gasketFrame(gw + sf * 0.12, gh + sf * 0.12, sf * 0.08, d * 0.03, gasketMat, glassW_loc, glassY_loc, -d * 0.09);
+                gasketFrame(gw + sf * 0.12, gh + sf * 0.12, sf * 0.08, d * 0.03, gasketMat, glassW_loc, glassY_loc, d * 0.09);
 
                 // L-shaklidagi deraza tutqichi (Ruchka)
                 let hx = 0, hy = 0;
@@ -474,8 +490,7 @@ export function createViewer(canvas) {
                 const icx = cx + (leftShift - rightShift) / 2;
                 const icy = cy - (topShift - bottomShift) / 2;
 
-                // Eshik ochiladigan bo'lishini ta'minlash (Faqat bitta katak bo'lsa, uni avtomatik ochiladigan qilamiz.
-                // Agar 2 ga bo'lingan bo'lsa, foydalanuvchi tanlagan 'kar' (oynak) yoki boshqa ochilishlarni hurmat qilamiz.)
+                // Eshik ochiladigan bo'lishini ta'minlash (Faqat bitta katak bo'lsa, uni avtomatik ochiladigan qilamiz.)
                 const isSingleCell = out.cells.length === 1;
                 if (type === 'eshik' && isSingleCell && (!c.opening || c.opening === 'kar')) {
                     c.opening = 'casement_l';
@@ -495,9 +510,9 @@ export function createViewer(canvas) {
                     box(iw * 0.99, ih * 0.99, d * 0.05, glassMat, icx, icy, d * 0.08);
                     box(iw * 0.99 - impF * 0.06, ih * 0.99 - impF * 0.06, d * 0.11, spacerMat, icx, icy, 0);
                     
-                    // Glass Gaskets for fixed glass
-                    box(iw * 0.99 + impF * 0.15, ih * 0.99 + impF * 0.15, d * 0.03, gasketMat, icx, icy, -d * 0.09);
-                    box(iw * 0.99 + impF * 0.15, ih * 0.99 + impF * 0.15, d * 0.03, gasketMat, icx, icy, d * 0.09);
+                    // Hollow EPDM rubber gasket for fixed glass - does not block glass center!
+                    gasketFrameOnModel(iw * 0.99 + impF * 0.12, ih * 0.99 + impF * 0.12, impF * 0.08, d * 0.03, gasketMat, icx, icy, -d * 0.09);
+                    gasketFrameOnModel(iw * 0.99 + impF * 0.12, ih * 0.99 + impF * 0.12, impF * 0.08, d * 0.03, gasketMat, icx, icy, d * 0.09);
                 }
             });
         } else {
@@ -522,9 +537,9 @@ export function createViewer(canvas) {
                 box(innerW * 0.99, glassH * 0.99, d * 0.05, glassMat, 0, glassBottom + glassH / 2, d * 0.08);
                 box(innerW * 0.99 - impF * 0.06, glassH * 0.99 - impF * 0.06, d * 0.11, spacerMat, 0, glassBottom + glassH / 2, 0);
                 
-                // Glass Gaskets for fixed glass
-                box(innerW * 0.99 + impF * 0.15, glassH * 0.99 + impF * 0.15, d * 0.03, gasketMat, 0, glassBottom + glassH / 2, -d * 0.09);
-                box(innerW * 0.99 + impF * 0.15, glassH * 0.99 + impF * 0.15, d * 0.03, gasketMat, 0, glassBottom + glassH / 2, d * 0.09);
+                // Hollow EPDM rubber gasket for fixed glass
+                gasketFrameOnModel(innerW * 0.99 + impF * 0.12, glassH * 0.99 + impF * 0.12, impF * 0.08, d * 0.03, gasketMat, 0, glassBottom + glassH / 2, -d * 0.09);
+                gasketFrameOnModel(innerW * 0.99 + impF * 0.12, glassH * 0.99 + impF * 0.12, impF * 0.08, d * 0.03, gasketMat, 0, glassBottom + glassH / 2, d * 0.09);
 
                 // Impostlar
                 const vDiv = Math.max(0, Math.min(6, parseInt(params.vDiv) || 0));
