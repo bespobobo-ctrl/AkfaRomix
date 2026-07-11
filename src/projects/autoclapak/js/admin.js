@@ -541,6 +541,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 renderBuhKunlikSotuv(btn.getAttribute('data-sotuv-period'));
             });
         });
+        document.querySelectorAll('#buhSotuvSubTabs .pill').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#buhSotuvSubTabs .pill').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const target = btn.getAttribute('data-sotuv-view');
+                document.querySelectorAll('.buh-sotuv-subview').forEach(v => v.classList.toggle('active', v.id === `buh-sotuv-view-${target}`));
+            });
+        });
     }
 
     function bindRomixBuhForms() {
@@ -2223,6 +2231,213 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.showPremiumToast('To\'lov Qayd Etildi', `${val.toLocaleString()} UZS to'lov sifatida saqlandi.`, true);
     };
 
+    // ═══════════ Sotuv/123 bilan bir xil: Buyurtma Harakat Grafigi (Kanban) va To'lov Tarixi ═══════════
+    const _BUH_SOTUV_KANBAN_STAGES = [
+        { key: 'yangi', label: '🆕 Yangi Zakaz', color: '#94a3b8' },
+        { key: 'avans_kutmoqda', label: '⏳ Avans Kutayotgan', color: '#ffaa00' },
+        { key: 'ombor_tasdiqlamagan', label: '📦 Ombor Tasdiqlamagan', color: '#ef4444' },
+        { key: 'navbatida', label: '🗂️ Ishlab Chiqarish Navbatida', color: '#a855f7' },
+        { key: 'ishlab_chiqarilmoqda', label: '🏭 Ishlab Chiqarilmoqda', color: '#00d2ff' },
+        { key: 'tayyor', label: '✅ Buyurtma Tayyor', color: '#22c55e' },
+        { key: 'ornatilishda', label: "🚚 O'rnatilish Jarayonida", color: '#6366f1' },
+        { key: 'bajarilgan', label: '🏁 Bajarilgan', color: '#00ff88' }
+    ];
+
+    function _buhGetJourneyStage(o) {
+        if (o.status === 'Tayyor / Yetkazildi') return 'bajarilgan';
+        if (o.production_stage === 'tayyor_omborda') {
+            return (o.install_group && o.install_status !== 'Bajarildi') ? 'ornatilishda' : 'tayyor';
+        }
+        if (['kesish', 'payvandlash', 'yigish_qadoqlash'].includes(o.production_stage)) return 'ishlab_chiqarilmoqda';
+        if (o.status === 'Jarayonda') return 'navbatida';
+        const total = Number(o.total_price) || 0;
+        const paid = Number(o.paid_amount) || 0;
+        if (total > 0 && paid / total >= 0.5) return 'ombor_tasdiqlamagan';
+        if (paid > 0) return 'avans_kutmoqda';
+        return 'yangi';
+    }
+
+    function _buhRenderSotuvKanban(orders) {
+        const board = document.getElementById('buh-sotuv-kanban');
+        if (!board) return;
+        board.innerHTML = _BUH_SOTUV_KANBAN_STAGES.map(stage => {
+            const stageOrders = orders.filter(o => _buhGetJourneyStage(o) === stage.key);
+            const cardsHtml = stageOrders.length ? stageOrders.map(o => {
+                const total = Number(o.total_price) || 0;
+                const paid = Number(o.paid_amount) || 0;
+                const percent = total > 0 ? Math.round((paid / total) * 100) : 0;
+                const omborBadge = o.ombor_confirmed_at ? `<div style="font-size:0.65rem; color:#00ff88;">✅ Ombor tasdiqladi — ${new Date(o.ombor_confirmed_at).toLocaleDateString('uz-UZ')}</div>` : '';
+                const installBadge = o.install_group ? `<div style="font-size:0.65rem; color:#6366f1;">🚚 Brigada: ${o.install_group}</div>` : '';
+                return `<div class="buh-kanban-card" style="border-top:3px solid ${stage.color};" onclick="window.openBuhSotuvOrderDetail('${o.id}')">
+                    <div style="font-weight:700; color:#fff; font-size:0.82rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${o.customer_name || "Noma'lum"}</div>
+                    <div style="font-size:0.7rem; color:rgba(255,255,255,0.45);">${o.prod_type || ''}</div>
+                    <div style="font-size:0.7rem; color:rgba(255,255,255,0.45);">💰 ${paid.toLocaleString()} / ${total.toLocaleString()} so'm (${percent}%)</div>
+                    ${omborBadge}${installBadge}
+                </div>`;
+            }).join('') : `<div style="grid-column:1/-1; text-align:center; color:rgba(255,255,255,0.25); font-size:0.75rem; padding:14px 0;">Bo'sh</div>`;
+            return `<div>
+                <div class="buh-kanban-col-head" style="background:${stage.color}1a; margin-bottom:10px;">
+                    <strong style="color:${stage.color}; font-size:0.78rem;">${stage.label}</strong>
+                    <span style="background:${stage.color}; color:#000; border-radius:10px; padding:2px 9px; font-size:0.72rem; font-weight:800;">${stageOrders.length}</span>
+                </div>
+                <div class="buh-kanban-cards-row">${cardsHtml}</div>
+            </div>`;
+        }).join('');
+    }
+
+    const _BUH_SOTUV_PAYMENT_STATUS_META = {
+        yopilgan: { label: "✅ To'liq To'langan", color: '#00ff88' },
+        avans: { label: '💰 Avans Olindi (Qisman)', color: '#ffaa00' },
+        kutilmoqda: { label: "⏳ Hali To'lov Kutilmoqda", color: '#ef4444' }
+    };
+    function _buhGetPaymentStatus(o) {
+        const total = Number(o.total_price) || 0;
+        const paid = Number(o.paid_amount) || 0;
+        if (total > 0 && paid >= total) return 'yopilgan';
+        if (paid > 0) return 'avans';
+        return 'kutilmoqda';
+    }
+
+    function _buhRenderSotuvPayments(orders) {
+        const statsEl = document.getElementById('buh-sotuv-payment-stats');
+        const filtersEl = document.getElementById('buh-sotuv-payment-filters');
+        const gridEl = document.getElementById('buh-sotuv-payment-grid');
+        if (!statsEl && !filtersEl && !gridEl) return;
+
+        const activeFilter = window._buhSotuvPaymentFilter || 'barchasi';
+        const buckets = { yopilgan: 0, avans: 0, kutilmoqda: 0 };
+        orders.forEach(o => buckets[_buhGetPaymentStatus(o)]++);
+
+        if (filtersEl) {
+            filtersEl.innerHTML = `
+                <div class="buh-brand-chip ${activeFilter === 'barchasi' ? 'active' : ''}" onclick="window._buhSelectSotuvPaymentFilter('barchasi')">
+                    <span class="chip-name">🗂️ Barchasi</span><span class="chip-meta">${orders.length} buyurtma</span>
+                </div>
+                ${Object.keys(_BUH_SOTUV_PAYMENT_STATUS_META).map(key => {
+                    const meta = _BUH_SOTUV_PAYMENT_STATUS_META[key];
+                    const active = activeFilter === key;
+                    return `<div class="buh-brand-chip ${active ? 'active' : ''}" onclick="window._buhSelectSotuvPaymentFilter('${key}')" style="${active ? `border-color:${meta.color};` : ''}">
+                        <span class="chip-name" style="${active ? `color:${meta.color};` : ''}">${meta.label}</span><span class="chip-meta">${buckets[key]} buyurtma</span>
+                    </div>`;
+                }).join('')}
+            `;
+        }
+
+        const filtered = activeFilter === 'barchasi' ? orders : orders.filter(o => _buhGetPaymentStatus(o) === activeFilter);
+
+        let collected = 0, pending = 0;
+        filtered.forEach(o => {
+            const total = Number(o.total_price) || 0;
+            const paid = Number(o.paid_amount) || 0;
+            collected += paid;
+            pending += Math.max(0, total - paid);
+        });
+        if (statsEl) {
+            statsEl.innerHTML = `
+                <div class="buh-mini-stat"><span class="buh-mini-label">Jami Yig'ilgan</span><span class="buh-mini-value" style="color:#00ff88;">${_buhFmt(collected)}</span></div>
+                <div class="buh-mini-stat"><span class="buh-mini-label">To'lanishi Kutilayotgan (Qoldiq)</span><span class="buh-mini-value" style="color:#ef4444;">${_buhFmt(pending)}</span></div>
+                <div class="buh-mini-stat"><span class="buh-mini-label">Buyurtmalar Soni</span><span class="buh-mini-value">${filtered.length}</span></div>
+            `;
+        }
+
+        if (gridEl) {
+            if (filtered.length === 0) {
+                gridEl.innerHTML = `<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Bu holatda buyurtma yo'q</div>`;
+            } else {
+                gridEl.innerHTML = filtered.map(o => {
+                    const status = _buhGetPaymentStatus(o);
+                    const meta = _BUH_SOTUV_PAYMENT_STATUS_META[status];
+                    const total = Number(o.total_price) || 0;
+                    const paid = Number(o.paid_amount) || 0;
+                    const remaining = Math.max(0, total - paid);
+                    const percent = total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0;
+                    return `<div class="buh-payment-card" style="border-top:3px solid ${meta.color};">
+                        <div class="buh-payment-card-info" onclick="window.openBuhSotuvOrderDetail('${o.id}')">
+                            <div style="min-width:0;">
+                                <div style="font-weight:700; color:#fff; font-size:0.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${o.customer_name || "Noma'lum"}</div>
+                                <div style="font-size:0.7rem; color:rgba(255,255,255,0.45);">${o.prod_type || ''}</div>
+                            </div>
+                            <span style="background:${meta.color}1a; color:${meta.color}; padding:3px 10px; border-radius:12px; font-size:0.62rem; font-weight:700; white-space:nowrap;">${meta.label}</span>
+                        </div>
+                        <div style="width:100%; height:8px; background:rgba(255,255,255,0.08); border-radius:6px; overflow:hidden;">
+                            <div style="width:${percent}%; height:100%; background:linear-gradient(90deg,#00d2ff,#00ff88);"></div>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.74rem;">
+                            <span style="color:rgba(255,255,255,0.45);">Umumiy: <strong style="color:#fff;">${total.toLocaleString()}</strong></span>
+                            <span style="color:rgba(255,255,255,0.45);">To'langan: <strong style="color:#00ff88;">${paid.toLocaleString()}</strong></span>
+                        </div>
+                        <div style="font-size:0.74rem; color:${remaining > 0 ? '#ef4444' : '#00ff88'};">Qoldiq: <strong>${remaining.toLocaleString()} so'm</strong></div>
+                        ${remaining > 0 ? `<button onclick="window.payRomixSalesOrder('${o.id}')" style="background:#00ff88; color:#000; border:none; padding:9px; border-radius:10px; font-weight:700; font-size:0.78rem; cursor:pointer; margin-top:2px;">+ To'lov Qabul Qilish</button>` : ''}
+                    </div>`;
+                }).join('');
+            }
+        }
+    }
+
+    window._buhSelectSotuvPaymentFilter = (key) => {
+        window._buhSotuvPaymentFilter = key;
+        _buhRenderSotuvPayments(window._buhSotuvOrdersCache || []);
+    };
+
+    // Eski buyurtmalarda (payment_history ustuni bo'lmasa) birinchi to'lovni tarixga qo'shib beradi (sales.js dagi bilan bir xil)
+    function _buhGetBackfilledPaymentHistory(o) {
+        const paid = Number(o.paid_amount) || 0;
+        const history = Array.isArray(o.payment_history) ? [...o.payment_history] : [];
+        const historySum = history.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+        const missing = paid - historySum;
+        if (missing > 0) history.unshift({ amount: missing, by: o.advance_received_by || "Noma'lum", at: o.payment_date || o.created_at });
+        return history;
+    }
+
+    window.openBuhSotuvOrderDetail = (orderId) => {
+        const o = (window._buhSotuvOrdersCache || []).find(x => x.id === orderId);
+        if (!o) return;
+        const modal = document.getElementById('buh-sotuv-order-detail-modal');
+        const nameEl = document.getElementById('buhSotuvDetailName');
+        const bodyEl = document.getElementById('buhSotuvDetailBody');
+        if (!modal || !bodyEl) return;
+
+        const total = Number(o.total_price) || 0;
+        const paid = Number(o.paid_amount) || 0;
+        const remaining = Math.max(0, total - paid);
+        const percent = total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0;
+        const history = _buhGetBackfilledPaymentHistory(o).reverse();
+        const stage = _BUH_SOTUV_KANBAN_STAGES.find(s => s.key === _buhGetJourneyStage(o)) || _BUH_SOTUV_KANBAN_STAGES[0];
+
+        if (nameEl) nameEl.textContent = o.customer_name || "Noma'lum mijoz";
+        const timelineHtml = history.length ? history.map(p => `
+            <div style="padding:10px 0; border-bottom:1px dashed rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+                <div>
+                    <div style="font-weight:700; color:#fff; font-size:0.85rem;">${p.by || "Noma'lum"}</div>
+                    <div style="font-size:0.7rem; color:rgba(255,255,255,0.4);">${p.at ? new Date(p.at).toLocaleString('uz-UZ') : '---'}</div>
+                    ${p.note ? `<div style="font-size:0.72rem; color:rgba(255,255,255,0.5); margin-top:4px; font-style:italic;">💬 ${p.note}</div>` : ''}
+                </div>
+                <strong style="color:#00ff88; font-family:monospace; white-space:nowrap;">+${Number(p.amount || 0).toLocaleString()} so'm</strong>
+            </div>`).join('') : `<div style="text-align:center; color:rgba(255,255,255,0.3); padding:14px;">To'lov tarixi yo'q</div>`;
+
+        bodyEl.innerHTML = `
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+                <span style="background:${stage.color}1a; color:${stage.color}; padding:4px 12px; border-radius:12px; font-size:0.74rem; font-weight:700;">${stage.label}</span>
+                <span style="color:rgba(255,255,255,0.45); font-size:0.78rem;">${o.prod_type || ''}</span>
+            </div>
+            <div style="width:100%; height:9px; background:rgba(255,255,255,0.08); border-radius:6px; overflow:hidden; margin-bottom:10px;">
+                <div style="width:${percent}%; height:100%; background:linear-gradient(90deg,#00d2ff,#00ff88);"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:16px;">
+                <span style="color:rgba(255,255,255,0.5);">Shartnoma: <strong style="color:#fff;">${total.toLocaleString()} so'm</strong></span>
+                <span style="color:rgba(255,255,255,0.5);">Qoldiq: <strong style="color:${remaining > 0 ? '#ef4444' : '#00ff88'};">${remaining.toLocaleString()} so'm</strong></span>
+            </div>
+            <h4 style="color:#fff; font-size:0.9rem; margin-bottom:6px;">💳 To'lovlar Tarixi</h4>
+            ${timelineHtml}
+            ${remaining > 0 ? `<button onclick="window.closeBuhSotuvOrderDetail(); window.payRomixSalesOrder('${o.id}')" style="width:100%; margin-top:14px; background:#00ff88; color:#000; border:none; padding:12px; border-radius:12px; font-weight:800; cursor:pointer;">+ To'lov Qabul Qilish</button>` : ''}
+        `;
+        modal.style.display = 'flex';
+    };
+    window.closeBuhSotuvOrderDetail = () => {
+        const modal = document.getElementById('buh-sotuv-order-detail-modal');
+        if (modal) modal.style.display = 'none';
+    };
+
     async function renderBuhKunlikSotuv(period) {
         period = period || 'today';
         window._buhSotuvActivePeriod = period;
@@ -2235,6 +2450,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             const { data } = await supabase.from('sales_orders').select('*').order('created_at', { ascending: false });
             orders = data || [];
         } catch (e) { console.warn('Buh Kunlik Sotuv fetch error:', e); }
+
+        // "Buyurtma Harakati" va "To'lov Tarixi" — davrga bog'liq emas, Sotuv/123 dagi kabi BARCHA buyurtmalarni ko'rsatadi
+        window._buhSotuvOrdersCache = orders;
+        _buhRenderSotuvKanban(orders);
+        _buhRenderSotuvPayments(orders);
 
         const from = _buhPeriodStart(period);
         const inPeriod = orders.filter(o => o.created_at && new Date(o.created_at) >= from);
