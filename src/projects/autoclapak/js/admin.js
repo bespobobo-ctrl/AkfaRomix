@@ -2580,23 +2580,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return items.reduce((s, o) => s + ((Number(o.price) || 0) * (Number(o.stock_quantity) || 0)), 0);
     }
 
-    // Profillarni brend/seriya bo'yicha guruhlash (rang/o'lcham variantlari bitta qatorga jamlanadi)
-    // Brend (metadata.brend+seriya bo'lsa, aks holda product_name) bo'yicha guruhlash;
-    // har bir guruh o'z ichida o'lcham/rang variantlarini (items) saqlaydi
-    function _buhGroupProfilByName(items) {
-        const groups = {};
-        items.forEach(p => {
-            const meta = p.metadata || {};
-            const key = meta.brend ? `${meta.brend}${meta.seriya ? ' ' + meta.seriya : ''}` : (p.product_name || "Noma'lum");
-            if (!groups[key]) groups[key] = { name: key, qty: 0, value: 0, unit: p.unit || '', items: [] };
-            groups[key].qty += Number(p.stock_quantity) || 0;
-            groups[key].value += (Number(p.price) || 0) * (Number(p.stock_quantity) || 0);
-            if (!groups[key].unit) groups[key].unit = p.unit || '';
-            groups[key].items.push(p);
-        });
-        return Object.values(groups).map(g => ({ ...g, variants: g.items.length })).sort((a, b) => b.value - a.value);
-    }
-
     function _buhProfilSizeLabel(p) {
         const meta = p.metadata || {};
         if (meta.uzunligi || meta.shakli || meta.rangi) {
@@ -2699,34 +2682,64 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (filter === 'profil') {
             const searchTerm = (window._buhProfilSearchTerm || '').trim().toLowerCase();
-            const allGrouped = _buhGroupProfilByName(d.profilItems);
-            const brandFilter = window._buhProfilBrandFilter || 'barchasi';
+            const brandVal = window._buhProfilBrandFilter || '';
+            const seriesVal = window._buhProfilSeriesFilter || '';
+            const colorVal = window._buhProfilColorFilter || '';
 
-            if (brandFilter === 'barchasi') {
-                let grouped = allGrouped;
-                if (searchTerm) grouped = grouped.filter(g => g.name.toLowerCase().includes(searchTerm));
-                const value = grouped.reduce((s, g) => s + g.value, 0);
+            const withMeta = d.profilItems.map(p => {
+                const meta = p.metadata || {};
+                return { p, brend: (meta.brend || p.product_name || "Noma'lum").trim(), seriya: (meta.seriya || '').trim(), rangi: (meta.rangi || '').trim() };
+            });
+            const uniqSorted = arr => [...new Set(arr.filter(Boolean))].sort();
+
+            const brands = uniqSorted(withMeta.map(x => x.brend));
+            let pool = brandVal ? withMeta.filter(x => x.brend === brandVal) : withMeta;
+            const seriesList = uniqSorted(pool.map(x => x.seriya));
+            if (seriesVal) pool = pool.filter(x => x.seriya === seriesVal);
+            const colors = uniqSorted(pool.map(x => x.rangi));
+            if (colorVal) pool = pool.filter(x => x.rangi === colorVal);
+
+            if (searchTerm) {
+                pool = pool.filter(x => (x.p.product_name || '').toLowerCase().includes(searchTerm) || (_buhProfilSizeLabel(x.p) || '').toLowerCase().includes(searchTerm));
+            }
+
+            const value = pool.reduce((s, x) => s + (Number(x.p.price) || 0) * (Number(x.p.stock_quantity) || 0), 0);
+            const titleParts = [brandVal, seriesVal, colorVal].filter(Boolean);
+            const cascade = { brands, seriesList, colors, brandVal, seriesVal, colorVal };
+
+            // Barcha 3 bosqich (brend+seriya+rang) tanlanmaguncha — jadval doim QISQA bo'lishi uchun
+            // navbatdagi bosqich bo'yicha guruhlangan (yig'ilgan) qatorlar ko'rsatiladi.
+            if (!colorVal) {
+                const groupKeyFn = !brandVal ? (x => x.brend) : (!seriesVal ? (x => x.seriya || "Seriyasiz") : (x => x.rangi || "Rangsiz"));
+                const groupLabel = !brandVal ? 'Brend' : (!seriesVal ? 'Profil turi (Seriya)' : 'Rang');
+                const groups = {};
+                pool.forEach(x => {
+                    const key = groupKeyFn(x);
+                    if (!groups[key]) groups[key] = { name: key, qty: 0, value: 0, unit: x.p.unit || '', variants: 0 };
+                    groups[key].qty += Number(x.p.stock_quantity) || 0;
+                    groups[key].value += (Number(x.p.price) || 0) * (Number(x.p.stock_quantity) || 0);
+                    if (!groups[key].unit) groups[key].unit = x.p.unit || '';
+                    groups[key].variants += 1;
+                });
+                const groupRows = Object.values(groups).sort((a, b) => b.value - a.value);
                 return {
-                    title: '📦 Profil (barcha brendlar)', value,
-                    qtyText: _buhQtyBreakdown(grouped.flatMap(g => g.items), 'stock_quantity', 'unit'),
-                    columns: ['Brend / Seriya', 'Jami Miqdor', "O'rtacha Narx", 'Jami Qiymat', 'Variantlar'], alignRight: [false, true, true, true, true],
-                    rows: grouped.map(g => [g.name, `${g.qty.toLocaleString('uz-UZ')} ${g.unit}`, _buhFmt(g.qty > 0 ? g.value / g.qty : 0), _buhFmt(g.value), g.variants]),
-                    profilBrands: allGrouped, profilActiveBrand: 'barchasi'
+                    title: `📦 Profil${titleParts.length ? ' — ' + titleParts.join(' / ') : ' (barcha brendlar)'}`, value,
+                    qtyText: _buhQtyBreakdown(pool.map(x => x.p), 'stock_quantity', 'unit'),
+                    columns: [groupLabel, 'Jami Miqdor', "O'rtacha Narx", 'Jami Qiymat', 'Variantlar'], alignRight: [false, true, true, true, true],
+                    rows: groupRows.map(g => [g.name, `${g.qty.toLocaleString('uz-UZ')} ${g.unit}`, _buhFmt(g.qty > 0 ? g.value / g.qty : 0), _buhFmt(g.value), g.variants]),
+                    profilCascade: cascade
                 };
             }
 
-            const activeGroup = allGrouped.find(g => _buhSafeKey(g.name) === brandFilter);
-            let items = activeGroup ? activeGroup.items : [];
-            if (searchTerm) items = items.filter(p => (_buhProfilSizeLabel(p) || '').toLowerCase().includes(searchTerm) || (p.product_name || '').toLowerCase().includes(searchTerm));
-            const sortedItems = items.slice().sort((a, b) => ((Number(b.price) || 0) * (Number(b.stock_quantity) || 0)) - ((Number(a.price) || 0) * (Number(a.stock_quantity) || 0)));
-            const value = sortedItems.reduce((s, p) => s + (Number(p.price) || 0) * (Number(p.stock_quantity) || 0), 0);
+            // Brend + Seriya + Rang uchhalasi tanlangan — aniq o'lcham/shakl variantlari (odatda bir nechta qator, ekranga sig'adi)
+            const sortedItems = pool.map(x => x.p).sort((a, b) => ((Number(b.price) || 0) * (Number(b.stock_quantity) || 0)) - ((Number(a.price) || 0) * (Number(a.stock_quantity) || 0)));
             return {
-                title: `📦 ${activeGroup ? activeGroup.name : brandFilter}`, value,
+                title: `📦 Profil — ${titleParts.join(' / ')}`, value,
                 qtyText: _buhQtyBreakdown(sortedItems, 'stock_quantity', 'unit'),
                 columns: ["O'lcham / Variant", 'Miqdor', 'Narx', 'Qiymat'], alignRight: [false, true, true, true],
                 rows: sortedItems.map(p => [_buhProfilSizeLabel(p), `${(Number(p.stock_quantity) || 0).toLocaleString('uz-UZ')} ${p.unit || ''}`, _buhFmt(p.price), _buhFmt((Number(p.price) || 0) * (Number(p.stock_quantity) || 0))]),
                 rowIds: sortedItems.map(p => p.id), canEdit: true,
-                profilBrands: allGrouped, profilActiveBrand: brandFilter
+                profilCascade: cascade
             };
         }
         if (filter === 'aksesuvar') {
@@ -2913,6 +2926,51 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // Profil uchun 3 bosqichli kaskad filtr (Brend → Profil turi/Seriya → Rang) — chiplar o'rniga
+    // ixcham select'lar, chunki brend/seriya soni ko'p bo'lganda gorizontal chiplar ekranga sig'mas edi.
+    function _buhRenderProfilCascadeFilter(containerEl, cascade) {
+        const opt = (val, label, count) => `<option value="${(val || '').replace(/"/g, '&quot;')}">${label}${count !== undefined ? ` (${count})` : ''}</option>`;
+        const selectHtml = (label, options, activeVal, onchangeFn, disabled) => `
+            <div class="buh-cascade-group">
+                <label>${label}</label>
+                <select class="buh-input buh-cascade-select" onchange="window.${onchangeFn}(this.value)" ${disabled ? 'disabled' : ''}>
+                    ${opt('', '🗂️ Barchasi', options.length)}
+                    ${options.map(v => `<option value="${v.replace(/"/g, '&quot;')}" ${activeVal === v ? 'selected' : ''}>${v}</option>`).join('')}
+                </select>
+            </div>`;
+
+        containerEl.innerHTML = `
+            <div class="buh-filter-stage-label"><span class="stage-num">2</span>Brend, profil turi va rang bo'yicha tanlang</div>
+            <div class="buh-cascade-row">
+                ${selectHtml('Brend', cascade.brands, cascade.brandVal, '_buhOnProfilBrandChange', false)}
+                ${selectHtml('Profil turi (Seriya)', cascade.seriesList, cascade.seriesVal, '_buhOnProfilSeriesChange', cascade.seriesList.length === 0)}
+                ${selectHtml('Rang', cascade.colors, cascade.colorVal, '_buhOnProfilColorChange', cascade.colors.length === 0)}
+            </div>
+            <div class="buh-search-pill">
+                <span class="search-ico">🔍</span>
+                <input type="text" id="buhProfilSearch" class="buh-input" placeholder="🔍 Nomi yoki o'lchami bo'yicha qidirish..." value="${(window._buhProfilSearchTerm || '').replace(/"/g, '&quot;')}" oninput="window._buhOnProfilSearchInput(this.value)">
+            </div>`;
+
+        const wasFocused = document.activeElement && document.activeElement.id === 'buhProfilSearch';
+        if (wasFocused) document.getElementById('buhProfilSearch')?.focus();
+    }
+
+    window._buhOnProfilBrandChange = (val) => {
+        window._buhProfilBrandFilter = val;
+        window._buhProfilSeriesFilter = '';
+        window._buhProfilColorFilter = '';
+        window._buhRenderOmborFilterView('profil');
+    };
+    window._buhOnProfilSeriesChange = (val) => {
+        window._buhProfilSeriesFilter = val;
+        window._buhProfilColorFilter = '';
+        window._buhRenderOmborFilterView('profil');
+    };
+    window._buhOnProfilColorChange = (val) => {
+        window._buhProfilColorFilter = val;
+        window._buhRenderOmborFilterView('profil');
+    };
+
     window._buhRenderOmborFilterView = (filter) => {
         filter = filter || window._buhOmborActiveFilter || 'barchasi';
         window._buhOmborActiveFilter = filter;
@@ -2934,9 +2992,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const breadcrumbEl = document.getElementById('buhOmborBreadcrumb');
         if (breadcrumbEl) {
             let stage2Label = '';
-            if (filter === 'profil' && data.profilActiveBrand !== 'barchasi') {
-                const g = (data.profilBrands || []).find(b => _buhSafeKey(b.name) === data.profilActiveBrand);
-                stage2Label = g ? g.name : '';
+            if (filter === 'profil' && data.profilCascade) {
+                stage2Label = [data.profilCascade.brandVal, data.profilCascade.seriesVal, data.profilCascade.colorVal].filter(Boolean).join(' / ');
             } else if (filter === 'aksesuvar' && data.accActiveCategory !== 'barchasi') {
                 const g = (data.accCategories || []).find(c => _buhSafeKey(c.name) === data.accActiveCategory);
                 stage2Label = g ? g.name : '';
@@ -2952,15 +3009,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const subfilterEl = document.getElementById('buh-profil-subfilter');
         if (subfilterEl) {
-            if (filter === 'profil') {
-                const activeBrand = data.profilActiveBrand || 'barchasi';
-                _buhRenderStage2Filter(subfilterEl, {
-                    groups: data.profilBrands || [], activeKey: activeBrand, allLabel: 'Barchasi',
-                    stageLabel: 'Brend / seriya tanlang', selectFnName: '_buhSelectProfilBrand',
-                    searchId: 'buhProfilSearch', searchValue: window._buhProfilSearchTerm,
-                    searchPlaceholder: `🔍 ${activeBrand === 'barchasi' ? 'Brend yoki seriya' : "O'lcham yoki variant"} bo'yicha qidirish...`,
-                    searchFnName: '_buhOnProfilSearchInput'
-                });
+            if (filter === 'profil' && data.profilCascade) {
+                _buhRenderProfilCascadeFilter(subfilterEl, data.profilCascade);
             } else {
                 subfilterEl.innerHTML = '';
             }
@@ -3425,12 +3475,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const monthKey = _buhCurrentMonthKey();
         await romixBuhDelete('romix_utility_readings', ROMIX_BUH_KEYS.utilityReadings, _buhUtilReadingId(cat, monthKey));
         await window._buhRenderKommunalPanel();
-    };
-
-    window._buhSelectProfilBrand = (brandKey) => {
-        window._buhProfilBrandFilter = brandKey;
-        window._buhProfilSearchTerm = '';
-        window._buhRenderOmborFilterView('profil');
     };
 
     window._buhOnProfilSearchInput = (val) => {

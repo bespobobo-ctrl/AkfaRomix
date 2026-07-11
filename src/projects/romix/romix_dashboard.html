@@ -1624,11 +1624,17 @@
                             .buh-stage2-chip .s2-meta { font-size:0.66rem; font-weight:600; color:var(--adm-text-sec); }
                             .buh-stage2-chip.active .s2-meta { color:#00d2ff; }
 
+                            .buh-cascade-row { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+                            .buh-cascade-group { display:flex; flex-direction:column; gap:5px; min-width:160px; flex:1 1 200px; max-width:260px; }
+                            .buh-cascade-group label { font-size:0.65rem; font-weight:700; letter-spacing:0.4px; text-transform:uppercase; color:rgba(255,255,255,0.4); }
+                            .buh-cascade-select { width:100%; padding:10px 12px; border-radius:12px; margin:0; box-sizing:border-box; cursor:pointer; }
+                            .buh-cascade-select:disabled { opacity:0.4; cursor:not-allowed; }
+
                             .buh-search-pill { position:relative; margin-top:4px; max-width:340px; }
                             .buh-search-pill input.buh-input { width:100%; padding:11px 14px 11px 36px; border-radius:14px; margin:0; box-sizing:border-box; }
                             .buh-search-pill .search-ico { position:absolute; left:12px; top:50%; transform:translateY(-50%); opacity:0.4; font-size:0.82rem; pointer-events:none; }
 
-                            .buh-report-table-wrap { border-radius:16px; overflow:hidden; border:1px solid rgba(255,255,255,0.07); }
+                            .buh-report-table-wrap { border-radius:16px; overflow:auto; max-height:480px; border:1px solid rgba(255,255,255,0.07); }
                             .buh-report-table-wrap table.v2-table { margin:0; width:100%; }
                             .buh-report-table-wrap table.v2-table thead th { position:sticky; top:0; background:#0f172a; z-index:1; }
                             .buh-report-table-wrap table.v2-table tbody tr:nth-child(even) { background:rgba(255,255,255,0.015); }
