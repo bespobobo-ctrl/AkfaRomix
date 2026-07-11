@@ -493,11 +493,11 @@ export function createViewer(canvas) {
                     // Fixed (Kar) double glazing unit & spacer
                     box(iw * 0.99, ih * 0.99, d * 0.05, glassMat, icx, icy, -d * 0.08);
                     box(iw * 0.99, ih * 0.99, d * 0.05, glassMat, icx, icy, d * 0.08);
-                    box(iw * 0.99 - sf * 0.06, ih * 0.99 - sf * 0.06, d * 0.11, spacerMat, icx, icy, 0);
+                    box(iw * 0.99 - impF * 0.06, ih * 0.99 - impF * 0.06, d * 0.11, spacerMat, icx, icy, 0);
                     
                     // Glass Gaskets for fixed glass
-                    box(iw * 0.99 + sf * 0.15, ih * 0.99 + sf * 0.15, d * 0.03, gasketMat, icx, icy, -d * 0.09);
-                    box(iw * 0.99 + sf * 0.15, ih * 0.99 + sf * 0.15, d * 0.03, gasketMat, icx, icy, d * 0.09);
+                    box(iw * 0.99 + impF * 0.15, ih * 0.99 + impF * 0.15, d * 0.03, gasketMat, icx, icy, -d * 0.09);
+                    box(iw * 0.99 + impF * 0.15, ih * 0.99 + impF * 0.15, d * 0.03, gasketMat, icx, icy, d * 0.09);
                 }
             });
         } else {
