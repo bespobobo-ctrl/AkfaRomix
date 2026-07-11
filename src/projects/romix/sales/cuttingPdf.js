@@ -218,13 +218,38 @@ export function derivePieces(items) {
                         add(sashMat, sashH, '45°/45°', 2 * qty); // 2ta vertikal
                         add(sashMat, sashW, '45°/45°', 2 * qty); // 2ta gorizontal
 
-                        // Shtapik fits inside the sash inner opening
-                        // Sash profile width is SASH_PROFILE (50mm) on each side
-                        const gW = sashW - 2 * SASH_PROFILE;
-                        const gH = sashH - 2 * SASH_PROFILE;
-                        if (gW > 0 && gH > 0) {
-                            add(beadMat, gH, '45°/45°', 2 * qty);
-                            add(beadMat, gW, '45°/45°', 2 * qty);
+                        if (type === 'eshik') {
+                            // Door leaf: has horizontal sash impost and 2 sets of glass/panel beads
+                            const sashImpLen = sashW - 2 * SASH_PROFILE;
+                            if (sashImpLen > 0) {
+                                add(baseMat + ' · Sash Impost', sashImpLen, '90°/90°', qty);
+                            }
+                            
+                            const panelH = sashH * 0.38;
+                            const topH = sashH - panelH;
+                            
+                            const beadW = sashW - 2 * SASH_PROFILE;
+                            const beadH_bottom = panelH - SASH_PROFILE - 15;
+                            const beadH_top = topH - SASH_PROFILE - 15;
+                            
+                            // Top glass beads
+                            if (beadW > 0 && beadH_top > 0) {
+                                add(beadMat, beadH_top, '45°/45°', 2 * qty);
+                                add(beadMat, beadW, '45°/45°', 2 * qty);
+                            }
+                            // Bottom panel beads
+                            if (beadW > 0 && beadH_bottom > 0) {
+                                add(beadMat, beadH_bottom, '45°/45°', 2 * qty);
+                                add(beadMat, beadW, '45°/45°', 2 * qty);
+                            }
+                        } else {
+                            // Window sash: regular 1 set of glass beads
+                            const gW = sashW - 2 * SASH_PROFILE;
+                            const gH = sashH - 2 * SASH_PROFILE;
+                            if (gW > 0 && gH > 0) {
+                                add(beadMat, gH, '45°/45°', 2 * qty);
+                                add(beadMat, gW, '45°/45°', 2 * qty);
+                            }
                         }
                     }
                 } else {
