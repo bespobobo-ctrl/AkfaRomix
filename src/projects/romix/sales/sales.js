@@ -107,30 +107,67 @@ document.addEventListener('DOMContentLoaded', async () => {
         ]
     };
 
-    // Sync material prices from romix_inventory to AVAILABLE_MATERIALS
-    async function syncMaterialPrices() {
+    // =====================================================================
+    // OMBOR MATERIALLARI: Supabase-dan real vaqtda yuklash
+    // romix_inventory jadvalidan faqat zaxirasi bor (>0) profillarni oladi
+    // =====================================================================
+    async function loadOmborMaterials() {
         try {
-            const { data, error } = await supabase.from('romix_inventory').select('product_name, price');
+            const { data, error } = await supabase
+                .from('romix_inventory')
+                .select('id, product_name, price, stock_quantity, unit, metadata')
+                .gt('stock_quantity', 0)
+                .order('product_name', { ascending: true });
+
             if (error) throw error;
-            if (data && data.length > 0) {
-                for (const cat in AVAILABLE_MATERIALS) {
-                    AVAILABLE_MATERIALS[cat].forEach(mat => {
-                        const dbMatch = data.find(dbMat => 
-                            dbMat.product_name.toLowerCase().trim() === mat.name.toLowerCase().trim() ||
-                            dbMat.product_name.toLowerCase().includes(mat.name.toLowerCase()) ||
-                            mat.name.toLowerCase().includes(dbMat.product_name.toLowerCase())
-                        );
-                        if (dbMatch && dbMatch.price !== undefined) {
-                            mat.price = parseFloat(dbMatch.price) || 0;
-                        }
-                    });
+            if (!data || data.length === 0) {
+                console.warn('Omborda mavjud profil topilmadi.');
+                return;
+            }
+
+            // Har bir ombor mahsulotini qulay formatga keltirish
+            const omborProfillar = data.map(p => {
+                const meta = p.metadata || {};
+                const brend = meta.brend || '';
+                const seriya = meta.seriya || '';
+                const uzunlik = meta.uzunligi ? ` ${meta.uzunligi}mm` : '';
+                const shakl = meta.shakli ? ` (${meta.shakli})` : '';
+                const qty = Math.round(Number(p.stock_quantity) || 0);
+                const unit = p.unit || 'm';
+                const price = parseFloat(p.price) || 0;
+
+                // Ko'rsatma nomi: "AKFA 60 Seriya — 3000mm (Uchburchak) [Omborda: 72 m]"
+                let displayName = p.product_name;
+                if (brend || seriya) {
+                    displayName = [brend, seriya].filter(Boolean).join(' ') + (uzunlik ? uzunlik : '') + shakl;
+                    displayName = displayName || p.product_name;
                 }
-                if (typeof updateConstructorFields === 'function') {
-                    updateConstructorFields();
-                }
+
+                return {
+                    id: `ombor-${p.id}`,
+                    name: displayName,
+                    fullName: p.product_name,
+                    price: price,
+                    unit: unit,
+                    stock: qty,
+                    label: `${displayName} [Omborda: ${qty.toLocaleString('uz-UZ')} ${unit}]`
+                };
+            });
+
+            // itemMaterial select-ni to'ldirish (AVAILABLE_MATERIALS o'rniga to'g'ridan-to'g'ri)
+            window._omborProfillar = omborProfillar;
+
+            // Profil typelari uchun bir xil ro'yxat ishlatiladi (rom, rom_fortochka, eshik)
+            AVAILABLE_MATERIALS.rom = omborProfillar;
+            AVAILABLE_MATERIALS.rom_fortochka = omborProfillar;
+            AVAILABLE_MATERIALS.eshik = omborProfillar;
+
+            // Constructor maydonlarini yangilash
+            if (typeof updateConstructorFields === 'function') {
+                updateConstructorFields();
             }
         } catch (err) {
-            console.warn("Failed to sync material prices from romix_inventory:", err);
+            console.warn('loadOmborMaterials xatoligi:', err);
         }
     }
 
@@ -152,17 +189,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         const type = itemTypeSel.value;
         const materials = AVAILABLE_MATERIALS[type] || [];
 
-        // Populate Materials select
+        // Ombordagi real profillarni ko'rsatish
         itemMaterialSel.innerHTML = '';
-        materials.forEach(m => {
+        if (materials.length === 0) {
             const opt = document.createElement('option');
-            opt.value = m.id;
-            opt.textContent = `${m.name} (${m.price.toLocaleString()} so'm / ${m.unit})`;
-            opt.dataset.name = m.name;
-            opt.dataset.price = m.price;
-            opt.dataset.unit = m.unit;
+            opt.value = '';
+            opt.textContent = '⚠️ Omborda profil mavjud emas';
             itemMaterialSel.appendChild(opt);
-        });
+        } else {
+            materials.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                // Agar ombor maʼlumotlari bo'lsa, label ishlatiladi (zaxira bilan)
+                opt.textContent = m.label ||
+                    `${m.name} — ${(m.price || 0).toLocaleString()} so'm/${m.unit}`;
+                opt.dataset.name = m.name || m.fullName || '';
+                opt.dataset.price = m.price || 0;
+                opt.dataset.unit = m.unit || 'm';
+                opt.dataset.stock = m.stock ?? '';
+                itemMaterialSel.appendChild(opt);
+            });
+        }
 
         const dimWrapper = document.getElementById('dimWrapper');
         const dimX = document.getElementById('dimX');
@@ -1715,7 +1762,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     document.getElementById('logoutBtn').onclick = () => { localStorage.removeItem('currentUser'); window.location.href = '/'; };
 
-    syncMaterialPrices();
+    loadOmborMaterials();
     loadOrders();
 
     // Yordamchi sotuvchi kirishi bilan darhol buyurtma olish oynasi ochiladi (yagona ko'radigan oynasi)
