@@ -25,7 +25,7 @@ export function createViewer(canvas) {
     controls.enablePan = false;
     controls.minDistance = 3;
     controls.maxDistance = 12;
-    controls.autoRotate = true;
+    controls.autoRotate = false; // Aylanib turmasligi uchun autoRotate o'chirildi
     controls.autoRotateSpeed = 1.2;
 
     // Yorug'lik
@@ -67,6 +67,7 @@ export function createViewer(canvas) {
         modelGroup.add(m);
         return m;
     }
+
     // params: { type, width(m), height(m), vDiv, hDiv, design, arch }
     function update(params) {
         clearGroup();
@@ -116,6 +117,118 @@ export function createViewer(canvas) {
             const gd = new THREE.Mesh(new THREE.CircleGeometry(R - f, 40, 0, Math.PI), glassMat);
             gd.position.set(0, springY, -d * 0.1);
             modelGroup.add(gd);
+        }
+
+        // Shared Sash (Stvorka) builder with open angle (swing outward/inward or tilt)
+        function addSash(cx, cy, sw, sh, sf, zf, ot) {
+            const group = new THREE.Group();
+            
+            function groupBox(w_b, h_b, d_b, mat, lx, ly, lz) {
+                const mesh = new THREE.Mesh(new THREE.BoxGeometry(w_b, h_b, d_b), mat);
+                mesh.position.set(lx, ly, lz);
+                group.add(mesh);
+            }
+            
+            let rotationAxis = '';
+            let rotationVal = 0;
+            let groupX = cx;
+            let groupY = cy;
+            
+            const isLeftHinge = ot === 'casement_chap' || ot === 'casement_l' || ot === 'tilt_turn' || ot === 'tilt_turn_l';
+            const isRightHinge = ot === 'casement_ong' || ot === 'casement_r' || ot === 'tilt_turn_r';
+            const isTiltTop = ot === 'tilt';
+            const isTiltBottom = ot === 'tilt_bottom';
+            
+            if (isLeftHinge) {
+                // Hinge on left - swing open outward
+                groupX = cx - sw / 2;
+                groupBox(sf, sh, d * 0.8, frameMat, sf / 2, 0, 0); // left
+                groupBox(sf, sh, d * 0.8, frameMat, sw - sf / 2, 0, 0); // right
+                groupBox(sw, sf, d * 0.8, frameMat, sw / 2, sh / 2 - sf / 2, 0); // top
+                groupBox(sw, sf, d * 0.8, frameMat, sw / 2, -sh / 2 + sf / 2, 0); // bottom
+                groupBox(sw - sf * 2, sh - sf * 2, d * 0.25, glassMat, sw / 2, 0, 0); // glass
+                
+                rotationAxis = 'y';
+                rotationVal = -0.6; // Open angle (~34 degrees)
+            } else if (isRightHinge) {
+                // Hinge on right - swing open outward
+                groupX = cx + sw / 2;
+                groupBox(sf, sh, d * 0.8, frameMat, -sf / 2, 0, 0); // right
+                groupBox(sf, sh, d * 0.8, frameMat, -sw + sf / 2, 0, 0); // left
+                groupBox(sw, sf, d * 0.8, frameMat, -sw / 2, sh / 2 - sf / 2, 0); // top
+                groupBox(sw, sf, d * 0.8, frameMat, -sw / 2, -sh / 2 + sf / 2, 0); // bottom
+                groupBox(sw - sf * 2, sh - sf * 2, d * 0.25, glassMat, -sw / 2, 0, 0); // glass
+                
+                rotationAxis = 'y';
+                rotationVal = 0.6;
+            } else if (isTiltTop) {
+                // Hinge on bottom (tilt top opens inward)
+                groupY = cy - sh / 2;
+                groupBox(sw, sf, d * 0.8, frameMat, 0, sf / 2, 0); // bottom
+                groupBox(sw, sf, d * 0.8, frameMat, 0, sh - sf / 2, 0); // top
+                groupBox(sf, sh, d * 0.8, frameMat, -sw / 2 + sf / 2, sh / 2, 0); // left
+                groupBox(sf, sh, d * 0.8, frameMat, sw / 2 - sf / 2, sh / 2, 0); // right
+                groupBox(sw - sf * 2, sh - sf * 2, d * 0.25, glassMat, 0, sh / 2, 0); // glass
+                
+                rotationAxis = 'x';
+                rotationVal = 0.2;
+            } else if (isTiltBottom) {
+                // Hinge on top (tilt bottom opens outward)
+                groupY = cy + sh / 2;
+                groupBox(sw, sf, d * 0.8, frameMat, 0, -sf / 2, 0); // top
+                groupBox(sw, sf, d * 0.8, frameMat, 0, -sh + sf / 2, 0); // bottom
+                groupBox(sf, sh, d * 0.8, frameMat, -sw / 2 + sf / 2, -sh / 2, 0); // left
+                groupBox(sf, sh, d * 0.8, frameMat, sw / 2 - sf / 2, -sh / 2, 0); // right
+                groupBox(sw - sf * 2, sh - sf * 2, d * 0.25, glassMat, 0, -sh / 2, 0); // glass
+                
+                rotationAxis = 'x';
+                rotationVal = -0.2;
+            } else {
+                // Fallback (no rotation, e.g. fixed or kar)
+                groupBox(sf, sh, d * 0.8, frameMat, 0, 0, 0);
+                groupBox(sf, sh, d * 0.8, frameMat, 0, 0, 0);
+                groupBox(sw, sf, d * 0.8, frameMat, 0, 0, 0);
+                groupBox(sw, sf, d * 0.8, frameMat, 0, 0, 0);
+                groupBox(sw - sf * 2, sh - sf * 2, d * 0.25, glassMat, 0, 0, 0);
+            }
+            
+            group.position.set(groupX, groupY, zf);
+            if (rotationAxis === 'y') {
+                group.rotation.y = rotationVal;
+            } else if (rotationAxis === 'x') {
+                group.rotation.x = rotationVal;
+            }
+            
+            modelGroup.add(group);
+            
+            // Hinge diagonal indicator lines (added inside the group so they rotate/swing with it)
+            const L = isLeftHinge ? 0 : (isRightHinge ? -sw : -sw/2);
+            const R = isLeftHinge ? sw : (isRightHinge ? 0 : sw/2);
+            const T = (isTiltTop) ? sh : ((isTiltBottom) ? 0 : sh/2);
+            const B = (isTiltTop) ? 0 : ((isTiltBottom) ? -sh : -sh/2);
+            const midY = (isTiltTop || isTiltBottom) ? sh/2 : 0;
+            const zs = d * 0.55;
+            
+            const lineLocal = (lx1, ly1, lx2, ly2) => {
+                const g = new THREE.BufferGeometry().setFromPoints([
+                    new THREE.Vector3(lx1, ly1, zs), new THREE.Vector3(lx2, ly2, zs)
+                ]);
+                group.add(new THREE.Line(g, symMat));
+            };
+            
+            if (isLeftHinge) {
+                lineLocal(L, T, R, midY);
+                lineLocal(L, B, R, midY);
+            } else if (isRightHinge) {
+                lineLocal(R, T, L, midY);
+                lineLocal(R, B, L, midY);
+            } else if (isTiltTop) {
+                lineLocal(L, B, 0, T);
+                lineLocal(R, B, 0, T);
+            } else if (isTiltBottom) {
+                lineLocal(L, T, 0, B);
+                lineLocal(R, T, 0, B);
+            }
         }
 
         // ── 2D DIZAYNER Model mavjud bo'lsa ──
@@ -202,34 +315,13 @@ export function createViewer(canvas) {
                 const icy = cy - (topShift - bottomShift) / 2;
 
                 if (c.opening && c.opening !== 'kar') {
-                    // Sash (Stvorka) frame and glass
                     const gap_w = (SASH_GAP / 1000) * scale;
                     const sw = iw - gap_w * 2;
                     const sh = ih - gap_w * 2;
                     const sf = impF;
-                    const zf = d * 0.35; // slightly forward in Z
+                    const zf = d * 0.35;
 
-                    // Sash profiles
-                    box(sf, sh, d * 0.8, frameMat, icx - sw / 2 + sf / 2, icy, zf); // left
-                    box(sf, sh, d * 0.8, frameMat, icx + sw / 2 - sf / 2, icy, zf); // right
-                    box(sw, sf, d * 0.8, frameMat, icx, icy + sh / 2 - sf / 2, zf); // top
-                    box(sw, sf, d * 0.8, frameMat, icx, icy - sh / 2 + sf / 2, zf); // bottom
-
-                    // Glass inside sash
-                    const sash_glass_w = sw - sf * 2;
-                    const sash_glass_h = sh - sf * 2;
-                    box(sash_glass_w, sash_glass_h, d * 0.25, glassMat, icx, icy, zf);
-
-                    // Hinge Lines
-                    const ot = c.opening || 'kasement_chap';
-                    const L = icx - sw / 2, R = icx + sw / 2, T = icy + sh / 2, B = icy - sh / 2, zs = zf + d * 0.55;
-                    const casL = () => { line(L, T, R, icy, zs); line(L, B, R, icy, zs); }; // hinge left
-                    const casR = () => { line(R, T, L, icy, zs); line(R, B, L, icy, zs); }; // hinge right
-                    const tilt = () => { line(L, B, icx, T, zs); line(R, B, icx, T, zs); }; // tilt top
-                    if (ot === 'kasement_chap') casL();
-                    else if (ot === 'kasement_ong') casR();
-                    else if (ot === 'tilt') tilt();
-                    else if (ot === 'tilt_turn') { casL(); tilt(); }
+                    addSash(icx, icy, sw, sh, sf, zf, c.opening);
                 } else {
                     // Fixed (Kar) glass
                     box(iw * 0.99, ih * 0.99, d * 0.25, glassMat, icx, icy, 0);
@@ -286,21 +378,7 @@ export function createViewer(canvas) {
                 const sw = sashW - gap * 2;
                 const sh = glassH - gap * 2;
                 const cy = glassBottom + glassH / 2;
-                box(sf, sh, d * 0.8, frameMat, cx - sw / 2 + sf / 2, cy, zf);
-                box(sf, sh, d * 0.8, frameMat, cx + sw / 2 - sf / 2, cy, zf);
-                box(sw, sf, d * 0.8, frameMat, cx, cy + sh / 2 - sf / 2, zf);
-                box(sw, sf, d * 0.8, frameMat, cx, cy - sh / 2 + sf / 2, zf);
-
-                // Ochilish belgisi (kasement diagonal / tilt uchburchak)
-                const ot = params.openType || 'kasement_chap';
-                const L = cx - sw / 2, R = cx + sw / 2, T = cy + sh / 2, B = cy - sh / 2, zs = zf + d * 0.6;
-                const casL = () => { line(L, T, R, cy, zs); line(L, B, R, cy, zs); }; // hinge chapda
-                const casR = () => { line(R, T, L, cy, zs); line(R, B, L, cy, zs); }; // hinge o'ngda
-                const tilt = () => { line(L, B, cx, T, zs); line(R, B, cx, T, zs); }; // tepaga qiya
-                if (ot === 'kasement_chap') casL();
-                else if (ot === 'kasement_ong') casR();
-                else if (ot === 'tilt') tilt();
-                else if (ot === 'tilt_turn') { casL(); tilt(); }
+                addSash(cx, cy, sw, sh, sf, zf, params.openType || 'kasement_chap');
             }
         }
 
