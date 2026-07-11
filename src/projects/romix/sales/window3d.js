@@ -474,8 +474,10 @@ export function createViewer(canvas) {
                 const icx = cx + (leftShift - rightShift) / 2;
                 const icy = cy - (topShift - bottomShift) / 2;
 
-                // Eshik ochiladigan bo'lishini ta'minlash (Eshiklar default holatda yopiq qolib ketmasligi uchun)
-                if (type === 'eshik' && (!c.opening || c.opening === 'kar')) {
+                // Eshik ochiladigan bo'lishini ta'minlash (Faqat bitta katak bo'lsa, uni avtomatik ochiladigan qilamiz.
+                // Agar 2 ga bo'lingan bo'lsa, foydalanuvchi tanlagan 'kar' (oynak) yoki boshqa ochilishlarni hurmat qilamiz.)
+                const isSingleCell = out.cells.length === 1;
+                if (type === 'eshik' && isSingleCell && (!c.opening || c.opening === 'kar')) {
                     c.opening = 'casement_l';
                 }
 
