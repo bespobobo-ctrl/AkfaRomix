@@ -1,4 +1,5 @@
 import { supabase, checkAuth, logout } from '@/core/supabase.js';
+import { generateCuttingPdf } from '../sales/cuttingPdf.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     checkAuth(['admin', 'ishlab_chiqarish']);
@@ -336,6 +337,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const prodHistCloseBtn = document.getElementById('productionHistoryCloseBtn');
     if (prodHistCloseBtn) prodHistCloseBtn.onclick = () => document.getElementById('productionHistoryModal').classList.add('hidden');
 
+    function showCuttingPdfForOrder(o) {
+        let items = [];
+        try { items = JSON.parse(o.model_name) || []; } catch (e) { items = []; }
+        const romlar = items.filter(it => ['rom', 'rom_fortochka', 'eshik'].includes(it.type));
+        if (romlar.length === 0) {
+            alert("Bu buyurtmada kesim PDF uchun rom yoki eshik elementi yo'q.");
+            return;
+        }
+        generateCuttingPdf({ customer: o.customer_name || '', phone: o.customer_phone || '', items });
+    }
+
     async function loadProductionPipeline() {
         let orders = [];
         let reqStatusByOrder = {};
@@ -470,6 +482,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         function batchCard(b) {
             const o = ordersById[b.order_id] || {};
             const totalQty = Number(o.quantity) || 1;
+            const pdfBtnHtml = b.stage === 'kesish' ? `<button class="batch-pdf-btn" data-order-id="${b.order_id}" title="Kesim PDF" style="background:rgba(245,158,11,0.15); border:1px solid #f59e0b; color:#f59e0b; border-radius:8px; padding:0 10px; cursor:pointer;" onmouseenter="this.style.background='rgba(245,158,11,0.25)'" onmouseleave="this.style.background='rgba(245,158,11,0.15)'">✂️ PDF</button>` : '';
             return `<div style="background:var(--adm-surface); border:1px solid var(--adm-border); border-radius:14px; padding:12px; display:flex; flex-direction:column; gap:8px; box-shadow:var(--adm-shadow);">
                 <div style="font-weight:700; color:var(--adm-text); font-size:0.82rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${o.customer_name || 'Noma\'lum'}</div>
                 <div style="font-size:0.78rem; color:var(--adm-text-sec);">Miqdor: <strong style="color:var(--adm-text);">${b.quantity} / ${totalQty}</strong></div>
@@ -480,6 +493,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="batch-stopwatch" data-started="${b.started_at}" style="font-size:0.7rem; font-weight:700; color:#00d2ff;"></div>
                 <div style="display:flex; gap:6px;">
                     <button class="batch-complete-btn" data-batch-id="${b.id}" data-stage="${b.stage}" data-qty="${b.quantity}" data-order-id="${b.order_id}" style="flex:1; background:${stageAccent[b.stage]}; color:#fff; border:none; padding:8px; border-radius:8px; font-weight:700; font-size:0.72rem; cursor:pointer;">${stageNextLabel[b.stage]}</button>
+                    ${pdfBtnHtml}
                     <button class="batch-history-btn" data-order-id="${b.order_id}" title="Ishlab chiqarish tarixi" style="background:rgba(255,255,255,0.05); border:1px solid var(--adm-border); color:var(--adm-text); border-radius:8px; padding:0 10px; cursor:pointer;">📜</button>
                 </div>
             </div>`;
@@ -517,6 +531,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             btn.onclick = () => openBatchCompleteModal(btn.dataset.batchId, btn.dataset.stage, parseInt(btn.dataset.qty), btn.dataset.orderId);
         });
 
+        document.querySelectorAll('.batch-pdf-btn').forEach(btn => {
+            btn.onclick = async () => {
+                const orderId = btn.dataset.orderId;
+                let order = ordersById[orderId];
+                if (!order) {
+                    try {
+                        const { data, error } = await supabase.from('sales_orders').select('*').eq('id', orderId).maybeSingle();
+                        if (data) order = data;
+                    } catch (e) {
+                        console.warn("Failed to fetch order fallback:", e);
+                    }
+                }
+                if (order) {
+                    showCuttingPdfForOrder(order);
+                } else {
+                    alert("Buyurtma ma'lumotlari topilmadi!");
+                }
+            };
+        });
+
         document.querySelectorAll('.batch-history-btn').forEach(btn => {
             btn.onclick = () => openProductionHistoryModal(btn.dataset.orderId);
         });
@@ -539,7 +573,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 }
                 try {
-                    const { data: order } = await supabase.from('sales_orders').select('quantity').eq('id', id).maybeSingle();
+                    const { data: order } = await supabase.from('sales_orders').select('*').eq('id', id).maybeSingle();
                     const { error } = await supabase.from('sales_orders').update({
                         production_stage: 'kesish',
                         production_target_date: targetDate,
@@ -549,6 +583,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                     await supabase.from('romix_production_batches').insert([{
                         order_id: id, stage: 'kesish', quantity: (order && Number(order.quantity)) || 1, started_at: new Date().toISOString()
                     }]);
+
+                    if (order) {
+                        const freshOrder = {
+                            ...order,
+                            production_stage: 'kesish',
+                            production_target_date: targetDate,
+                            production_accepted_at: new Date().toISOString()
+                        };
+                        showCuttingPdfForOrder(freshOrder);
+                    }
                 } catch (err) {
                     alert("Qabul qilishda xatolik: bazada 'production_target_date'/'production_accepted_at'/'romix_production_batches' mavjudligini tekshiring.");
                     console.warn("accept-order failed:", err);

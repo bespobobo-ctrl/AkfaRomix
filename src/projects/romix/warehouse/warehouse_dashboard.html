@@ -230,6 +230,7 @@
             <div id="sidebarBackBtn" class="logo-icon-v2" style="font-size: 1.5rem; color: #007c52; margin-bottom: 40px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(0, 124, 82, 0.1); width: 45px; height: 45px; border-radius: 12px;" onclick="window.location.href='../romix_dashboard.html'" title="Asosiy Panelga Qaytish">
                 ↩️</div>
             <div class="nav-icon active" data-tab="inventory" title="Ombor Qoldig'i">📦</div>
+            <div class="nav-icon" data-tab="orders" title="Olingan Buyurtmalar">📋</div>
             <div class="nav-icon" data-tab="staff" title="Xodimlar">👥</div>
             <div class="nav-icon" data-tab="history" title="Amallar Tarixi">📑</div>
             <div class="nav-icon" id="logoutBtn">🚪</div>
@@ -242,9 +243,10 @@
                     <button id="topNavBackBtn" class="tab-btn" onclick="window.location.href='../romix_dashboard.html'" style="background: rgba(0, 210, 255, 0.1); color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.2); border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; padding: 8px 16px; margin-right: 10px;">
                         ⬅️ Panelga Qaytish
                     </button>
-                    <button class="tab-btn active" data-tab="inventory">Ombor Holati</button>
-                    <button class="tab-btn" data-tab="staff">Xodimlar (Romix)</button>
-                    <button class="tab-btn" data-tab="history">Hujjatlar Tarixi</button>
+                    <button class="nav-link-item tab-btn active" data-tab="inventory">Ombor Holati</button>
+                    <button class="nav-link-item tab-btn" data-tab="orders">Olingan Buyurtmalar</button>
+                    <button class="nav-link-item tab-btn" data-tab="staff">Xodimlar (Romix)</button>
+                    <button class="nav-link-item tab-btn" data-tab="history">Hujjatlar Tarixi</button>
                 </div>
                 <div style="display: flex; gap: 20px; align-items: center;">
                     <button id="themeToggle" class="theme-toggle">🌙</button>
@@ -264,6 +266,9 @@
                     <div style="display:flex; gap:12px; flex-wrap:wrap;">
                         <button id="openScanModal" class="btn-glass" title="Skayner yordamida qabul qilish">
                             <span style="font-size: 1.2rem;">📷</span> Skayner (QR) Qabul
+                        </button>
+                        <button id="openKirimModal" class="btn-glass btn-outline-accent" style="border-color: #00ff88; color: #00ff88;">
+                            <span style="font-size: 1.2rem;">+</span> Umumiy Kirim
                         </button>
                         <button id="openProfilKirimModal" class="btn-glass btn-outline-accent">
                             <span style="font-size: 1.2rem;">+</span> Profil Kirim
@@ -401,6 +406,16 @@
                         </thead>
                         <tbody id="historyTable"></tbody>
                     </table>
+                </div>
+            </section>
+
+            <section id="orders-view" class="warehouse-section hidden">
+                <div style="margin-bottom: 25px;">
+                    <h1 style="font-size: 2.2rem; font-weight: 600;">Olingan Buyurtmalar</h1>
+                    <p style="color: var(--adm-text-sec);">Tasdiqlash va Ishlab Chiqarishga o'tkazish kutilayotgan buyurtmalar</p>
+                </div>
+                <div id="omborOrdersGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; width: 100%;">
+                    <!-- Buyurtmalar kartochkalari shu yerda ko'rinadi -->
                 </div>
             </section>
         </main>
@@ -725,6 +740,52 @@
             <button id="saveProfilBtn" style="width:100%; background:#00d2ff; color:#000; border:none; padding:18px; border-radius:15px; font-weight:700; font-size:1.1rem; cursor:pointer; box-shadow: 0 5px 20px rgba(0, 210, 255, 0.3);">
                 + Yangi qo'shish
             </button>
+        </div>
+    </div>
+
+    <!-- Modal: Buyurtmani Tasdiqlash va Materiallar Ajratish -->
+    <div id="ordConfirmModal" class="hidden"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px;">
+        <div class="user-form-modal" style="width: 650px; max-height:90vh; overflow-y:auto; background:var(--adm-surface);">
+            <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+                <span style="font-size: 2rem;">📋</span>
+                <h2 style="color:var(--adm-text); margin:0;">Buyurtmani Tasdiqlash</h2>
+            </div>
+            
+            <p id="ordConfirmCustomer" style="font-weight:700; color:#00d2ff; font-size:1rem; margin-bottom:15px; border-bottom:1px solid var(--adm-border); padding-bottom:10px;"></p>
+            
+            <!-- Avtomatik hisoblangan materiallar -->
+            <div style="background:rgba(255,255,255,0.02); border:1px solid var(--adm-border); padding:15px; border-radius:16px; margin-bottom:15px;">
+                <h3 style="font-size:0.9rem; color:var(--adm-text-sec); margin-top:0; margin-bottom:10px; font-weight:700;">📏 Avtomatik material ehtiyoji:</h3>
+                <div id="ordConfirmAutoList" style="display:flex; flex-direction:column; gap:6px;"></div>
+            </div>
+            
+            <!-- Qoldiq profillar biriktirish -->
+            <div style="background:rgba(245,158,11,0.05); border:1px solid rgba(245,158,11,0.15); padding:15px; border-radius:16px; margin-bottom:15px;">
+                <h3 style="font-size:0.9rem; color:#f59e0b; margin-top:0; margin-bottom:10px; font-weight:700;">🍂 Qoldiq profillardan biriktirish:</h3>
+                <div id="ordConfirmQoldiqList" style="margin-bottom:10px;"></div>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <select id="ordConfirmQoldiqSelect" class="form-input-v2" style="flex:2; margin:0;"></select>
+                    <input type="number" id="ordConfirmQoldiqQty" class="form-input-v2" placeholder="Soni" style="flex:1; margin:0;" min="1" value="1">
+                    <button id="ordConfirmQoldiqAddBtn" style="background:#f59e0b; color:#fff; border:none; padding:12px 18px; border-radius:12px; font-weight:700; cursor:pointer;">Qo'shish</button>
+                </div>
+            </div>
+            
+            <!-- Oynak biriktirish -->
+            <div style="background:rgba(0,210,255,0.05); border:1px solid rgba(0,210,255,0.15); padding:15px; border-radius:16px; margin-bottom:20px;">
+                <h3 style="font-size:0.9rem; color:#00d2ff; margin-top:0; margin-bottom:10px; font-weight:700;">💎 Oynaklardan biriktirish:</h3>
+                <div id="ordConfirmOynakList" style="margin-bottom:10px;"></div>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <select id="ordConfirmOynakSelect" class="form-input-v2" style="flex:2; margin:0;"></select>
+                    <input type="number" id="ordConfirmOynakQty" class="form-input-v2" placeholder="Miqdor" style="flex:1; margin:0;" min="1" value="1">
+                    <button id="ordConfirmOynakAddBtn" style="background:#00d2ff; color:#000; border:none; padding:12px 18px; border-radius:12px; font-weight:700; cursor:pointer;">Qo'shish</button>
+                </div>
+            </div>
+            
+            <div style="display:flex; gap:12px;">
+                <button id="ordConfirmSubmitBtn" style="flex:1; background:#00ff88; color:#000; border:none; padding:14px; border-radius:15px; font-weight:700; cursor:pointer;">✅ Tasdiqlash</button>
+                <button id="ordConfirmCancelBtn" style="flex:1; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; padding:14px; border-radius:15px; cursor:pointer;">Bekor qilish</button>
+            </div>
         </div>
     </div>
 

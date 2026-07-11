@@ -38,6 +38,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     LayoutService.init('OMBOR');
 
+    if (user.role === ROLES.MANAGER || user.username === 'ombor') {
+        const kirimBtn = document.getElementById('openKirimModal');
+        const profKirimBtn = document.getElementById('openProfilKirimModal');
+        if (kirimBtn) kirimBtn.classList.add('hidden');
+        if (profKirimBtn) profKirimBtn.classList.add('hidden');
+    }
+
     // Elements
     const inventoryTable = document.getElementById('inventoryTable');
     const historyTable = document.getElementById('historyTable');
@@ -440,6 +447,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const isLowStock = p.stock_quantity < 10;
                     const qtyClass = isLowStock ? 'qty-low' : 'qty-normal';
 
+                    const isAdmin = user && user.role === 'admin';
+                    const actionsHtml = isAdmin ? `
+                            <div class="card-actions">
+                                <button class="card-action-btn edit-btn" data-id="${p.id}" title="Tahrirlash">✏️</button>
+                                <button class="card-action-btn delete-btn delete-accent" data-id="${p.id}" title="O'chirish" style="color:#ff4d4f;">🗑️</button>
+                            </div>
+                    ` : '';
+
                     row.innerHTML = `
                         <div class="card-visual-container" style="height: 130px; overflow: hidden; border-radius: 14px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.05); margin-bottom: 8px; display: flex; align-items: center; justify-content: center; position: relative;">
                             <img src="${windowProfile}" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s;" class="card-visual-img" />
@@ -458,10 +473,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <span class="qty-label">Zaxira:</span>
                                 <span class="qty-val ${qtyClass}">${p.stock_quantity} ${p.unit || 'dona'}</span>
                             </div>
-                            <div class="card-actions">
-                                <button class="card-action-btn edit-btn" data-id="${p.id}" title="Tahrirlash">✏️</button>
-                                <button class="card-action-btn delete-btn delete-accent" data-id="${p.id}" title="O'chirish" style="color:#ff4d4f;">🗑️</button>
-                            </div>
+                            ${actionsHtml}
                         </div>
                     `;
                     listContainer.appendChild(row);
