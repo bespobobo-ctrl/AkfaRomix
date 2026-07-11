@@ -26,7 +26,7 @@ export function createViewer(canvas) {
     controls.enablePan = false;
     controls.minDistance = 2.5;
     controls.maxDistance = 12;
-    controls.autoRotate = false; // Avtomatik aylanish o'chirildi
+    controls.autoRotate = false;
     controls.autoRotateSpeed = 1.0;
 
     // Premium Yorug'lik tizimi (Specular highlight va chuqurlik uchun)
@@ -61,6 +61,11 @@ export function createViewer(canvas) {
         roughness: 0.12, 
         metalness: 0.9 
     });
+    const spacerMat = new THREE.MeshStandardMaterial({ 
+        color: 0x1f2937, 
+        roughness: 0.65, 
+        metalness: 0.2 
+    });
 
     const symMat = new THREE.LineBasicMaterial({ color: 0x00d2ff }); // Ochilish chiziqlari (neon ko'k)
 
@@ -71,6 +76,7 @@ export function createViewer(canvas) {
     let sashGroups = [];
     let currentOpenRatio = 0.0;
     let targetOpenRatio = 0.0;
+    let lastParams = null; // Qayta rang o'zgarganda ishlatish uchun
 
     function line(x1, y1, x2, y2, z) {
         const g = new THREE.BufferGeometry().setFromPoints([
@@ -84,7 +90,7 @@ export function createViewer(canvas) {
         scene.remove(modelGroup);
         modelGroup = new THREE.Group();
         scene.add(modelGroup);
-        sashGroups = []; // Animatsiya uchun guruhlarni tozalash
+        sashGroups = [];
     }
 
     function box(w, h, d, mat, x = 0, y = 0, z = 0) {
@@ -94,8 +100,45 @@ export function createViewer(canvas) {
         return m;
     }
 
+    // Billboarding 3D matn sprayti yaratish (CAD o'lchamlari uchun)
+    function createTextSprite(text) {
+        const canvasSprite = document.createElement('canvas');
+        canvasSprite.width = 128;
+        canvasSprite.height = 32;
+        const ctx = canvasSprite.getContext('2d');
+        ctx.fillStyle = 'rgba(0,0,0,0)';
+        ctx.fillRect(0, 0, 128, 32);
+        ctx.font = 'bold 20px Inter, Arial, sans-serif';
+        ctx.fillStyle = '#00d2ff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, 64, 16);
+        
+        const texture = new THREE.CanvasTexture(canvasSprite);
+        const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });
+        const sprite = new THREE.Sprite(spriteMat);
+        sprite.scale.set(0.48, 0.12, 1);
+        return sprite;
+    }
+
+    // Soft Shadow gradient texture yaratish
+    function createShadowTexture() {
+        const size = 128;
+        const canvasShadow = document.createElement('canvas');
+        canvasShadow.width = size;
+        canvasShadow.height = size;
+        const ctx = canvasShadow.getContext('2d');
+        const grad = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+        grad.addColorStop(0, 'rgba(0, 0, 0, 0.7)');
+        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, size, size);
+        return new THREE.CanvasTexture(canvasShadow);
+    }
+
     // params: { type, width(m), height(m), vDiv, hDiv, design, arch }
     function update(params) {
+        lastParams = params;
         clearGroup();
         const type = params.type || 'rom';
         if (!['rom', 'rom_fortochka', 'eshik'].includes(type)) {
@@ -138,13 +181,16 @@ export function createViewer(canvas) {
                 seg.rotation.z = a - Math.PI / 2;
                 modelGroup.add(seg);
             }
-            // Arka shishasi (Double glazing)
+            // Arka shishasi (Double glazing & spacer)
             const gdOuter = new THREE.Mesh(new THREE.CircleGeometry(R - f, 40, 0, Math.PI), glassMat);
             gdOuter.position.set(0, springY, -d * 0.08);
             modelGroup.add(gdOuter);
             const gdInner = new THREE.Mesh(new THREE.CircleGeometry(R - f, 40, 0, Math.PI), glassMat);
             gdInner.position.set(0, springY, d * 0.08);
             modelGroup.add(gdInner);
+            const gdSpacer = new THREE.Mesh(new THREE.CircleGeometry(R - f - sf * 0.06, 40, 0, Math.PI), spacerMat);
+            gdSpacer.position.set(0, springY, 0);
+            modelGroup.add(gdSpacer);
         }
 
         // Shared Sash (Stvorka) builder with open angle, handle, and cylinder hinges
@@ -177,16 +223,17 @@ export function createViewer(canvas) {
                 groupBox(sw, sf, d * 0.8, frameMat, sw / 2, sh / 2 - sf / 2, 0); // tepa
                 groupBox(sw, sf, d * 0.8, frameMat, sw / 2, -sh / 2 + sf / 2, 0); // past
                 
-                // Double glazing unit (Steklopaket)
+                // Double glazing unit & spacer
                 groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, sw / 2, 0, -d * 0.08);
                 groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, sw / 2, 0, d * 0.08);
+                groupBox(sw - sf * 2 - sf * 0.06, sh - sf * 2 - sf * 0.06, d * 0.11, spacerMat, sw / 2, 0, 0);
                 
-                // Cylinder Hinges (Oshiq-moshiqlar) - Adjusted Z and X to be on the front face edge
+                // Cylinder Hinges (Oshiq-moshiqlar) on front face
                 groupBox(sf * 0.22, sh * 0.08, sf * 0.22, handleMat, -sf * 0.12, sh * 0.35, d * 0.45);
                 groupBox(sf * 0.22, sh * 0.08, sf * 0.22, handleMat, -sf * 0.12, -sh * 0.35, d * 0.45);
                 
                 rotationAxis = 'y';
-                rotationVal = 0.7; // Swing outward (towards camera)
+                rotationVal = 0.7; // Swing outward
             } else if (isRightHinge) {
                 groupX = cx + sw / 2;
                 groupBox(sf, sh, d * 0.8, frameMat, -sf / 2, 0, 0); // o'ng
@@ -194,16 +241,17 @@ export function createViewer(canvas) {
                 groupBox(sw, sf, d * 0.8, frameMat, -sw / 2, sh / 2 - sf / 2, 0); // tepa
                 groupBox(sw, sf, d * 0.8, frameMat, -sw / 2, -sh / 2 + sf / 2, 0); // past
                 
-                // Double glazing unit
+                // Double glazing unit & spacer
                 groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, -sw / 2, 0, -d * 0.08);
                 groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, -sw / 2, 0, d * 0.08);
+                groupBox(sw - sf * 2 - sf * 0.06, sh - sf * 2 - sf * 0.06, d * 0.11, spacerMat, -sw / 2, 0, 0);
                 
                 // Cylinder Hinges
                 groupBox(sf * 0.22, sh * 0.08, sf * 0.22, handleMat, sf * 0.12, sh * 0.35, d * 0.45);
                 groupBox(sf * 0.22, sh * 0.08, sf * 0.22, handleMat, sf * 0.12, -sh * 0.35, d * 0.45);
                 
                 rotationAxis = 'y';
-                rotationVal = -0.7; // Swing outward (towards camera)
+                rotationVal = -0.7; // Swing outward
             } else if (isTiltTop) {
                 groupY = cy - sh / 2;
                 groupBox(sw, sf, d * 0.8, frameMat, 0, sf / 2, 0); // past
@@ -211,16 +259,17 @@ export function createViewer(canvas) {
                 groupBox(sf, sh, d * 0.8, frameMat, -sw / 2 + sf / 2, sh / 2, 0); // chap
                 groupBox(sf, sh, d * 0.8, frameMat, sw / 2 - sf / 2, sh / 2, 0); // o'ng
                 
-                // Double glazing unit
+                // Double glazing unit & spacer
                 groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, 0, sh / 2, -d * 0.08);
                 groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, 0, sh / 2, d * 0.08);
+                groupBox(sw - sf * 2 - sf * 0.06, sh - sf * 2 - sf * 0.06, d * 0.11, spacerMat, 0, sh / 2, 0);
                 
                 // Cylinder Hinges (bottom-left and bottom-right on front face)
                 groupBox(sw * 0.08, sf * 0.22, sf * 0.22, handleMat, -sw * 0.35, sf * 0.12, d * 0.45);
                 groupBox(sw * 0.08, sf * 0.22, sf * 0.22, handleMat, sw * 0.35, sf * 0.12, d * 0.45);
                 
                 rotationAxis = 'x';
-                rotationVal = -0.22; // Tilt outward (towards camera)
+                rotationVal = -0.22; // Tilt outward
             } else if (isTiltBottom) {
                 groupY = cy + sh / 2;
                 groupBox(sw, sf, d * 0.8, frameMat, 0, -sf / 2, 0); // tepa
@@ -228,16 +277,17 @@ export function createViewer(canvas) {
                 groupBox(sf, sh, d * 0.8, frameMat, -sw / 2 + sf / 2, -sh / 2, 0); // chap
                 groupBox(sf, sh, d * 0.8, frameMat, sw / 2 - sf / 2, -sh / 2, 0); // o'ng
                 
-                // Double glazing unit
+                // Double glazing unit & spacer
                 groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, 0, -sh / 2, -d * 0.08);
                 groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, 0, -sh / 2, d * 0.08);
+                groupBox(sw - sf * 2 - sf * 0.06, sh - sf * 2 - sf * 0.06, d * 0.11, spacerMat, 0, -sh / 2, 0);
                 
                 // Cylinder Hinges (top-left and top-right on front face)
                 groupBox(sw * 0.08, sf * 0.22, sf * 0.22, handleMat, -sw * 0.35, -sf * 0.12, d * 0.45);
                 groupBox(sw * 0.08, sf * 0.22, sf * 0.22, handleMat, sw * 0.35, -sf * 0.12, d * 0.45);
                 
                 rotationAxis = 'x';
-                rotationVal = 0.22; // Tilt outward (towards camera)
+                rotationVal = 0.22; // Tilt outward
             } else {
                 // Fixed/fallback
                 groupBox(sf, sh, d * 0.8, frameMat, 0, 0, 0);
@@ -246,6 +296,7 @@ export function createViewer(canvas) {
                 groupBox(sw, sf, d * 0.8, frameMat, 0, 0, 0);
                 groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, 0, 0, -d * 0.08);
                 groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, 0, 0, d * 0.08);
+                groupBox(sw - sf * 2 - sf * 0.06, sh - sf * 2 - sf * 0.06, d * 0.11, spacerMat, 0, 0, 0);
             }
 
             // L-shaklidagi premium metal tutqich (Ruchka) - positioned on the front face (Z-shifted)
@@ -275,7 +326,6 @@ export function createViewer(canvas) {
 
             group.position.set(groupX, groupY, zf);
             
-            // Set initial animation rotation based on current open ratio
             if (rotationAxis === 'y') {
                 group.rotation.y = rotationVal * currentOpenRatio;
             } else if (rotationAxis === 'x') {
@@ -284,14 +334,13 @@ export function createViewer(canvas) {
             
             modelGroup.add(group);
             
-            // Push for animation loop updating
             sashGroups.push({
                 group: group,
                 rotationAxis: rotationAxis,
                 maxRotationVal: rotationVal
             });
             
-            // Hinge diagonal indicator lines (added inside the group so they rotate/swing with it)
+            // Hinge diagonal indicator lines
             const L = isLeftHinge ? 0 : (isRightHinge ? -sw : -sw/2);
             const R = isLeftHinge ? sw : (isRightHinge ? 0 : sw/2);
             const T = (isTiltTop) ? sh : ((isTiltBottom) ? 0 : sh/2);
@@ -413,81 +462,114 @@ export function createViewer(canvas) {
 
                     addSash(icx, icy, sw, sh, sf, zf, c.opening);
                 } else {
-                    // Fixed (Kar) double glazing unit
+                    // Fixed (Kar) double glazing unit & spacer
                     box(iw * 0.99, ih * 0.99, d * 0.05, glassMat, icx, icy, -d * 0.08);
                     box(iw * 0.99, ih * 0.99, d * 0.05, glassMat, icx, icy, d * 0.08);
+                    box(iw * 0.99 - sf * 0.06, ih * 0.99 - sf * 0.06, d * 0.11, spacerMat, icx, icy, 0);
                 }
             });
+        } else {
+            const innerW = W - 2 * f;
+            const innerH = rectH - 2 * f;
+            const innerLeft = -W / 2 + f;
+            const innerBottom = -H / 2 + f;
 
-            controls.target.set(0, 0, 0);
-            camera.position.set(W * 0.5 + 1.5, H * 0.25, 5);
-            controls.update();
-            return;
-        }
+            // Eshik: pastki 38% panel, tepasi shisha
+            let glassBottom = innerBottom;
+            let glassH = innerH;
+            if (type === 'eshik') {
+                const panelH = innerH * 0.38;
+                box(innerW, panelH, d * 0.7, panelMat, 0, innerBottom + panelH / 2, 0);
+                glassBottom = innerBottom + panelH;
+                glassH = innerH - panelH;
+                
+                // Premium Door Handle (Chrome cylindrical bar handle)
+                box(f * 0.2, H * 0.35, d * 0.1, handleMat, W / 2 - f - f * 0.55, 0, d * 0.6);
+                // Handle supports
+                box(f * 0.1, f * 0.1, d * 0.5, handleMat, W / 2 - f - f * 0.55, H * 0.14, d * 0.35);
+                box(f * 0.1, f * 0.1, d * 0.5, handleMat, W / 2 - f - f * 0.55, -H * 0.14, d * 0.35);
+            }
 
-        const innerW = W - 2 * f;
-        const innerH = rectH - 2 * f;
-        const innerLeft = -W / 2 + f;
-        const innerBottom = -H / 2 + f;
+            // Shisha (Double glazing & spacer)
+            box(innerW * 0.99, glassH * 0.99, d * 0.05, glassMat, 0, glassBottom + glassH / 2, -d * 0.08);
+            box(innerW * 0.99, glassH * 0.99, d * 0.05, glassMat, 0, glassBottom + glassH / 2, d * 0.08);
+            box(innerW * 0.99 - impF * 0.06, glassH * 0.99 - impF * 0.06, d * 0.11, spacerMat, 0, glassBottom + glassH / 2, 0);
 
-        // Eshik: pastki 38% panel, tepasi shisha
-        let glassBottom = innerBottom;
-        let glassH = innerH;
-        if (type === 'eshik') {
-            const panelH = innerH * 0.38;
-            box(innerW, panelH, d * 0.7, panelMat, 0, innerBottom + panelH / 2, 0);
-            glassBottom = innerBottom + panelH;
-            glassH = innerH - panelH;
-            
-            // Premium Door Handle (Chrome cylindrical bar handle)
-            box(f * 0.2, H * 0.35, d * 0.1, handleMat, W / 2 - f - f * 0.55, 0, d * 0.6);
-            // Handle supports
-            box(f * 0.1, f * 0.1, d * 0.5, handleMat, W / 2 - f - f * 0.55, H * 0.14, d * 0.35);
-            box(f * 0.1, f * 0.1, d * 0.5, handleMat, W / 2 - f - f * 0.55, -H * 0.14, d * 0.35);
-        }
+            // Impostlar
+            const vDiv = Math.max(0, Math.min(6, parseInt(params.vDiv) || 0));
+            const hDiv = Math.max(0, Math.min(6, parseInt(params.hDiv) || 0));
+            for (let i = 1; i <= vDiv; i++) {
+                const x = innerLeft + (innerW * i) / (vDiv + 1);
+                box(impF, glassH, d, frameMat, x, glassBottom + glassH / 2, 0);
+            }
+            for (let j = 1; j <= hDiv; j++) {
+                const y = glassBottom + (glassH * j) / (hDiv + 1);
+                box(innerW, impF, d, frameMat, 0, y, 0);
+            }
 
-        // Shisha (Double glazing)
-        box(innerW * 0.99, glassH * 0.99, d * 0.05, glassMat, 0, glassBottom + glassH / 2, -d * 0.08);
-        box(innerW * 0.99, glassH * 0.99, d * 0.05, glassMat, 0, glassBottom + glassH / 2, d * 0.08);
+            // Stvorkalar
+            const stv = Math.max(0, Math.min(4, parseInt(params.stvorka) || 0));
+            if (stv > 0) {
+                const gap = f * 0.18;
+                const sashW = innerW / stv;
+                const sf = impF;
+                const zf = d * 0.4;
+                for (let s = 0; s < stv; s++) {
+                    const cx = innerLeft + sashW * s + sashW / 2;
+                    const sw = sashW - gap * 2;
+                    const sh = glassH - gap * 2;
+                    const cy = glassBottom + glassH / 2;
+                    addSash(cx, cy, sw, sh, sf, zf, params.openType || 'kasement_chap');
+                }
+            }
 
-        // Impostlar
-        const vDiv = Math.max(0, Math.min(6, parseInt(params.vDiv) || 0));
-        const hDiv = Math.max(0, Math.min(6, parseInt(params.hDiv) || 0));
-        for (let i = 1; i <= vDiv; i++) {
-            const x = innerLeft + (innerW * i) / (vDiv + 1);
-            box(impF, glassH, d, frameMat, x, glassBottom + glassH / 2, 0);
-        }
-        for (let j = 1; j <= hDiv; j++) {
-            const y = glassBottom + (glassH * j) / (hDiv + 1);
-            box(innerW, impF, d, frameMat, 0, y, 0);
-        }
-
-        // Stvorkalar
-        const stv = Math.max(0, Math.min(4, parseInt(params.stvorka) || 0));
-        if (stv > 0) {
-            const gap = f * 0.18;
-            const sashW = innerW / stv;
-            const sf = impF;
-            const zf = d * 0.4;
-            for (let s = 0; s < stv; s++) {
-                const cx = innerLeft + sashW * s + sashW / 2;
-                const sw = sashW - gap * 2;
-                const sh = glassH - gap * 2;
-                const cy = glassBottom + glassH / 2;
-                addSash(cx, cy, sw, sh, sf, zf, params.openType || 'kasement_chap');
+            // Fortochka
+            if (type === 'rom_fortochka') {
+                const fw = innerW * 0.4, fh = glassH * 0.32;
+                const cx = innerLeft + fw / 2 + f * 0.2;
+                const cy = glassBottom + glassH - fh / 2 - f * 0.2;
+                box(impF, fh, d * 1.1, frameMat, cx - fw / 2, cy, d * 0.2);
+                box(impF, fh, d * 1.1, frameMat, cx + fw / 2, cy, d * 0.2);
+                box(fw, impF, d * 1.1, frameMat, cx, cy + fh / 2, d * 0.2);
+                box(fw, impF, d * 1.1, frameMat, cx, cy - fh / 2, d * 0.2);
             }
         }
 
-        // Fortochka
-        if (type === 'rom_fortochka') {
-            const fw = innerW * 0.4, fh = glassH * 0.32;
-            const cx = innerLeft + fw / 2 + f * 0.2;
-            const cy = glassBottom + glassH - fh / 2 - f * 0.2;
-            box(impF, fh, d * 1.1, frameMat, cx - fw / 2, cy, d * 0.2);
-            box(impF, fh, d * 1.1, frameMat, cx + fw / 2, cy, d * 0.2);
-            box(fw, impF, d * 1.1, frameMat, cx, cy + fh / 2, d * 0.2);
-            box(fw, impF, d * 1.1, frameMat, cx, cy - fh / 2, d * 0.2);
-        }
+        // ── CAD-style 3D O'lchamlari va chiziqlari ──
+        const dimOffset = 0.35;
+        // Eni o'lchami chizig'i
+        const dimY = -H / 2 - dimOffset;
+        line(-W / 2, dimY, W / 2, dimY, 0.1);
+        // Yon chekka ticks
+        line(-W / 2, dimY - 0.05, -W / 2, dimY + 0.05, 0.1);
+        line(W / 2, dimY - 0.05, W / 2, dimY + 0.05, 0.1);
+        
+        // Bo'yi o'lchami chizig'i
+        const dimX = -W / 2 - dimOffset;
+        line(dimX, -H / 2, dimX, H / 2, 0.1);
+        // Yon chekka ticks
+        line(dimX - 0.05, -H / 2, dimX + 0.05, -H / 2, 0.1);
+        line(dimX - 0.05, H / 2, dimX + 0.05, H / 2, 0.1);
+        
+        // Millimetrda matn spraytlari (Billboarding)
+        const wText = Math.round((params.width || 1.5) * 1000) + ' mm';
+        const hText = Math.round((params.height || 2.0) * 1000) + ' mm';
+        
+        const wSprite = createTextSprite(wText);
+        wSprite.position.set(0, dimY - 0.1, 0.15);
+        modelGroup.add(wSprite);
+        
+        const hSprite = createTextSprite(hText);
+        hSprite.position.set(dimX - 0.12, 0, 0.15);
+        modelGroup.add(hSprite);
+
+        // ── Yumshoq Soya (Soft Shadow Plane) ──
+        const shadowTex = createShadowTexture();
+        const shadowMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, opacity: 0.82 });
+        const shadow = new THREE.Mesh(new THREE.PlaneGeometry(W * 1.6, 0.4), shadowMat);
+        shadow.rotation.x = -Math.PI / 2;
+        shadow.position.set(0, -H / 2 - 0.01, 0); // Joyiga mukammal soya tushishi uchun
+        modelGroup.add(shadow);
 
         controls.target.set(0, 0, 0);
         camera.position.set(W * 0.5 + 1.5, H * 0.25, 5);
@@ -531,6 +613,39 @@ export function createViewer(canvas) {
         resize, 
         setOpenState(isOpen) {
             targetOpenRatio = isOpen ? 1.0 : 0.0;
+        },
+        setProfileColor(colorKey) {
+            let hex = FRAME_COLOR;
+            let roughness = 0.42;
+            let metalness = 0.28;
+            
+            if (colorKey === 'white') {
+                hex = 0xf3f4f6; roughness = 0.6; metalness = 0.05;
+            } else if (colorKey === 'oak') {
+                hex = 0x9a3412; roughness = 0.72; metalness = 0.08; // Wood Oak look
+            } else if (colorKey === 'bronze') {
+                hex = 0x5c3d2e; roughness = 0.25; metalness = 0.75; // Anodized Bronze look
+            }
+            
+            frameMat.color.setHex(hex);
+            frameMat.roughness = roughness;
+            frameMat.metalness = metalness;
+            
+            // Re-render immediately
+            renderer.render(scene, camera);
+        },
+        resetCamera() {
+            controls.reset();
+            let W = lastParams ? Math.max(0.3, lastParams.width || 1.5) : 1.5;
+            let H = lastParams ? Math.max(0.3, lastParams.height || 2.0) : 2.0;
+            const maxDim = Math.max(W, H);
+            const scale = 3.2 / maxDim;
+            W *= scale; H *= scale;
+            
+            camera.position.set(W * 0.5 + 1.5, H * 0.25, 5);
+            controls.target.set(0, 0, 0);
+            controls.update();
+            renderer.render(scene, camera);
         },
         dispose() { 
             running = false; 

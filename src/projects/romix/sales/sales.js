@@ -420,6 +420,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    const reset3dCameraBtn = document.getElementById('reset3dCameraBtn');
+    if (reset3dCameraBtn) {
+        reset3dCameraBtn.addEventListener('click', () => {
+            const v = ensureViewer();
+            if (v && v.resetCamera) v.resetCamera();
+        });
+    }
+
+    const color3dBtns = document.querySelectorAll('.color3d-btn');
+    color3dBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            color3dBtns.forEach(b => {
+                b.style.border = '1px solid rgba(255,255,255,0.3)';
+                b.classList.remove('active');
+            });
+            btn.style.border = '2px solid #00d2ff';
+            btn.classList.add('active');
+            
+            const colorKey = btn.dataset.color;
+            const v = ensureViewer();
+            if (v && v.setProfileColor) v.setProfileColor(colorKey);
+        });
+    });
+
     window.update3DPreview = function update3D() {
         const type = itemTypeSel ? itemTypeSel.value : 'rom';
         const isRom = ['rom', 'rom_fortochka', 'eshik'].includes(type);
