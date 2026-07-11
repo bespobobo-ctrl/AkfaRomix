@@ -18,6 +18,25 @@ function kerf(a, b) {
     return (a && a.includes('45') && b && b.includes('45')) ? K45 : K90;
 }
 
+// ─── Ombordagi qoldiqlarni material guruhiga moslashtirish ────────────────
+// `mat` shakli "Brend Seriya · Rol" (masalan "AKFA 6000 · Rama"). Brend/seriya
+// mos kelishi YETARLI EMAS — Rama (60mm ramka), Impost (30mm), Stvorka (50mm qanot)
+// va Shtapik (20mm shisha ushlagich) fizik jihatdan boshqa-boshqa kesim profillari,
+// shuning uchun qoldiqning roli (r.profileRole) ham material rolига mos kelishi shart.
+// Eski/qo'lda kiritilgan qoldiqlarda rol bo'sh bo'lishi mumkin — bunday holda faqat
+// brend/seriya bo'yicha (orqaga moslik uchun) moslashtiramiz.
+function matchRemnantsForMaterial(remnants, mat) {
+    const [matBrand, matRole] = mat.split(' · ');
+    const mk = (matBrand || mat).toLowerCase().trim();
+    return remnants.filter(r => {
+        const rk = (r.profile_type || '').toLowerCase();
+        const brandMatch = mk.includes(rk) || rk.includes(mk);
+        if (!brandMatch) return false;
+        if (!matRole || !r.profileRole) return true; // rol noma'lum — eski yozuvlar bilan orqaga moslik
+        return r.profileRole.toLowerCase().trim() === matRole.toLowerCase().trim();
+    });
+}
+
 // ─── 2D dizayner daraxti yoyish ────────────────────────────
 function layoutTree(node, box, out) {
     if (!node) return;
@@ -270,7 +289,11 @@ export function optimize(pieces, barLen = BAR, existingRemnants = []) {
     pieces.forEach(p => { for (let i = 0; i < p.qty; i++) units.push({ ref: p.ref, role: p.role, len: p.len, angle: p.angle }); });
     units.sort((a, b) => b.len - a.len);
 
-    const remnants = [...existingRemnants].sort((a, b) => b.length - a.length);
+    // MUHIM: existingRemnants elementlarini (obyektlarni) EMAS, nusxalarini ishlatamiz —
+    // aks holda rem.length shu funksiya ichida to'g'ridan-to'g'ri kamayib, chaqiruvchida
+    // (masalan bir nechta material/variant uchun ketma-ket optimize() chaqirilganda) haqiqiy
+    // omborda hali sarflanmagan qoldiq "allaqachon ishlatilgan" deb noto'g'ri hisoblanardi.
+    const remnants = existingRemnants.map(r => ({ ...r })).sort((a, b) => b.length - a.length);
     const bars = [];
     const usedRemnantIds = [];
     const newRemnants    = [];
@@ -540,11 +563,7 @@ export async function generateCuttingPdf(order) {
 
     mats.forEach(mat => {
         const pieces = groups[mat];
-        const matchR = remnants.filter(r => {
-            const rk = (r.profile_type || '').toLowerCase();
-            const mk = mat.toLowerCase();
-            return mk.includes(rk) || rk.includes(mk.split(' ·')[0].trim());
-        });
+        const matchR = matchRemnantsForMaterial(remnants, mat);
 
         // 3 variant
         const scenResults = {
@@ -787,11 +806,7 @@ export async function generateCuttingPdf(order) {
     let cy3 = 28;
     mats.forEach(mat => {
         const pieces = groups[mat];
-        const matchR = remnants.filter(r => {
-            const rk = (r.profile_type || '').toLowerCase();
-            const mk = mat.toLowerCase();
-            return mk.includes(rk) || rk.includes(mk.split(' ·')[0].trim());
-        });
+        const matchR = matchRemnantsForMaterial(remnants, mat);
         const A = optimize(pieces, 6000, matchR);
         const B = optimize(pieces, 3000);
         const units3 = []; pieces.forEach(p => { for (let i = 0; i < p.qty; i++) units3.push({ ...p }); });

@@ -1683,11 +1683,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Kesim PDF — saqlangan buyurtmadagi rom/eshik elementlari uchun (model_name JSON'dan)
+    //
+    // MUHIM: "✂️ Kesim PDF" tugmasi shu buyurtma uchun necha marta bosilsa ham (qayta chiqarish,
+    // tekshirish uchun qayta ochish va h.k.) qoldiq profillar FAQAT BIR MARTA iste'mol
+    // qilinishi/yaratilishi kerak — aks holda har bosishda omborda haqiqatda mavjud bo'lmagan
+    // "soxta" qoldiqlar yaratilib, Smart Remnant AI hisobini buzib boradi (cutting_remnants_applied_at
+    // orqali nazorat qilinadi). Keyingi bosishlarda PDF baribir qayta chiqariladi, faqat ombor
+    // yozuvlariga tegilmaydi.
     async function showCuttingPdfForOrder(o) {
         let items = [];
         try { items = JSON.parse(o.model_name) || []; } catch (e) { items = []; }
         const romlar = items.filter(it => ['rom', 'rom_fortochka', 'eshik'].includes(it.type));
         if (romlar.length === 0) { alert("Bu buyurtmada kesim PDF uchun rom yoki eshik elementi yo'q."); return; }
+
+        const alreadyApplied = !!o.cutting_remnants_applied_at;
 
         // Smart Remnant AI: Ombordagi qoldiq profillarni Supabase'dan yuklash
         let remnants = [];
@@ -1700,38 +1709,59 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (rData) {
                 remnants = rData.map(r => ({
                     id: r.id,
-                    profile_type: r.profile_name || r.profile_type || r.product_name || '',
+                    profile_type: r.profile_name || r.product_name || '',
+                    // profileRole = Rama/Impost/Stvorka/Shtapik — Rama (60mm ramka) bilan Stvorka (50mm qanot)
+                    // yoki Shtapik (20mm shisha ushlagich) FIZIK JIHATDAN BOSHQA-BOSHQA kesim profillari,
+                    // shuning uchun brend bir xil bo'lsa ham roli farqli qoldiqni bir-biriga moslashtirmaslik kerak.
+                    profileRole: (r.profile_type || '').trim(),
                     length: Math.round((r.stock_quantity || r.length || 0) * 1000), // metrdan mm ga
                     color: r.color || ''
                 })).filter(r => r.length >= 800);
             }
         } catch (e) { console.warn('Qoldiq profillar yuklanmadi:', e); }
 
-        const result = generateCuttingPdf({ customer: o.customer_name || '', phone: o.customer_phone || '', items, remnants });
+        // Agar bu buyurtma uchun qoldiqlar allaqachon iste'mol qilingan bo'lsa, optimizatorni
+        // bo'sh qoldiqlar ro'yxati bilan ishlatamiz — shunda PDF qayta chiqariladi, lekin
+        // haqiqatda ishlatilmagan qoldiqlarni "band" deb ko'rsatmaydi.
+        const result = generateCuttingPdf({ customer: o.customer_name || '', phone: o.customer_phone || '', items, remnants: alreadyApplied ? [] : remnants });
 
-        // Smart Remnant AI: Ishlatilgan qoldiqlarni bazadan o'chirish va yangilarini saqlash
-        if (result && supabase) {
+        // Smart Remnant AI: Ishlatilgan qoldiqlarni bazadan o'chirish va yangilarini saqlash —
+        // FAQAT birinchi marta (alreadyApplied === false)
+        if (result && supabase && !alreadyApplied) {
             try {
                 // Ishlatilgan qoldiqlarni bazadan o'chirish
                 if (result.usedRemnantIds.length > 0) {
                     await supabase.from('romix_qoldiq_profillar').delete().in('id', result.usedRemnantIds);
                     console.log(`✅ ${result.usedRemnantIds.length} ta qoldiq profil ishlatildi va o'chirildi.`);
                 }
-                // Yangi qoldiqlarni bazaga saqlash
+                // Yangi qoldiqlarni bazaga saqlash — profile_type ustuniga profil ROLINI
+                // (Rama/Impost/Stvorka/Shtapik) ham yozamiz, aks holda keyingi buyurtmada
+                // bu qoldiq boshqa (fizik jihatdan mos kelmaydigan) profil roliga moslashtirilib qo'yilishi mumkin.
                 for (const nr of result.newRemnants) {
+                    const matParts = (nr.mat || '').split(' · ');
                     await supabase.from('romix_qoldiq_profillar').insert([{
-                        profile_name: nr.mat ? nr.mat.split(' ·')[0].trim() : 'Qoldiq profil',
+                        profile_name: matParts[0] ? matParts[0].trim() : 'Qoldiq profil',
+                        profile_type: matParts[1] ? matParts[1].trim() : '',
                         stock_quantity: +(nr.length / 1000).toFixed(3), // mm dan metrga
                         unit: 'm',
                         is_used: false,
                         created_at: new Date().toISOString()
                     }]);
                 }
+                // Shu buyurtma uchun qoldiqlar allaqachon hisoblanganini belgilab qo'yamiz —
+                // keyingi "Kesim PDF" bosishlarida ombor yozuvlariga qayta tegilmaydi.
+                try {
+                    await supabase.from('sales_orders').update({ cutting_remnants_applied_at: new Date().toISOString() }).eq('id', o.id);
+                    o.cutting_remnants_applied_at = new Date().toISOString();
+                } catch (e) { console.warn("cutting_remnants_applied_at ustuni topilmadi — ⚙️ Jadval Sozlash orqali qo'shing.", e); }
+
                 if (result.newRemnants.length > 0) {
                     console.log(`✅ ${result.newRemnants.length} ta yangi qoldiq profil omborga yozildi.`);
                     setTimeout(() => alert(`♻️ Smart Remnant AI:\n${result.newRemnants.length} ta yangi qoldiq profil omborga saqlandi.\nBu qoldiqlar keyingi buyurtmalarda ishlatiladi.`), 500);
                 }
             } catch (e) { console.warn('Smart Remnant DB sync xatosi:', e); }
+        } else if (alreadyApplied) {
+            console.log('ℹ️ Bu buyurtma uchun qoldiqlar avval hisoblangan — PDF qayta chiqarildi, ombor o\'zgartirilmadi.');
         }
     }
 

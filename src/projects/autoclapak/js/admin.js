@@ -4166,6 +4166,10 @@ CREATE TABLE IF NOT EXISTS romix_debts (
 ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS paid_amount NUMERIC DEFAULT 0;
 ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS payment_date TIMESTAMPTZ;
 
+-- Smart Remnant AI: "Kesim PDF" tugmasi bir buyurtma uchun necha marta bosilsa ham
+-- qoldiq profillar faqat BIR MARTA iste'mol qilinishi/yaratilishi uchun (Sotuv > Kesim PDF)
+ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS cutting_remnants_applied_at TIMESTAMPTZ;
+
 -- Tashqi qarz to'lovlari tarixi (Buhgalteriya > Umumiy > To'lovlar)
 CREATE TABLE IF NOT EXISTS romix_payment_log (
     id TEXT PRIMARY KEY,
