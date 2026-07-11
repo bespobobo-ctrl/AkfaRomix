@@ -1842,6 +1842,214 @@ document.addEventListener('DOMContentLoaded', async () => {
         await renderRomixBuhOmbor();
     };
 
+    // ========================================================
+    // ======== BUXGALTERIYA: RASMDAN CHIQIM (AI, Gemini Vision) ==
+    // Xuddi "Rasmdan Kirim" kabi bir xil /api/spiska-vision orqali rasmni
+    // o'qiydi, lekin aniqlangan miqdor omordagi MAVJUD mos nomdagi
+    // mahsulotdan AYIRILADI (chiqim). Ombordan topilmagan nom yaratilmaydi —
+    // shunchaki "topilmadi" ro'yxatiga qo'shilib, foydalanuvchiga xabar beriladi.
+    // ========================================================
+    window.openBuhVisionChiqimModal = () => {
+        window.__buhVisionChiqimImageData = null;
+        window.__buhVisionChiqimItems = [];
+        const fileInput = document.getElementById('buhVisionChiqimFileInput');
+        if (fileInput) fileInput.value = '';
+        document.getElementById('buhVisionChiqimPreviewWrap').style.display = 'none';
+        document.getElementById('buhVisionChiqimPlaceholder').style.display = 'block';
+        const analyzeBtn = document.getElementById('buhVisionChiqimAnalyzeBtn');
+        analyzeBtn.disabled = true;
+        analyzeBtn.style.opacity = '0.5';
+        document.getElementById('buhVisionChiqimError').style.display = 'none';
+        document.getElementById('buhVisionChiqimLoading').style.display = 'none';
+        document.getElementById('buhVisionChiqimUploadStep').style.display = 'block';
+        document.getElementById('buhVisionChiqimReviewStep').style.display = 'none';
+        const modal = document.getElementById('buh-vision-chiqim-modal');
+        if (modal) modal.style.display = 'flex';
+    };
+    window.closeBuhVisionChiqimModal = () => {
+        const modal = document.getElementById('buh-vision-chiqim-modal');
+        if (modal) modal.style.display = 'none';
+    };
+    window.resetBuhVisionChiqimModal = () => {
+        document.getElementById('buhVisionChiqimReviewStep').style.display = 'none';
+        document.getElementById('buhVisionChiqimUploadStep').style.display = 'block';
+        document.getElementById('buhVisionChiqimError').style.display = 'none';
+        window.__buhVisionChiqimItems = [];
+    };
+    window.handleBuhVisionChiqimFileSelect = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const MAX_DIM = 2600;
+                const MAX_BASE64_BYTES = 3.6 * 1024 * 1024;
+                let width = img.width, height = img.height;
+                if (width > MAX_DIM || height > MAX_DIM) {
+                    const scale = MAX_DIM / Math.max(width, height);
+                    width = Math.round(width * scale);
+                    height = Math.round(height * scale);
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = width; canvas.height = height;
+                canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+
+                let quality = 0.95;
+                let dataUrl = canvas.toDataURL('image/jpeg', quality);
+                while (dataUrl.length > MAX_BASE64_BYTES && quality > 0.5) {
+                    quality -= 0.1;
+                    dataUrl = canvas.toDataURL('image/jpeg', quality);
+                }
+                window.__buhVisionChiqimImageData = { image: dataUrl.split(',')[1], mimeType: 'image/jpeg' };
+                document.getElementById('buhVisionChiqimPreviewImg').src = dataUrl;
+                document.getElementById('buhVisionChiqimPreviewWrap').style.display = 'block';
+                document.getElementById('buhVisionChiqimPlaceholder').style.display = 'none';
+                const analyzeBtn = document.getElementById('buhVisionChiqimAnalyzeBtn');
+                analyzeBtn.disabled = false;
+                analyzeBtn.style.opacity = '1';
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    };
+    window.analyzeBuhVisionChiqimImage = async () => {
+        if (!window.__buhVisionChiqimImageData) return;
+        const loadingEl = document.getElementById('buhVisionChiqimLoading');
+        const errorEl = document.getElementById('buhVisionChiqimError');
+        const analyzeBtn = document.getElementById('buhVisionChiqimAnalyzeBtn');
+        loadingEl.style.display = 'block';
+        errorEl.style.display = 'none';
+        analyzeBtn.disabled = true;
+        try {
+            const resp = await fetch('/api/spiska-vision', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(window.__buhVisionChiqimImageData)
+            });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error || 'Xatolik yuz berdi');
+            if (!data.items || data.items.length === 0) throw new Error("Rasmda hech qanday mahsulot aniqlanmadi. Aniqroq/yorug' rasm bilan qayta urinib ko'ring.");
+            window.__buhVisionChiqimItems = data.items;
+            window.renderBuhVisionChiqimResults();
+            document.getElementById('buhVisionChiqimUploadStep').style.display = 'none';
+            document.getElementById('buhVisionChiqimReviewStep').style.display = 'block';
+        } catch (err) {
+            errorEl.textContent = '❌ ' + err.message;
+            errorEl.style.display = 'block';
+        } finally {
+            loadingEl.style.display = 'none';
+            analyzeBtn.disabled = false;
+        }
+    };
+    window.renderBuhVisionChiqimResults = () => {
+        const tbody = document.getElementById('buhVisionChiqimResultsBody');
+        const items = window.__buhVisionChiqimItems || [];
+        tbody.innerHTML = items.map((it, idx) => {
+            const isAcc = it.type === 'aksessuar';
+            return `<tr style="border-top:1px solid rgba(255,255,255,0.05);">
+                <td style="padding:6px;"><input type="text" value="${(it.name || '').replace(/"/g, '&quot;')}" oninput="window.updateBuhVisionChiqimItem(${idx},'name',this.value)" style="width:100%; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:5px 8px; border-radius:6px; font-size:0.76rem; box-sizing:border-box;"></td>
+                <td style="padding:6px;">
+                    <select onchange="window.updateBuhVisionChiqimItem(${idx},'type',this.value)" style="width:100%; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:5px; border-radius:6px; font-size:0.76rem;">
+                        <option value="profil" ${!isAcc ? 'selected' : ''}>Profil</option>
+                        <option value="aksessuar" ${isAcc ? 'selected' : ''}>Aksessuar</option>
+                    </select>
+                </td>
+                <td style="padding:6px;">
+                    <select onchange="window.updateBuhVisionChiqimItem(${idx},'unit',this.value)" style="width:100%; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:5px; border-radius:6px; font-size:0.76rem;">
+                        ${BUH_VISION_UNITS.map(u => `<option value="${u}" ${it.unit === u ? 'selected' : ''}>${u}</option>`).join('')}
+                    </select>
+                </td>
+                <td style="padding:6px;"><input type="number" value="${it.qty}" min="0" oninput="window.updateBuhVisionChiqimItem(${idx},'qty',this.value)" style="width:70px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#ff4d4f; font-weight:700; padding:5px 8px; border-radius:6px; font-size:0.76rem; text-align:right;"></td>
+                <td style="padding:6px;">
+                    ${!isAcc ? `<input type="number" value="${it.lengthMm || ''}" min="0" placeholder="mm" oninput="window.updateBuhVisionChiqimItem(${idx},'lengthMm',this.value)" title="Har bir dona/pachka uzunligi (mm) — to'ldirilsa, jami metr avtomatik hisoblanadi" style="width:70px; background:rgba(0,210,255,0.06); border:1px solid rgba(0,210,255,0.25); color:#00d2ff; font-weight:700; padding:5px 8px; border-radius:6px; font-size:0.76rem; text-align:right;">` : '<span style="color:rgba(255,255,255,0.3); font-size:0.72rem;">—</span>'}
+                </td>
+                <td style="padding:6px; text-align:center;"><button onclick="window.removeBuhVisionChiqimItem(${idx})" style="background:none; border:none; color:#ff4d4f; cursor:pointer; font-size:0.85rem;">🗑️</button></td>
+            </tr>`;
+        }).join('') || '<tr><td colspan="6" style="text-align:center; padding:20px; color:rgba(255,255,255,0.3);">Ro\'yxat bo\'sh</td></tr>';
+    };
+    window.updateBuhVisionChiqimItem = (idx, field, value) => {
+        if (!window.__buhVisionChiqimItems || !window.__buhVisionChiqimItems[idx]) return;
+        if (field === 'qty' || field === 'lengthMm') value = parseFloat(value) || 0;
+        window.__buhVisionChiqimItems[idx][field] = value;
+        if (field === 'type') window.renderBuhVisionChiqimResults();
+    };
+    window.removeBuhVisionChiqimItem = (idx) => {
+        window.__buhVisionChiqimItems.splice(idx, 1);
+        window.renderBuhVisionChiqimResults();
+    };
+    window.confirmBuhVisionChiqim = async () => {
+        const items = (window.__buhVisionChiqimItems || []).filter(it => it.name && it.qty > 0);
+        if (items.length === 0) {
+            alert("Tasdiqlash uchun hech bo'lmaganda bitta to'g'ri mahsulot bo'lishi kerak!");
+            return;
+        }
+        const profilItems = items.filter(it => it.type === 'profil');
+        const accItems = items.filter(it => it.type === 'aksessuar');
+        const notFound = [];
+        const insufficient = [];
+        let doneCount = 0;
+
+        for (const it of profilItems) {
+            try {
+                const useLength = Number(it.lengthMm) > 0;
+                const finalQty = useLength ? (it.qty * Number(it.lengthMm) / 1000) : it.qty;
+
+                const { data: existing } = await supabase.from('romix_inventory').select('*').eq('product_name', it.name).maybeSingle();
+                if (!existing) { notFound.push(it.name); continue; }
+
+                const currentQty = parseFloat(existing.stock_quantity) || 0;
+                if (currentQty < finalQty) insufficient.push(`${it.name} (bor: ${currentQty}, so'ralgan: ${finalQty})`);
+                const newQty = Math.max(0, currentQty - finalQty);
+
+                await supabase.from('romix_inventory').update({ stock_quantity: newQty }).eq('id', existing.id);
+                await supabase.from('romix_transactions').insert([{
+                    product_id: existing.id, type: 'OUT', quantity: finalQty,
+                    note: `Rasmdan Chiqim (AI) - Buxgalteriya`
+                }]);
+                doneCount++;
+            } catch (err) {
+                console.error('Vision chiqim (profil) xatolik:', it.name, err);
+            }
+        }
+
+        if (accItems.length > 0) {
+            const inventory = await _buhGetAccessories();
+            const curUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const operator = (curUser.full_name || curUser.username || 'BUXGALTERIYA').toUpperCase();
+            for (const it of accItems) {
+                const matched = inventory.find(inv => (inv.name || '').toLowerCase() === it.name.toLowerCase());
+                if (!matched) { notFound.push(it.name); continue; }
+
+                const currentQty = Number(matched.qty) || 0;
+                if (currentQty < it.qty) insufficient.push(`${it.name} (bor: ${currentQty}, so'ralgan: ${it.qty})`);
+                const newQty = Math.max(0, currentQty - it.qty);
+
+                await romixBuhUpdate('romix_accessories', ROMIX_BUH_KEYS.accessories, matched.id, { qty: newQty });
+                matched.qty = newQty;
+                doneCount++;
+
+                const now = new Date();
+                const timeStr = now.toLocaleDateString('uz-UZ') + ' ' + now.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+                await romixBuhInsert('romix_accessories_history', 'romix_accessories_history_log', {
+                    id: 'HIST-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+                    timestamp: timeStr,
+                    action: 'Rasmdan Chiqim (AI) 📷',
+                    details: `"${it.name}" mahsulotidan ${it.qty.toLocaleString()} ${it.unit} rasm orqali (AI) chiqim qilindi.`,
+                    operator: operator
+                });
+            }
+        }
+
+        const hasIssues = notFound.length > 0 || insufficient.length > 0;
+        let msg = `${doneCount} ta mahsulot chiqim qilindi.`;
+        if (notFound.length > 0) msg += ` Omborda topilmadi: ${notFound.join(', ')}.`;
+        if (insufficient.length > 0) msg += ` Yetarli zaxira yo'q edi: ${insufficient.join(', ')}.`;
+        window.showPremiumToast(hasIssues ? 'Diqqat' : 'Muvaffaqiyatli', msg, !hasIssues);
+        window.closeBuhVisionChiqimModal();
+        await renderRomixBuhOmbor();
+    };
+
     async function renderBuhTayyorMahsulot() {
         const statsEl = document.getElementById('buh-tayyor-stats');
         const tableEl = document.getElementById('buh-tayyor-table');
