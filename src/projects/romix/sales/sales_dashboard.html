@@ -501,9 +501,14 @@
                         <span style="font-size:0.7rem; color:var(--adm-text-sec);">🖱️ aylantirish uchun torting</span>
                     </div>
                 </div>
-                <div style="position:relative; width:100%; height:320px; border-radius:12px; overflow:hidden; background:radial-gradient(circle at 50% 40%, #16283d, #0a1420);">
+                <div id="canvas3dContainer" style="position:relative; width:100%; height:320px; border-radius:12px; overflow:hidden; background:radial-gradient(circle at 50% 40%, #16283d, #0a1420);">
                     <canvas id="preview3dCanvas" style="width:100%; height:100%; display:block;"></canvas>
                     
+                    <!-- Floating Fullscreen Button -->
+                    <button id="toggle3dFullscreenBtn" type="button" style="position:absolute; top:15px; right:15px; background:rgba(11,21,34,0.75); backdrop-filter:blur(8px); border:1px solid rgba(0,210,255,0.25); border-radius:8px; padding:6px 12px; color:#00d2ff; font-size:0.72rem; font-weight:700; cursor:pointer; transition:all 0.2s; pointer-events:auto; z-index:10;">
+                        🖥️ To'liq ekran
+                    </button>
+
                     <!-- Floating Camera Reset -->
                     <button id="reset3dCameraBtn" type="button" style="position:absolute; bottom:15px; left:15px; background:rgba(11,21,34,0.75); backdrop-filter:blur(8px); border:1px solid rgba(0,210,255,0.25); border-radius:8px; padding:6px 12px; color:#00d2ff; font-size:0.72rem; font-weight:700; cursor:pointer; transition:all 0.2s; pointer-events:auto; z-index:10;">
                         🔄 Kamerani tiklash

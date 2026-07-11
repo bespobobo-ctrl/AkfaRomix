@@ -444,6 +444,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
+    const toggle3dFullscreenBtn = document.getElementById('toggle3dFullscreenBtn');
+    const canvas3dContainer = document.getElementById('canvas3dContainer');
+    if (toggle3dFullscreenBtn && canvas3dContainer) {
+        toggle3dFullscreenBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                canvas3dContainer.requestFullscreen().catch(err => {
+                    console.warn(`Fullscreen error: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            const isFull = document.fullscreenElement === canvas3dContainer;
+            if (isFull) {
+                toggle3dFullscreenBtn.innerHTML = '🖥️ Kichik ekran';
+                canvas3dContainer.style.height = '100%';
+            } else {
+                toggle3dFullscreenBtn.innerHTML = '🖥️ To\'liq ekran';
+                canvas3dContainer.style.height = '320px';
+            }
+            const v = ensureViewer();
+            if (v && v.resize) {
+                setTimeout(() => { v.resize(); }, 100);
+            }
+        });
+    }
+
     window.update3DPreview = function update3D() {
         const type = itemTypeSel ? itemTypeSel.value : 'rom';
         const isRom = ['rom', 'rom_fortochka', 'eshik'].includes(type);
