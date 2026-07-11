@@ -861,6 +861,73 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>`;
     }
 
+    // Profil kartalarini brendga ajratish — metadata.brend bo'lmasa, nomdan taniqli brendni qidiradi
+    function _buhOmborProfilBrandKey(p) {
+        const meta = p.metadata || {};
+        if (meta.brend) return meta.brend;
+        const knownBrands = ['AKFA', 'RETPEN', 'Ekopen', 'ALTA PLAST', 'ALUBEST', 'ALUTEX', 'CRA'];
+        const name = (p.product_name || '').toUpperCase();
+        for (const b of knownBrands) {
+            if (name.includes(b.toUpperCase())) return b;
+        }
+        return "Noma'lum";
+    }
+
+    function _buhGroupOmborProfilByBrand(items) {
+        const groups = {};
+        items.forEach(p => {
+            const brand = _buhOmborProfilBrandKey(p);
+            if (!groups[brand]) groups[brand] = { name: brand, items: [] };
+            groups[brand].items.push(p);
+        });
+        return Object.values(groups).sort((a, b) => b.items.length - a.items.length);
+    }
+
+    function _buhRenderOmborProfilGrid() {
+        const gridEl = document.getElementById('buh-ombor-grid');
+        if (!gridEl) return;
+        const items = window._buhOmborProfilItems || [];
+        const filterEl = document.getElementById('buh-ombor-brand-filter');
+        const brandGroups = _buhGroupOmborProfilByBrand(items);
+        const activeBrand = window._buhOmborProfilBrandFilter || 'barchasi';
+
+        if (filterEl) {
+            filterEl.innerHTML = `
+                <div class="buh-brand-chip ${activeBrand === 'barchasi' ? 'active' : ''}" onclick="window._buhSelectOmborProfilBrand('barchasi')">
+                    <span class="chip-name">🗂️ Barchasi</span>
+                    <span class="chip-meta">${items.length} mahsulot</span>
+                </div>
+                ${brandGroups.map(g => {
+                    const key = _buhSafeKey(g.name);
+                    return `<div class="buh-brand-chip ${activeBrand === key ? 'active' : ''}" onclick="window._buhSelectOmborProfilBrand('${key}')" title="${g.name.replace(/"/g, '&quot;')}">
+                        <span class="chip-name">${g.name}</span>
+                        <span class="chip-meta">${g.items.length} mahsulot</span>
+                    </div>`;
+                }).join('')}
+            `;
+        }
+
+        const activeGroup = brandGroups.find(g => _buhSafeKey(g.name) === activeBrand);
+        const filteredItems = activeBrand === 'barchasi' ? items : (activeGroup ? activeGroup.items : []);
+
+        gridEl.innerHTML = filteredItems.map(p => _buhOmborCardHtml('inventory', p.id, p.product_name, Number(p.stock_quantity) || 0, p.unit, Number(p.price) || 0, '📦', 'linear-gradient(135deg,#00baff,#0072ff)')).join('')
+            || '<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Ushbu brendda mahsulot topilmadi</div>';
+
+        // Filtr almashganda joriy qidiruv matnini yangi kartalarga qayta qo'llash
+        const searchEl = document.getElementById('buh-ombor-search');
+        const q = searchEl ? searchEl.value.trim().toLowerCase() : '';
+        if (q) {
+            gridEl.querySelectorAll('.buh-ombor-card').forEach(card => {
+                card.style.display = (card.dataset.search || '').includes(q) ? '' : 'none';
+            });
+        }
+    }
+
+    window._buhSelectOmborProfilBrand = (brandKey) => {
+        window._buhOmborProfilBrandFilter = brandKey;
+        _buhRenderOmborProfilGrid();
+    };
+
     async function renderRomixBuhOmbor() {
         const statsEl = document.getElementById('buh-ombor-stats');
         const gridEl = document.getElementById('buh-ombor-grid');
@@ -919,8 +986,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (gridEl) {
-            gridEl.innerHTML = items.map(p => _buhOmborCardHtml('inventory', p.id, p.product_name, Number(p.stock_quantity) || 0, p.unit, Number(p.price) || 0, '📦', 'linear-gradient(135deg,#00baff,#0072ff)')).join('')
-                || '<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Ombor bo\'sh</div>';
+            window._buhOmborProfilItems = items;
+            _buhRenderOmborProfilGrid();
         }
         if (accGridEl) {
             accGridEl.innerHTML = accessories.map(a => _buhOmborCardHtml('accessory', a.id, a.name, Number(a.qty) || 0, a.unit, Number(a.price) || 0, '🔩', 'linear-gradient(135deg,#BA68C8,#7B1FA2)')).join('')
@@ -1058,53 +1125,101 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Ombor (Kirim) kartochkalarida — Profil/Aksesuar mahsulotini tahrirlash/o'chirish (Narx belgilashdan tashqari)
     window.editRomixOmborItem = async (source, id, currentName, currentQty, currentPrice, currentUnit) => {
+        let item = null;
         if (source === 'qoldiq') {
-            const { data: item } = await supabase.from('romix_qoldiq_profillar').select('*').eq('id', id).maybeSingle();
-            if (!item) return;
-            const name = prompt('Nomi:', item.product_name || ''); if (name === null) return;
-            const len = prompt('Uzunligi (mm):', item.length || 0); if (len === null) return;
-            const qty = prompt('Soni (dona):', item.stock_quantity || 0); if (qty === null) return;
-            const patch = { product_name: name.trim(), length: parseFloat(len) || 0, stock_quantity: parseFloat(qty) || 0 };
-            const res = await romixBuhUpdate('romix_qoldiq_profillar', ROMIX_BUH_KEYS.qoldiqProfillar, id, patch);
-            if (res && res.ok === false) { alert("Xatolik: bazada yangilab bo'lmadi — " + (res.error && res.error.message || "sabab noma'lum")); return; }
-            window.showPremiumToast && window.showPremiumToast('Yangilandi', "Mahsulot ma'lumotlari yangilandi.", true);
-            await renderRomixBuhOmbor();
-            await renderBuhOverview();
-            return;
-        }
-        if (source === 'oynak') {
-            const { data: item } = await supabase.from('romix_oynak').select('*').eq('id', id).maybeSingle();
-            if (!item) return;
-            const name = prompt('Nomi:', item.product_name || ''); if (name === null) return;
-            const size = prompt("O'lcham:", item.size || ''); if (size === null) return;
-            const qty = prompt('Soni:', item.stock_quantity || 0); if (qty === null) return;
-            const price = prompt('Narx (1 birlik):', item.price || 0); if (price === null) return;
-            const patch = { product_name: name.trim(), size: size.trim(), stock_quantity: parseFloat(qty) || 0, price: parseFloat(price) || 0 };
-            const res = await romixBuhUpdate('romix_oynak', ROMIX_BUH_KEYS.oynak, id, patch);
-            if (res && res.ok === false) { alert("Xatolik: bazada yangilab bo'lmadi — " + (res.error && res.error.message || "sabab noma'lum")); return; }
-            window.showPremiumToast && window.showPremiumToast('Yangilandi', "Mahsulot ma'lumotlari yangilandi.", true);
-            await renderRomixBuhOmbor();
-            await renderBuhOverview();
-            return;
-        }
-
-        const name = prompt('Nomi:', currentName || ''); if (name === null) return;
-        const qty = prompt('Miqdor:', currentQty || 0); if (qty === null) return;
-        const price = prompt('Narx (1 birlik):', currentPrice || 0); if (price === null) return;
-        const patch = source === 'accessory'
-            ? { name: name.trim(), qty: parseFloat(qty) || 0, price: parseFloat(price) || 0 }
-            : { product_name: name.trim(), stock_quantity: parseFloat(qty) || 0, price: parseFloat(price) || 0 };
-
-        if (source === 'accessory') {
-            const res = await romixBuhUpdate('romix_accessories', ROMIX_BUH_KEYS.accessories, id, patch);
-            if (res && res.ok === false) { alert("Xatolik: bazada yangilab bo'lmadi — " + (res.error && res.error.message || "sabab noma'lum")); return; }
+            const { data } = await supabase.from('romix_qoldiq_profillar').select('*').eq('id', id).maybeSingle();
+            item = data;
+        } else if (source === 'oynak') {
+            const { data } = await supabase.from('romix_oynak').select('*').eq('id', id).maybeSingle();
+            item = data;
+        } else if (source === 'accessory') {
+            const accessories = await _buhGetAccessories();
+            item = accessories.find(a => a.id === id);
         } else {
+            const { data } = await supabase.from('romix_inventory').select('*').eq('id', id).maybeSingle();
+            item = data;
+        }
+        if (!item) { alert("Mahsulot topilmadi — sahifani yangilab qayta urinib ko'ring."); return; }
+        window.openBuhEditItemModal(source, item);
+    };
+
+    function _buhEditField(id, label, value, opts) {
+        opts = opts || {};
+        const type = opts.type || 'text';
+        const step = type === 'number' ? ` step="${opts.step || 'any'}"` : '';
+        return `<div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">${label}</label>
+            <input type="${type}"${step} id="${id}" value="${(value ?? '').toString().replace(/"/g, '&quot;')}" class="buh-input" style="width:100%; box-sizing:border-box;"></div>`;
+    }
+
+    window.openBuhEditItemModal = (source, item) => {
+        window._buhEditItemState = { source, id: item.id };
+        const modal = document.getElementById('buh-edit-item-modal');
+        const fieldsWrap = document.getElementById('buh-edit-item-fields');
+        if (!modal || !fieldsWrap) return;
+
+        const isAcc = source === 'accessory';
+        const name = isAcc ? item.name : item.product_name;
+        const qty = isAcc ? item.qty : item.stock_quantity;
+
+        let html = _buhEditField('beiName', 'Mahsulot Nomi', name);
+        if (source === 'qoldiq') html += _buhEditField('beiLength', 'Uzunligi (mm)', item.length || 0, { type: 'number' });
+        if (source === 'oynak') html += _buhEditField('beiSize', "O'lcham", item.size || '');
+        html += `<div style="display:grid; grid-template-columns:${source === 'qoldiq' ? '1fr' : '1fr 1fr'}; gap:14px;">`;
+        html += _buhEditField('beiQty', source === 'qoldiq' ? 'Soni (dona)' : 'Miqdor', qty || 0, { type: 'number' });
+        if (source !== 'qoldiq') html += _buhEditField('beiPrice', 'Narx (1 birlik)', item.price || 0, { type: 'number' });
+        html += `</div>`;
+
+        fieldsWrap.innerHTML = html;
+        modal.style.display = 'flex';
+        setTimeout(() => document.getElementById('beiName')?.focus(), 50);
+    };
+
+    window.closeBuhEditItemModal = () => {
+        const modal = document.getElementById('buh-edit-item-modal');
+        if (modal) modal.style.display = 'none';
+        window._buhEditItemState = null;
+    };
+
+    window.saveBuhEditItemModal = async () => {
+        const state = window._buhEditItemState;
+        if (!state) return;
+        const { source, id } = state;
+
+        const name = (document.getElementById('beiName')?.value || '').trim();
+        const qty = parseFloat(document.getElementById('beiQty')?.value) || 0;
+        if (!name) { alert('Nomini kiriting!'); return; }
+
+        let patch, table, localKey;
+        if (source === 'qoldiq') {
+            const length = parseFloat(document.getElementById('beiLength')?.value) || 0;
+            patch = { product_name: name, length, stock_quantity: qty };
+            table = 'romix_qoldiq_profillar'; localKey = ROMIX_BUH_KEYS.qoldiqProfillar;
+        } else if (source === 'oynak') {
+            const size = (document.getElementById('beiSize')?.value || '').trim();
+            const price = parseFloat(document.getElementById('beiPrice')?.value) || 0;
+            patch = { product_name: name, size, stock_quantity: qty, price };
+            table = 'romix_oynak'; localKey = ROMIX_BUH_KEYS.oynak;
+        } else if (source === 'accessory') {
+            const price = parseFloat(document.getElementById('beiPrice')?.value) || 0;
+            patch = { name, qty, price };
+            table = 'romix_accessories'; localKey = ROMIX_BUH_KEYS.accessories;
+        } else {
+            const price = parseFloat(document.getElementById('beiPrice')?.value) || 0;
+            patch = { product_name: name, stock_quantity: qty, price };
+        }
+
+        if (source === 'inventory' || !table) {
             try {
                 const { error } = await supabase.from('romix_inventory').update(patch).eq('id', id);
                 if (error) throw error;
             } catch (err) { alert('Xatolik: ' + err.message); return; }
+        } else {
+            const res = await romixBuhUpdate(table, localKey, id, patch);
+            if (res && res.ok === false) { alert("Xatolik: bazada yangilab bo'lmadi — " + (res.error && res.error.message || "sabab noma'lum")); return; }
         }
+
         window.showPremiumToast && window.showPremiumToast('Yangilandi', "Mahsulot ma'lumotlari yangilandi.", true);
+        window.closeBuhEditItemModal();
         await renderRomixBuhOmbor();
         await renderBuhOverview();
     };

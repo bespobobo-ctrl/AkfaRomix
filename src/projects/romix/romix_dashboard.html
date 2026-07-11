@@ -1798,6 +1798,7 @@
                         <!-- ===== Profil ===== -->
                         <div id="buh-ombor-cat-panel-profil" class="buh-ombor-cat-panel">
                             <div class="buh-mini-row" id="buh-ombor-stats"></div>
+                            <div id="buh-ombor-brand-filter" class="buh-brand-filter-row" style="margin:16px 0 4px;"></div>
                             <div style="display:flex; align-items:center; gap:10px; margin:18px 0 12px; flex-wrap:wrap;">
                                 <input type="text" id="buh-ombor-search" placeholder="🔍 Mahsulot nomi bo'yicha qidirish..." style="flex:1; max-width:320px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:9px 14px; border-radius:12px; font-size:0.82rem;">
                                 <button onclick="window.openBuhKirimModal()" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(0,255,136,0.1); border:1px solid rgba(0,255,136,0.3); color:#00ff88; font-weight:700; font-size:0.8rem;">➕ Kirim Qilish</button>
@@ -1913,6 +1914,21 @@
                         <div style="display:flex; gap:12px; margin-top:22px;">
                             <button onclick="window.saveBuhOynakKirim()" class="buh-save-btn" style="flex:1;">💾 Tasdiqlash va Saqlash</button>
                             <button onclick="window.closeBuhOynakKirimModal()" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); padding:13px; border-radius:14px; font-weight:700; cursor:pointer;">Bekor qilish</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============ Buxgalteriya: Ombor Mahsulotini Tahrirlash (universal) ============ -->
+                <div id="buh-edit-item-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:10002; align-items:center; justify-content:center; padding:20px;">
+                    <div style="background:#141e2d; border:1px solid rgba(0,255,136,0.2); width:100%; max-width:460px; max-height:92vh; overflow-y:auto; border-radius:24px; padding:28px;">
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+                            <span style="font-size:1.8rem;">✏️</span>
+                            <h3 style="color:#fff; margin:0;">Mahsulotni Tahrirlash</h3>
+                        </div>
+                        <div id="buh-edit-item-fields" style="display:flex; flex-direction:column; gap:14px;"></div>
+                        <div style="display:flex; gap:12px; margin-top:22px;">
+                            <button onclick="window.saveBuhEditItemModal()" class="buh-save-btn" style="flex:1; background:#00ff88; color:#052013;">💾 Saqlash</button>
+                            <button onclick="window.closeBuhEditItemModal()" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); padding:13px; border-radius:14px; font-weight:700; cursor:pointer;">Bekor qilish</button>
                         </div>
                     </div>
                 </div>
