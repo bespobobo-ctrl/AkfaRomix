@@ -1,14 +1,15 @@
 // ═══════════════════════════════════════════════════════════
-//  AKFA Romix — 3D Rom / Eshik ko'rinishi (Three.js)
-//  Zakaz konstruktorida turi va o'lchamiga qarab jonli 3D model.
+//  AKFA Romix — Premium 3D Rom / Eshik ko'rinishi (Three.js)
+//  Jonli 3D model, shisha paketlar, metall tutqichlar (ruchka),
+//  oshqovoqlar (hinges) va silliq ochilib-yopilish animatsiyasi.
 // ═══════════════════════════════════════════════════════════
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-const FRAME_COLOR = 0xeef2f5;   // oq PVC/alyumin profil
-const GLASS_COLOR = 0x9fd3e8;   // shisha
-const PANEL_COLOR = 0xcfd8dc;   // eshik pastki panel
-const HANDLE_COLOR = 0x9aa4ad;  // metall ruchka
+const FRAME_COLOR = 0x222a35;   // Premium Anthracite Grey (Matte)
+const GLASS_COLOR = 0x8ecae6;   // Glassmorphic Light Blue
+const PANEL_COLOR = 0x2c3540;   // Eshik pastki panel rangi
+const HANDLE_COLOR = 0xe5e7eb;  // Chrome metal tutqichlar
 
 export function createViewer(canvas) {
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -16,36 +17,60 @@ export function createViewer(canvas) {
 
     const scene = new THREE.Scene();
 
-    const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
-    camera.position.set(2.5, 1.5, 5);
+    const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+    camera.position.set(2.8, 1.8, 5.5);
 
     const controls = new OrbitControls(camera, canvas);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
     controls.enablePan = false;
-    controls.minDistance = 3;
+    controls.minDistance = 2.5;
     controls.maxDistance = 12;
-    controls.autoRotate = false; // Aylanib turmasligi uchun autoRotate o'chirildi
-    controls.autoRotateSpeed = 1.2;
+    controls.autoRotate = false; // Avtomatik aylanish o'chirildi
+    controls.autoRotateSpeed = 1.0;
 
-    // Yorug'lik
-    scene.add(new THREE.AmbientLight(0xffffff, 0.75));
-    const dir = new THREE.DirectionalLight(0xffffff, 1.1);
-    dir.position.set(4, 6, 6);
-    scene.add(dir);
-    const dir2 = new THREE.DirectionalLight(0xbfd8ff, 0.4);
-    dir2.position.set(-5, 2, -4);
-    scene.add(dir2);
+    // Premium Yorug'lik tizimi (Specular highlight va chuqurlik uchun)
+    scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.25);
+    dirLight1.position.set(5, 8, 7);
+    scene.add(dirLight1);
+    const dirLight2 = new THREE.DirectionalLight(0xbfd8ff, 0.45);
+    dirLight2.position.set(-6, 3, -4);
+    scene.add(dirLight2);
 
-    const frameMat = new THREE.MeshStandardMaterial({ color: FRAME_COLOR, roughness: 0.55, metalness: 0.15 });
-    const glassMat = new THREE.MeshStandardMaterial({ color: GLASS_COLOR, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.32 });
-    const panelMat = new THREE.MeshStandardMaterial({ color: PANEL_COLOR, roughness: 0.7, metalness: 0.05 });
-    const handleMat = new THREE.MeshStandardMaterial({ color: HANDLE_COLOR, roughness: 0.3, metalness: 0.8 });
+    // Premium Materiallar
+    const frameMat = new THREE.MeshStandardMaterial({ 
+        color: FRAME_COLOR, 
+        roughness: 0.42, 
+        metalness: 0.28 
+    });
+    const glassMat = new THREE.MeshStandardMaterial({ 
+        color: GLASS_COLOR, 
+        roughness: 0.03, 
+        metalness: 0.15, 
+        transparent: true, 
+        opacity: 0.26 
+    });
+    const panelMat = new THREE.MeshStandardMaterial({ 
+        color: PANEL_COLOR, 
+        roughness: 0.65, 
+        metalness: 0.1 
+    });
+    const handleMat = new THREE.MeshStandardMaterial({ 
+        color: HANDLE_COLOR, 
+        roughness: 0.12, 
+        metalness: 0.9 
+    });
 
-    const symMat = new THREE.LineBasicMaterial({ color: 0x1e40af }); // ochilish belgisi (ko'k)
+    const symMat = new THREE.LineBasicMaterial({ color: 0x00d2ff }); // Ochilish chiziqlari (neon ko'k)
 
     let modelGroup = new THREE.Group();
     scene.add(modelGroup);
+
+    // Silliq animatsiya o'zgaruvchilari
+    let sashGroups = [];
+    let currentOpenRatio = 0.0;
+    let targetOpenRatio = 0.0;
 
     function line(x1, y1, x2, y2, z) {
         const g = new THREE.BufferGeometry().setFromPoints([
@@ -59,6 +84,7 @@ export function createViewer(canvas) {
         scene.remove(modelGroup);
         modelGroup = new THREE.Group();
         scene.add(modelGroup);
+        sashGroups = []; // Animatsiya uchun guruhlarni tozalash
     }
 
     function box(w, h, d, mat, x = 0, y = 0, z = 0) {
@@ -73,7 +99,6 @@ export function createViewer(canvas) {
         clearGroup();
         const type = params.type || 'rom';
         if (!['rom', 'rom_fortochka', 'eshik'].includes(type)) {
-            // 3D yo'q turlar uchun bo'sh (chaqiruvchi placeholder ko'rsatadi)
             renderer.render(scene, camera);
             return;
         }
@@ -89,7 +114,7 @@ export function createViewer(canvas) {
         const d = Math.max(0.06, 0.05 * scale);  // profil chuqurligi
         const impF = f * 0.75;                   // impost eni
 
-        // Arka (yarim doira tepa) — faqat deraza uchun
+        // Arka (yarim doira tepa)
         const arch = !!params.arch && type !== 'eshik';
         const archRise = arch ? Math.min(W * 0.5, H * 0.42) : 0;
         const rectH = H - archRise;            // to'g'ri burchakli qism balandligi
@@ -103,7 +128,7 @@ export function createViewer(canvas) {
         if (!arch) {
             box(W - 2 * f, f, d, frameMat, 0, H / 2 - f / 2, 0); // to'g'ri tepa
         } else {
-            // Arka ramkasi — yarim doira segmentlar
+            // Arka ramkasi
             const R = W / 2;
             const segs = 28;
             for (let i = 0; i < segs; i++) {
@@ -113,13 +138,16 @@ export function createViewer(canvas) {
                 seg.rotation.z = a - Math.PI / 2;
                 modelGroup.add(seg);
             }
-            // Arka shishasi — yarim disk
-            const gd = new THREE.Mesh(new THREE.CircleGeometry(R - f, 40, 0, Math.PI), glassMat);
-            gd.position.set(0, springY, -d * 0.1);
-            modelGroup.add(gd);
+            // Arka shishasi (Double glazing)
+            const gdOuter = new THREE.Mesh(new THREE.CircleGeometry(R - f, 40, 0, Math.PI), glassMat);
+            gdOuter.position.set(0, springY, -d * 0.08);
+            modelGroup.add(gdOuter);
+            const gdInner = new THREE.Mesh(new THREE.CircleGeometry(R - f, 40, 0, Math.PI), glassMat);
+            gdInner.position.set(0, springY, d * 0.08);
+            modelGroup.add(gdInner);
         }
 
-        // Shared Sash (Stvorka) builder with open angle (swing outward/inward or tilt)
+        // Shared Sash (Stvorka) builder with open angle, handle, and cylinder hinges
         function addSash(cx, cy, sw, sh, sf, zf, ot) {
             const group = new THREE.Group();
             
@@ -139,67 +167,128 @@ export function createViewer(canvas) {
             const isTiltTop = ot === 'tilt';
             const isTiltBottom = ot === 'tilt_bottom';
             
-            if (isLeftHinge) {
-                // Hinge on left - swing open outward
-                groupX = cx - sw / 2;
-                groupBox(sf, sh, d * 0.8, frameMat, sf / 2, 0, 0); // left
-                groupBox(sf, sh, d * 0.8, frameMat, sw - sf / 2, 0, 0); // right
-                groupBox(sw, sf, d * 0.8, frameMat, sw / 2, sh / 2 - sf / 2, 0); // top
-                groupBox(sw, sf, d * 0.8, frameMat, sw / 2, -sh / 2 + sf / 2, 0); // bottom
-                groupBox(sw - sf * 2, sh - sf * 2, d * 0.25, glassMat, sw / 2, 0, 0); // glass
-                
-                rotationAxis = 'y';
-                rotationVal = -0.6; // Open angle (~34 degrees)
-            } else if (isRightHinge) {
-                // Hinge on right - swing open outward
-                groupX = cx + sw / 2;
-                groupBox(sf, sh, d * 0.8, frameMat, -sf / 2, 0, 0); // right
-                groupBox(sf, sh, d * 0.8, frameMat, -sw + sf / 2, 0, 0); // left
-                groupBox(sw, sf, d * 0.8, frameMat, -sw / 2, sh / 2 - sf / 2, 0); // top
-                groupBox(sw, sf, d * 0.8, frameMat, -sw / 2, -sh / 2 + sf / 2, 0); // bottom
-                groupBox(sw - sf * 2, sh - sf * 2, d * 0.25, glassMat, -sw / 2, 0, 0); // glass
-                
-                rotationAxis = 'y';
-                rotationVal = 0.6;
-            } else if (isTiltTop) {
-                // Hinge on bottom (tilt top opens inward)
-                groupY = cy - sh / 2;
-                groupBox(sw, sf, d * 0.8, frameMat, 0, sf / 2, 0); // bottom
-                groupBox(sw, sf, d * 0.8, frameMat, 0, sh - sf / 2, 0); // top
-                groupBox(sf, sh, d * 0.8, frameMat, -sw / 2 + sf / 2, sh / 2, 0); // left
-                groupBox(sf, sh, d * 0.8, frameMat, sw / 2 - sf / 2, sh / 2, 0); // right
-                groupBox(sw - sf * 2, sh - sf * 2, d * 0.25, glassMat, 0, sh / 2, 0); // glass
-                
-                rotationAxis = 'x';
-                rotationVal = 0.2;
-            } else if (isTiltBottom) {
-                // Hinge on top (tilt bottom opens outward)
-                groupY = cy + sh / 2;
-                groupBox(sw, sf, d * 0.8, frameMat, 0, -sf / 2, 0); // top
-                groupBox(sw, sf, d * 0.8, frameMat, 0, -sh + sf / 2, 0); // bottom
-                groupBox(sf, sh, d * 0.8, frameMat, -sw / 2 + sf / 2, -sh / 2, 0); // left
-                groupBox(sf, sh, d * 0.8, frameMat, sw / 2 - sf / 2, -sh / 2, 0); // right
-                groupBox(sw - sf * 2, sh - sf * 2, d * 0.25, glassMat, 0, -sh / 2, 0); // glass
-                
-                rotationAxis = 'x';
-                rotationVal = -0.2;
-            } else {
-                // Fallback (no rotation, e.g. fixed or kar)
-                groupBox(sf, sh, d * 0.8, frameMat, 0, 0, 0);
-                groupBox(sf, sh, d * 0.8, frameMat, 0, 0, 0);
-                groupBox(sw, sf, d * 0.8, frameMat, 0, 0, 0);
-                groupBox(sw, sf, d * 0.8, frameMat, 0, 0, 0);
-                groupBox(sw - sf * 2, sh - sf * 2, d * 0.25, glassMat, 0, 0, 0);
-            }
+            const glassW_loc = isLeftHinge ? sw / 2 : (isRightHinge ? -sw / 2 : 0);
+            const glassY_loc = isTiltTop ? sh / 2 : (isTiltBottom ? -sh / 2 : 0);
             
+            if (isLeftHinge) {
+                groupX = cx - sw / 2;
+                groupBox(sf, sh, d * 0.8, frameMat, sf / 2, 0, 0); // chap
+                groupBox(sf, sh, d * 0.8, frameMat, sw - sf / 2, 0, 0); // o'ng
+                groupBox(sw, sf, d * 0.8, frameMat, sw / 2, sh / 2 - sf / 2, 0); // tepa
+                groupBox(sw, sf, d * 0.8, frameMat, sw / 2, -sh / 2 + sf / 2, 0); // past
+                
+                // Double glazing unit (Steklopaket)
+                groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, sw / 2, 0, -d * 0.08);
+                groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, sw / 2, 0, d * 0.08);
+                
+                // Cylinder Hinges (Oshiq-moshiqlar)
+                groupBox(sf * 0.16, sf * 0.5, sf * 0.16, handleMat, 0, sh * 0.35, 0);
+                groupBox(sf * 0.16, sf * 0.5, sf * 0.16, handleMat, 0, -sh * 0.35, 0);
+                
+                rotationAxis = 'y';
+                rotationVal = -0.7; // Swing angle
+            } else if (isRightHinge) {
+                groupX = cx + sw / 2;
+                groupBox(sf, sh, d * 0.8, frameMat, -sf / 2, 0, 0); // o'ng
+                groupBox(sf, sh, d * 0.8, frameMat, -sw + sf / 2, 0, 0); // chap
+                groupBox(sw, sf, d * 0.8, frameMat, -sw / 2, sh / 2 - sf / 2, 0); // tepa
+                groupBox(sw, sf, d * 0.8, frameMat, -sw / 2, -sh / 2 + sf / 2, 0); // past
+                
+                // Double glazing unit
+                groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, -sw / 2, 0, -d * 0.08);
+                groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, -sw / 2, 0, d * 0.08);
+                
+                // Cylinder Hinges
+                groupBox(sf * 0.16, sf * 0.5, sf * 0.16, handleMat, 0, sh * 0.35, 0);
+                groupBox(sf * 0.16, sf * 0.5, sf * 0.16, handleMat, 0, -sh * 0.35, 0);
+                
+                rotationAxis = 'y';
+                rotationVal = 0.7;
+            } else if (isTiltTop) {
+                groupY = cy - sh / 2;
+                groupBox(sw, sf, d * 0.8, frameMat, 0, sf / 2, 0); // past
+                groupBox(sw, sf, d * 0.8, frameMat, 0, sh - sf / 2, 0); // tepa
+                groupBox(sf, sh, d * 0.8, frameMat, -sw / 2 + sf / 2, sh / 2, 0); // chap
+                groupBox(sf, sh, d * 0.8, frameMat, sw / 2 - sf / 2, sh / 2, 0); // o'ng
+                
+                // Double glazing unit
+                groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, 0, sh / 2, -d * 0.08);
+                groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, 0, sh / 2, d * 0.08);
+                
+                // Cylinder Hinges (bottom-left and bottom-right)
+                groupBox(sf * 0.4, sf * 0.16, sf * 0.16, handleMat, -sw * 0.38, 0, 0);
+                groupBox(sf * 0.4, sf * 0.16, sf * 0.16, handleMat, sw * 0.38, 0, 0);
+                
+                rotationAxis = 'x';
+                rotationVal = 0.22;
+            } else if (isTiltBottom) {
+                groupY = cy + sh / 2;
+                groupBox(sw, sf, d * 0.8, frameMat, 0, -sf / 2, 0); // tepa
+                groupBox(sw, sf, d * 0.8, frameMat, 0, -sh + sf / 2, 0); // past
+                groupBox(sf, sh, d * 0.8, frameMat, -sw / 2 + sf / 2, -sh / 2, 0); // chap
+                groupBox(sf, sh, d * 0.8, frameMat, sw / 2 - sf / 2, -sh / 2, 0); // o'ng
+                
+                // Double glazing unit
+                groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, 0, -sh / 2, -d * 0.08);
+                groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, 0, -sh / 2, d * 0.08);
+                
+                // Cylinder Hinges (top-left and top-right)
+                groupBox(sf * 0.4, sf * 0.16, sf * 0.16, handleMat, -sw * 0.38, 0, 0);
+                groupBox(sf * 0.4, sf * 0.16, sf * 0.16, handleMat, sw * 0.38, 0, 0);
+                
+                rotationAxis = 'x';
+                rotationVal = -0.22;
+            } else {
+                // Fixed/fallback
+                groupBox(sf, sh, d * 0.8, frameMat, 0, 0, 0);
+                groupBox(sf, sh, d * 0.8, frameMat, 0, 0, 0);
+                groupBox(sw, sf, d * 0.8, frameMat, 0, 0, 0);
+                groupBox(sw, sf, d * 0.8, frameMat, 0, 0, 0);
+                groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, 0, 0, -d * 0.08);
+                groupBox(sw - sf * 2, sh - sf * 2, d * 0.05, glassMat, 0, 0, d * 0.08);
+            }
+
+            // L-shaklidagi premium metal tutqich (Ruchka) joylashtirish
+            let hx = 0, hy = 0, hz = d * 0.4;
+            let showHandle = true;
+            if (isLeftHinge) {
+                hx = sw - sf * 0.7; hy = 0;
+            } else if (isRightHinge) {
+                hx = -sw + sf * 0.7; hy = 0;
+            } else if (isTiltTop) {
+                hx = 0; hy = sh - sf * 0.7;
+            } else if (isTiltBottom) {
+                hx = 0; hy = -sh + sf * 0.7;
+            } else {
+                showHandle = false;
+            }
+
+            if (showHandle) {
+                // Rozetka (base)
+                groupBox(sf * 0.24, sf * 0.44, d * 0.18, handleMat, hx, hy, hz);
+                // Tutqich bo'yni (shaft)
+                groupBox(sf * 0.1, sf * 0.1, d * 0.42, handleMat, hx, hy, hz + d * 0.12);
+                // Tutqich dastasining o'zi (lever) - pastga yo'nalgan
+                groupBox(sf * 0.1, sf * 0.8, sf * 0.1, handleMat, hx, hy - sf * 0.3, hz + d * 0.32);
+            }
+
             group.position.set(groupX, groupY, zf);
+            
+            // Set initial animation rotation based on current open ratio
             if (rotationAxis === 'y') {
-                group.rotation.y = rotationVal;
+                group.rotation.y = rotationVal * currentOpenRatio;
             } else if (rotationAxis === 'x') {
-                group.rotation.x = rotationVal;
+                group.rotation.x = rotationVal * currentOpenRatio;
             }
             
             modelGroup.add(group);
+            
+            // Push for animation loop updating
+            sashGroups.push({
+                group: group,
+                rotationAxis: rotationAxis,
+                maxRotationVal: rotationVal
+            });
             
             // Hinge diagonal indicator lines (added inside the group so they rotate/swing with it)
             const L = isLeftHinge ? 0 : (isRightHinge ? -sw : -sw/2);
@@ -297,7 +386,7 @@ export function createViewer(canvas) {
                 box(imW_world, imH_world, d, frameMat, imX_world, imY_world, 0);
             });
 
-            // 2) Kataklar (shisha va ochiladigan stvorkalar) chizish
+            // 2) Kataklar chizish
             out.cells.forEach(c => {
                 const cw = (c.box.w / 1000) * scale;
                 const ch = (c.box.h / 1000) * scale;
@@ -323,8 +412,9 @@ export function createViewer(canvas) {
 
                     addSash(icx, icy, sw, sh, sf, zf, c.opening);
                 } else {
-                    // Fixed (Kar) glass
-                    box(iw * 0.99, ih * 0.99, d * 0.25, glassMat, icx, icy, 0);
+                    // Fixed (Kar) double glazing unit
+                    box(iw * 0.99, ih * 0.99, d * 0.05, glassMat, icx, icy, -d * 0.08);
+                    box(iw * 0.99, ih * 0.99, d * 0.05, glassMat, icx, icy, d * 0.08);
                 }
             });
 
@@ -347,14 +437,19 @@ export function createViewer(canvas) {
             box(innerW, panelH, d * 0.7, panelMat, 0, innerBottom + panelH / 2, 0);
             glassBottom = innerBottom + panelH;
             glassH = innerH - panelH;
-            // ruchka
-            box(f * 0.35, H * 0.14, d * 1.6, handleMat, W / 2 - f - f * 0.4, 0, 0);
+            
+            // Premium Door Handle (Chrome cylindrical bar handle)
+            box(f * 0.2, H * 0.35, d * 0.1, handleMat, W / 2 - f - f * 0.55, 0, d * 0.6);
+            // Handle supports
+            box(f * 0.1, f * 0.1, d * 0.5, handleMat, W / 2 - f - f * 0.55, H * 0.14, d * 0.35);
+            box(f * 0.1, f * 0.1, d * 0.5, handleMat, W / 2 - f - f * 0.55, -H * 0.14, d * 0.35);
         }
 
-        // Shisha (rect qism paneli)
-        box(innerW * 0.99, glassH * 0.99, d * 0.25, glassMat, 0, glassBottom + glassH / 2, 0);
+        // Shisha (Double glazing)
+        box(innerW * 0.99, glassH * 0.99, d * 0.05, glassMat, 0, glassBottom + glassH / 2, -d * 0.08);
+        box(innerW * 0.99, glassH * 0.99, d * 0.05, glassMat, 0, glassBottom + glassH / 2, d * 0.08);
 
-        // Impostlar (bo'linmalar)
+        // Impostlar
         const vDiv = Math.max(0, Math.min(6, parseInt(params.vDiv) || 0));
         const hDiv = Math.max(0, Math.min(6, parseInt(params.hDiv) || 0));
         for (let i = 1; i <= vDiv; i++) {
@@ -366,7 +461,7 @@ export function createViewer(canvas) {
             box(innerW, impF, d, frameMat, 0, y, 0);
         }
 
-        // Stvorka (ochiladigan ramkalar) — oyna oldida
+        // Stvorkalar
         const stv = Math.max(0, Math.min(4, parseInt(params.stvorka) || 0));
         if (stv > 0) {
             const gap = f * 0.18;
@@ -382,7 +477,7 @@ export function createViewer(canvas) {
             }
         }
 
-        // Fortochka: tepa-chap katakda kichik forточка ramkasi
+        // Fortochka
         if (type === 'rom_fortochka') {
             const fw = innerW * 0.4, fh = glassH * 0.32;
             const cx = innerLeft + fw / 2 + f * 0.2;
@@ -410,6 +505,19 @@ export function createViewer(canvas) {
     function loop() {
         if (!running) return;
         controls.update();
+
+        // Smooth swing-opening animation
+        if (Math.abs(targetOpenRatio - currentOpenRatio) > 0.001) {
+            currentOpenRatio += (targetOpenRatio - currentOpenRatio) * 0.09;
+            sashGroups.forEach(item => {
+                if (item.rotationAxis === 'y') {
+                    item.group.rotation.y = item.maxRotationVal * currentOpenRatio;
+                } else if (item.rotationAxis === 'x') {
+                    item.group.rotation.x = item.maxRotationVal * currentOpenRatio;
+                }
+            });
+        }
+
         renderer.render(scene, camera);
         requestAnimationFrame(loop);
     }
@@ -417,5 +525,15 @@ export function createViewer(canvas) {
     window.addEventListener('resize', resize);
     loop();
 
-    return { update, resize, dispose() { running = false; renderer.dispose(); } };
+    return { 
+        update, 
+        resize, 
+        setOpenState(isOpen) {
+            targetOpenRatio = isOpen ? 1.0 : 0.0;
+        },
+        dispose() { 
+            running = false; 
+            renderer.dispose(); 
+        } 
+    };
 }

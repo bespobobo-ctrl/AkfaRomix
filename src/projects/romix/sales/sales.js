@@ -404,6 +404,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         return _viewer;
     }
 
+    const toggle3dOpenBtn = document.getElementById('toggle3dOpenBtn');
+    let is3dOpen = false;
+    if (toggle3dOpenBtn) {
+        toggle3dOpenBtn.addEventListener('click', () => {
+            is3dOpen = !is3dOpen;
+            toggle3dOpenBtn.innerHTML = is3dOpen ? '🚪 Tavaqalarni Yopish' : '🚪 Tavaqalarni Ochish';
+            toggle3dOpenBtn.style.background = is3dOpen ? 'rgba(239, 68, 68, 0.15)' : 'rgba(0, 210, 255, 0.1)';
+            toggle3dOpenBtn.style.borderColor = is3dOpen ? '#ef4444' : 'rgba(0, 210, 255, 0.4)';
+            toggle3dOpenBtn.style.color = is3dOpen ? '#ef4444' : '#00d2ff';
+            const v = ensureViewer();
+            if (v && v.setOpenState) {
+                v.setOpenState(is3dOpen);
+            }
+        });
+    }
+
     window.update3DPreview = function update3D() {
         const type = itemTypeSel ? itemTypeSel.value : 'rom';
         const isRom = ['rom', 'rom_fortochka', 'eshik'].includes(type);
@@ -531,6 +547,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (['rom', 'rom_fortochka', 'eshik'].includes(type) && _designer) {
                 _designer.reset(parseInt(itemWidthInput.value) || 1500, parseInt(itemHeightInput.value) || 2000);
             }
+            is3dOpen = false;
+            if (toggle3dOpenBtn) {
+                toggle3dOpenBtn.innerHTML = '🚪 Tavaqalarni Ochish';
+                toggle3dOpenBtn.style.background = 'rgba(0, 210, 255, 0.1)';
+                toggle3dOpenBtn.style.borderColor = 'rgba(0, 210, 255, 0.4)';
+                toggle3dOpenBtn.style.color = '#00d2ff';
+            }
+            const vTemp = ensureViewer();
+            if (vTemp && vTemp.setOpenState) vTemp.setOpenState(false);
         };
     }
 

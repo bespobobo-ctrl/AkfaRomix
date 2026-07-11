@@ -494,7 +494,12 @@
                     <h4 style="color:#00d2ff; font-weight:800; font-size:0.9rem; letter-spacing:1px; text-transform:uppercase; margin:0;">
                         <i data-lucide="box" style="width:15px;height:15px;vertical-align:-2px;"></i> 3D Ko'rinish
                     </h4>
-                    <span style="font-size:0.7rem; color:var(--adm-text-sec);">🖱️ aylantirish uchun torting</span>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <button id="toggle3dOpenBtn" type="button" style="background:rgba(0, 210, 255, 0.1); border:1px solid rgba(0, 210, 255, 0.4); border-radius:8px; padding:5px 12px; color:#00d2ff; font-size:0.75rem; font-weight:700; cursor:pointer; transition:all 0.2s;">
+                            🚪 Tavaqalarni Ochish
+                        </button>
+                        <span style="font-size:0.7rem; color:var(--adm-text-sec);">🖱️ aylantirish uchun torting</span>
+                    </div>
                 </div>
                 <div style="position:relative; width:100%; height:300px; border-radius:12px; overflow:hidden; background:radial-gradient(circle at 50% 40%, #16283d, #0a1420);">
                     <canvas id="preview3dCanvas" style="width:100%; height:100%; display:block;"></canvas>
