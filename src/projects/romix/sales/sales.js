@@ -183,7 +183,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 function fillBrandOptions(profillar) {
                     if (!_tsFilterBrand) return;
                     _tsFilterBrand.clearOptions();
-                    _tsFilterBrand.addOption([{ value: '', text: '✅ Barchasi' }]);
+                    _tsFilterBrand.addOption([{ value: '', text: 'Barchasi' }]);
                     uniq(profillar.map(p => p.brend)).forEach(b => {
                         _tsFilterBrand.addOption({ value: b, text: b });
                     });
@@ -194,7 +194,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (!_tsFilterSeries) return;
                     const filtered = brand ? profillar.filter(p => p.brend === brand) : profillar;
                     _tsFilterSeries.clearOptions();
-                    _tsFilterSeries.addOption([{ value: '', text: '✅ Barchasi' }]);
+                    _tsFilterSeries.addOption([{ value: '', text: 'Barchasi' }]);
                     uniq(filtered.map(p => p.seriya)).forEach(s => {
                         _tsFilterSeries.addOption({ value: s, text: s });
                     });
@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (brand)  filtered = filtered.filter(p => p.brend  === brand);
                     if (series) filtered = filtered.filter(p => p.seriya === series);
                     _tsFilterColor.clearOptions();
-                    _tsFilterColor.addOption([{ value: '', text: '✅ Barchasi' }]);
+                    _tsFilterColor.addOption([{ value: '', text: 'Barchasi' }]);
                     uniq(filtered.map(p => p.rangi)).forEach(r => {
                         _tsFilterColor.addOption({ value: r, text: r });
                     });

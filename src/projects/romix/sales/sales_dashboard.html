@@ -117,73 +117,118 @@
     <style>
         /* ---- Tom Select premium dark style (sales modal) ---- */
         .ts-wrapper.sales-filter-ts {
-            border: 1px solid rgba(0,210,255,0.2) !important;
-            border-radius: 10px !important;
-            background: rgba(0,210,255,0.04) !important;
+            position: relative !important;
+            border: 1px solid rgba(0, 210, 255, 0.2) !important;
+            border-radius: 12px !important;
+            background: rgba(10, 25, 47, 0.5) !important;
+            backdrop-filter: blur(8px) !important;
             font-family: 'Outfit', sans-serif !important;
-            font-size: 0.82rem !important;
-            font-weight: 600 !important;
-            min-height: 36px !important;
+            font-size: 0.85rem !important;
+            font-weight: 500 !important;
+            min-height: 40px !important;
             box-shadow: none !important;
-            transition: border-color 0.2s !important;
+            transition: all 0.3s ease !important;
         }
         .ts-wrapper.sales-filter-ts.focus {
             border-color: #00d2ff !important;
-            box-shadow: 0 0 8px rgba(0,210,255,0.15) !important;
+            box-shadow: 0 0 10px rgba(0, 210, 255, 0.25) !important;
+            background: rgba(10, 25, 47, 0.7) !important;
         }
         .ts-wrapper.sales-filter-ts .ts-control {
             background: transparent !important;
             border: none !important;
             color: #fff !important;
-            padding: 4px 10px !important;
-            min-height: 36px !important;
+            padding: 8px 32px 8px 12px !important; /* Right padding for chevron */
+            min-height: 40px !important;
+            display: flex !important;
+            align-items: center !important;
+        }
+        /* Custom Chevron Dropdown Arrow */
+        .ts-wrapper.sales-filter-ts::after {
+            content: "" !important;
+            position: absolute !important;
+            right: 12px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            width: 12px !important;
+            height: 12px !important;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300d2ff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+            background-repeat: no-repeat !important;
+            background-size: contain !important;
+            pointer-events: none !important;
+            transition: transform 0.2s ease !important;
+            opacity: 0.85 !important;
+        }
+        .ts-wrapper.sales-filter-ts.dropdown-active::after {
+            transform: translateY(-50%) rotate(180deg) !important;
         }
         .ts-wrapper.sales-filter-ts .ts-control input {
-            color: rgba(255,255,255,0.8) !important;
-            font-size: 0.82rem !important;
-        }
-        .ts-wrapper.sales-filter-ts .ts-dropdown {
-            background: #0f1e2e !important;
-            border: 1px solid rgba(0,210,255,0.2) !important;
-            border-radius: 10px !important;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important;
-            z-index: 4000 !important;
-            margin-top: 4px !important;
-        }
-        .ts-wrapper.sales-filter-ts .ts-dropdown .option {
-            color: rgba(255,255,255,0.7) !important;
-            padding: 8px 14px !important;
-            border-radius: 7px !important;
-            margin: 2px 4px !important;
-            font-size: 0.82rem !important;
-        }
-        .ts-wrapper.sales-filter-ts .ts-dropdown .option.active {
-            background: #00d2ff !important;
-            color: #000 !important;
-            font-weight: 700 !important;
+            color: #fff !important;
+            font-size: 0.85rem !important;
+            padding: 0 !important;
+            margin: 0 !important;
         }
         .ts-wrapper.sales-filter-ts .ts-control .item {
             color: #00d2ff !important;
-            font-weight: 700 !important;
+            font-weight: 600 !important;
+            font-size: 0.85rem !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            max-width: calc(100% - 10px) !important;
+            display: inline-block !important;
+        }
+        .ts-wrapper.sales-filter-ts .ts-dropdown {
+            background: #0d1e31 !important;
+            border: 1px solid rgba(0, 210, 255, 0.2) !important;
+            border-radius: 12px !important;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5) !important;
+            z-index: 4000 !important;
+            margin-top: 6px !important;
+            padding: 6px !important;
+        }
+        .ts-wrapper.sales-filter-ts .ts-dropdown .option {
+            color: rgba(255, 255, 255, 0.8) !important;
+            padding: 10px 14px !important;
+            border-radius: 8px !important;
+            margin: 2px 0 !important;
+            font-size: 0.85rem !important;
+            transition: all 0.2s ease !important;
+        }
+        .ts-wrapper.sales-filter-ts .ts-dropdown .option.active {
+            background: rgba(0, 210, 255, 0.15) !important;
+            color: #00d2ff !important;
+            font-weight: 600 !important;
+        }
+        .ts-wrapper.sales-filter-ts .ts-dropdown .option:hover {
+            background: rgba(0, 210, 255, 0.25) !important;
+            color: #fff !important;
         }
         .profil-filter-row {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 12px;
-            padding: 14px;
-            background: rgba(0,210,255,0.03);
-            border: 1px solid rgba(0,210,255,0.1);
-            border-radius: 14px;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 18px;
+            background: linear-gradient(135deg, rgba(11, 22, 40, 0.7) 0%, rgba(16, 33, 62, 0.7) 100%);
+            border: 1px solid rgba(0, 210, 255, 0.15);
+            border-radius: 18px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
         .profil-filter-label {
             font-size: 0.75rem;
             font-weight: 700;
-            color: rgba(255,255,255,0.5);
+            color: #00d2ff;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 5px;
-            display: block;
+            letter-spacing: 0.8px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
     </style>
 </head>
