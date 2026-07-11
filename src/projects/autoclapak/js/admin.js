@@ -2869,40 +2869,98 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     }
 
+    // Bo'lim (1-bosqich) meta-ma'lumotlari — ikon, nom, urgu rangi
+    const _BUH_OMBOR_SECTIONS = [
+        { key: 'barchasi', icon: '🗂️', label: 'Barchasi', accent: '#8b93a1' },
+        { key: 'profil', icon: '📦', label: 'Profil', accent: '#00baff' },
+        { key: 'aksesuvar', icon: '🔩', label: 'Aksesuvar', accent: '#BA68C8' },
+        { key: 'qoldiq', icon: '✂️', label: 'Qoldiq Profillar', accent: '#ffaa00' },
+        { key: 'oynak', icon: '🪟', label: 'Oynak', accent: '#42a5f5' },
+        { key: 'kirim', icon: '📥', label: 'Ombor Kirim', accent: '#00ff88' },
+        { key: 'chiqim', icon: '📤', label: 'Ombor Chiqim', accent: '#ff4d4f' }
+    ];
+
+    // 2-bosqich (brend/kategoriya) chiplari + qidiruv maydonini bitta izchil ko'rinishda chiqaradi —
+    // profil/aksesuvar/qoldiq/oynak uchun avval 4 marta deyarli bir xil takrorlangan kod shu yerga jamlandi.
+    function _buhRenderStage2Filter(containerEl, opts) {
+        const totalValue = opts.groups.reduce((s, g) => s + g.value, 0);
+        const chipsHtml = `
+            <div class="buh-filter-stage-label"><span class="stage-num">2</span>${opts.stageLabel}</div>
+            <div class="buh-stage2-scroller">
+                <div class="buh-stage2-chip ${opts.activeKey === 'barchasi' ? 'active' : ''}" onclick="window.${opts.selectFnName}('barchasi')">
+                    <span class="s2-name">🗂️ ${opts.allLabel}</span>
+                    <span class="s2-meta">${opts.groups.length} · ${_buhCompactFmt(totalValue)}</span>
+                </div>
+                ${opts.groups.map(g => {
+                    const key = _buhSafeKey(g.name);
+                    return `<div class="buh-stage2-chip ${opts.activeKey === key ? 'active' : ''}" onclick="window.${opts.selectFnName}('${key}')" title="${g.name.replace(/"/g, '&quot;')}">
+                        <span class="s2-name">${g.name}</span>
+                        <span class="s2-meta">${g.qty.toLocaleString('uz-UZ')} ${g.unit} · ${_buhCompactFmt(g.value)}</span>
+                    </div>`;
+                }).join('')}
+            </div>
+            <div class="buh-search-pill">
+                <span class="search-ico">🔍</span>
+                <input type="text" id="${opts.searchId}" class="buh-input" placeholder="${opts.searchPlaceholder}" value="${(opts.searchValue || '').replace(/"/g, '&quot;')}" oninput="window.${opts.searchFnName}(this.value)">
+            </div>`;
+
+        const wasFocused = document.activeElement && document.activeElement.id === opts.searchId;
+        const selStart = wasFocused ? document.activeElement.selectionStart : null;
+        containerEl.innerHTML = chipsHtml;
+        if (wasFocused) {
+            const inp = document.getElementById(opts.searchId);
+            if (inp) { inp.focus(); if (selStart !== null) inp.setSelectionRange(selStart, selStart); }
+        }
+    }
+
     window._buhRenderOmborFilterView = (filter) => {
         filter = filter || window._buhOmborActiveFilter || 'barchasi';
         window._buhOmborActiveFilter = filter;
-        document.querySelectorAll('#buhOmborFilterPills .buh-brand-chip').forEach(p => p.classList.toggle('active', p.dataset.omborFilter === filter));
+        const section = _BUH_OMBOR_SECTIONS.find(s => s.key === filter) || _BUH_OMBOR_SECTIONS[0];
+        document.querySelectorAll('#buhOmborFilterPills .buh-section-chip').forEach(p => {
+            const isActive = p.dataset.omborFilter === filter;
+            const s = _BUH_OMBOR_SECTIONS.find(x => x.key === p.dataset.omborFilter);
+            p.classList.toggle('active', isActive);
+            p.style.borderColor = isActive ? s.accent : '';
+            p.style.background = isActive ? `${s.accent}1F` : '';
+            p.style.boxShadow = isActive ? `0 6px 16px ${s.accent}33` : '';
+            const nameEl = p.querySelector('.sec-name');
+            if (nameEl) nameEl.style.color = isActive ? s.accent : '';
+        });
 
         const data = _buhOmborFilterDataset(filter);
+
+        // Breadcrumb — foydalanuvchi doim qaysi bo'lim/brendda turganini ko'radi
+        const breadcrumbEl = document.getElementById('buhOmborBreadcrumb');
+        if (breadcrumbEl) {
+            let stage2Label = '';
+            if (filter === 'profil' && data.profilActiveBrand !== 'barchasi') {
+                const g = (data.profilBrands || []).find(b => _buhSafeKey(b.name) === data.profilActiveBrand);
+                stage2Label = g ? g.name : '';
+            } else if (filter === 'aksesuvar' && data.accActiveCategory !== 'barchasi') {
+                const g = (data.accCategories || []).find(c => _buhSafeKey(c.name) === data.accActiveCategory);
+                stage2Label = g ? g.name : '';
+            } else if (filter === 'qoldiq' && data.qoldiqActiveBrand !== 'barchasi') {
+                const g = (data.qoldiqBrands || []).find(b => _buhSafeKey(b.name) === data.qoldiqActiveBrand);
+                stage2Label = g ? g.name : '';
+            } else if (filter === 'oynak' && data.oynakActiveBrand !== 'barchasi') {
+                const g = (data.oynakBrands || []).find(b => _buhSafeKey(b.name) === data.oynakActiveBrand);
+                stage2Label = g ? g.name : '';
+            }
+            breadcrumbEl.innerHTML = `🏬 <b>Ombor</b><span class="bc-sep">›</span>${section.icon} <b>${section.label}</b>${stage2Label ? `<span class="bc-sep">›</span><b style="color:${section.accent};">${stage2Label}</b>` : ''}`;
+        }
 
         const subfilterEl = document.getElementById('buh-profil-subfilter');
         if (subfilterEl) {
             if (filter === 'profil') {
-                const brands = data.profilBrands || [];
                 const activeBrand = data.profilActiveBrand || 'barchasi';
-                const totalValue = brands.reduce((s, b) => s + b.value, 0);
-                const chipsHtml = `<div class="buh-brand-filter-row">
-                    <div class="buh-brand-chip ${activeBrand === 'barchasi' ? 'active' : ''}" onclick="window._buhSelectProfilBrand('barchasi')">
-                        <span class="chip-name">🗂️ Barchasi</span>
-                        <span class="chip-meta">${brands.length} brend · ${_buhCompactFmt(totalValue)}</span>
-                    </div>
-                    ${brands.map(b => {
-                        const key = _buhSafeKey(b.name);
-                        return `<div class="buh-brand-chip ${activeBrand === key ? 'active' : ''}" onclick="window._buhSelectProfilBrand('${key}')" title="${b.name.replace(/"/g, '&quot;')}">
-                            <span class="chip-name">${b.name}</span>
-                            <span class="chip-meta">${b.qty.toLocaleString('uz-UZ')} ${b.unit} · ${_buhCompactFmt(b.value)}</span>
-                        </div>`;
-                    }).join('')}
-                </div>`;
-                const wasFocused = document.activeElement && document.activeElement.id === 'buhProfilSearch';
-                const selStart = wasFocused ? document.activeElement.selectionStart : null;
-                subfilterEl.innerHTML = `${chipsHtml}<input type="text" id="buhProfilSearch" class="buh-input" placeholder="🔍 ${activeBrand === 'barchasi' ? 'Brend yoki seriya' : "O'lcham yoki variant"} bo'yicha qidirish..." style="width:100%; margin-top:12px;" value="${(window._buhProfilSearchTerm || '').replace(/"/g, '&quot;')}" oninput="window._buhOnProfilSearchInput(this.value)">`;
-                if (wasFocused) {
-                    const inp = document.getElementById('buhProfilSearch');
-                    inp.focus();
-                    if (selStart !== null) inp.setSelectionRange(selStart, selStart);
-                }
+                _buhRenderStage2Filter(subfilterEl, {
+                    groups: data.profilBrands || [], activeKey: activeBrand, allLabel: 'Barchasi',
+                    stageLabel: 'Brend / seriya tanlang', selectFnName: '_buhSelectProfilBrand',
+                    searchId: 'buhProfilSearch', searchValue: window._buhProfilSearchTerm,
+                    searchPlaceholder: `🔍 ${activeBrand === 'barchasi' ? 'Brend yoki seriya' : "O'lcham yoki variant"} bo'yicha qidirish...`,
+                    searchFnName: '_buhOnProfilSearchInput'
+                });
             } else {
                 subfilterEl.innerHTML = '';
             }
@@ -2911,30 +2969,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         const accSubfilterEl = document.getElementById('buh-aksesuvar-subfilter');
         if (accSubfilterEl) {
             if (filter === 'aksesuvar') {
-                const cats = data.accCategories || [];
                 const activeCat = data.accActiveCategory || 'barchasi';
-                const totalValue = cats.reduce((s, c) => s + c.value, 0);
-                const chipsHtml = `<div class="buh-brand-filter-row">
-                    <div class="buh-brand-chip ${activeCat === 'barchasi' ? 'active' : ''}" onclick="window._buhSelectAccCategory('barchasi')">
-                        <span class="chip-name">🗂️ Barchasi</span>
-                        <span class="chip-meta">${cats.length} kategoriya · ${_buhCompactFmt(totalValue)}</span>
-                    </div>
-                    ${cats.map(c => {
-                        const key = _buhSafeKey(c.name);
-                        return `<div class="buh-brand-chip ${activeCat === key ? 'active' : ''}" onclick="window._buhSelectAccCategory('${key}')" title="${c.name.replace(/"/g, '&quot;')}">
-                            <span class="chip-name">${c.name}</span>
-                            <span class="chip-meta">${c.qty.toLocaleString('uz-UZ')} ${c.unit} · ${_buhCompactFmt(c.value)}</span>
-                        </div>`;
-                    }).join('')}
-                </div>`;
-                const wasFocused = document.activeElement && document.activeElement.id === 'buhAccSearch';
-                const selStart = wasFocused ? document.activeElement.selectionStart : null;
-                accSubfilterEl.innerHTML = `${chipsHtml}<input type="text" id="buhAccSearch" class="buh-input" placeholder="🔍 ${activeCat === 'barchasi' ? 'Kategoriya' : 'Nomi yoki xususiyati'} bo'yicha qidirish..." style="width:100%; margin-top:12px;" value="${(window._buhAccSearchTerm || '').replace(/"/g, '&quot;')}" oninput="window._buhOnAccSearchInput(this.value)">`;
-                if (wasFocused) {
-                    const inp = document.getElementById('buhAccSearch');
-                    inp.focus();
-                    if (selStart !== null) inp.setSelectionRange(selStart, selStart);
-                }
+                _buhRenderStage2Filter(accSubfilterEl, {
+                    groups: data.accCategories || [], activeKey: activeCat, allLabel: 'Barchasi',
+                    stageLabel: 'Kategoriya tanlang', selectFnName: '_buhSelectAccCategory',
+                    searchId: 'buhAccSearch', searchValue: window._buhAccSearchTerm,
+                    searchPlaceholder: `🔍 ${activeCat === 'barchasi' ? 'Kategoriya' : 'Nomi yoki xususiyati'} bo'yicha qidirish...`,
+                    searchFnName: '_buhOnAccSearchInput'
+                });
             } else {
                 accSubfilterEl.innerHTML = '';
             }
@@ -2943,30 +2985,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         const qoldiqSubfilterEl = document.getElementById('buh-qoldiq-subfilter');
         if (qoldiqSubfilterEl) {
             if (filter === 'qoldiq') {
-                const brands = data.qoldiqBrands || [];
                 const activeBrand = data.qoldiqActiveBrand || 'barchasi';
-                const totalValue = brands.reduce((s, b) => s + b.value, 0);
-                const chipsHtml = `<div class="buh-brand-filter-row">
-                    <div class="buh-brand-chip ${activeBrand === 'barchasi' ? 'active' : ''}" onclick="window._buhSelectQoldiqBrand('barchasi')">
-                        <span class="chip-name">🗂️ Barchasi</span>
-                        <span class="chip-meta">${brands.length} brend · ${_buhCompactFmt(totalValue)}</span>
-                    </div>
-                    ${brands.map(b => {
-                        const key = _buhSafeKey(b.name);
-                        return `<div class="buh-brand-chip ${activeBrand === key ? 'active' : ''}" onclick="window._buhSelectQoldiqBrand('${key}')" title="${b.name.replace(/"/g, '&quot;')}">
-                            <span class="chip-name">${b.name}</span>
-                            <span class="chip-meta">${b.qty.toLocaleString('uz-UZ')} dona · ${_buhCompactFmt(b.value)}</span>
-                        </div>`;
-                    }).join('')}
-                </div>`;
-                const wasFocused = document.activeElement && document.activeElement.id === 'buhQoldiqSearch';
-                const selStart = wasFocused ? document.activeElement.selectionStart : null;
-                qoldiqSubfilterEl.innerHTML = `${chipsHtml}<input type="text" id="buhQoldiqSearch" class="buh-input" placeholder="🔍 ${activeBrand === 'barchasi' ? 'Brend' : 'Nomi, seriya yoki rang'} bo'yicha qidirish..." style="width:100%; margin-top:12px;" value="${(window._buhQoldiqSearchTerm || '').replace(/"/g, '&quot;')}" oninput="window._buhOnQoldiqSearchInput(this.value)">`;
-                if (wasFocused) {
-                    const inp = document.getElementById('buhQoldiqSearch');
-                    inp.focus();
-                    if (selStart !== null) inp.setSelectionRange(selStart, selStart);
-                }
+                _buhRenderStage2Filter(qoldiqSubfilterEl, {
+                    groups: data.qoldiqBrands || [], activeKey: activeBrand, allLabel: 'Barchasi',
+                    stageLabel: 'Brend tanlang', selectFnName: '_buhSelectQoldiqBrand',
+                    searchId: 'buhQoldiqSearch', searchValue: window._buhQoldiqSearchTerm,
+                    searchPlaceholder: `🔍 ${activeBrand === 'barchasi' ? 'Brend' : 'Nomi, seriya yoki rang'} bo'yicha qidirish...`,
+                    searchFnName: '_buhOnQoldiqSearchInput'
+                });
             } else {
                 qoldiqSubfilterEl.innerHTML = '';
             }
@@ -2974,30 +3000,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const oynakSubfilterEl = document.getElementById('buh-oynak-subfilter');
         if (oynakSubfilterEl) {
-            if (filter === 'oynak') {
-                const brands = data.oynakBrands || [];
+            const brands = data.oynakBrands || [];
+            if (filter === 'oynak' && brands.length) {
                 const activeBrand = data.oynakActiveBrand || 'barchasi';
-                const totalValue = brands.reduce((s, b) => s + b.value, 0);
-                const chipsHtml = `<div class="buh-brand-filter-row">
-                    <div class="buh-brand-chip ${activeBrand === 'barchasi' ? 'active' : ''}" onclick="window._buhSelectOynakBrand('barchasi')">
-                        <span class="chip-name">🗂️ Barchasi</span>
-                        <span class="chip-meta">${brands.length} turi · ${_buhCompactFmt(totalValue)}</span>
-                    </div>
-                    ${brands.map(b => {
-                        const key = _buhSafeKey(b.name);
-                        return `<div class="buh-brand-chip ${activeBrand === key ? 'active' : ''}" onclick="window._buhSelectOynakBrand('${key}')" title="${b.name.replace(/"/g, '&quot;')}">
-                            <span class="chip-name">${b.name}</span>
-                            <span class="chip-meta">${b.qty.toLocaleString('uz-UZ')} dona · ${_buhCompactFmt(b.value)}</span>
-                        </div>`;
-                    }).join('')}
-                </div>`;
-                const wasFocused = document.activeElement && document.activeElement.id === 'buhOynakSearch';
-                const selStart = wasFocused ? document.activeElement.selectionStart : null;
-                oynakSubfilterEl.innerHTML = brands.length ? `${chipsHtml}<input type="text" id="buhOynakSearch" class="buh-input" placeholder="🔍 ${activeBrand === 'barchasi' ? 'Turi/brend' : 'Nomi yoki o\'lchami'} bo'yicha qidirish..." style="width:100%; margin-top:12px;" value="${(window._buhOynakSearchTerm || '').replace(/"/g, '&quot;')}" oninput="window._buhOnOynakSearchInput(this.value)">` : '';
-                if (wasFocused) {
-                    const inp = document.getElementById('buhOynakSearch');
-                    if (inp) { inp.focus(); if (selStart !== null) inp.setSelectionRange(selStart, selStart); }
-                }
+                _buhRenderStage2Filter(oynakSubfilterEl, {
+                    groups: brands, activeKey: activeBrand, allLabel: 'Barchasi',
+                    stageLabel: 'Turi / brend tanlang', selectFnName: '_buhSelectOynakBrand',
+                    searchId: 'buhOynakSearch', searchValue: window._buhOynakSearchTerm,
+                    searchPlaceholder: `🔍 ${activeBrand === 'barchasi' ? 'Turi/brend' : "Nomi yoki o'lchami"} bo'yicha qidirish...`,
+                    searchFnName: '_buhOnOynakSearchInput'
+                });
             } else {
                 oynakSubfilterEl.innerHTML = '';
             }
@@ -3460,7 +3472,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     window._buhInitOmborFilter = () => {
-        document.querySelectorAll('#buhOmborFilterPills .buh-brand-chip').forEach(p => {
+        document.querySelectorAll('#buhOmborFilterPills .buh-section-chip').forEach(p => {
             p.onclick = () => window._buhRenderOmborFilterView(p.dataset.omborFilter);
         });
         window._buhRenderOmborFilterView(window._buhOmborActiveFilter || 'barchasi');
@@ -3671,20 +3683,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         window._buhUmumiyData = d;
         window._buhUmumiyDrills = {};
 
+        const omborSectionValues = {
+            barchasi: d.omborTotal, profil: d.profilValue, aksesuvar: d.accValue,
+            qoldiq: d.qoldiqValue, oynak: d.oynakValue,
+            kirim: _buhOmborFilterDataset('kirim').value, chiqim: _buhOmborFilterDataset('chiqim').value
+        };
+        const activeOmborSection = window._buhOmborActiveFilter || 'barchasi';
+        const sectionChipsHtml = _BUH_OMBOR_SECTIONS.map(s => {
+            const isActive = activeOmborSection === s.key;
+            return `<div class="buh-section-chip ${isActive ? 'active' : ''}" data-ombor-filter="${s.key}" style="${isActive ? `border-color:${s.accent}; background:${s.accent}1F; box-shadow:0 6px 16px ${s.accent}33;` : ''}">
+                <span class="sec-icon">${s.icon}</span>
+                <div class="sec-text">
+                    <span class="sec-name" style="${isActive ? `color:${s.accent};` : ''}">${s.label}</span>
+                    <span class="sec-val">${_buhCompactFmt(omborSectionValues[s.key] || 0)}</span>
+                </div>
+            </div>`;
+        }).join('');
+
         window._buhUmumiyDrills['ombor'] = `
-            <div class="buh-brand-filter-row" id="buhOmborFilterPills" style="margin-bottom:16px;">
-                <div class="buh-brand-chip active" data-ombor-filter="barchasi"><span class="chip-name">🗂️ Barchasi</span></div>
-                <div class="buh-brand-chip" data-ombor-filter="profil"><span class="chip-name">📦 Profil</span></div>
-                <div class="buh-brand-chip" data-ombor-filter="aksesuvar"><span class="chip-name">🔩 Aksesuvar</span></div>
-                <div class="buh-brand-chip" data-ombor-filter="qoldiq"><span class="chip-name">✂️ Qoldiq Profillar</span></div>
-                <div class="buh-brand-chip" data-ombor-filter="oynak"><span class="chip-name">🪟 Oynak</span></div>
-                <div class="buh-brand-chip" data-ombor-filter="kirim"><span class="chip-name">📥 Ombor Kirim</span></div>
-                <div class="buh-brand-chip" data-ombor-filter="chiqim"><span class="chip-name">📤 Ombor Chiqim</span></div>
-            </div>
-            <div id="buh-profil-subfilter" style="margin-bottom:14px;"></div>
-            <div id="buh-aksesuvar-subfilter" style="margin-bottom:14px;"></div>
-            <div id="buh-qoldiq-subfilter" style="margin-bottom:14px;"></div>
-            <div id="buh-oynak-subfilter" style="margin-bottom:14px;"></div>
+            <div id="buhOmborBreadcrumb" class="buh-breadcrumb"></div>
+            <div class="buh-filter-stage-label"><span class="stage-num">1</span>Bo'lim tanlang</div>
+            <div class="buh-section-row" id="buhOmborFilterPills">${sectionChipsHtml}</div>
+            <div id="buh-profil-subfilter" class="buh-stage2-wrap"></div>
+            <div id="buh-aksesuvar-subfilter" class="buh-stage2-wrap"></div>
+            <div id="buh-qoldiq-subfilter" class="buh-stage2-wrap"></div>
+            <div id="buh-oynak-subfilter" class="buh-stage2-wrap"></div>
             <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
                 <div class="buh-mini-row" id="buh-ombor-filter-stats" style="margin:0; flex:1; min-width:260px;"></div>
                 <div style="display:flex; gap:8px;">
@@ -3693,7 +3716,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
             </div>
             <div id="buh-oynak-add-form"></div>
-            <div id="buh-ombor-filter-table"></div>`;
+            <div id="buh-ombor-filter-table" class="buh-report-table-wrap"></div>`;
 
         const incomeCards = d.monthOrders.length
             ? d.monthOrders.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).map(o => {
