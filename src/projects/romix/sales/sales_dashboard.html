@@ -111,9 +111,81 @@
             }
         }
     </style>
-    <!-- Kesim optimizatsiya PDF uchun -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <!-- Tom Select for searchable dropdown filters -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+    <style>
+        /* ---- Tom Select premium dark style (sales modal) ---- */
+        .ts-wrapper.sales-filter-ts {
+            border: 1px solid rgba(0,210,255,0.2) !important;
+            border-radius: 10px !important;
+            background: rgba(0,210,255,0.04) !important;
+            font-family: 'Outfit', sans-serif !important;
+            font-size: 0.82rem !important;
+            font-weight: 600 !important;
+            min-height: 36px !important;
+            box-shadow: none !important;
+            transition: border-color 0.2s !important;
+        }
+        .ts-wrapper.sales-filter-ts.focus {
+            border-color: #00d2ff !important;
+            box-shadow: 0 0 8px rgba(0,210,255,0.15) !important;
+        }
+        .ts-wrapper.sales-filter-ts .ts-control {
+            background: transparent !important;
+            border: none !important;
+            color: #fff !important;
+            padding: 4px 10px !important;
+            min-height: 36px !important;
+        }
+        .ts-wrapper.sales-filter-ts .ts-control input {
+            color: rgba(255,255,255,0.8) !important;
+            font-size: 0.82rem !important;
+        }
+        .ts-wrapper.sales-filter-ts .ts-dropdown {
+            background: #0f1e2e !important;
+            border: 1px solid rgba(0,210,255,0.2) !important;
+            border-radius: 10px !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important;
+            z-index: 4000 !important;
+            margin-top: 4px !important;
+        }
+        .ts-wrapper.sales-filter-ts .ts-dropdown .option {
+            color: rgba(255,255,255,0.7) !important;
+            padding: 8px 14px !important;
+            border-radius: 7px !important;
+            margin: 2px 4px !important;
+            font-size: 0.82rem !important;
+        }
+        .ts-wrapper.sales-filter-ts .ts-dropdown .option.active {
+            background: #00d2ff !important;
+            color: #000 !important;
+            font-weight: 700 !important;
+        }
+        .ts-wrapper.sales-filter-ts .ts-control .item {
+            color: #00d2ff !important;
+            font-weight: 700 !important;
+        }
+        .profil-filter-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 12px;
+            padding: 14px;
+            background: rgba(0,210,255,0.03);
+            border: 1px solid rgba(0,210,255,0.1);
+            border-radius: 14px;
+        }
+        .profil-filter-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: rgba(255,255,255,0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+            display: block;
+        }
+    </style>
 </head>
 
 <body class="sales-body">
@@ -303,6 +375,21 @@
                     </div>
                     <div>
                         <label class="form-label" id="materialLabel">Profil / Aksesuar</label>
+                        <!-- Profil Filtr qatori: Brend → Qalinlik/Seriya → Rang -->
+                        <div class="profil-filter-row" id="profilFilterRow">
+                            <div>
+                                <span class="profil-filter-label">🏢 Brend</span>
+                                <select id="pfBrand" class="sales-filter-ts"></select>
+                            </div>
+                            <div>
+                                <span class="profil-filter-label">📐 Qalinligi / Seriya</span>
+                                <select id="pfSeries" class="sales-filter-ts"></select>
+                            </div>
+                            <div>
+                                <span class="profil-filter-label">🎨 Rangi</span>
+                                <select id="pfColor" class="sales-filter-ts"></select>
+                            </div>
+                        </div>
                         <select id="itemMaterial" class="form-input-v2" style="height:45px;"></select>
                     </div>
                     <!-- Dimension wrapper — toggled by JS -->

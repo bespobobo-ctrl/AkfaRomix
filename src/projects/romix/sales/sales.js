@@ -109,8 +109,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // =====================================================================
     // OMBOR MATERIALLARI: Supabase-dan real vaqtda yuklash
-    // romix_inventory jadvalidan faqat zaxirasi bor (>0) profillarni oladi
+    // 3 bosqichli kaskad filtr: Brend → Qalinligi/Seriya → Rangi
     // =====================================================================
+    let _tsFilterBrand = null;
+    let _tsFilterSeries = null;
+    let _tsFilterColor = null;
+
     async function loadOmborMaterials() {
         try {
             const { data, error } = await supabase
@@ -128,44 +132,162 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Har bir ombor mahsulotini qulay formatga keltirish
             const omborProfillar = data.map(p => {
                 const meta = p.metadata || {};
-                const brend = meta.brend || '';
-                const seriya = meta.seriya || '';
-                const uzunlik = meta.uzunligi ? ` ${meta.uzunligi}mm` : '';
-                const shakl = meta.shakli ? ` (${meta.shakli})` : '';
-                const qty = Math.round(Number(p.stock_quantity) || 0);
+                const brend  = (meta.brend  || '').trim();
+                const seriya = (meta.seriya || '').trim();
+                const rangi  = (meta.rangi  || '').trim();
+                const uzunlik = meta.uzunligi ? `${meta.uzunligi}mm` : '';
+                const qty  = Math.round(Number(p.stock_quantity) || 0);
                 const unit = p.unit || 'm';
                 const price = parseFloat(p.price) || 0;
 
-                // Ko'rsatma nomi: "AKFA 60 Seriya — 3000mm (Uchburchak) [Omborda: 72 m]"
-                let displayName = p.product_name;
-                if (brend || seriya) {
-                    displayName = [brend, seriya].filter(Boolean).join(' ') + (uzunlik ? uzunlik : '') + shakl;
-                    displayName = displayName || p.product_name;
-                }
+                // Ko'rsatma nomi: "AKFA 60 — Oq [Omborda: 72 m]"
+                let displayName = [brend, seriya, uzunlik].filter(Boolean).join(' ');
+                if (rangi) displayName += ` — ${rangi}`;
+                displayName = displayName || p.product_name;
 
                 return {
                     id: `ombor-${p.id}`,
                     name: displayName,
                     fullName: p.product_name,
-                    price: price,
-                    unit: unit,
-                    stock: qty,
+                    price, unit, stock: qty,
+                    brend, seriya, rangi,
                     label: `${displayName} [Omborda: ${qty.toLocaleString('uz-UZ')} ${unit}]`
                 };
             });
 
-            // itemMaterial select-ni to'ldirish (AVAILABLE_MATERIALS o'rniga to'g'ridan-to'g'ri)
             window._omborProfillar = omborProfillar;
 
-            // Profil typelari uchun bir xil ro'yxat ishlatiladi (rom, rom_fortochka, eshik)
+            // Profil type-lari uchun bir xil ro'yxat (rom, rom_fortochka, eshik)
             AVAILABLE_MATERIALS.rom = omborProfillar;
             AVAILABLE_MATERIALS.rom_fortochka = omborProfillar;
             AVAILABLE_MATERIALS.eshik = omborProfillar;
 
-            // Constructor maydonlarini yangilash
-            if (typeof updateConstructorFields === 'function') {
-                updateConstructorFields();
+            // --- 3 ta kaskad Tom Select filtrlarini ishga tushirish ---
+            if (window.TomSelect && document.getElementById('pfBrand')) {
+                const initTs = (id) => {
+                    const el = document.getElementById(id);
+                    if (!el) return null;
+                    if (el.tomselect) el.tomselect.destroy();
+                    return new window.TomSelect(el, {
+                        create: false, sortField: { field: 'text', direction: 'asc' }
+                    });
+                };
+
+                _tsFilterBrand  = initTs('pfBrand');
+                _tsFilterSeries = initTs('pfSeries');
+                _tsFilterColor  = initTs('pfColor');
+
+                // Yordamchi: unikal qiymatlar to'plami
+                const uniq = (arr) => [...new Set(arr.filter(Boolean))].sort();
+
+                function fillBrandOptions(profillar) {
+                    if (!_tsFilterBrand) return;
+                    _tsFilterBrand.clearOptions();
+                    _tsFilterBrand.addOption([{ value: '', text: '✅ Barchasi' }]);
+                    uniq(profillar.map(p => p.brend)).forEach(b => {
+                        _tsFilterBrand.addOption({ value: b, text: b });
+                    });
+                    _tsFilterBrand.setValue('', true);
+                }
+
+                function fillSeriesOptions(profillar, brand) {
+                    if (!_tsFilterSeries) return;
+                    const filtered = brand ? profillar.filter(p => p.brend === brand) : profillar;
+                    _tsFilterSeries.clearOptions();
+                    _tsFilterSeries.addOption([{ value: '', text: '✅ Barchasi' }]);
+                    uniq(filtered.map(p => p.seriya)).forEach(s => {
+                        _tsFilterSeries.addOption({ value: s, text: s });
+                    });
+                    _tsFilterSeries.setValue('', true);
+                }
+
+                function fillColorOptions(profillar, brand, series) {
+                    if (!_tsFilterColor) return;
+                    let filtered = profillar;
+                    if (brand)  filtered = filtered.filter(p => p.brend  === brand);
+                    if (series) filtered = filtered.filter(p => p.seriya === series);
+                    _tsFilterColor.clearOptions();
+                    _tsFilterColor.addOption([{ value: '', text: '✅ Barchasi' }]);
+                    uniq(filtered.map(p => p.rangi)).forEach(r => {
+                        _tsFilterColor.addOption({ value: r, text: r });
+                    });
+                    _tsFilterColor.setValue('', true);
+                }
+
+                function applyFiltersToMaterial() {
+                    const brand  = _tsFilterBrand?.getValue()  || '';
+                    const series = _tsFilterSeries?.getValue() || '';
+                    const color  = _tsFilterColor?.getValue()  || '';
+
+                    const type = document.getElementById('itemType')?.value;
+                    let pool = AVAILABLE_MATERIALS[type] || omborProfillar;
+
+                    if (brand)  pool = pool.filter(p => p.brend  === brand);
+                    if (series) pool = pool.filter(p => p.seriya === series);
+                    if (color)  pool = pool.filter(p => p.rangi  === color);
+
+                    // itemMaterial-ni qayta to'ldirish
+                    const sel = document.getElementById('itemMaterial');
+                    if (!sel) return;
+                    sel.innerHTML = '';
+                    if (pool.length === 0) {
+                        const opt = document.createElement('option');
+                        opt.value = '';
+                        opt.textContent = '⚠️ Mos profil topilmadi';
+                        sel.appendChild(opt);
+                    } else {
+                        pool.forEach(m => {
+                            const opt = document.createElement('option');
+                            opt.value = m.id;
+                            opt.textContent = m.label || m.name;
+                            opt.dataset.name  = m.name || m.fullName || '';
+                            opt.dataset.price = m.price || 0;
+                            opt.dataset.unit  = m.unit  || 'm';
+                            opt.dataset.stock = m.stock ?? '';
+                            sel.appendChild(opt);
+                        });
+                    }
+                }
+
+                // Kaskad hodisalari
+                if (_tsFilterBrand) {
+                    _tsFilterBrand.on('change', (brand) => {
+                        fillSeriesOptions(omborProfillar, brand);
+                        fillColorOptions(omborProfillar, brand, '');
+                        applyFiltersToMaterial();
+                    });
+                }
+                if (_tsFilterSeries) {
+                    _tsFilterSeries.on('change', (series) => {
+                        const brand = _tsFilterBrand?.getValue() || '';
+                        fillColorOptions(omborProfillar, brand, series);
+                        applyFiltersToMaterial();
+                    });
+                }
+                if (_tsFilterColor) {
+                    _tsFilterColor.on('change', () => applyFiltersToMaterial());
+                }
+
+                // Boshlang'ich to'ldirish
+                fillBrandOptions(omborProfillar);
+                fillSeriesOptions(omborProfillar, '');
+                fillColorOptions(omborProfillar, '', '');
+                applyFiltersToMaterial();
+
+                // Profil turi o'zgarganda filtrlarni qayta ko'rsatish/yashirish
+                const filterRow = document.getElementById('profilFilterRow');
+                document.getElementById('itemType')?.addEventListener('change', (e) => {
+                    const isProfile = ['rom','rom_fortochka','eshik'].includes(e.target.value);
+                    if (filterRow) filterRow.style.display = isProfile ? 'grid' : 'none';
+                    applyFiltersToMaterial();
+                });
+
+                window._applyProfilFilters = applyFiltersToMaterial;
+            } else {
+                // Tom Select mavjud bo'lmasa oddiy to'ldirish
+                if (typeof updateConstructorFields === 'function') updateConstructorFields();
             }
+
         } catch (err) {
             console.warn('loadOmborMaterials xatoligi:', err);
         }
