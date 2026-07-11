@@ -1784,7 +1784,129 @@ document.addEventListener('DOMContentLoaded', async () => {
     window._ojData = null;
     window._ojActiveCategory = 'profil';
     window._ojActiveBrand = { profil: 'barchasi', aksesuvar: 'barchasi', qoldiq: 'barchasi', oynak: 'barchasi' };
+    window._ojActiveSeries = { profil: 'barchasi', aksesuvar: 'barchasi', qoldiq: 'barchasi', oynak: 'barchasi' };
     window._ojSearchTerm = '';
+
+    let tsBrand = null;
+    let tsSeries = null;
+
+    function populateBrandOptions() {
+        if (!tsBrand) return;
+        const cat = window._ojActiveCategory;
+        const data = window._ojData && window._ojData[cat];
+        if (!data) return;
+
+        tsBrand.clearOptions();
+        tsBrand.clear();
+
+        const labelEl = document.getElementById('ojBrandFilterLabel');
+
+        let options = [{ value: 'barchasi', text: '🗂️ Barchasi' }];
+        let uniqueBrands = new Set();
+
+        if (cat === 'profil') {
+            if (labelEl) labelEl.textContent = "🏢 Brendni Tanlang";
+            tsBrand.settings.placeholder = "Barcha brendlar...";
+            data.items.forEach(p => {
+                const b = p.metadata?.brend || p.brand;
+                if (b) uniqueBrands.add(b);
+            });
+        } else if (cat === 'aksesuvar') {
+            if (labelEl) labelEl.textContent = "🔩 Kategoriyani Tanlang";
+            tsBrand.settings.placeholder = "Barcha kategoriyalar...";
+            data.items.forEach(a => {
+                if (a.category) uniqueBrands.add(a.category);
+            });
+        } else if (cat === 'qoldiq') {
+            if (labelEl) labelEl.textContent = "🏢 Brendni Tanlang";
+            tsBrand.settings.placeholder = "Barcha brendlar...";
+            data.items.forEach(qi => {
+                if (qi.brand) uniqueBrands.add(qi.brand);
+            });
+        } else if (cat === 'oynak') {
+            if (labelEl) labelEl.textContent = "🏢 Brendni Tanlang";
+            tsBrand.settings.placeholder = "Barcha brendlar...";
+            data.items.forEach(o => {
+                if (o.brand) uniqueBrands.add(o.brand);
+            });
+        }
+
+        tsBrand.input.setAttribute('placeholder', tsBrand.settings.placeholder);
+        if (tsBrand.controlInput) tsBrand.controlInput.setAttribute('placeholder', tsBrand.settings.placeholder);
+
+        uniqueBrands.forEach(b => {
+            options.push({ value: b, text: b });
+        });
+
+        tsBrand.addOption(options);
+        tsBrand.setValue(window._ojActiveBrand[cat] || 'barchasi', true);
+    }
+
+    function updateSeriesOptions() {
+        if (!tsSeries) return;
+        
+        const cat = window._ojActiveCategory;
+        const brand = window._ojActiveBrand[cat] || 'barchasi';
+        const data = window._ojData && window._ojData[cat];
+        if (!data) return;
+
+        tsSeries.clearOptions();
+        tsSeries.clear();
+
+        const container = document.getElementById('ojSeriesFilterContainer');
+        const labelEl = document.getElementById('ojSeriesFilterLabel');
+
+        if (cat === 'aksesuvar') {
+            if (container) container.style.display = 'none';
+            return;
+        }
+
+        if (container) container.style.display = 'block';
+
+        let options = [{ value: 'barchasi', text: '🗂️ Barchasi' }];
+        let uniqueVals = new Set();
+
+        let items = data.items || [];
+        if (brand !== 'barchasi') {
+            if (cat === 'profil') {
+                items = items.filter(it => (it.metadata?.brend || it.brand) === brand);
+            } else if (cat === 'qoldiq') {
+                items = items.filter(it => it.brand === brand);
+            } else if (cat === 'oynak') {
+                items = items.filter(it => it.brand === brand);
+            }
+        }
+
+        items.forEach(it => {
+            let val = '';
+            if (cat === 'profil') {
+                val = it.metadata?.seriya || it.series;
+            } else if (cat === 'qoldiq') {
+                val = it.series;
+            } else if (cat === 'oynak') {
+                val = it.size;
+            }
+            if (val) uniqueVals.add(val);
+        });
+
+        if (cat === 'oynak') {
+            if (labelEl) labelEl.textContent = "🪟 O'lchamni Tanlang";
+            tsSeries.settings.placeholder = "Barcha o'lchamlar...";
+        } else {
+            if (labelEl) labelEl.textContent = "🏷️ Seriyani Tanlang";
+            tsSeries.settings.placeholder = "Barcha seriyalar...";
+        }
+        
+        tsSeries.input.setAttribute('placeholder', tsSeries.settings.placeholder);
+        if (tsSeries.controlInput) tsSeries.controlInput.setAttribute('placeholder', tsSeries.settings.placeholder);
+
+        uniqueVals.forEach(v => {
+            options.push({ value: v, text: v });
+        });
+
+        tsSeries.addOption(options);
+        tsSeries.setValue(window._ojActiveSeries[cat] || 'barchasi', true);
+    }
 
     async function loadOmborJami() {
         const tabsEl = document.getElementById('ojCategoryTabs');
@@ -1806,12 +1928,37 @@ document.addEventListener('DOMContentLoaded', async () => {
             oynak: { items: oynakItems, groups: omGroupOynakByBrand(oynakItems) }
         };
 
-        tabsEl.querySelectorAll('.om-brand-chip').forEach(chip => {
+        if (window.TomSelect && !tsBrand) {
+            tsBrand = new window.TomSelect('#ojBrandSelect', {
+                create: false,
+                sortField: { field: 'text', direction: 'asc' },
+                onChange: (val) => {
+                    window._ojActiveBrand[window._ojActiveCategory] = val;
+                    updateSeriesOptions();
+                    renderOmborJami();
+                }
+            });
+        }
+        if (window.TomSelect && !tsSeries) {
+            tsSeries = new window.TomSelect('#ojSeriesSelect', {
+                create: false,
+                sortField: { field: 'text', direction: 'asc' },
+                onChange: (val) => {
+                    window._ojActiveSeries[window._ojActiveCategory] = val;
+                    renderOmborJami();
+                }
+            });
+        }
+
+        tabsEl.querySelectorAll('.category-tab').forEach(chip => {
             chip.onclick = () => {
                 window._ojActiveCategory = chip.dataset.ojCat;
                 window._ojSearchTerm = '';
                 const search = document.getElementById('ojSearchInput');
                 if (search) search.value = '';
+                
+                populateBrandOptions();
+                updateSeriesOptions();
                 renderOmborJami();
             };
         });
@@ -1823,6 +1970,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
         }
 
+        populateBrandOptions();
+        updateSeriesOptions();
         renderOmborJami();
     }
 
@@ -1830,43 +1979,50 @@ document.addEventListener('DOMContentLoaded', async () => {
         const cat = window._ojActiveCategory;
         const data = window._ojData && window._ojData[cat];
         const statRow = document.getElementById('ojStatRow');
-        const brandFilterEl = document.getElementById('ojBrandFilter');
         const tableWrap = document.getElementById('ojItemsTableWrap');
         const titleEl = document.getElementById('ojCategoryTitle');
-        if (!data || !statRow || !brandFilterEl || !tableWrap) return;
+        if (!data || !statRow || !tableWrap) return;
 
-        document.querySelectorAll('#ojCategoryTabs .om-brand-chip').forEach(c => {
+        document.querySelectorAll('#ojCategoryTabs .category-tab').forEach(c => {
             c.classList.toggle('active', c.dataset.ojCat === cat);
         });
         if (titleEl) titleEl.textContent = _OJ_CATEGORY_META[cat].title;
 
-        const totalQty = data.groups.reduce((s, g) => s + g.qty, 0);
-        statRow.innerHTML = `
-            <div class="om-stat-card"><div class="lbl">📦 Jami Miqdor</div><div class="val">${totalQty.toLocaleString('uz-UZ')}</div></div>
-            <div class="om-stat-card"><div class="lbl">🏷️ Turlar Soni</div><div class="val">${data.groups.length}</div></div>
-        `;
-
         const activeBrand = window._ojActiveBrand[cat] || 'barchasi';
-        brandFilterEl.innerHTML = `
-            <div class="om-brand-chip ${activeBrand === 'barchasi' ? 'active' : ''}" onclick="window._ojSelectBrand('barchasi')">
-                <span class="chip-name">🗂️ Barchasi</span><span class="chip-meta">${data.groups.length} xil</span>
-            </div>
-            ${data.groups.map(g => `<div class="om-brand-chip ${activeBrand === g.name ? 'active' : ''}" onclick="window._ojSelectBrand('${g.name.replace(/'/g, "\\'")}')">
-                <span class="chip-name">${g.name}</span><span class="chip-meta">${g.qty.toLocaleString('uz-UZ')} ${g.unit || ''}</span>
-            </div>`).join('')}
-        `;
+        const activeSeries = window._ojActiveSeries[cat] || 'barchasi';
 
-        let items;
-        if (activeBrand === 'barchasi') {
-            items = data.items;
-        } else {
-            const grp = data.groups.find(g => g.name === activeBrand);
-            items = grp ? grp.items : [];
+        let items = data.items || [];
+        if (activeBrand !== 'barchasi') {
+            if (cat === 'profil') {
+                items = items.filter(it => (it.metadata?.brend || it.brand) === activeBrand);
+            } else if (cat === 'aksesuvar') {
+                items = items.filter(it => it.category === activeBrand);
+            } else if (cat === 'qoldiq') {
+                items = items.filter(it => it.brand === activeBrand);
+            } else if (cat === 'oynak') {
+                items = items.filter(it => it.brand === activeBrand);
+            }
         }
+        if (activeSeries !== 'barchasi') {
+            if (cat === 'profil') {
+                items = items.filter(it => (it.metadata?.seriya || it.series) === activeSeries);
+            } else if (cat === 'qoldiq') {
+                items = items.filter(it => it.series === activeSeries);
+            } else if (cat === 'oynak') {
+                items = items.filter(it => it.size === activeSeries);
+            }
+        }
+
         const q = window._ojSearchTerm;
         if (q) {
             items = items.filter(it => (it.product_name || it.name || '').toLowerCase().includes(q));
         }
+
+        const totalQty = items.reduce((s, it) => s + (Number(it.stock_quantity ?? it.qty) || 0), 0);
+        statRow.innerHTML = `
+            <div class="om-stat-card"><div class="lbl">📦 Jami Miqdor</div><div class="val">${totalQty.toLocaleString('uz-UZ')}</div></div>
+            <div class="om-stat-card"><div class="lbl">🏷️ Turlar Soni</div><div class="val">${items.length}</div></div>
+        `;
 
         const isAdmin = user && user.role === 'admin';
 
@@ -2011,10 +2167,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    window._ojSelectBrand = (brand) => {
-        window._ojActiveBrand[window._ojActiveCategory] = brand;
-        renderOmborJami();
-    };
+
 
     // "Ombor Jami" — professional Excel/PDF hisobot eksporti. Faqat miqdor (narxsiz).
     // window._ojData allaqachon barcha 4 toifani o'z ichiga oladi (loadOmborJami() orqali).

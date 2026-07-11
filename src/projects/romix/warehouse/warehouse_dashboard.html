@@ -10,6 +10,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Tom Select for searchable dropdown filters -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
     <style>
         .warehouse-body {
             background: var(--adm-bg);
@@ -292,6 +295,81 @@
             font-weight: 800;
             color: var(--adm-text);
         }
+
+        /* --- Tom Select Premium Styling --- */
+        .ts-wrapper.form-input-v2 select, .ts-wrapper.form-input-v2 input {
+            display: none !important;
+        }
+        .ts-wrapper.form-input-v2 {
+            border: 1px solid var(--adm-border) !important;
+            border-radius: 12px !important;
+            background: rgba(255, 255, 255, 0.02) !important;
+            color: var(--adm-text) !important;
+            font-family: 'Outfit', sans-serif !important;
+            font-weight: 600 !important;
+            font-size: 0.85rem !important;
+            padding: 2px 8px !important;
+            box-shadow: var(--adm-shadow) !important;
+            transition: border-color 0.3s !important;
+            display: flex !important;
+            align-items: center !important;
+        }
+        .dark-mode .ts-wrapper.form-input-v2 {
+            background: rgba(20, 30, 45, 0.6) !important;
+            border-color: rgba(255, 255, 255, 0.05) !important;
+        }
+        .ts-wrapper.form-input-v2.focus {
+            border-color: var(--adm-accent) !important;
+            box-shadow: 0 0 10px rgba(0, 124, 82, 0.15) !important;
+        }
+        .ts-wrapper.form-input-v2 .ts-control {
+            background: transparent !important;
+            border: none !important;
+            color: var(--adm-text) !important;
+            padding: 8px 12px !important;
+            display: flex !important;
+            align-items: center !important;
+            min-height: auto !important;
+            width: 100% !important;
+        }
+        .ts-wrapper.form-input-v2 .ts-control input {
+            color: var(--adm-text) !important;
+            font-weight: 500 !important;
+        }
+        .ts-wrapper.form-input-v2 .ts-dropdown {
+            background: var(--adm-surface) !important;
+            border: 1px solid var(--adm-border) !important;
+            border-radius: 12px !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;
+            color: var(--adm-text) !important;
+            font-weight: 500 !important;
+            z-index: 2000 !important;
+            margin-top: 6px !important;
+        }
+        .dark-mode .ts-wrapper.form-input-v2 .ts-dropdown {
+            background: rgba(20, 30, 45, 0.95) !important;
+            backdrop-filter: blur(12px) !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
+        }
+        .ts-wrapper.form-input-v2 .ts-dropdown .option {
+            padding: 10px 16px !important;
+            transition: background 0.2s !important;
+            border-radius: 8px !important;
+            margin: 2px 4px !important;
+            color: var(--adm-text-sec) !important;
+        }
+        .ts-wrapper.form-input-v2 .ts-dropdown .option.active {
+            background: var(--adm-accent) !important;
+            color: #fff !important;
+        }
+        .ts-wrapper.form-input-v2 .ts-dropdown .option:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.05) !important;
+            color: var(--adm-text) !important;
+        }
+        .ts-wrapper.form-input-v2 .ts-control .item {
+            color: var(--adm-text) !important;
+            font-weight: 700 !important;
+        }
     </style>
     <script>
         // Anti-Flash & RBAC Role Protection (Ultimate Sync Edition)
@@ -470,9 +548,16 @@
                             <!-- Stats cards will load here -->
                         </div>
 
-                        <!-- Brand Filter Chips Row -->
-                        <div id="ojBrandFilter" class="brand-selector-row" style="margin-bottom: 0; padding-bottom: 10px; border-bottom: 1px solid var(--adm-border);">
-                            <!-- Brand chips will load here -->
+                        <!-- Brand Filter Row (Searchable Select Edition) -->
+                        <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 0; padding-bottom: 10px; border-bottom: 1px solid var(--adm-border);">
+                            <div style="flex: 1; min-width: 200px;">
+                                <label style="font-size: 0.8rem; font-weight: 700; color: var(--adm-text-sec); margin-bottom: 6px; display: block;" id="ojBrandFilterLabel">🏢 Brendni Tanlang</label>
+                                <select id="ojBrandSelect" class="form-input-v2" style="margin: 0;"></select>
+                            </div>
+                            <div style="flex: 1; min-width: 200px;" id="ojSeriesFilterContainer">
+                                <label style="font-size: 0.8rem; font-weight: 700; color: var(--adm-text-sec); margin-bottom: 6px; display: block;" id="ojSeriesFilterLabel">🏷️ Seriyani Tanlang</label>
+                                <select id="ojSeriesSelect" class="form-input-v2" style="margin: 0;"></select>
+                            </div>
                         </div>
 
                         <!-- Main Table Content -->
