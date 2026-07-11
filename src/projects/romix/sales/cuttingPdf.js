@@ -193,40 +193,48 @@ export function derivePieces(items) {
                 }
             });
 
-            // ③ STVORKA (ochiladigan qism) profillar — 45° kesim
+            // ③ STVORKA (Sash) & ④ SHTAPIK (Glass Bead) - Professional deductions
             const sashMat = baseMat + ' · Stvorka';
-            out.cells.forEach(c => {
-                const cw = Math.round(c.box.w);
-                const ch = Math.round(c.box.h);
-                if (c.opening && c.opening !== 'kar') {
-                    // Stvorka rama ichiga joylashadi, zazor bilan
-                    const sashH = ch - 2 * SASH_GAP;
-                    const sashW = cw - 2 * SASH_GAP;
-                    if (sashH > 0 && sashW > 0) {
-                        add(sashMat, sashH, '45°/45°', 2 * qty); // 2ta vertikal
-                        add(sashMat, sashW, '45°/45°', 2 * qty); // 2ta gorizontal
-                    }
-                }
-            });
-
-            // ④ SHTAPIK (oyna atrofidagi profillar) — 45° kesim
             const beadMat = baseMat + ' · Shtapik';
             out.cells.forEach(c => {
                 const cw = Math.round(c.box.w);
                 const ch = Math.round(c.box.h);
-                let gW, gH;
+
+                // Detect if the cell touches outer frame boundaries
+                const leftTouchesFrame = Math.abs(c.box.x - 0) < 1;
+                const rightTouchesFrame = Math.abs((c.box.x + c.box.w) - dW) < 1;
+                const topTouchesFrame = Math.abs(c.box.y - 0) < 1;
+                const bottomTouchesFrame = Math.abs((c.box.y + c.box.h) - dH) < 1;
+
+                // Deduct FRAME_PROFILE (60mm) for each border touching the outer frame to get inner light opening
+                const W_inner = cw - (leftTouchesFrame ? FRAME_PROFILE : 0) - (rightTouchesFrame ? FRAME_PROFILE : 0);
+                const H_inner = ch - (topTouchesFrame ? FRAME_PROFILE : 0) - (bottomTouchesFrame ? FRAME_PROFILE : 0);
+
                 if (c.opening && c.opening !== 'kar') {
-                    // Ochiladigan: oyna stvorka ichida
-                    gW = cw - 2 * SASH_GAP - 2 * SASH_PROFILE + 2 * BEAD_W;
-                    gH = ch - 2 * SASH_GAP - 2 * SASH_PROFILE + 2 * BEAD_W;
+                    // Sash (Stvorka) fits inside the cell inner opening with SASH_GAP (3mm) on each side
+                    const sashH = H_inner - 2 * SASH_GAP;
+                    const sashW = W_inner - 2 * SASH_GAP;
+                    if (sashH > 0 && sashW > 0) {
+                        add(sashMat, sashH, '45°/45°', 2 * qty); // 2ta vertikal
+                        add(sashMat, sashW, '45°/45°', 2 * qty); // 2ta gorizontal
+
+                        // Shtapik fits inside the sash inner opening
+                        // Sash profile width is SASH_PROFILE (50mm) on each side
+                        const gW = sashW - 2 * SASH_PROFILE;
+                        const gH = sashH - 2 * SASH_PROFILE;
+                        if (gW > 0 && gH > 0) {
+                            add(beadMat, gH, '45°/45°', 2 * qty);
+                            add(beadMat, gW, '45°/45°', 2 * qty);
+                        }
+                    }
                 } else {
-                    // Kar: oyna to'g'ridan-to'g'ri ramaga o'rnashadi
-                    gW = cw - 2 * BEAD_W;
-                    gH = ch - 2 * BEAD_W;
-                }
-                if (gW > 0 && gH > 0) {
-                    add(beadMat, gH, '45°/45°', 2 * qty);
-                    add(beadMat, gW, '45°/45°', 2 * qty);
+                    // Fixed (Kar) cell: Shtapik fits directly in the cell inner opening
+                    const gW = W_inner;
+                    const gH = H_inner;
+                    if (gW > 0 && gH > 0) {
+                        add(beadMat, gH, '45°/45°', 2 * qty);
+                        add(beadMat, gW, '45°/45°', 2 * qty);
+                    }
                 }
             });
 

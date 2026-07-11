@@ -379,7 +379,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!_designer && designerHost) {
             _designer = createDesigner(designerHost, {
                 W: parseInt(itemWidthInput.value) || 1500,
-                H: parseInt(itemHeightInput.value) || 2000
+                H: parseInt(itemHeightInput.value) || 2000,
+                onChange: () => {
+                    if (window.update3DPreview) window.update3DPreview();
+                }
             });
         }
         return _designer;
@@ -411,15 +414,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (stvorkaWrap) stvorkaWrap.style.display = isEshik ? '' : 'none';
         if (openTypeWrap) openTypeWrap.style.display = (isEshik && stv > 0) ? '' : 'none';
         if (archWrap) archWrap.style.display = isRom ? '' : 'none';
-        // Ko'rinish: rom → 2D dizayner, eshik → 3D, boshqa → bo'sh
+        // Ko'rinish: rom → 2D dizayner + 3D, eshik/boshqalar → 3D
         if (designerWrap) designerWrap.style.display = isRom ? 'block' : 'none';
-        if (preview3dWrap) preview3dWrap.style.display = isRom ? 'none' : 'block';
-        if (canvas3d) canvas3d.style.display = isEshik ? 'block' : 'none';
-        if (empty3d) empty3d.style.display = isEshik ? 'none' : 'flex';
+        if (preview3dWrap) preview3dWrap.style.display = (isRom || isEshik) ? 'block' : 'none';
+        if (canvas3d) canvas3d.style.display = (isRom || isEshik) ? 'block' : 'none';
+        if (empty3d) empty3d.style.display = (isRom || isEshik) ? 'none' : 'flex';
 
         if (isRom) {
             const d = ensureDesigner();
             if (d) d.setSize(parseInt(itemWidthInput.value) || 1500, parseInt(itemHeightInput.value) || 2000);
+            
+            const v = ensureViewer();
+            if (v) {
+                v.resize();
+                const designModel = d ? d.getModel() : null;
+                v.update({
+                    type,
+                    width: (parseInt(itemWidthInput.value) || 1500) / 1000,
+                    height: (parseInt(itemHeightInput.value) || 2000) / 1000,
+                    design: designModel,
+                    arch: document.getElementById('itemArch')?.checked || false
+                });
+            }
             return;
         }
         if (isEshik) {
