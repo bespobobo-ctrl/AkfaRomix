@@ -883,6 +883,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         return Object.values(groups).sort((a, b) => b.items.length - a.items.length);
     }
 
+    // Ikkinchi bosqich filtr almashganda joriy qidiruv matnini yangi kartalarga qayta qo'llash
+    function _buhReapplySearchFilter(searchElId, gridEl) {
+        const searchEl = document.getElementById(searchElId);
+        const q = searchEl ? searchEl.value.trim().toLowerCase() : '';
+        if (q) {
+            gridEl.querySelectorAll('.buh-ombor-card').forEach(card => {
+                card.style.display = (card.dataset.search || '').includes(q) ? '' : 'none';
+            });
+        }
+    }
+
     function _buhRenderOmborProfilGrid() {
         const gridEl = document.getElementById('buh-ombor-grid');
         if (!gridEl) return;
@@ -913,19 +924,115 @@ document.addEventListener('DOMContentLoaded', async () => {
         gridEl.innerHTML = filteredItems.map(p => _buhOmborCardHtml('inventory', p.id, p.product_name, Number(p.stock_quantity) || 0, p.unit, Number(p.price) || 0, '📦', 'linear-gradient(135deg,#00baff,#0072ff)')).join('')
             || '<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Ushbu brendda mahsulot topilmadi</div>';
 
-        // Filtr almashganda joriy qidiruv matnini yangi kartalarga qayta qo'llash
-        const searchEl = document.getElementById('buh-ombor-search');
-        const q = searchEl ? searchEl.value.trim().toLowerCase() : '';
-        if (q) {
-            gridEl.querySelectorAll('.buh-ombor-card').forEach(card => {
-                card.style.display = (card.dataset.search || '').includes(q) ? '' : 'none';
-            });
-        }
+        _buhReapplySearchFilter('buh-ombor-search', gridEl);
     }
 
     window._buhSelectOmborProfilBrand = (brandKey) => {
         window._buhOmborProfilBrandFilter = brandKey;
         _buhRenderOmborProfilGrid();
+    };
+
+    // ===== Aksesuvar — 2-bosqich filtr: kategoriya chiplari (Zamoklar/Ruchkalar/...) =====
+    function _buhRenderOmborAccGrid() {
+        const gridEl = document.getElementById('buh-ombor-acc-grid');
+        if (!gridEl) return;
+        const items = window._buhOmborAccItems || [];
+        const filterEl = document.getElementById('buh-ombor-acc-category-filter');
+        const catGroups = _buhGroupAccessoriesByCategory(items);
+        const activeCat = window._buhOmborAccCategoryFilter || 'barchasi';
+
+        if (filterEl) {
+            filterEl.innerHTML = `
+                <div class="buh-brand-chip ${activeCat === 'barchasi' ? 'active' : ''}" onclick="window._buhSelectOmborAccCategory('barchasi')">
+                    <span class="chip-name">🗂️ Barchasi</span>
+                    <span class="chip-meta">${items.length} mahsulot</span>
+                </div>
+                ${catGroups.map(g => {
+                    const key = _buhSafeKey(g.name);
+                    return `<div class="buh-brand-chip ${activeCat === key ? 'active' : ''}" onclick="window._buhSelectOmborAccCategory('${key}')" title="${g.name.replace(/"/g, '&quot;')}">
+                        <span class="chip-name">${g.name}</span>
+                        <span class="chip-meta">${g.items.length} mahsulot</span>
+                    </div>`;
+                }).join('')}
+            `;
+        }
+
+        const activeGroup = catGroups.find(g => _buhSafeKey(g.name) === activeCat);
+        const filteredItems = activeCat === 'barchasi' ? items : (activeGroup ? activeGroup.items : []);
+
+        gridEl.innerHTML = filteredItems.map(a => _buhOmborCardHtml('accessory', a.id, a.name, Number(a.qty) || 0, a.unit, Number(a.price) || 0, '🔩', 'linear-gradient(135deg,#BA68C8,#7B1FA2)')).join('')
+            || '<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Ushbu kategoriyada aksesuvar topilmadi</div>';
+
+        _buhReapplySearchFilter('buh-ombor-acc-search', gridEl);
+    }
+
+    window._buhSelectOmborAccCategory = (catKey) => {
+        window._buhOmborAccCategoryFilter = catKey;
+        _buhRenderOmborAccGrid();
+    };
+
+    // ===== Qoldiq Profillar — 2-bosqich filtr: brend chiplari =====
+    function _buhRenderOmborQoldiqGrid() {
+        const gridEl = document.getElementById('buh-ombor-qoldiq-grid');
+        if (!gridEl) return;
+        const items = window._buhOmborQoldiqItems || [];
+        const filterEl = document.getElementById('buh-ombor-qoldiq-brand-filter');
+        const brandGroups = _buhGroupQoldiqByBrand(items);
+        const activeBrand = window._buhOmborQoldiqBrandFilter || 'barchasi';
+
+        if (filterEl) {
+            filterEl.innerHTML = `
+                <div class="buh-brand-chip ${activeBrand === 'barchasi' ? 'active' : ''}" onclick="window._buhSelectOmborQoldiqBrand('barchasi')">
+                    <span class="chip-name">🗂️ Barchasi</span>
+                    <span class="chip-meta">${items.length} mahsulot</span>
+                </div>
+                ${brandGroups.map(g => {
+                    const key = _buhSafeKey(g.name);
+                    return `<div class="buh-brand-chip ${activeBrand === key ? 'active' : ''}" onclick="window._buhSelectOmborQoldiqBrand('${key}')" title="${g.name.replace(/"/g, '&quot;')}">
+                        <span class="chip-name">${g.name}</span>
+                        <span class="chip-meta">${g.items.length} mahsulot</span>
+                    </div>`;
+                }).join('')}
+            `;
+        }
+
+        const activeGroup = brandGroups.find(g => _buhSafeKey(g.name) === activeBrand);
+        const filteredItems = activeBrand === 'barchasi' ? items : (activeGroup ? activeGroup.items : []);
+
+        gridEl.innerHTML = filteredItems.map(q => {
+            const qty = Number(q.stock_quantity) || 0;
+            const len = Number(q.length) || 0;
+            const val = len * qty * 25;
+            const nameEsc = (q.product_name || '').replace(/'/g, "\\'");
+            return `<div class="buh-ombor-card" data-search="${(q.product_name || '').toLowerCase().replace(/"/g, '')}" style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-top:3px solid #ffaa00; border-radius:18px; padding:16px; display:flex; flex-direction:column; gap:10px; transition:all 0.25s;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="width:44px; height:44px; border-radius:14px; background:linear-gradient(135deg,#ffaa00,#ff7a00); display:flex; align-items:center; justify-content:center; font-size:1.15rem; flex-shrink:0;">✂️</div>
+                    <div style="min-width:0; flex:1;">
+                        <div style="font-weight:700; color:#fff; font-size:0.88rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${q.product_name || ''}">${q.product_name || "Noma'lum"}</div>
+                        <div style="font-size:0.7rem; color:rgba(255,255,255,0.4); margin-top:2px;">${len} mm × ${qty} dona</div>
+                    </div>
+                </div>
+                <div style="border-top:1px dashed rgba(255,255,255,0.06); padding-top:10px; display:flex; justify-content:space-between; font-size:0.76rem; color:rgba(255,255,255,0.5);">
+                    <span>Brend / Seriya</span><strong style="color:rgba(255,255,255,0.7);">${q.brand || '—'} ${q.series || ''}</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:0.76rem; color:rgba(255,255,255,0.5);">
+                    <span>Baholangan qiymat</span><strong style="color:#ffaa00; font-family:monospace;">${_buhFmt(val)}</strong>
+                </div>
+                <div style="display:flex; gap:6px; margin-top:2px;">
+                    <button onclick="window.editRomixOmborItem('qoldiq', '${q.id}', '${nameEsc}', ${qty}, 0, 'dona')"
+                        title="Tahrirlash" style="flex:1; background:rgba(0,255,136,0.1); border:1px solid rgba(0,255,136,0.25); color:#00ff88; padding:9px; border-radius:10px; font-size:0.85rem; font-weight:700; cursor:pointer;">✏️ Tahrirlash</button>
+                    <button onclick="window.deleteRomixOmborItem('qoldiq', '${q.id}', '${nameEsc}')"
+                        title="O'chirish" style="flex:1; background:rgba(255,77,79,0.1); border:1px solid rgba(255,77,79,0.25); color:#ff4d4f; padding:9px; border-radius:10px; font-size:0.85rem; cursor:pointer;">🗑️</button>
+                </div>
+            </div>`;
+        }).join('') || '<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Ushbu brendda qoldiq profil topilmadi</div>';
+
+        _buhReapplySearchFilter('buh-ombor-qoldiq-search', gridEl);
+    }
+
+    window._buhSelectOmborQoldiqBrand = (brandKey) => {
+        window._buhOmborQoldiqBrandFilter = brandKey;
+        _buhRenderOmborQoldiqGrid();
     };
 
     async function renderRomixBuhOmbor() {
@@ -990,37 +1097,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             _buhRenderOmborProfilGrid();
         }
         if (accGridEl) {
-            accGridEl.innerHTML = accessories.map(a => _buhOmborCardHtml('accessory', a.id, a.name, Number(a.qty) || 0, a.unit, Number(a.price) || 0, '🔩', 'linear-gradient(135deg,#BA68C8,#7B1FA2)')).join('')
-                || '<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Aksesuvar yo\'q</div>';
+            window._buhOmborAccItems = accessories;
+            _buhRenderOmborAccGrid();
         }
         if (qoldiqGridEl) {
-            qoldiqGridEl.innerHTML = qoldiqItems.map(q => {
-                const qty = Number(q.stock_quantity) || 0;
-                const len = Number(q.length) || 0;
-                const val = len * qty * 25;
-                const nameEsc = (q.product_name || '').replace(/'/g, "\\'");
-                return `<div class="buh-ombor-card" data-search="${(q.product_name || '').toLowerCase().replace(/"/g, '')}" style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-top:3px solid #ffaa00; border-radius:18px; padding:16px; display:flex; flex-direction:column; gap:10px; transition:all 0.25s;">
-                    <div style="display:flex; align-items:center; gap:12px;">
-                        <div style="width:44px; height:44px; border-radius:14px; background:linear-gradient(135deg,#ffaa00,#ff7a00); display:flex; align-items:center; justify-content:center; font-size:1.15rem; flex-shrink:0;">✂️</div>
-                        <div style="min-width:0; flex:1;">
-                            <div style="font-weight:700; color:#fff; font-size:0.88rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${q.product_name || ''}">${q.product_name || "Noma'lum"}</div>
-                            <div style="font-size:0.7rem; color:rgba(255,255,255,0.4); margin-top:2px;">${len} mm × ${qty} dona</div>
-                        </div>
-                    </div>
-                    <div style="border-top:1px dashed rgba(255,255,255,0.06); padding-top:10px; display:flex; justify-content:space-between; font-size:0.76rem; color:rgba(255,255,255,0.5);">
-                        <span>Brend / Seriya</span><strong style="color:rgba(255,255,255,0.7);">${q.brand || '—'} ${q.series || ''}</strong>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; font-size:0.76rem; color:rgba(255,255,255,0.5);">
-                        <span>Baholangan qiymat</span><strong style="color:#ffaa00; font-family:monospace;">${_buhFmt(val)}</strong>
-                    </div>
-                    <div style="display:flex; gap:6px; margin-top:2px;">
-                        <button onclick="window.editRomixOmborItem('qoldiq', '${q.id}', '${nameEsc}', ${qty}, 0, 'dona')"
-                            title="Tahrirlash" style="flex:1; background:rgba(0,255,136,0.1); border:1px solid rgba(0,255,136,0.25); color:#00ff88; padding:9px; border-radius:10px; font-size:0.85rem; font-weight:700; cursor:pointer;">✏️ Tahrirlash</button>
-                        <button onclick="window.deleteRomixOmborItem('qoldiq', '${q.id}', '${nameEsc}')"
-                            title="O'chirish" style="flex:1; background:rgba(255,77,79,0.1); border:1px solid rgba(255,77,79,0.25); color:#ff4d4f; padding:9px; border-radius:10px; font-size:0.85rem; cursor:pointer;">🗑️</button>
-                    </div>
-                </div>`;
-            }).join('') || '<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Qoldiq profil yo\'q</div>';
+            window._buhOmborQoldiqItems = qoldiqItems;
+            _buhRenderOmborQoldiqGrid();
         }
         if (oynakGridEl) {
             oynakGridEl.innerHTML = oynakItems.map(o => _buhOmborCardHtml('oynak', o.id, o.product_name, Number(o.stock_quantity) || 0, o.unit, Number(o.price) || 0, '🪟', 'linear-gradient(135deg,#00d2ff,#0088ff)', o.size)).join('')
