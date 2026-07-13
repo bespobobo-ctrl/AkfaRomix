@@ -1,5 +1,5 @@
 import { supabase, checkAuth, logout } from '@/core/supabase.js';
-import { generateCuttingPdf } from '../sales/cuttingPdf.js';
+import { generateCuttingPdf } from '../sotuv/cuttingPdf.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     checkAuth(['admin', 'ishlab_chiqarish']);
