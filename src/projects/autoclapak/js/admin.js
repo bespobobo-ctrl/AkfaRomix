@@ -567,15 +567,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (omborSearch) omborSearch.addEventListener('input', () => {
             _buhRenderOmborProfilGrid();
         });
-        [['buh-ombor-acc-search', 'buh-ombor-acc-grid'], ['buh-ombor-qoldiq-search', 'buh-ombor-qoldiq-grid'], ['buh-ombor-oynak-search', 'buh-ombor-oynak-grid']].forEach(([searchId, gridId]) => {
-            const el = document.getElementById(searchId);
-            if (el) el.addEventListener('input', () => {
-                const q = el.value.trim().toLowerCase();
-                document.querySelectorAll(`#${gridId} .buh-ombor-card`).forEach(card => {
-                    card.style.display = (!q || (card.dataset.search || '').includes(q)) ? '' : 'none';
-                });
-            });
-        });
+        const accSearch = document.getElementById('buh-ombor-acc-search');
+        if (accSearch) accSearch.addEventListener('input', () => _buhRenderOmborAccGrid());
+
+        const qoldiqSearch = document.getElementById('buh-ombor-qoldiq-search');
+        if (qoldiqSearch) qoldiqSearch.addEventListener('input', () => _buhRenderOmborQoldiqGrid());
+
+        const oynakSearch = document.getElementById('buh-ombor-oynak-search');
+        if (oynakSearch) oynakSearch.addEventListener('input', () => _buhRenderOmborOynakGrid());
 
         const prodDateEl = document.getElementById('buh-prod-date');
         if (prodDateEl) prodDateEl.value = _buhToday();
@@ -1310,37 +1309,85 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // ===== Aksesuvar — 2-bosqich filtr: kategoriya chiplari (Zamoklar/Ruchkalar/...) =====
+    window._expandedBuhAccCats = window._expandedBuhAccCats || new Set();
+
+    window.toggleBuhAccCatGroup = (catKey) => {
+        if (window._expandedBuhAccCats.has(catKey)) {
+            window._expandedBuhAccCats.delete(catKey);
+        } else {
+            window._expandedBuhAccCats.add(catKey);
+        }
+        _buhRenderOmborAccGrid();
+    };
+
     function _buhRenderOmborAccGrid() {
         const gridEl = document.getElementById('buh-ombor-acc-grid');
         if (!gridEl) return;
-        const items = window._buhOmborAccItems || [];
+        
         const filterEl = document.getElementById('buh-ombor-acc-category-filter');
-        const catGroups = _buhGroupAccessoriesByCategory(items);
-        const activeCat = window._buhOmborAccCategoryFilter || 'barchasi';
+        if (filterEl) filterEl.style.display = 'none';
 
-        if (filterEl) {
-            filterEl.innerHTML = `
-                <div class="buh-brand-chip ${activeCat === 'barchasi' ? 'active' : ''}" onclick="window._buhSelectOmborAccCategory('barchasi')">
-                    <span class="chip-name">🗂️ Barchasi</span>
-                    <span class="chip-meta">${items.length} mahsulot</span>
-                </div>
-                ${catGroups.map(g => {
-                    const key = _buhSafeKey(g.name);
-                    return `<div class="buh-brand-chip ${activeCat === key ? 'active' : ''}" onclick="window._buhSelectOmborAccCategory('${key}')" title="${g.name.replace(/"/g, '&quot;')}">
-                        <span class="chip-name">${g.name}</span>
-                        <span class="chip-meta">${g.items.length} mahsulot</span>
-                    </div>`;
-                }).join('')}
-            `;
+        const items = window._buhOmborAccItems || [];
+        const catGroups = _buhGroupAccessoriesByCategory(items);
+        const searchInput = document.getElementById('buh-ombor-acc-search');
+        const q = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
+        let html = '';
+        if (catGroups.length === 0) {
+            gridEl.innerHTML = '<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Aksesuvar topilmadi</div>';
+            return;
         }
 
-        const activeGroup = catGroups.find(g => _buhSafeKey(g.name) === activeCat);
-        const filteredItems = activeCat === 'barchasi' ? items : (activeGroup ? activeGroup.items : []);
+        const catColors = {
+            'petlya': '#BA68C8',
+            'ruchka': '#ffaa00',
+            'zamok': '#ff4d4f',
+            'shpingalet': '#00d2ff',
+            'boshqa': '#b0bec5'
+        };
 
-        gridEl.innerHTML = filteredItems.map(a => _buhOmborCardHtml('accessory', a.id, a.name, Number(a.qty) || 0, a.unit, Number(a.price) || 0, '🔩', 'linear-gradient(135deg,#BA68C8,#7B1FA2)')).join('')
-            || '<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Ushbu kategoriyada aksesuvar topilmadi</div>';
+        catGroups.forEach(g => {
+            const catName = g.name;
+            const catKey = _buhSafeKey(catName);
+            const color = catColors[catName.toLowerCase()] || '#BA68C8';
 
-        _buhReapplySearchFilter('buh-ombor-acc-search', gridEl);
+            const matchingItems = g.items.filter(a => (a.name || '').toLowerCase().includes(q));
+            if (matchingItems.length === 0) return;
+
+            const isExpanded = q ? true : window._expandedBuhAccCats.has(catKey);
+            const totalQty = matchingItems.reduce((s, a) => s + (Number(a.qty) || 0), 0);
+            const totalValue = matchingItems.reduce((s, a) => s + ((Number(a.qty) || 0) * (Number(a.price) || 0)), 0);
+            const unit = matchingItems[0]?.unit || 'dona';
+
+            html += `
+            <div class="buh-brand-group-header" onclick="window.toggleBuhAccCatGroup('${catKey}')" 
+                 style="grid-column: 1 / -1; background: linear-gradient(145deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%); border: 1px solid rgba(255, 255, 255, 0.08); border-left: 5px solid ${color}; border-radius: 20px; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.3s; margin-top: 15px; margin-bottom: 5px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="font-size: 1.8rem; filter: drop-shadow(0 0 8px ${color}50); color: ${color};">📁</div>
+                    <div>
+                        <h4 style="color: #fff; margin: 0; font-size: 1.15rem; font-weight: 800; font-family: 'Outfit', sans-serif; letter-spacing: 0.3px;">${catName}</h4>
+                        <p style="color: rgba(255,255,255,0.45); margin: 4px 0 0; font-size: 0.8rem;">
+                            ${matchingItems.length} xil mahsulot • Jami zaxira: <strong style="color: #fff; font-weight: 700;">${totalQty.toLocaleString('uz-UZ')} ${unit}</strong>
+                        </p>
+                    </div>
+                </div>
+                <div style="text-align: right; display: flex; align-items: center; gap: 24px;">
+                    <div>
+                        <div style="font-size: 0.65rem; color: rgba(255,255,255,0.4); text-transform: uppercase; font-weight: 800; letter-spacing: 0.6px;">Umumiy Qiymati</div>
+                        <div style="font-size: 1.25rem; color: #BA68C8; font-weight: 800; margin-top: 2px; text-shadow: 0 0 10px rgba(186,104,200,0.2);">${_buhFmt(totalValue)}</div>
+                    </div>
+                    <div class="brand-chevron" style="font-size: 1rem; color: rgba(255,255,255,0.4); transform: ${isExpanded ? 'rotate(90deg)' : 'rotate(0deg)'}; transition: transform 0.25s;">▶</div>
+                </div>
+            </div>
+            
+            <div id="buh-brand-subgrid-${catKey}" 
+                 style="display: ${isExpanded ? 'grid' : 'none'}; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; grid-column: 1 / -1; margin-bottom: 25px; padding: 12px 10px; border-left: 2px dashed rgba(255,255,255,0.1); border-radius: 0 0 0 16px;">
+                ${matchingItems.map(a => _buhOmborCardHtml('accessory', a.id, a.name, Number(a.qty) || 0, a.unit, Number(a.price) || 0, '🔩', 'linear-gradient(135deg,#BA68C8,#7B1FA2)')).join('')}
+            </div>
+            `;
+        });
+
+        gridEl.innerHTML = html;
     }
 
     window._buhSelectOmborAccCategory = (catKey) => {
@@ -1348,69 +1395,204 @@ document.addEventListener('DOMContentLoaded', async () => {
         _buhRenderOmborAccGrid();
     };
 
-    // ===== Qoldiq Profillar — 2-bosqich filtr: brend chiplari =====
+    window._expandedBuhQoldiqBrands = window._expandedBuhQoldiqBrands || new Set();
+
+    window.toggleBuhQoldiqBrandGroup = (brandKey) => {
+        if (window._expandedBuhQoldiqBrands.has(brandKey)) {
+            window._expandedBuhQoldiqBrands.delete(brandKey);
+        } else {
+            window._expandedBuhQoldiqBrands.add(brandKey);
+        }
+        _buhRenderOmborQoldiqGrid();
+    };
+
     function _buhRenderOmborQoldiqGrid() {
         const gridEl = document.getElementById('buh-ombor-qoldiq-grid');
         if (!gridEl) return;
-        const items = window._buhOmborQoldiqItems || [];
+        
         const filterEl = document.getElementById('buh-ombor-qoldiq-brand-filter');
-        const brandGroups = _buhGroupQoldiqByBrand(items);
-        const activeBrand = window._buhOmborQoldiqBrandFilter || 'barchasi';
+        if (filterEl) filterEl.style.display = 'none';
 
-        if (filterEl) {
-            filterEl.innerHTML = `
-                <div class="buh-brand-chip ${activeBrand === 'barchasi' ? 'active' : ''}" onclick="window._buhSelectOmborQoldiqBrand('barchasi')">
-                    <span class="chip-name">🗂️ Barchasi</span>
-                    <span class="chip-meta">${items.length} mahsulot</span>
-                </div>
-                ${brandGroups.map(g => {
-                    const key = _buhSafeKey(g.name);
-                    return `<div class="buh-brand-chip ${activeBrand === key ? 'active' : ''}" onclick="window._buhSelectOmborQoldiqBrand('${key}')" title="${g.name.replace(/"/g, '&quot;')}">
-                        <span class="chip-name">${g.name}</span>
-                        <span class="chip-meta">${g.items.length} mahsulot</span>
-                    </div>`;
-                }).join('')}
-            `;
+        const items = window._buhOmborQoldiqItems || [];
+        const brandGroups = _buhGroupQoldiqByBrand(items);
+        const searchInput = document.getElementById('buh-ombor-qoldiq-search');
+        const q = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
+        let html = '';
+        if (brandGroups.length === 0) {
+            gridEl.innerHTML = '<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Qoldiq profil topilmadi</div>';
+            return;
         }
 
-        const activeGroup = brandGroups.find(g => _buhSafeKey(g.name) === activeBrand);
-        const filteredItems = activeBrand === 'barchasi' ? items : (activeGroup ? activeGroup.items : []);
+        const brandColors = {
+            'akfa': '#ffaa00',
+            'retpen': '#BA68C8',
+            'ekopen': '#00baff',
+            'noma\'lum': '#b0bec5'
+        };
 
-        gridEl.innerHTML = filteredItems.map(q => {
-            const qty = Number(q.stock_quantity) || 0;
-            const len = Number(q.length) || 0;
-            const val = len * qty * 25;
-            const nameEsc = (q.product_name || '').replace(/'/g, "\\'");
-            return `<div class="buh-ombor-card" data-search="${(q.product_name || '').toLowerCase().replace(/"/g, '')}" style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-top:3px solid #ffaa00; border-radius:18px; padding:16px; display:flex; flex-direction:column; gap:10px; transition:all 0.25s;">
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <div style="width:44px; height:44px; border-radius:14px; background:linear-gradient(135deg,#ffaa00,#ff7a00); display:flex; align-items:center; justify-content:center; font-size:1.15rem; flex-shrink:0;">✂️</div>
-                    <div style="min-width:0; flex:1;">
-                        <div style="font-weight:700; color:#fff; font-size:0.88rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${q.product_name || ''}">${q.product_name || "Noma'lum"}</div>
-                        <div style="font-size:0.7rem; color:rgba(255,255,255,0.4); margin-top:2px;">${len} mm × ${qty} dona</div>
+        brandGroups.forEach(g => {
+            const brandName = g.name;
+            const brandKey = _buhSafeKey(brandName);
+            const color = brandColors[brandName.toLowerCase()] || '#ffaa00';
+
+            const matchingItems = g.items.filter(qItem => (qItem.product_name || '').toLowerCase().includes(q));
+            if (matchingItems.length === 0) return;
+
+            const isExpanded = q ? true : window._expandedBuhQoldiqBrands.has(brandKey);
+            const totalQty = matchingItems.reduce((s, qItem) => s + (Number(qItem.stock_quantity) || 0), 0);
+            const totalValue = matchingItems.reduce((s, qItem) => s + ((Number(qItem.stock_quantity) || 0) * (Number(qItem.length) || 0) * 25), 0);
+            const unit = 'dona';
+
+            html += `
+            <div class="buh-brand-group-header" onclick="window.toggleBuhQoldiqBrandGroup('${brandKey}')" 
+                 style="grid-column: 1 / -1; background: linear-gradient(145deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%); border: 1px solid rgba(255, 255, 255, 0.08); border-left: 5px solid ${color}; border-radius: 20px; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.3s; margin-top: 15px; margin-bottom: 5px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="font-size: 1.8rem; filter: drop-shadow(0 0 8px ${color}50); color: ${color};">📁</div>
+                    <div>
+                        <h4 style="color: #fff; margin: 0; font-size: 1.15rem; font-weight: 800; font-family: 'Outfit', sans-serif; letter-spacing: 0.3px;">${brandName}</h4>
+                        <p style="color: rgba(255,255,255,0.45); margin: 4px 0 0; font-size: 0.8rem;">
+                            ${matchingItems.length} xil mahsulot • Jami zaxira: <strong style="color: #fff; font-weight: 700;">${totalQty.toLocaleString('uz-UZ')} ${unit}</strong>
+                        </p>
                     </div>
                 </div>
-                <div style="border-top:1px dashed rgba(255,255,255,0.06); padding-top:10px; display:flex; justify-content:space-between; font-size:0.76rem; color:rgba(255,255,255,0.5);">
-                    <span>Brend / Seriya</span><strong style="color:rgba(255,255,255,0.7);">${q.brand || '—'} ${q.series || ''}</strong>
+                <div style="text-align: right; display: flex; align-items: center; gap: 24px;">
+                    <div>
+                        <div style="font-size: 0.65rem; color: rgba(255,255,255,0.4); text-transform: uppercase; font-weight: 800; letter-spacing: 0.6px;">Umumiy Qiymati</div>
+                        <div style="font-size: 1.25rem; color: #ffaa00; font-weight: 800; margin-top: 2px; text-shadow: 0 0 10px rgba(255,170,0,0.2);">${_buhFmt(totalValue)}</div>
+                    </div>
+                    <div class="brand-chevron" style="font-size: 1rem; color: rgba(255,255,255,0.4); transform: ${isExpanded ? 'rotate(90deg)' : 'rotate(0deg)'}; transition: transform 0.25s;">▶</div>
                 </div>
-                <div style="display:flex; justify-content:space-between; font-size:0.76rem; color:rgba(255,255,255,0.5);">
-                    <span>Baholangan qiymat</span><strong style="color:#ffaa00; font-family:monospace;">${_buhFmt(val)}</strong>
-                </div>
-                <div style="display:flex; gap:6px; margin-top:2px;">
-                    <button onclick="window.editRomixOmborItem('qoldiq', '${q.id}', '${nameEsc}', ${qty}, 0, 'dona')"
-                        title="Tahrirlash" style="flex:1; background:rgba(0,255,136,0.1); border:1px solid rgba(0,255,136,0.25); color:#00ff88; padding:9px; border-radius:10px; font-size:0.85rem; font-weight:700; cursor:pointer;">✏️ Tahrirlash</button>
-                    <button onclick="window.deleteRomixOmborItem('qoldiq', '${q.id}', '${nameEsc}')"
-                        title="O'chirish" style="flex:1; background:rgba(255,77,79,0.1); border:1px solid rgba(255,77,79,0.25); color:#ff4d4f; padding:9px; border-radius:10px; font-size:0.85rem; cursor:pointer;">🗑️</button>
-                </div>
-            </div>`;
-        }).join('') || '<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Ushbu brendda qoldiq profil topilmadi</div>';
+            </div>
+            
+            <div id="buh-brand-subgrid-${brandKey}" 
+                 style="display: ${isExpanded ? 'grid' : 'none'}; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; grid-column: 1 / -1; margin-bottom: 25px; padding: 12px 10px; border-left: 2px dashed rgba(255,255,255,0.1); border-radius: 0 0 0 16px;">
+                ${matchingItems.map(qItem => {
+                    const qty = Number(qItem.stock_quantity) || 0;
+                    const len = Number(qItem.length) || 0;
+                    const val = len * qty * 25;
+                    const nameEsc = (qItem.product_name || '').replace(/'/g, "\\'");
+                    return `<div class="buh-ombor-card" data-search="${(qItem.product_name || '').toLowerCase().replace(/"/g, '')}" style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-top:3px solid #ffaa00; border-radius:18px; padding:16px; display:flex; flex-direction:column; gap:10px; transition:all 0.25s;">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <div style="width:44px; height:44px; border-radius:14px; background:linear-gradient(135deg,#ffaa00,#ff7a00); display:flex; align-items:center; justify-content:center; font-size:1.15rem; flex-shrink:0;">✂️</div>
+                            <div style="min-width:0; flex:1;">
+                                <div style="font-weight:700; color:#fff; font-size:0.88rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${qItem.product_name || ''}">${qItem.product_name || "Noma'lum"}</div>
+                                <div style="font-size:0.7rem; color:rgba(255,255,255,0.4); margin-top:2px;">${len} mm × ${qty} dona</div>
+                            </div>
+                        </div>
+                        <div style="border-top:1px dashed rgba(255,255,255,0.06); padding-top:10px; display:flex; justify-content:space-between; font-size:0.76rem; color:rgba(255,255,255,0.5);">
+                            <span>Brend / Seriya</span><strong style="color:rgba(255,255,255,0.7);">${qItem.brand || '—'} ${qItem.series || ''}</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.76rem; color:rgba(255,255,255,0.5);">
+                            <span>Baholangan qiymat</span><strong style="color:#ffaa00; font-family:monospace;">${_buhFmt(val)}</strong>
+                        </div>
+                        <div style="display:flex; gap:6px; margin-top:2px;">
+                            <button onclick="window.editRomixOmborItem('qoldiq', '${qItem.id}', '${nameEsc}', ${qty}, 0, 'dona')"
+                                title="Tahrirlash" style="flex:1; background:rgba(0,255,136,0.1); border:1px solid rgba(0,255,136,0.25); color:#00ff88; padding:9px; border-radius:10px; font-size:0.85rem; font-weight:700; cursor:pointer;">✏️ Tahrirlash</button>
+                            <button onclick="window.deleteRomixOmborItem('qoldiq', '${qItem.id}', '${nameEsc}')"
+                                title="O'chirish" style="flex:1; background:rgba(255,77,79,0.1); border:1px solid rgba(255,77,79,0.25); color:#ff4d4f; padding:9px; border-radius:10px; font-size:0.85rem; cursor:pointer;">🗑️</button>
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>
+            `;
+        });
 
-        _buhReapplySearchFilter('buh-ombor-qoldiq-search', gridEl);
+        gridEl.innerHTML = html;
     }
 
     window._buhSelectOmborQoldiqBrand = (brandKey) => {
         window._buhOmborQoldiqBrandFilter = brandKey;
         _buhRenderOmborQoldiqGrid();
     };
+
+    function _buhGroupOynakByBrand(items) {
+        const groups = {};
+        items.forEach(o => {
+            const brand = o.brand || "Noma'lum";
+            if (!groups[brand]) groups[brand] = { name: brand, items: [] };
+            groups[brand].items.push(o);
+        });
+        return Object.values(groups).sort((a, b) => b.items.length - a.items.length);
+    }
+
+    window._expandedBuhOynakBrands = window._expandedBuhOynakBrands || new Set();
+
+    window.toggleBuhOynakBrandGroup = (brandKey) => {
+        if (window._expandedBuhOynakBrands.has(brandKey)) {
+            window._expandedBuhOynakBrands.delete(brandKey);
+        } else {
+            window._expandedBuhOynakBrands.add(brandKey);
+        }
+        _buhRenderOmborOynakGrid();
+    };
+
+    function _buhRenderOmborOynakGrid() {
+        const gridEl = document.getElementById('buh-ombor-oynak-grid');
+        if (!gridEl) return;
+
+        const items = window._buhOmborOynakItems || [];
+        const brandGroups = _buhGroupOynakByBrand(items);
+        const searchInput = document.getElementById('buh-ombor-oynak-search');
+        const q = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
+        let html = '';
+        if (brandGroups.length === 0) {
+            gridEl.innerHTML = '<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Oynak topilmadi</div>';
+            return;
+        }
+
+        const brandColors = {
+            'oq': '#00d2ff',
+            'jigarrang': '#ffaa00',
+            'muzli': '#e0f7fa',
+            'tonirovka': '#37474f',
+            'noma\'lum': '#b0bec5'
+        };
+
+        brandGroups.forEach(g => {
+            const brandName = g.name;
+            const brandKey = _buhSafeKey(brandName);
+            const color = brandColors[brandName.toLowerCase()] || '#00d2ff';
+
+            const matchingItems = g.items.filter(o => (o.product_name || '').toLowerCase().includes(q));
+            if (matchingItems.length === 0) return;
+
+            const isExpanded = q ? true : window._expandedBuhOynakBrands.has(brandKey);
+            const totalQty = matchingItems.reduce((s, o) => s + (Number(o.stock_quantity) || 0), 0);
+            const totalValue = matchingItems.reduce((s, o) => s + ((Number(o.stock_quantity) || 0) * (Number(o.price) || 0)), 0);
+            const unit = matchingItems[0]?.unit || 'dona';
+
+            html += `
+            <div class="buh-brand-group-header" onclick="window.toggleBuhOynakBrandGroup('${brandKey}')" 
+                 style="grid-column: 1 / -1; background: linear-gradient(145deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%); border: 1px solid rgba(255, 255, 255, 0.08); border-left: 5px solid ${color}; border-radius: 20px; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.3s; margin-top: 15px; margin-bottom: 5px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="font-size: 1.8rem; filter: drop-shadow(0 0 8px ${color}50); color: ${color};">📁</div>
+                    <div>
+                        <h4 style="color: #fff; margin: 0; font-size: 1.15rem; font-weight: 800; font-family: 'Outfit', sans-serif; letter-spacing: 0.3px;">${brandName}</h4>
+                        <p style="color: rgba(255,255,255,0.45); margin: 4px 0 0; font-size: 0.8rem;">
+                            ${matchingItems.length} xil mahsulot • Jami zaxira: <strong style="color: #fff; font-weight: 700;">${totalQty.toLocaleString('uz-UZ')} ${unit}</strong>
+                        </p>
+                    </div>
+                </div>
+                <div style="text-align: right; display: flex; align-items: center; gap: 24px;">
+                    <div>
+                        <div style="font-size: 0.65rem; color: rgba(255,255,255,0.4); text-transform: uppercase; font-weight: 800; letter-spacing: 0.6px;">Umumiy Qiymati</div>
+                        <div style="font-size: 1.25rem; color: #00d2ff; font-weight: 800; margin-top: 2px; text-shadow: 0 0 10px rgba(0,210,255,0.2);">${_buhFmt(totalValue)}</div>
+                    </div>
+                    <div class="brand-chevron" style="font-size: 1rem; color: rgba(255,255,255,0.4); transform: ${isExpanded ? 'rotate(90deg)' : 'rotate(0deg)'}; transition: transform 0.25s;">▶</div>
+                </div>
+            </div>
+            
+            <div id="buh-brand-subgrid-${brandKey}" 
+                 style="display: ${isExpanded ? 'grid' : 'none'}; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; grid-column: 1 / -1; margin-bottom: 25px; padding: 12px 10px; border-left: 2px dashed rgba(255,255,255,0.1); border-radius: 0 0 0 16px;">
+                ${matchingItems.map(o => _buhOmborCardHtml('oynak', o.id, o.product_name, Number(o.stock_quantity) || 0, o.unit, Number(o.price) || 0, '🪟', 'linear-gradient(135deg,#00d2ff,#0088ff)', o.size)).join('')}
+            </div>
+            `;
+        });
+
+        gridEl.innerHTML = html;
+    }
 
     async function renderRomixBuhOmbor() {
         const statsEl = document.getElementById('buh-ombor-stats');
@@ -1482,8 +1664,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             _buhRenderOmborQoldiqGrid();
         }
         if (oynakGridEl) {
-            oynakGridEl.innerHTML = oynakItems.map(o => _buhOmborCardHtml('oynak', o.id, o.product_name, Number(o.stock_quantity) || 0, o.unit, Number(o.price) || 0, '🪟', 'linear-gradient(135deg,#00d2ff,#0088ff)', o.size)).join('')
-                || '<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Oynak yo\'q</div>';
+            window._buhOmborOynakItems = oynakItems;
+            _buhRenderOmborOynakGrid();
         }
         return { totalValue, accValue, qoldiqValue, oynakValue };
     }
