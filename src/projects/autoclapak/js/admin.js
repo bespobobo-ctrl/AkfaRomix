@@ -1520,6 +1520,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const unitEsc = (unit || '').replace(/'/g, "\\'");
         const lowBadge = isLow ? `<span style="background:rgba(255,77,79,0.1); color:#ff4d4f; padding:2px 8px; border-radius:10px; font-size:0.62rem; font-weight:700; margin-left:6px;">⚠️ Kam qolgan</span>` : '';
         const sizeRow = sizeLabel ? `<div style="display:flex; justify-content:space-between; font-size:0.76rem; color:rgba(255,255,255,0.5);"><span>O'lcham</span><strong style="color:rgba(255,255,255,0.7);">${sizeLabel}</strong></div>` : '';
+        const usdRate = getUsdRate();
+        const priceUsd = price > 0 ? (price / usdRate) : 0;
+        const valUsd = val > 0 ? (val / usdRate) : 0;
+        const priceUsdStr = `$${priceUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const valUsdStr = `$${valUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         return `<div class="buh-ombor-card" data-search="${(name || '').toLowerCase().replace(/"/g, '')}" style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-top:3px solid ${accentColor}; border-radius:18px; padding:16px; display:flex; flex-direction:column; gap:10px; transition:all 0.25s;">
             <div style="display:flex; align-items:center; gap:12px;">
                 <div style="width:44px; height:44px; border-radius:14px; background:${gradient}; display:flex; align-items:center; justify-content:center; font-size:1.15rem; flex-shrink:0;">${icon}</div>
@@ -1529,11 +1534,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
             </div>
             ${sizeRow}
-            <div style="border-top:1px dashed rgba(255,255,255,0.06); padding-top:10px; display:flex; justify-content:space-between; font-size:0.76rem; color:rgba(255,255,255,0.5);">
-                <span>Narx (birlik)</span><strong style="color:#00ff88; font-family:monospace;">${_buhFmt(price)}</strong>
+            <div style="border-top:1px dashed rgba(255,255,255,0.06); padding-top:10px; display:flex; justify-content:space-between; align-items:flex-start; font-size:0.76rem; color:rgba(255,255,255,0.5);">
+                <span>Narx (birlik)</span>
+                <div style="text-align:right;">
+                    <strong style="color:#00ff88; font-family:monospace; display:block;">${_buhFmt(price)}</strong>
+                    <span style="color:rgba(255,200,100,0.75); font-size:0.68rem; font-weight:700; font-family:monospace;">${priceUsdStr}</span>
+                </div>
             </div>
-            <div style="display:flex; justify-content:space-between; font-size:0.76rem; color:rgba(255,255,255,0.5);">
-                <span>Jami qiymat</span><strong style="color:#00d2ff; font-family:monospace;">${_buhFmt(val)}</strong>
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; font-size:0.76rem; color:rgba(255,255,255,0.5);">
+                <span>Jami qiymat</span>
+                <div style="text-align:right;">
+                    <strong style="color:#00d2ff; font-family:monospace; display:block;">${_buhFmt(val)}</strong>
+                    <span style="color:rgba(255,200,100,0.75); font-size:0.68rem; font-weight:700; font-family:monospace;">${valUsdStr}</span>
+                </div>
             </div>
             <div style="display:flex; gap:6px; margin-top:2px;">
                 <button onclick="window.openRomixPriceModal('${source}', '${id}', '${nameEsc}', ${price}, ${qty}, '${unitEsc}')"
@@ -2262,11 +2275,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         const modal = document.getElementById('buh-kirim-modal');
         if (modal) modal.style.display = 'none';
     };
+    window.updateBuhKirimPricePreview = () => {
+        const priceVal = parseFloat(document.getElementById('buhKPrice')?.value) || 0;
+        const curUnit = document.getElementById('buhKCurrencyUnit')?.value || 'UZS';
+        const previewEl = document.getElementById('buhKirimPricePreview');
+        if (!previewEl) return;
+        if (curUnit === 'USD' && priceVal > 0) {
+            const rate = getUsdRate();
+            const calculated = priceVal * rate;
+            previewEl.innerHTML = `<span style="color:#ffaa00;">= ${calculated.toLocaleString('uz-UZ')} UZS</span> <span style="color:rgba(255,255,255,0.35);">| Kurs: ${rate.toLocaleString()} UZS/$</span>`;
+        } else {
+            previewEl.textContent = '';
+        }
+    };
+
     window.saveBuhKirim = async () => {
         const name = document.getElementById('buhKName').value.trim();
         const cat = document.getElementById('buhKCategory').value;
         const qty = parseFloat(document.getElementById('buhKQty').value);
-        const price = parseFloat(document.getElementById('buhKPrice').value) || 0;
+        let priceRaw = parseFloat(document.getElementById('buhKPrice').value) || 0;
+        const currency = document.getElementById('buhKCurrencyUnit')?.value || 'UZS';
+        const price = (currency === 'USD') ? priceRaw * getUsdRate() : priceRaw;
         const supplier = document.getElementById('buhKSupplier').value.trim();
         const phone = document.getElementById('buhKPhone').value.trim();
         const unit = document.getElementById('buhKUnit').value;
@@ -2275,6 +2304,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const desc = document.getElementById('buhKDesc').value;
 
         if (!name || isNaN(qty)) { alert('Ma\'lumotlarni to\'ldiring!'); return; }
+
+        const currencyNote = currency === 'USD' ? ` | Valyuta: $${priceRaw} (${price.toLocaleString()} UZS @ ${getUsdRate().toLocaleString()})` : '';
 
         try {
             const { data: existing } = await supabase.from('romix_inventory').select('*').eq('product_name', name).maybeSingle();
@@ -2295,13 +2326,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             await supabase.from('romix_transactions').insert([{
                 product_id: product.id, type: 'IN', quantity: qty,
-                note: `Buxgalteriya Kirim - Taminotchi: ${supplier} | Brutto/Netto: ${gross}/${net}`
+                note: `Buxgalteriya Kirim - Taminotchi: ${supplier} | Brutto/Netto: ${gross}/${net}${currencyNote}`
             }]);
             window.showPremiumToast('Muvaffaqiyatli', `${name} — ${qty} ${unit} kirim qilindi.`, true);
             window.closeBuhKirimModal();
             ['buhKName','buhKDesc','buhKSupplier','buhKPhone','buhKQty','buhKPrice','buhKGross','buhKNet'].forEach(id => {
                 const el = document.getElementById(id); if (el) el.value = '';
             });
+            const cur = document.getElementById('buhKCurrencyUnit');
+            if (cur) cur.selectedIndex = 0;
+            const prev = document.getElementById('buhKirimPricePreview');
+            if (prev) prev.textContent = '';
             await renderRomixBuhOmbor();
         } catch (err) {
             alert('Xatolik: ' + err.message);
@@ -2488,13 +2523,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         const modal = document.getElementById('buh-oynak-kirim-modal');
         if (modal) modal.style.display = 'none';
     };
+    window.updateBuhOynakPricePreview = () => {
+        const priceVal = parseFloat(document.getElementById('buhOkPrice')?.value) || 0;
+        const curUnit = document.getElementById('buhOkCurrencyUnit')?.value || 'UZS';
+        const previewEl = document.getElementById('buhOynakPricePreview');
+        if (!previewEl) return;
+        if (curUnit === 'USD' && priceVal > 0) {
+            const rate = getUsdRate();
+            const calculated = priceVal * rate;
+            previewEl.innerHTML = `<span style="color:#ffaa00;">= ${calculated.toLocaleString('uz-UZ')} UZS</span> <span style="color:rgba(255,255,255,0.35);">| Kurs: ${rate.toLocaleString()} UZS/$</span>`;
+        } else {
+            previewEl.textContent = '';
+        }
+    };
+
     window.saveBuhOynakKirim = async () => {
         const name = document.getElementById('buhOkName').value.trim();
         const brand = document.getElementById('buhOkBrand').value.trim();
         const size = document.getElementById('buhOkSize').value.trim();
         const qty = parseFloat(document.getElementById('buhOkQty').value) || 0;
         const unit = document.getElementById('buhOkUnit').value.trim() || 'dona';
-        const price = parseFloat(document.getElementById('buhOkPrice').value) || 0;
+        let priceRaw = parseFloat(document.getElementById('buhOkPrice').value) || 0;
+        const currency = document.getElementById('buhOkCurrencyUnit')?.value || 'UZS';
+        const price = (currency === 'USD') ? priceRaw * getUsdRate() : priceRaw;
 
         if (!name || qty <= 0) {
             alert("Nomi va sonini to'g'ri kiriting!");
@@ -2508,6 +2559,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         window.showPremiumToast('Muvaffaqiyatli', `${name} — ${qty} ${unit} kirim qilindi.`, true);
         window.closeBuhOynakKirimModal();
+        const cur = document.getElementById('buhOkCurrencyUnit');
+        if (cur) cur.selectedIndex = 0;
+        const prev = document.getElementById('buhOynakPricePreview');
+        if (prev) prev.textContent = '';
         ['buhOkName', 'buhOkBrand', 'buhOkSize', 'buhOkQty', 'buhOkPrice'].forEach(id => {
             const el = document.getElementById(id); if (el) el.value = '';
         });
@@ -10335,9 +10390,10 @@ CREATE TABLE IF NOT EXISTS buh_sales (
     window.saveBuhUsdRate = () => {
         const rate = parseFloat(document.getElementById('buh-usd-rate')?.value) || 12800;
         localStorage.setItem('buh_usd_rate', rate.toString());
-        renderBuhOmbor();
-        renderBuhSales();
-        updateBuhKPIs();
+        if (typeof renderBuhOmbor === 'function') renderBuhOmbor();
+        if (typeof renderBuhSales === 'function') renderBuhSales();
+        if (typeof updateBuhKPIs === 'function') updateBuhKPIs();
+        if (typeof renderRomixBuhOmbor === 'function') renderRomixBuhOmbor();
         window.showPremiumToast('Kurs Yangilandi', `1 USD = ${rate.toLocaleString()} UZS qilib belgilandi.`);
     };
 

@@ -1875,6 +1875,17 @@
                 <!-- ============ PANEL 7: OMBOR HOLATI ============ -->
                 <div id="buh-panel-ombor" class="buh-tab-panel">
                     <div class="hr-card">
+                        <!-- USD Kurs Widget -->
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px; padding:12px 18px; background:rgba(0,210,255,0.04); border:1px solid rgba(0,210,255,0.15); border-radius:16px; flex-wrap:wrap;">
+                            <span style="font-size:1.2rem;">💱</span>
+                            <span style="color:rgba(255,255,255,0.55); font-size:0.8rem; font-weight:700;">USD Kursi:</span>
+                            <span style="color:rgba(255,255,255,0.4); font-size:0.8rem;">1 $ =</span>
+                            <input type="number" id="buh-usd-rate" value="12800" min="1" style="width:110px; text-align:center; font-weight:800; color:#00d2ff; background:rgba(0,0,0,0.2); border:1px solid rgba(0,210,255,0.25); border-radius:10px; padding:7px 10px; font-size:0.9rem; font-family:monospace;">
+                            <span style="color:rgba(255,255,255,0.4); font-size:0.8rem;">UZS</span>
+                            <button onclick="window.saveBuhUsdRate()" style="background:linear-gradient(135deg,#00d2ff,#0072ff); border:none; color:#fff; padding:7px 16px; border-radius:10px; font-weight:800; font-size:0.78rem; cursor:pointer; box-shadow:0 4px 12px rgba(0,114,255,0.3);">💾 Saqlash</button>
+                            <span style="color:rgba(255,255,255,0.3); font-size:0.72rem; font-style:italic;">Narxlar kartochkada $ da ham ko'rinadi</span>
+                        </div>
+
                         <div style="display:flex; align-items:center; gap:8px; margin-bottom:18px; flex-wrap:wrap;">
                             <div class="buh-ombor-cat-tab active" data-ombor-cat="profil" onclick="window.switchBuhOmborCatTab('profil')" style="cursor:pointer; padding:9px 18px; border-radius:12px; background:rgba(0,186,255,0.15); border:1px solid rgba(0,186,255,0.4); color:#00baff; font-weight:700; font-size:0.82rem;">📦 Profil</div>
                             <div class="buh-ombor-cat-tab" data-ombor-cat="aksesuvar" onclick="window.switchBuhOmborCatTab('aksesuvar')" style="cursor:pointer; padding:9px 18px; border-radius:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); font-weight:700; font-size:0.82rem;">🔩 Aksesuvar</div>
@@ -2102,8 +2113,22 @@
                                     <input type="number" id="buhOkQty" min="1" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
                                 <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Birlik</label>
                                     <input type="text" id="buhOkUnit" placeholder="dona / kv.m" value="dona" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
-                                <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Narx (birlik)</label>
-                                    <input type="number" id="buhOkPrice" min="0" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                                <div style="grid-column: span 1;">
+                                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px;">
+                                        <div>
+                                            <label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Narx (birlik)</label>
+                                            <input type="number" id="buhOkPrice" min="0" class="buh-input" style="width:100%; box-sizing:border-box;" oninput="window.updateBuhOynakPricePreview()">
+                                        </div>
+                                        <div>
+                                            <label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Valyuta</label>
+                                            <select id="buhOkCurrencyUnit" class="buh-input" style="width:100%; box-sizing:border-box;" onchange="window.updateBuhOynakPricePreview()">
+                                                <option value="UZS">UZS (So'm)</option>
+                                                <option value="USD">USD ($)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div id="buhOynakPricePreview" style="font-size:0.72rem; color:#ffaa00; margin-top:4px; font-weight: 700; min-height: 14px;"></div>
+                                </div>
                             </div>
                         </div>
                         <div style="display:flex; gap:12px; margin-top:22px;">
@@ -2220,8 +2245,22 @@
                                 <input type="text" id="buhKPhone" placeholder="+998" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
                             <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Kirim Miqdori</label>
                                 <input type="number" id="buhKQty" placeholder="0.00" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
-                            <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Mahsulot Narxi (so'm)</label>
-                                <input type="number" id="buhKPrice" placeholder="0.00" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                            <div>
+                                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px;">
+                                    <div>
+                                        <label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Mahsulot Narxi</label>
+                                        <input type="number" id="buhKPrice" placeholder="0.00" class="buh-input" style="width:100%; box-sizing:border-box;" oninput="window.updateBuhKirimPricePreview()">
+                                    </div>
+                                    <div>
+                                        <label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Valyuta</label>
+                                        <select id="buhKCurrencyUnit" class="buh-input" style="width:100%; box-sizing:border-box;" onchange="window.updateBuhKirimPricePreview()">
+                                            <option value="UZS">UZS (So'm)</option>
+                                            <option value="USD">USD ($)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div id="buhKirimPricePreview" style="font-size:0.72rem; color:#ffaa00; margin-top:4px; font-weight: 700; min-height: 14px;"></div>
+                            </div>
                         </div>
                         <div style="display:flex; gap:12px; margin-top:22px;">
                             <button id="buhSaveKirimBtn" onclick="window.saveBuhKirim()" class="buh-save-btn" style="flex:1;">💾 Tasdiqlash va Saqlash</button>
