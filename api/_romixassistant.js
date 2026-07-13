@@ -90,11 +90,16 @@ const WRITE_TOOLS = [
     { name: "tolov_qoshish", description: "TO'LOV kiritish. tur='qarz' → tashqi qarzni (kreditorga) to'lash; tur='zakaz' → mijoz zakazi to'lovi. Tizim avval tasdiq so'raydi.", parameters: OBJ({ tur: STR("'qarz' yoki 'zakaz'"), kimga: STR("Kreditor nomi (qarz) yoki mijoz ismi (zakaz)"), summa: NUM("To'lov summasi (so'm)") }, ["tur", "kimga", "summa"]) }
 ];
 export const WRITE_NAMES = WRITE_TOOLS.map(t => t.name);
-// Gemini bo'sh properties'ni rad etadi — parametersiz toollardan olib tashlaymiz
-export const ALL_TOOLS = [...READ_TOOLS, ...WRITE_TOOLS].map(t => {
+const CONFIRM_TOOL = { name: "tasdiqlash", description: "Foydalanuvchi oldin taklif qilingan HARAJAT yoki TO'LOV amalini ovozda tasdiqlagach yoki rad etgach shu toolni chaqir.", parameters: OBJ({ tasdiqlaymi: { type: "boolean", description: "true = foydalanuvchi \"ha\" dedi (amalni bajar), false = \"yo'q\" dedi (bekor qil)" } }, ["tasdiqlaymi"]) };
+const stripEmptyParams = t => {
     if (t.parameters && Object.keys(t.parameters.properties || {}).length === 0) { const { parameters, ...rest } = t; return rest; }
     return t;
-});
+};
+// Gemini bo'sh properties'ni rad etadi — parametersiz toollardan olib tashlaymiz
+export const ALL_TOOLS = [...READ_TOOLS, ...WRITE_TOOLS].map(stripEmptyParams);
+// Live (jonli ovozli qo'ng'iroq) rejimi uchun: yozish toollari darhol bajarilmaydi,
+// faqat taklif sifatida saqlanadi — 'tasdiqlash' toolini kutadi (runLiveTool orqali).
+export const LIVE_TOOLS = [...READ_TOOLS, ...WRITE_TOOLS, CONFIRM_TOOL].map(stripEmptyParams);
 
 export const fmtSom = n => Math.round(Number(n) || 0).toLocaleString("uz-UZ") + " so'm";
 
@@ -204,6 +209,24 @@ VAZIFANG:
 5. Sen matnli va ovozli muloqot qila olasan. Agar egasi "gapir", "ovozli javob ber" desa yoki ovozli xabar yuborsa, tizim sening javobingni avtomatik ravishda ovozga aylantirib yuboradi. Hech qachon "ovoz yubora olmayman" deb aytma.
 6. Markdown sarlavha ishlatma — oddiy matn, <b>qalin</b> va emoji. Javoblar qisqa, Telegram uchun mos.`;
 
+// ── Jonli ovozli qo'ng'iroq (Gemini Live API) uchun tizim prompti ──
+export const SYSTEM_PROMPT_LIVE =
+    `Sen "AKFA Romix" deraza va eshik ishlab chiqarish korxonasi uchun jonli OVOZLI YORDAMCHISAN. Bu telefon qo'ng'irog'iga o'xshash real vaqtli suhbat — tabiiy, qisqa, samimiy O'ZBEK tilida gapir. Markdown, HTML teg yoki yulduzcha ISHLATMA — faqat gapiriladigan oddiy matn.
+
+LOYIHA HAQIDA:
+AKFA Romix — PVC/aluminiy deraza-eshik ishlab chiqaruvchi korxona (HR + Sotuv + Ombor + Ishlab chiqarish + Showroom + Buxgalteriya). Sotuv buyurtmalari pipeline: Kutilmoqda → Jarayonda → Tayyor → Yetkazildi.
+
+VAZIFANG:
+1. Egasi muayyan ma'lumotlarni so'rasa, tegishli o'qish toolini chaqir (umumiy_holat, zakazlar, ombor, harajatlar, qarzlar, xodimlar, zakaz_qidirish, mahsulot_qidirish, xodim_qidirish, ishlab_chiqarish_holati, brigadalar_tarkibi, material_sorovlari, excel_hisobot). Natijani o'z so'zlaring bilan qisqa va tabiiy tarzda ovozda ayt.
+2. Egasi FAQAT ikki xil amalni kirita oladi: HARAJAT va TO'LOV.
+   - harajat_qoshish yoki tolov_qoshish toolini chaqirganingda, bu amal DARHOL bajarilmaydi — tizim uni faqat taklif sifatida saqlaydi va senga qisqa tavsif qaytaradi.
+   - Shu tavsifni foydalanuvchiga ovozda tabiiy tarzda ayt va "tasdiqlaysizmi?" deb so'ra.
+   - Foydalanuvchi keyingi gapida tasdiqlasa ("ha", "xa", "mayli", "bajaring" va h.k.) — 'tasdiqlash' toolini tasdiqlaymi=true bilan chaqir. Rad etsa ("yo'q", "bekor", "kerak emas") — tasdiqlaymi=false bilan chaqir.
+   - 'tasdiqlash' natijasini foydalanuvchiga ovozda ayt.
+3. Summa/ism yetishmasa yoki nima demoqchi ekani tushunarsiz bo'lsa — toolni chaqirma, qisqa aniqlashtirib so'ra.
+4. Pul summalarini tabiiy gapirilgandek ayt (masalan "bir million ikki yuz ellik ming so'm"), raqamlarni harf-harf o'qima.
+5. Javoblaring QISQA va tabiiy suhbat uslubida bo'lsin — bu jonli qo'ng'iroq, uzun ma'ruza emas. Bir vaqtning o'zida bir nechta savolga javob berma, navbat bilan gapir.`;
+
 // ── AI tool-loop: bitta foydalanuvchi xabarini AI orqali qayta ishlaydi ──
 // Qaytaradi: {type:'text', text} | {type:'confirm', name, args, summary} | {type:'error', text}
 export async function runAssistantTurn(chatId, userText, history) {
@@ -248,8 +271,27 @@ export async function runConfirm(chatId, approved) {
     }
 }
 
+export const stripHtml = s => String(s == null ? "" : s).replace(/<[^>]*>/g, "");
+
+// ── Gemini Live: bitta function-call'ni bajarish (o'qish darhol, yozish taklif, tasdiqlash ijro) ──
+// Qaytaradi: oddiy (HTML'siz) obyekt/matn — to'g'ridan-to'g'ri Live toolResponse'ga qo'yiladi.
+export async function runLiveTool(chatId, name, args) {
+    if (name === "tasdiqlash") {
+        const r = await runConfirm(chatId, !!args.tasdiqlaymi);
+        if (r.type === "cancelled") return { bekor_qilindi: true };
+        if (r.type === "error") return { xato: stripHtml(r.text) };
+        return { bajarildi: true, natija: stripHtml(r.text) };
+    }
+    if (WRITE_NAMES.includes(name)) {
+        await stSet("pending_" + chatId, { name, args });
+        return { tasdiq_kerak: true, tavsif: stripHtml(writeSummary(name, args)) };
+    }
+    const result = await execRead(name, args, chatId);
+    return result;
+}
+
 export default {
     TOKEN, PASSWORD, stGet, stSet, stDel, tg, esc, send, sendVoice, tgFilePath, downloadB64,
-    ALL_TOOLS, WRITE_NAMES, fmtSom, execRead, execWrite, writeSummary, resultSummary,
-    SYSTEM_PROMPT, runAssistantTurn, runConfirm
+    ALL_TOOLS, LIVE_TOOLS, WRITE_NAMES, fmtSom, execRead, execWrite, writeSummary, resultSummary, stripHtml,
+    SYSTEM_PROMPT, SYSTEM_PROMPT_LIVE, runAssistantTurn, runConfirm, runLiveTool
 };
