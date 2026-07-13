@@ -855,59 +855,137 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+    const _buhGroupTransactionsIntoDocuments = (rows) => {
+        const docs = [];
+        
+        // Sort rows by created_at descending
+        const sorted = [...rows].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        
+        sorted.forEach(tx => {
+            const txTime = new Date(tx.created_at).getTime();
+            
+            // Find if there is an existing doc within 3 seconds, of the same type
+            let foundDoc = docs.find(doc => {
+                if (doc.type !== tx.type) return false;
+                
+                // Check time difference (within 3 seconds)
+                const docTime = new Date(doc.created_at).getTime();
+                const timeDiff = Math.abs(docTime - txTime);
+                if (timeDiff > 3000) return false; // 3 seconds threshold
+                
+                // Check note similarity or prefix matching
+                const orderIdMatchTx = tx.note ? tx.note.match(/#([a-fA-F0-9-]{8,})/i) : null;
+                const orderIdMatchDoc = doc.note ? doc.note.match(/#([a-fA-F0-9-]{8,})/i) : null;
+                
+                if (orderIdMatchTx && orderIdMatchDoc) {
+                    return orderIdMatchTx[1] === orderIdMatchDoc[1];
+                }
+                
+                if (orderIdMatchTx || orderIdMatchDoc) return false;
+                
+                return true;
+            });
+            
+            if (foundDoc) {
+                foundDoc.items.push(tx);
+            } else {
+                docs.push({
+                    id: tx.id,
+                    created_at: tx.created_at,
+                    type: tx.type,
+                    note: tx.note || '',
+                    items: [tx]
+                });
+            }
+        });
+        
+        return docs;
+    };
+
     window.renderBuhHistoryCards = () => {
         const kirimGrid = document.getElementById('buh-kirim-grid');
         const chiqimGrid = document.getElementById('buh-chiqim-grid');
 
         // Filter and Render Kirim (IN)
         if (kirimGrid) {
-            let inRows = _buhHistCache.filter(tx => tx.type === 'IN');
+            let inDocs = _buhGroupTransactionsIntoDocuments(_buhHistCache.filter(tx => tx.type === 'IN'));
             const q = (document.getElementById('buh-in-search')?.value || '').toLowerCase().trim();
             if (q) {
-                inRows = inRows.filter(tx => (tx.romix_inventory?.product_name || "o'chirilgan mahsulot").toLowerCase().includes(q));
+                inDocs = inDocs.filter(doc => {
+                    if (doc.id.toLowerCase().includes(q)) return true;
+                    return doc.items.some(tx => (tx.romix_inventory?.product_name || "o'chirilgan mahsulot").toLowerCase().includes(q));
+                });
             }
             const fromVal = document.getElementById('buh-in-date-from')?.value;
             const toVal = document.getElementById('buh-in-date-to')?.value;
             if (fromVal) {
                 const from = new Date(fromVal + 'T00:00:00');
-                inRows = inRows.filter(tx => new Date(tx.created_at) >= from);
+                inDocs = inDocs.filter(doc => new Date(doc.created_at) >= from);
             }
             if (toVal) {
                 const to = new Date(toVal + 'T23:59:59');
-                inRows = inRows.filter(tx => new Date(tx.created_at) <= to);
+                inDocs = inDocs.filter(doc => new Date(doc.created_at) <= to);
             }
 
-            if (inRows.length === 0) {
+            if (inDocs.length === 0) {
                 kirimGrid.innerHTML = '<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Kirim amallari topilmadi</div>';
             } else {
-                kirimGrid.innerHTML = inRows.map(tx => {
-                    const date = new Date(tx.created_at).toLocaleString('uz-UZ');
-                    const prodName = tx.romix_inventory?.product_name || "O'chirilgan mahsulot";
-                    const unit = tx.romix_inventory?.unit || '';
-                    const price = Number(tx.romix_inventory?.price) || 0;
-                    const qty = Number(tx.quantity) || 0;
-                    const total = price * qty;
+                kirimGrid.innerHTML = inDocs.map(doc => {
+                    const date = new Date(doc.created_at).toLocaleString('uz-UZ');
+                    const isSingle = doc.items.length === 1;
+                    
+                    let titleText = '';
+                    let itemsPreview = '';
+                    let totalSum = 0;
+                    
+                    doc.items.forEach(tx => {
+                        const price = Number(tx.romix_inventory?.price) || 0;
+                        const qty = Number(tx.quantity) || 0;
+                        totalSum += price * qty;
+                    });
+                    
+                    if (isSingle) {
+                        const tx = doc.items[0];
+                        const prodName = tx.romix_inventory?.product_name || "O'chirilgan mahsulot";
+                        const unit = tx.romix_inventory?.unit || '';
+                        const qty = Number(tx.quantity) || 0;
+                        titleText = prodName;
+                        itemsPreview = `<strong style="color: #fff;">${qty} ${unit}</strong>`;
+                    } else {
+                        titleText = `📦 Guruhli Kirim (${doc.items.length} xil mahsulot)`;
+                        const previews = doc.items.slice(0, 2).map(tx => {
+                            const name = tx.romix_inventory?.product_name || "Mahsulot";
+                            const qty = Number(tx.quantity) || 0;
+                            const unit = tx.romix_inventory?.unit || '';
+                            return `• ${name.slice(0, 22)}${name.length > 22 ? '...' : ''}: ${qty} ${unit}`;
+                        });
+                        if (doc.items.length > 2) {
+                            previews.push(`+ yana ${doc.items.length - 2} ta mahsulot...`);
+                        }
+                        itemsPreview = `<div style="font-size:0.75rem; color:rgba(255,255,255,0.45); display:flex; flex-direction:column; gap:2px;">${previews.join('<br>')}</div>`;
+                    }
+                    
                     return `
-                    <div class="buh-tx-card" onclick="window.viewBuhTxDetails('${tx.id}')"
+                    <div class="buh-tx-card" onclick="window.viewBuhTxDetails('${doc.id}')"
                          style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-left: 4px solid #00ff88; border-radius: 16px; padding: 16px; cursor: pointer; transition: all 0.25s; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="font-size: 0.72rem; color: rgba(255,255,255,0.4); font-weight: 700;">#${tx.id.slice(0, 8)}</span>
+                            <span style="font-size: 0.72rem; color: rgba(255,255,255,0.4); font-weight: 700;">#${doc.id.slice(0, 8).toUpperCase()}</span>
                             <span style="font-size: 0.72rem; color: rgba(255,255,255,0.4);">${date}</span>
                         </div>
-                        <div style="font-weight: 800; color: #fff; font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${prodName.replace(/"/g, '&quot;')}">
-                            ${prodName}
+                        <div style="font-weight: 800; color: #fff; font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${titleText.replace(/"/g, '&quot;')}">
+                            ${titleText}
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.06); padding-top: 10px; margin-top: 4px;">
                             <div>
-                                <span style="font-size: 0.7rem; color: rgba(255,255,255,0.45); display: block; text-transform: uppercase;">Miqdori</span>
-                                <strong style="font-size: 0.88rem; color: #fff;">${qty} ${unit}</strong>
+                                <span style="font-size: 0.7rem; color: rgba(255,255,255,0.45); display: block; text-transform: uppercase; margin-bottom: 2px;">Miqdori</span>
+                                ${itemsPreview}
                             </div>
                             <div style="text-align: right;">
-                                <span style="font-size: 0.7rem; color: rgba(255,255,255,0.45); display: block; text-transform: uppercase;">Jami summa</span>
-                                <strong style="font-size: 1.05rem; color: #00ff88; font-weight: 800;">${_buhFmt(total)}</strong>
+                                <span style="font-size: 0.7rem; color: rgba(255,255,255,0.45); display: block; text-transform: uppercase; margin-bottom: 2px;">Jami summa</span>
+                                <strong style="font-size: 1.05rem; color: #00ff88; font-weight: 800;">${_buhFmt(totalSum)}</strong>
                             </div>
                         </div>
-                        ${tx.note ? `<div style="font-size: 0.72rem; color: rgba(255,255,255,0.35); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: rgba(0,0,0,0.15); padding: 4px 8px; border-radius: 6px;">📝 ${tx.note.replace(/"/g, '&quot;')}</div>` : ''}
+                        ${doc.note && isSingle ? `<div style="font-size: 0.72rem; color: rgba(255,255,255,0.35); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: rgba(0,0,0,0.15); padding: 4px 8px; border-radius: 6px;">📝 ${doc.note.replace(/"/g, '&quot;')}</div>` : ''}
                     </div>`;
                 }).join('');
             }
@@ -915,53 +993,84 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Filter and Render Chiqim (OUT)
         if (chiqimGrid) {
-            let outRows = _buhHistCache.filter(tx => tx.type === 'OUT');
+            let outDocs = _buhGroupTransactionsIntoDocuments(_buhHistCache.filter(tx => tx.type === 'OUT'));
             const q = (document.getElementById('buh-out-search')?.value || '').toLowerCase().trim();
             if (q) {
-                outRows = outRows.filter(tx => (tx.romix_inventory?.product_name || "o'chirilgan mahsulot").toLowerCase().includes(q));
+                outDocs = outDocs.filter(doc => {
+                    if (doc.id.toLowerCase().includes(q)) return true;
+                    return doc.items.some(tx => (tx.romix_inventory?.product_name || "o'chirilgan mahsulot").toLowerCase().includes(q));
+                });
             }
             const fromVal = document.getElementById('buh-out-date-from')?.value;
             const toVal = document.getElementById('buh-out-date-to')?.value;
             if (fromVal) {
                 const from = new Date(fromVal + 'T00:00:00');
-                outRows = outRows.filter(tx => new Date(tx.created_at) >= from);
+                outDocs = outDocs.filter(doc => new Date(doc.created_at) >= from);
             }
             if (toVal) {
                 const to = new Date(toVal + 'T23:59:59');
-                outRows = outRows.filter(tx => new Date(tx.created_at) <= to);
+                outDocs = outDocs.filter(doc => new Date(doc.created_at) <= to);
             }
 
-            if (outRows.length === 0) {
+            if (outDocs.length === 0) {
                 chiqimGrid.innerHTML = '<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Chiqim amallari topilmadi</div>';
             } else {
-                chiqimGrid.innerHTML = outRows.map(tx => {
-                    const date = new Date(tx.created_at).toLocaleString('uz-UZ');
-                    const prodName = tx.romix_inventory?.product_name || "O'chirilgan mahsulot";
-                    const unit = tx.romix_inventory?.unit || '';
-                    const price = Number(tx.romix_inventory?.price) || 0;
-                    const qty = Number(tx.quantity) || 0;
-                    const total = price * qty;
+                chiqimGrid.innerHTML = outDocs.map(doc => {
+                    const date = new Date(doc.created_at).toLocaleString('uz-UZ');
+                    const isSingle = doc.items.length === 1;
+                    
+                    let titleText = '';
+                    let itemsPreview = '';
+                    let totalSum = 0;
+                    
+                    doc.items.forEach(tx => {
+                        const price = Number(tx.romix_inventory?.price) || 0;
+                        const qty = Number(tx.quantity) || 0;
+                        totalSum += price * qty;
+                    });
+                    
+                    if (isSingle) {
+                        const tx = doc.items[0];
+                        const prodName = tx.romix_inventory?.product_name || "O'chirilgan mahsulot";
+                        const unit = tx.romix_inventory?.unit || '';
+                        const qty = Number(tx.quantity) || 0;
+                        titleText = prodName;
+                        itemsPreview = `<strong style="color: #fff;">${qty} ${unit}</strong>`;
+                    } else {
+                        titleText = `📦 Guruhli Chiqim (${doc.items.length} xil mahsulot)`;
+                        const previews = doc.items.slice(0, 2).map(tx => {
+                            const name = tx.romix_inventory?.product_name || "Mahsulot";
+                            const qty = Number(tx.quantity) || 0;
+                            const unit = tx.romix_inventory?.unit || '';
+                            return `• ${name.slice(0, 22)}${name.length > 22 ? '...' : ''}: ${qty} ${unit}`;
+                        });
+                        if (doc.items.length > 2) {
+                            previews.push(`+ yana ${doc.items.length - 2} ta mahsulot...`);
+                        }
+                        itemsPreview = `<div style="font-size:0.75rem; color:rgba(255,255,255,0.45); display:flex; flex-direction:column; gap:2px;">${previews.join('<br>')}</div>`;
+                    }
+                    
                     return `
-                    <div class="buh-tx-card" onclick="window.viewBuhTxDetails('${tx.id}')"
+                    <div class="buh-tx-card" onclick="window.viewBuhTxDetails('${doc.id}')"
                          style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-left: 4px solid #ff4d4f; border-radius: 16px; padding: 16px; cursor: pointer; transition: all 0.25s; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="font-size: 0.72rem; color: rgba(255,255,255,0.4); font-weight: 700;">#${tx.id.slice(0, 8)}</span>
+                            <span style="font-size: 0.72rem; color: rgba(255,255,255,0.4); font-weight: 700;">#${doc.id.slice(0, 8).toUpperCase()}</span>
                             <span style="font-size: 0.72rem; color: rgba(255,255,255,0.4);">${date}</span>
                         </div>
-                        <div style="font-weight: 800; color: #fff; font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${prodName.replace(/"/g, '&quot;')}">
-                            ${prodName}
+                        <div style="font-weight: 800; color: #fff; font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${titleText.replace(/"/g, '&quot;')}">
+                            ${titleText}
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.06); padding-top: 10px; margin-top: 4px;">
                             <div>
-                                <span style="font-size: 0.7rem; color: rgba(255,255,255,0.45); display: block; text-transform: uppercase;">Miqdori</span>
-                                <strong style="font-size: 0.88rem; color: #fff;">${qty} ${unit}</strong>
+                                <span style="font-size: 0.72rem; color: rgba(255,255,255,0.45); display: block; text-transform: uppercase; margin-bottom: 2px;">Miqdori</span>
+                                ${itemsPreview}
                             </div>
                             <div style="text-align: right;">
-                                <span style="font-size: 0.7rem; color: rgba(255,255,255,0.45); display: block; text-transform: uppercase;">Jami summa</span>
-                                <strong style="font-size: 1.05rem; color: #ff4d4f; font-weight: 800;">${_buhFmt(total)}</strong>
+                                <span style="font-size: 0.72rem; color: rgba(255,255,255,0.45); display: block; text-transform: uppercase; margin-bottom: 2px;">Jami summa</span>
+                                <strong style="font-size: 1.05rem; color: #ff4d4f; font-weight: 800;">${_buhFmt(totalSum)}</strong>
                             </div>
                         </div>
-                        ${tx.note ? `<div style="font-size: 0.72rem; color: rgba(255,255,255,0.35); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: rgba(0,0,0,0.15); padding: 4px 8px; border-radius: 6px;">📝 ${tx.note.replace(/"/g, '&quot;')}</div>` : ''}
+                        ${doc.note && isSingle ? `<div style="font-size: 0.72rem; color: rgba(255,255,255,0.35); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: rgba(0,0,0,0.15); padding: 4px 8px; border-radius: 6px;">📝 ${doc.note.replace(/"/g, '&quot;')}</div>` : ''}
                     </div>`;
                 }).join('');
             }
@@ -1120,116 +1229,246 @@ document.addEventListener('DOMContentLoaded', async () => {
         doc.save(`Romix_Ombor_${type === 'IN' ? 'Kirim' : 'Chiqim'}_Hisoboti.pdf`);
     };
 
-    window.downloadSingleTxPdf = (txId) => {
-        const tx = _buhHistCache.find(t => t.id === txId);
-        if (!tx) return;
-        
-        const dateStr = new Date(tx.created_at).toLocaleString('uz-UZ');
-        const prodName = tx.romix_inventory?.product_name || "O'chirilgan mahsulot";
-        const unit = tx.romix_inventory?.unit || '';
-        const price = Number(tx.romix_inventory?.price) || 0;
-        const qty = Number(tx.quantity) || 0;
-        const total = price * qty;
-        const isKirim = tx.type === 'IN';
-        
+    window.downloadBuhDocPdf = (docId) => {
+        const docs = _buhGroupTransactionsIntoDocuments(_buhHistCache);
+        const docObj = docs.find(d => d.id === docId);
+        if (!docObj) return;
+
+        if (!window.jspdf || !window.jspdf.jsPDF) {
+            alert("jsPDF kutubxonasi yuklanmagan!");
+            return;
+        }
+
+        const isKirim = docObj.type === 'IN';
+        const dateObj = new Date(docObj.created_at);
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        const shortId = docObj.id.slice(0, 4).toUpperCase();
+        const docNo = `${isKirim ? 'KRM' : 'CHQ'}-${year}/${month}-${shortId}`;
+        const docDateStr = `${day}.${month}.${year}`;
+
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ unit: 'mm', format: 'a5', orientation: 'landscape' });
-        
-        doc.setFillColor(20, 30, 45);
-        doc.rect(0, 0, 210, 148, 'F');
-        
-        doc.setDrawColor(255, 255, 255, 10);
-        doc.setLineWidth(0.5);
-        doc.rect(5, 5, 200, 138);
+        const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+        const pageW = 210;
 
+        // Theme colors: Kirim = Green [0, 150, 80], Chiqim = Dark Red/Burgundy [204, 0, 0]
+        const themeColor = isKirim ? [0, 150, 80] : [204, 0, 0];
+        const textDark = [30, 34, 45];
+
+        let y = 15;
+
+        // Header Logo & Meta
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(14);
-        doc.setTextColor(255, 255, 255);
-        doc.text('AKFA ROMIX', 12, 18);
-        
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7.5);
-        doc.setTextColor(150, 150, 150);
-        doc.text('OMBOR HARAKAT VAUCHERI', 12, 23);
+        doc.setFontSize(16);
+        doc.setTextColor(...themeColor);
+        doc.text('AKFA', 15, y);
+        doc.setTextColor(...textDark);
+        doc.text(' ROMIX', doc.getTextWidth('AKFA') + 15, y);
 
-        const typeColor = isKirim ? [0, 255, 136] : [255, 77, 79];
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(11);
-        doc.setTextColor(...typeColor);
-        doc.text(isKirim ? 'KIRIM VAUCHERI' : 'CHIQIM VAUCHERI', 198, 18, { align: 'right' });
-        
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7.5);
-        doc.setTextColor(150, 150, 150);
-        doc.text(`Vaqt: ${dateStr}`, 198, 23, { align: 'right' });
+        doc.setFontSize(8.5);
+        doc.setTextColor(100, 100, 100);
+        doc.text('Ombor xo\'jaligi boshqaruvi', 15, y + 5);
 
-        doc.setDrawColor(...typeColor);
+        doc.setFontSize(8.5);
+        doc.setTextColor(...textDark);
+        doc.text(`Hujjat No: ${docNo}`, pageW - 15, y, { align: 'right' });
+        doc.text(`Sana: ${docDateStr}`, pageW - 15, y + 4, { align: 'right' });
+        doc.setTextColor(...themeColor);
+        doc.text('www.akfagroup.com', pageW - 15, y + 8, { align: 'right' });
+
+        y += 12;
+
+        // Decorative line
+        doc.setDrawColor(...themeColor);
         doc.setLineWidth(0.6);
-        doc.line(12, 28, 198, 28);
+        doc.line(15, y, pageW - 15, y);
+
+        y += 10;
+
+        // Main Title
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(13);
+        doc.setTextColor(...textDark);
+        const titleText = isKirim ? 'KIRIM MA\'LUMOTNOMASI' : 'CHIQIM MA\'LUMOTNOMASI';
+        doc.text(titleText, pageW / 2, y, { align: 'center' });
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9.5);
+        doc.setTextColor(100, 100, 100);
+        const subtitleText = isKirim ? 'Omborga qabul qilingan mahsulotlar to\'g\'risida' : 'Ombordan chiqarilgan mahsulotlar to\'g\'risida';
+        doc.text(subtitleText, pageW / 2, y + 4.5, { align: 'center' });
+
+        y += 12;
+
+        // Metadata Table Layout
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.2);
+        doc.rect(15, y, pageW - 30, 16);
+        doc.line(pageW / 2, y, pageW / 2, y + 16);
+        doc.line(15, y + 8, pageW - 15, y + 8);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(80, 80, 80);
+
+        // Row 1
+        doc.text('Korxona:', 18, y + 5);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...textDark);
+        doc.text('AKFA Romix Ombori', 35, y + 5);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(80, 80, 80);
+        doc.text(isKirim ? 'Kirim turi:' : 'Chiqim turi:', pageW / 2 + 3, y + 5);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...textDark);
+        doc.text(isKirim ? 'Omborga qabul qilish' : 'Ombordan chiqim', pageW / 2 + 25, y + 5);
+
+        // Row 2
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(80, 80, 80);
+        doc.text('Bo\'lim:', 18, y + 13);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...textDark);
+        doc.text('Ombor xo\'jaligi', 35, y + 13);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(80, 80, 80);
+        doc.text('Sana:', pageW / 2 + 3, y + 13);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...textDark);
+        doc.text(`${docDateStr}-yil`, pageW / 2 + 25, y + 13);
+
+        y += 24;
+
+        // Build Table rows
+        const tableData = docObj.items.map((tx, idx) => {
+            const prodName = tx.romix_inventory?.product_name || "O'chirilgan mahsulot";
+            const unit = tx.romix_inventory?.unit || 'dona';
+            const qty = Number(tx.quantity) || 0;
+            
+            let statusText = isKirim ? 'Qabul qilindi ✓' : 'Chiqarildi ✓';
+            if (tx.note) {
+                const cleanNote = tx.note.replace(/\[BatchID:[^\]]+\]/g, '').trim();
+                if (cleanNote) statusText += ` (${cleanNote.slice(0, 24)}${cleanNote.length > 24 ? '...' : ''})`;
+            }
+
+            return [
+                idx + 1,
+                prodName,
+                unit,
+                qty,
+                statusText
+            ];
+        });
+
+        doc.autoTable({
+            startY: y,
+            head: [['No', 'MAHSULOT NOMI', 'O\'LCHOV BIRLIGI', 'MIQDORI', 'HOLATI / IZOH']],
+            body: tableData,
+            theme: 'grid',
+            headStyles: {
+                fillColor: themeColor,
+                textColor: [255, 255, 255],
+                fontStyle: 'bold',
+                fontSize: 8.5,
+                halign: 'center'
+            },
+            bodyStyles: {
+                fontSize: 8,
+                textColor: textDark,
+                valign: 'middle'
+            },
+            columnStyles: {
+                0: { cellWidth: 12, halign: 'center' },
+                1: { cellWidth: 90, halign: 'left' },
+                2: { cellWidth: 25, halign: 'center' },
+                3: { cellWidth: 20, halign: 'center', fontStyle: 'bold' },
+                4: { cellWidth: 33, halign: 'left' }
+            },
+            didParseCell: function(data) {
+                if (data.section === 'body' && data.column.index === 4) {
+                    data.cell.styles.textColor = isKirim ? [0, 150, 80] : [204, 0, 0];
+                    data.cell.styles.fontStyle = 'bold';
+                }
+            }
+        });
+
+        const finalY = doc.lastAutoTable.finalY + 8;
+
+        // Group totals by unit
+        const unitTotals = {};
+        docObj.items.forEach(tx => {
+            const unit = tx.romix_inventory?.unit || 'dona';
+            const qty = Number(tx.quantity) || 0;
+            unitTotals[unit] = (unitTotals[unit] || 0) + qty;
+        });
+        const totalParts = Object.entries(unitTotals).map(([unit, sum]) => `${sum} ${unit}`);
+        const totalStr = `JAMI POZITSIYALAR: ${docObj.items.length} ta    |    JAMI: ${totalParts.join(' • ')}`;
 
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8.5);
-        doc.setTextColor(160, 160, 160);
-        doc.text('Parametr', 15, 38);
-        doc.text('Tafsilot', 70, 38);
+        doc.setTextColor(...textDark);
+        doc.text(totalStr, 15, finalY);
 
-        doc.line(12, 41, 198, 41);
-
-        const fields = [
-            ['Hujjat ID', `#${tx.id}`],
-            ['Mahsulot Nomi', prodName],
-            ['Miqdor / Birlik', `${qty} ${unit}`],
-            ['Birlik Narxi', `${_buhFmt(price)}`],
-            ['Izoh', tx.note || '—']
-        ];
-
-        let y_pos = 48;
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
-        doc.setTextColor(230, 230, 230);
-        
-        fields.forEach(f => {
-            doc.text(f[0], 15, y_pos);
-            doc.text(f[1], 70, y_pos);
-            y_pos += 8;
-        });
+        doc.setTextColor(120, 120, 120);
+        doc.text(`Izoh: Ushbu hisobot avtomatik tarzda tizimdan yuklab olindi.`, 15, finalY + 5);
 
-        doc.setDrawColor(255, 255, 255, 15);
-        doc.line(12, y_pos - 4, 198, y_pos - 4);
+        const sigY = finalY + 22;
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...textDark);
+        doc.text('Ombor mudiri: _______________________', 15, sigY);
+        doc.text('Qabul qildi: _______________________', pageW - 85, sigY);
 
-        doc.setFillColor(isKirim ? 0 : 40, isKirim ? 40 : 15, isKirim ? 20 : 15);
-        doc.rect(12, y_pos, 186, 16, 'F');
-        
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9.5);
-        doc.setTextColor(255, 255, 255);
-        doc.text('JAMI SUMMA:', 18, y_pos + 10);
-        
-        doc.setFontSize(11);
-        doc.setTextColor(...typeColor);
-        doc.text(_buhFmt(total), 192, y_pos + 10, { align: 'right' });
+        doc.setFontSize(7.5);
+        doc.setTextColor(150, 150, 150);
+        const footerInfo = `AKFA Romix Ombori - ${isKirim ? 'Kirim' : 'Chiqim'} ma'lumotnomasi • Hujjat №: ${docNo} • ${docDateStr} • Ushbu hujjat ombor hisobi uchun rasmiy asos hisoblanadi.`;
+        doc.text(footerInfo, pageW / 2, sigY + 12, { align: 'center' });
 
-        doc.save(`Vaucher_${tx.id.slice(0, 8)}.pdf`);
+        const filename = `AKFA_Romix_${isKirim ? 'Kirim' : 'Chiqim'}_Malumotnoma_${docDateStr.replace(/\./g, '_')}.pdf`;
+        doc.save(filename);
     };
 
-    window.viewBuhTxDetails = (txId) => {
-        const tx = _buhHistCache.find(t => t.id === txId);
-        if (!tx) return;
+    window.viewBuhTxDetails = (docId) => {
+        const docs = _buhGroupTransactionsIntoDocuments(_buhHistCache);
+        const docObj = docs.find(d => d.id === docId);
+        if (!docObj) return;
 
-        const dateStr = new Date(tx.created_at).toLocaleString('uz-UZ');
-        const prodName = tx.romix_inventory?.product_name || "O'chirilgan mahsulot";
-        const unit = tx.romix_inventory?.unit || '';
-        const price = Number(tx.romix_inventory?.price) || 0;
-        const qty = Number(tx.quantity) || 0;
-        const total = price * qty;
-        
-        const isKirim = tx.type === 'IN';
+        const dateStr = new Date(docObj.created_at).toLocaleString('uz-UZ');
+        const isKirim = docObj.type === 'IN';
         const typeLabel = isKirim ? '📥 KIRIM (Kirim qilingan)' : '📤 CHIQIM (Chiqarilgan)';
         const typeColor = isKirim ? '#00ff88' : '#ff4d4f';
         const typeIcon = isKirim ? '📥' : '📤';
 
         document.getElementById('buhDetailsIcon').textContent = typeIcon;
-        document.getElementById('buhDetailsTitle').textContent = isKirim ? 'Kirim Tafsilotlari' : 'Chiqim Tafsilotlari';
+        document.getElementById('buhDetailsTitle').textContent = isKirim ? 'Kirim Hujjati Tafsilotlari' : 'Chiqim Hujjati Tafsilotlari';
+
+        let docTotalSum = 0;
+        const itemsHtml = docObj.items.map((tx, idx) => {
+            const prodName = tx.romix_inventory?.product_name || "O'chirilgan mahsulot";
+            const unit = tx.romix_inventory?.unit || '';
+            const price = Number(tx.romix_inventory?.price) || 0;
+            const qty = Number(tx.quantity) || 0;
+            const itemTotal = price * qty;
+            docTotalSum += itemTotal;
+            return `
+            <div style="border: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.01); border-radius: 12px; padding: 12px; margin-bottom: 8px;">
+                <div style="display:flex; justify-content:space-between; font-weight:700; color:#fff; font-size:0.85rem; margin-bottom:6px;">
+                    <span>${idx + 1}. ${prodName}</span>
+                    <span style="color:#00ff88;">${qty} ${unit}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:rgba(255,255,255,0.45);">
+                    <span>Narxi: ${_buhFmt(price)}</span>
+                    <span style="color:${typeColor}; font-weight:700;">Jami: ${_buhFmt(itemTotal)}</span>
+                </div>
+                ${tx.note ? `<div style="font-size:0.7rem; color:rgba(255,255,255,0.35); margin-top:6px; font-style:italic;">Izoh: ${tx.note}</div>` : ''}
+            </div>
+            `;
+        }).join('');
 
         const contentEl = document.getElementById('buhDetailsContent');
         contentEl.innerHTML = `
@@ -1238,41 +1477,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <span style="color:${typeColor}; font-weight:800; text-transform:uppercase;">${typeLabel}</span>
             </div>
             <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.04);">
-                <span style="color:rgba(255,255,255,0.45);">Hujjat ID</span>
-                <span style="font-family:monospace; color:#fff; font-weight:700;">#${tx.id}</span>
+                <span style="color:rgba(255,255,255,0.45);">Hujjat raqami</span>
+                <span style="font-family:monospace; color:#fff; font-weight:700;">#${docObj.id.slice(0, 8).toUpperCase()}</span>
             </div>
             <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.04);">
                 <span style="color:rgba(255,255,255,0.45);">Sana / Vaqt</span>
                 <span style="color:#fff; font-weight:700;">${dateStr}</span>
             </div>
-            <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.04);">
-                <span style="color:rgba(255,255,255,0.45);">Mahsulot nomi</span>
-                <span style="color:#fff; font-weight:800; text-align:right; max-width:60%; word-break:break-all;">${prodName}</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.04);">
-                <span style="color:rgba(255,255,255,0.45);">Miqdor</span>
-                <span style="color:#fff; font-weight:700;">${qty} ${unit}</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.04);">
-                <span style="color:rgba(255,255,255,0.45);">Tan narx (1 birlik)</span>
-                <span style="color:#BA68C8; font-weight:700;">${_buhFmt(price)}</span>
-            </div>
             <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.04); background:rgba(255,255,255,0.01); margin-top:5px; padding:12px 10px; border-radius:10px;">
-                <span style="color:rgba(255,255,255,0.5); font-weight:700;">Jami summa</span>
-                <span style="color:${typeColor}; font-weight:800; font-size:1.15rem;">${_buhFmt(total)}</span>
+                <span style="color:rgba(255,255,255,0.5); font-weight:700;">Hujjat Jami Qiymati</span>
+                <span style="color:${typeColor}; font-weight:800; font-size:1.15rem;">${_buhFmt(docTotalSum)}</span>
             </div>
-            ${tx.note ? `
-            <div style="display:flex; flex-direction:column; gap:6px; padding:10px 0;">
-                <span style="color:rgba(255,255,255,0.45);">Izoh</span>
-                <div style="background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.05); padding:10px 14px; border-radius:12px; font-size:0.8rem; color:#eee; line-height:1.4;">
-                    ${tx.note}
+            <div style="margin-top:15px;">
+                <span style="color:rgba(255,255,255,0.45); font-size:0.8rem; font-weight:700; display:block; margin-bottom:8px;">Mahsulotlar ro'yxati (${docObj.items.length} ta pozitsiya):</span>
+                <div style="max-height: 250px; overflow-y: auto; padding-right: 4px;">
+                    ${itemsHtml}
                 </div>
-            </div>` : ''}
+            </div>
         `;
 
         const pdfBtn = document.getElementById('buhDetailsPdfBtn');
         if (pdfBtn) {
-            pdfBtn.onclick = () => window.downloadSingleTxPdf(tx.id);
+            pdfBtn.onclick = () => window.downloadBuhDocPdf(docObj.id);
+            pdfBtn.textContent = '📄 Hujjatni PDF yuklash';
         }
 
         const modal = document.getElementById('buh-tx-details-modal');
@@ -1283,6 +1510,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const modal = document.getElementById('buh-tx-details-modal');
         if (modal) modal.style.display = 'none';
     };
+
 
     function _buhOmborCardHtml(source, id, name, qty, unit, price, icon, gradient, sizeLabel) {
         const val = price * qty;
