@@ -1,0 +1,30 @@
+# Maxfiy kalitlarning tasodifan commit qilinishini oldini oladi.
+# 2026-07-13 auditida topilgan hodisa asosida qo'shildi (CLAUDE.md 3-band).
+
+staged_diff() {
+    git diff --cached -U0 -- . ':(exclude).env.example' ':(exclude)CLAUDE.md' ':(exclude).husky/pre-commit'
+}
+
+found=0
+
+# Telegram bot token: 8-10 xonali raqam : 30+ belgili token
+if staged_diff | grep -E '^\+' | grep -qE '[0-9]{8,10}:[A-Za-z0-9_-]{30,}'; then
+    echo "XATOLIK: commit ichida Telegram bot tokeniga o'xshash qator topildi."
+    found=1
+fi
+
+# JWT-shakldagi kalit (Supabase anon/service key va h.k.)
+if staged_diff | grep -E '^\+' | grep -qE 'eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}'; then
+    echo "XATOLIK: commit ichida JWT-shakldagi kalit (Supabase anon/service key) topildi."
+    found=1
+fi
+
+if [ "$found" = "1" ]; then
+    echo ""
+    echo "Bu qator xavfsizlik uchun blokladi (CLAUDE.md, 3-band: kalitlarni fallback sifatida yozmang)."
+    echo "Haqiqiy kalit bo'lsa: .env / .env.local ga ko'chiring, kodda import.meta.env.X ni fallbacksiz ishlating."
+    echo "Bu yolg'on signal bo'lsa (masalan test/mock qiymat): git commit --no-verify"
+    exit 1
+fi
+
+exit 0

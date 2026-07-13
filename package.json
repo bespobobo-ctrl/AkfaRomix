@@ -1,24 +1,26 @@
 {
-    "name": "akfa",
-    "private": true,
-    "version": "0.0.0",
-    "type": "module",
-    "scripts": {
-        "dev": "vite",
-        "build": "vite build",
-        "preview": "vite preview"
-    },
-    "devDependencies": {
-        "vite": "^5.2.0"
-    },
-    "dependencies": {
-        "@google/genai": "^2.11.0",
-        "@supabase/supabase-js": "^2.105.1",
-        "google-tts-api": "^2.0.2",
-        "jspdf": "^4.2.1",
-        "jspdf-autotable": "^5.0.8",
-        "pdfkit": "^0.19.1",
-        "telegraf": "^4.16.3",
-        "three": "^0.185.1"
-    }
+  "name": "akfa",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "vite": "^5.2.0"
+  },
+  "dependencies": {
+    "@google/genai": "^2.11.0",
+    "@supabase/supabase-js": "^2.105.1",
+    "google-tts-api": "^2.0.2",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
+    "pdfkit": "^0.19.1",
+    "telegraf": "^4.16.3",
+    "three": "^0.185.1"
+  }
 }
