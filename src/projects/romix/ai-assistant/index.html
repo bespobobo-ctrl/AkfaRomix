@@ -37,23 +37,41 @@
             </div>
         </div>
 
-        <!-- 💬 SCREEN: chat -->
-        <div id="chat-screen" class="screen" style="display:none; padding:0;">
+        <!-- 📞 SCREEN: ovozli qo'ng'iroq -->
+        <div id="call-screen" class="screen" style="display:none; padding:0;">
             <div class="chat-header">
                 <div class="chat-header-title">
                     <div class="bot-avatar">🤖</div>
                     <div>
                         <div class="chat-title">AKFA Romix Yordamchi</div>
-                        <div class="chat-subtitle" id="status-line">Loyiha haqida so'rang</div>
+                        <div class="chat-subtitle" id="status-line">Qo'ng'iroqni boshlang</div>
                     </div>
                 </div>
                 <button id="voice-toggle-btn" class="voice-toggle" title="Ovoz tanlash">🎙️ Maftuna</button>
             </div>
 
-            <div id="messages" class="messages"></div>
+            <div class="call-stage">
+                <div id="orb" class="orb idle"><div class="orb-core"></div></div>
+                <div class="captions">
+                    <div id="caption-user" class="caption caption-user"></div>
+                    <div id="caption-bot" class="caption caption-bot"></div>
+                </div>
+            </div>
 
-            <div class="composer">
-                <button id="mic-btn" class="mic-btn" title="Ovozli xabar">🎤</button>
+            <div id="confirm-overlay" class="confirm-overlay" style="display:none;">
+                <div id="confirm-overlay-text" class="confirm-overlay-text"></div>
+                <div class="confirm-actions">
+                    <button id="confirm-yes-btn" class="confirm-yes">✅ Ha</button>
+                    <button id="confirm-no-btn" class="confirm-no">❌ Yo'q</button>
+                </div>
+            </div>
+
+            <div class="call-controls">
+                <button id="text-fallback-toggle" class="text-fallback-toggle" title="Yozib yuborish">✍️</button>
+                <button id="call-toggle-btn" class="call-btn call-btn-start">📞 Qo'ng'iroqni boshlash</button>
+            </div>
+
+            <div id="text-fallback" class="text-fallback-row" style="display:none;">
                 <textarea id="text-input" class="text-input" placeholder="Savolingizni yozing..." rows="1"></textarea>
                 <button id="send-btn" class="send-btn" title="Yuborish">➤</button>
             </div>
