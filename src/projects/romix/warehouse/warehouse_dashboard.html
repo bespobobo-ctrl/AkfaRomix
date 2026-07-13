@@ -630,23 +630,111 @@
             </section>
 
             <section id="history-view" class="warehouse-section hidden">
-                <div style="margin-bottom: 25px;">
-                    <h1 style="font-size: 2.2rem; font-weight: 600;">Hujjatlar Tarixi</h1>
-                    <p style="color: var(--adm-text-sec);">Barcha qilingan kirim/chiqim amallari arxivi</p>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; flex-wrap: wrap; gap: 15px;">
+                    <div>
+                        <h1 style="font-size: 2.2rem; font-weight: 600;">Hujjatlar Tarixi</h1>
+                        <p style="color: var(--adm-text-sec);">Barcha qilingan kirim/chiqim amallari arxivi</p>
+                    </div>
+                    
+                    <!-- Mode Filter Switcher -->
+                    <div id="histModeFilter" class="om-brand-filter-row" style="margin: 0; background: rgba(0,0,0,0.15); padding: 5px; border-radius: 14px; border: 1px solid var(--adm-border); display: flex; gap: 8px;">
+                        <div class="om-brand-chip active" data-hist-mode="tx" style="padding: 6px 14px; border-radius: 10px; font-size: 0.8rem; height: auto;">Amallar Tarixi</div>
+                        <div class="om-brand-chip" data-hist-mode="orders" style="padding: 6px 14px; border-radius: 10px; font-size: 0.8rem; height: auto;">Buyurtma Tasdiqnomalari</div>
+                    </div>
                 </div>
-                <div class="bento-card" style="grid-column: span 4;">
-                    <table class="v2-table">
-                        <thead>
-                            <tr>
-                                <th>Sana / ID</th>
-                                <th>Mahsulot</th>
-                                <th>Tur</th>
-                                <th>Miqdor / Birlik</th>
-                                <th>Harakat</th>
-                            </tr>
-                        </thead>
-                        <tbody id="historyTable"></tbody>
-                    </table>
+
+                <!-- TRANSACTION HISTORY SECTION -->
+                <div id="histTxSection" class="bento-container" style="padding-top: 0; display: grid;">
+                    <!-- Filter Bento Item -->
+                    <div class="bento-item" style="grid-column: span 12; display: flex; flex-direction: column; gap: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                            <!-- Type Filters -->
+                            <div id="histTypeFilter" class="om-brand-filter-row" style="margin: 0; display: flex; gap: 8px;">
+                                <div class="om-brand-chip active" data-hist-type="barchasi" style="height: auto;">Barchasi</div>
+                                <div class="om-brand-chip" data-hist-type="IN" style="height: auto;">📥 Kirim</div>
+                                <div class="om-brand-chip" data-hist-type="OUT" style="height: auto;">📤 Chiqim</div>
+                            </div>
+                            
+                            <!-- Download PDF Buttons -->
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <button onclick="window.downloadDailyReportPdf('OUT')" class="btn-glass" style="background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.2); color: #ff4d4f; padding: 10px 18px; border-radius: 12px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; height: auto; line-height: 1;">
+                                    <span>📄</span> Kunlik Chiqim (PDF)
+                                </button>
+                                <button onclick="window.downloadDailyReportPdf('IN')" class="btn-glass" style="background: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.2); color: #10b981; padding: 10px 18px; border-radius: 12px; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; height: auto; line-height: 1;">
+                                    <span>📥</span> Kunlik Kirim (PDF)
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Date range and search row -->
+                        <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end; margin-top: 5px; width: 100%;">
+                            <div style="flex: 2; min-width: 220px;">
+                                <label style="font-size: 0.8rem; font-weight: 700; color: var(--adm-text-sec); margin-bottom: 6px; display: block;">Mahsulot Nomi</label>
+                                <input type="text" id="histSearchInput" placeholder="Mahsulot nomidan qidirish..." class="form-input-v2" style="width: 100%; margin: 0; padding: 10px 14px; box-sizing: border-box; height: 42px;">
+                            </div>
+                            <div style="flex: 1; min-width: 150px;">
+                                <label style="font-size: 0.8rem; font-weight: 700; color: var(--adm-text-sec); margin-bottom: 6px; display: block;">Sanadan</label>
+                                <input type="date" id="histDateFrom" class="form-input-v2" style="width: 100%; margin: 0; padding: 8px 12px; box-sizing: border-box; height: 42px; line-height: 1.5;">
+                            </div>
+                            <div style="flex: 1; min-width: 150px;">
+                                <label style="font-size: 0.8rem; font-weight: 700; color: var(--adm-text-sec); margin-bottom: 6px; display: block;">Sanagacha</label>
+                                <input type="date" id="histDateTo" class="form-input-v2" style="width: 100%; margin: 0; padding: 8px 12px; box-sizing: border-box; height: 42px; line-height: 1.5;">
+                            </div>
+                            <div style="height: 42px; display: flex; align-items: flex-end;">
+                                <button id="histFilterResetBtn" class="btn-glass" style="padding: 10px 18px; border-radius: 12px; font-size: 0.85rem; font-weight: 700; cursor: pointer; border-color: rgba(255,255,255,0.15); height: 42px; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
+                                    🔄 Reset
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Table Bento Item -->
+                    <div class="bento-item" style="grid-column: span 12; padding: 0; overflow: hidden; border-radius: 20px;">
+                        <div style="overflow-x: auto; width: 100%;">
+                            <table class="v2-table" style="margin: 0; width: 100%;">
+                                <thead>
+                                    <tr>
+                                        <th>Sana / Hujjat №</th>
+                                        <th>Mahsulot nomi</th>
+                                        <th>Harakat turi</th>
+                                        <th>Miqdor / Birlik</th>
+                                        <th style="width: 110px; text-align: center;">Amal</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="historyTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ORDERS DOCUMENTS HISTORY SECTION -->
+                <div id="histOrdersSection" class="bento-container hidden" style="padding-top: 0; display: none;">
+                    <!-- Filter Bento Item -->
+                    <div class="bento-item" style="grid-column: span 12; display: flex; flex-direction: column; gap: 15px;">
+                        <div style="width: 100%; max-width: 320px;">
+                            <label style="font-size: 0.8rem; font-weight: 700; color: var(--adm-text-sec); margin-bottom: 6px; display: block;">Mijoz Ismi</label>
+                            <input type="text" id="histOrdersSearchInput" placeholder="Mijoz ismi bo'yicha qidirish..." class="form-input-v2" style="width: 100%; margin: 0; padding: 10px 14px; box-sizing: border-box; height: 42px;">
+                        </div>
+                    </div>
+
+                    <!-- Table Bento Item -->
+                    <div class="bento-item" style="grid-column: span 12; padding: 0; overflow: hidden; border-radius: 20px;">
+                        <div style="overflow-x: auto; width: 100%;">
+                            <table class="v2-table" style="margin: 0; width: 100%;">
+                                <thead>
+                                    <tr>
+                                        <th>Tasdiqlangan sana</th>
+                                        <th>Mijoz</th>
+                                        <th>Telefon raqami</th>
+                                        <th>Buyurtma turi</th>
+                                        <th>Tasdiqladi</th>
+                                        <th style="width: 180px; text-align: center;">Amal</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="histOrdersTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </section>
 

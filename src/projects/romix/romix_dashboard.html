@@ -1875,11 +1875,24 @@
                 <!-- ============ PANEL 7: OMBOR HOLATI ============ -->
                 <div id="buh-panel-ombor" class="buh-tab-panel">
                     <div class="hr-card">
+                        <!-- USD Kurs Widget -->
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px; padding:12px 18px; background:rgba(0,210,255,0.04); border:1px solid rgba(0,210,255,0.15); border-radius:16px; flex-wrap:wrap;">
+                            <span style="font-size:1.2rem;">💱</span>
+                            <span style="color:rgba(255,255,255,0.55); font-size:0.8rem; font-weight:700;">USD Kursi:</span>
+                            <span style="color:rgba(255,255,255,0.4); font-size:0.8rem;">1 $ =</span>
+                            <input type="number" id="buh-usd-rate" value="12800" min="1" style="width:110px; text-align:center; font-weight:800; color:#00d2ff; background:rgba(0,0,0,0.2); border:1px solid rgba(0,210,255,0.25); border-radius:10px; padding:7px 10px; font-size:0.9rem; font-family:monospace;">
+                            <span style="color:rgba(255,255,255,0.4); font-size:0.8rem;">UZS</span>
+                            <button onclick="window.saveBuhUsdRate()" style="background:linear-gradient(135deg,#00d2ff,#0072ff); border:none; color:#fff; padding:7px 16px; border-radius:10px; font-weight:800; font-size:0.78rem; cursor:pointer; box-shadow:0 4px 12px rgba(0,114,255,0.3);">💾 Saqlash</button>
+                            <span style="color:rgba(255,255,255,0.3); font-size:0.72rem; font-style:italic;">Narxlar kartochkada $ da ham ko'rinadi</span>
+                        </div>
+
                         <div style="display:flex; align-items:center; gap:8px; margin-bottom:18px; flex-wrap:wrap;">
                             <div class="buh-ombor-cat-tab active" data-ombor-cat="profil" onclick="window.switchBuhOmborCatTab('profil')" style="cursor:pointer; padding:9px 18px; border-radius:12px; background:rgba(0,186,255,0.15); border:1px solid rgba(0,186,255,0.4); color:#00baff; font-weight:700; font-size:0.82rem;">📦 Profil</div>
                             <div class="buh-ombor-cat-tab" data-ombor-cat="aksesuvar" onclick="window.switchBuhOmborCatTab('aksesuvar')" style="cursor:pointer; padding:9px 18px; border-radius:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); font-weight:700; font-size:0.82rem;">🔩 Aksesuvar</div>
                             <div class="buh-ombor-cat-tab" data-ombor-cat="qoldiq" onclick="window.switchBuhOmborCatTab('qoldiq')" style="cursor:pointer; padding:9px 18px; border-radius:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); font-weight:700; font-size:0.82rem;">✂️ Qoldiq Profillar</div>
                             <div class="buh-ombor-cat-tab" data-ombor-cat="oynak" onclick="window.switchBuhOmborCatTab('oynak')" style="cursor:pointer; padding:9px 18px; border-radius:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); font-weight:700; font-size:0.82rem;">🪟 Oynak</div>
+                            <div class="buh-ombor-cat-tab" data-ombor-cat="kirim_tarix" onclick="window.switchBuhOmborCatTab('kirim_tarix')" style="cursor:pointer; padding:9px 18px; border-radius:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); font-weight:700; font-size:0.82rem;">📥 Kirim Tarixi</div>
+                            <div class="buh-ombor-cat-tab" data-ombor-cat="chiqim_tarix" onclick="window.switchBuhOmborCatTab('chiqim_tarix')" style="cursor:pointer; padding:9px 18px; border-radius:12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); font-weight:700; font-size:0.82rem;">📤 Chiqim Tarixi</div>
                         </div>
 
                         <!-- ===== Profil ===== -->
@@ -1937,6 +1950,108 @@
                             <div id="buh-ombor-oynak-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:14px;">
                                 <div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Yuklanmoqda...</div>
                             </div>
+                        </div>
+
+                        <!-- ===== Kirim Tarixi ===== -->
+                        <div id="buh-ombor-cat-panel-kirim_tarix" class="buh-ombor-cat-panel" style="display:none; width: 100%;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
+                                <h3 style="color:#00ff88; margin:0; font-family:'Outfit', sans-serif; display:flex; align-items:center; gap:8px;">📥 Kunlik Kirim Tarixi</h3>
+                                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                    <button onclick="window.downloadBuhHistoryExcel('IN')" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(0,255,136,0.1); border:1px solid rgba(0,255,136,0.3); color:#00ff88; font-weight:700; font-size:0.8rem; height: 38px; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                        <span>📊</span> Kirim (Excel)
+                                    </button>
+                                    <button onclick="window.downloadBuhHistoryPdf('IN')" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(0,186,255,0.1); border:1px solid rgba(0,186,255,0.3); color:#00baff; font-weight:700; font-size:0.8rem; height: 38px; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                        <span>📄</span> Kirim (PDF)
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Search & Date Pickers Row -->
+                            <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 20px; width: 100%;">
+                                <div style="flex: 2; min-width: 220px;">
+                                    <label style="font-size: 0.76rem; font-weight: 700; color: rgba(255,255,255,0.5); margin-bottom: 6px; display: block;">Mahsulot Nomi</label>
+                                    <input type="text" id="buh-in-search" placeholder="🔍 Kirimdan qidirish..." oninput="window.renderBuhHistoryCards()" style="width: 100%; max-width: none; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 10px 14px; border-radius: 12px; font-size: 0.82rem; box-sizing: border-box; height: 40px;">
+                                </div>
+                                <div style="flex: 1; min-width: 150px;">
+                                    <label style="font-size: 0.76rem; font-weight: 700; color: rgba(255,255,255,0.5); margin-bottom: 6px; display: block;">Sanadan</label>
+                                    <input type="date" id="buh-in-date-from" onchange="window.renderBuhHistoryCards()" style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 8px 12px; border-radius: 12px; font-size: 0.82rem; box-sizing: border-box; height: 40px;">
+                                </div>
+                                <div style="flex: 1; min-width: 150px;">
+                                    <label style="font-size: 0.76rem; font-weight: 700; color: rgba(255,255,255,0.5); margin-bottom: 6px; display: block;">Sanagacha</label>
+                                    <input type="date" id="buh-in-date-to" onchange="window.renderBuhHistoryCards()" style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 8px 12px; border-radius: 12px; font-size: 0.82rem; box-sizing: border-box; height: 40px;">
+                                </div>
+                                <div>
+                                    <button onclick="window.resetBuhHistFilters('IN')" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.7); font-weight:700; font-size:0.8rem; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                                        🔄 Reset
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Cards Grid Container -->
+                            <div id="buh-kirim-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:16px; width: 100%;">
+                                <div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Yuklanmoqda...</div>
+                            </div>
+                        </div>
+
+                        <!-- ===== Chiqim Tarixi ===== -->
+                        <div id="buh-ombor-cat-panel-chiqim_tarix" class="buh-ombor-cat-panel" style="display:none; width: 100%;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
+                                <h3 style="color:#ff4d4f; margin:0; font-family:'Outfit', sans-serif; display:flex; align-items:center; gap:8px;">📤 Kunlik Chiqim Tarixi</h3>
+                                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                    <button onclick="window.downloadBuhHistoryExcel('OUT')" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(255,77,79,0.1); border:1px solid rgba(255,77,79,0.3); color:#ff4d4f; font-weight:700; font-size:0.8rem; height: 38px; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                        <span>📊</span> Chiqim (Excel)
+                                    </button>
+                                    <button onclick="window.downloadBuhHistoryPdf('OUT')" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(0,186,255,0.1); border:1px solid rgba(0,186,255,0.3); color:#00baff; font-weight:700; font-size:0.8rem; height: 38px; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                        <span>📄</span> Chiqim (PDF)
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Search & Date Pickers Row -->
+                            <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 20px; width: 100%;">
+                                <div style="flex: 2; min-width: 220px;">
+                                    <label style="font-size: 0.76rem; font-weight: 700; color: rgba(255,255,255,0.5); margin-bottom: 6px; display: block;">Mahsulot Nomi</label>
+                                    <input type="text" id="buh-out-search" placeholder="🔍 Chiqimdan qidirish..." oninput="window.renderBuhHistoryCards()" style="width: 100%; max-width: none; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 10px 14px; border-radius: 12px; font-size: 0.82rem; box-sizing: border-box; height: 40px;">
+                                </div>
+                                <div style="flex: 1; min-width: 150px;">
+                                    <label style="font-size: 0.76rem; font-weight: 700; color: rgba(255,255,255,0.5); margin-bottom: 6px; display: block;">Sanadan</label>
+                                    <input type="date" id="buh-out-date-from" onchange="window.renderBuhHistoryCards()" style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 8px 12px; border-radius: 12px; font-size: 0.82rem; box-sizing: border-box; height: 40px;">
+                                </div>
+                                <div style="flex: 1; min-width: 150px;">
+                                    <label style="font-size: 0.76rem; font-weight: 700; color: rgba(255,255,255,0.5); margin-bottom: 6px; display: block;">Sanagacha</label>
+                                    <input type="date" id="buh-out-date-to" onchange="window.renderBuhHistoryCards()" style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 8px 12px; border-radius: 12px; font-size: 0.82rem; box-sizing: border-box; height: 40px;">
+                                </div>
+                                <div>
+                                    <button onclick="window.resetBuhHistFilters('OUT')" class="icon-small-btn" style="width:auto; border-radius:12px; padding:0 16px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.7); font-weight:700; font-size:0.8rem; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                                        🔄 Reset
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Cards Grid Container -->
+                            <div id="buh-chiqim-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:16px; width: 100%;">
+                                <div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Yuklanmoqda...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============ Buxgalteriya: Kirim-Chiqim Tafsilotlari Modali ============ -->
+                <div id="buh-tx-details-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:10001; align-items:center; justify-content:center; padding:20px;">
+                    <div style="background:#141e2d; border:1px solid rgba(255,255,255,0.08); width:100%; max-width:550px; max-height:92vh; overflow-y:auto; border-radius:24px; padding:28px; box-shadow:0 10px 40px rgba(0,0,0,0.5);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:15px;">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span id="buhDetailsIcon" style="font-size:1.8rem;">📦</span>
+                                <h3 id="buhDetailsTitle" style="color:#fff; margin:0; font-family:'Outfit', sans-serif;">Harakat Tafsilotlari</h3>
+                            </div>
+                            <button onclick="window.closeBuhTxDetailsModal()" style="background:none; border:none; color:rgba(255,255,255,0.4); font-size:1.5rem; cursor:pointer; font-weight:bold;">&times;</button>
+                        </div>
+                        <div id="buhDetailsContent" style="display:flex; flex-direction:column; gap:15px; color:#fff;">
+                            <!-- Dynamically populated detail key-values -->
+                        </div>
+                        <div style="display:flex; gap:12px; margin-top:28px; border-top:1px solid rgba(255,255,255,0.08); padding-top:20px;">
+                            <button id="buhDetailsPdfBtn" class="buh-save-btn" style="flex:1; background:rgba(204,0,0,0.1); border:1px solid rgba(204,0,0,0.3); color:#ff3333;">📄 PDF Yuklash</button>
+                            <button onclick="window.closeBuhTxDetailsModal()" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); padding:12px; border-radius:14px; font-weight:700; cursor:pointer;">Yopish</button>
                         </div>
                     </div>
                 </div>
@@ -1998,8 +2113,22 @@
                                     <input type="number" id="buhOkQty" min="1" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
                                 <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Birlik</label>
                                     <input type="text" id="buhOkUnit" placeholder="dona / kv.m" value="dona" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
-                                <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Narx (birlik)</label>
-                                    <input type="number" id="buhOkPrice" min="0" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                                <div style="grid-column: span 1;">
+                                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px;">
+                                        <div>
+                                            <label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Narx (birlik)</label>
+                                            <input type="number" id="buhOkPrice" min="0" class="buh-input" style="width:100%; box-sizing:border-box;" oninput="window.updateBuhOynakPricePreview()">
+                                        </div>
+                                        <div>
+                                            <label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Valyuta</label>
+                                            <select id="buhOkCurrencyUnit" class="buh-input" style="width:100%; box-sizing:border-box;" onchange="window.updateBuhOynakPricePreview()">
+                                                <option value="UZS">UZS (So'm)</option>
+                                                <option value="USD">USD ($)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div id="buhOynakPricePreview" style="font-size:0.72rem; color:#ffaa00; margin-top:4px; font-weight: 700; min-height: 14px;"></div>
+                                </div>
                             </div>
                         </div>
                         <div style="display:flex; gap:12px; margin-top:22px;">
@@ -2116,8 +2245,22 @@
                                 <input type="text" id="buhKPhone" placeholder="+998" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
                             <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Kirim Miqdori</label>
                                 <input type="number" id="buhKQty" placeholder="0.00" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
-                            <div><label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Mahsulot Narxi (so'm)</label>
-                                <input type="number" id="buhKPrice" placeholder="0.00" class="buh-input" style="width:100%; box-sizing:border-box;"></div>
+                            <div>
+                                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px;">
+                                    <div>
+                                        <label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Mahsulot Narxi</label>
+                                        <input type="number" id="buhKPrice" placeholder="0.00" class="buh-input" style="width:100%; box-sizing:border-box;" oninput="window.updateBuhKirimPricePreview()">
+                                    </div>
+                                    <div>
+                                        <label class="buh-form-label" style="display:block; font-size:0.72rem; color:rgba(255,255,255,0.5); margin-bottom:5px;">Valyuta</label>
+                                        <select id="buhKCurrencyUnit" class="buh-input" style="width:100%; box-sizing:border-box;" onchange="window.updateBuhKirimPricePreview()">
+                                            <option value="UZS">UZS (So'm)</option>
+                                            <option value="USD">USD ($)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div id="buhKirimPricePreview" style="font-size:0.72rem; color:#ffaa00; margin-top:4px; font-weight: 700; min-height: 14px;"></div>
+                            </div>
                         </div>
                         <div style="display:flex; gap:12px; margin-top:22px;">
                             <button id="buhSaveKirimBtn" onclick="window.saveBuhKirim()" class="buh-save-btn" style="flex:1;">💾 Tasdiqlash va Saqlash</button>
@@ -3415,7 +3558,7 @@
     <!-- Premium Buhgalter: trend grafiklari -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
-    <script type="module" src="../autoclapak/js/admin.js?v=6.0"></script>
+    <script type="module" src="../autoclapak/js/admin.js?v=6.4"></script>
 
     <!-- ⚙️ AUTO CLAPAK: STANOK BATAFSIL MA'LUMOTLAR MODALI -->
     <div id="machineDetailsModal"
