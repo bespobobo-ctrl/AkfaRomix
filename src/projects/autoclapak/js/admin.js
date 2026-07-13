@@ -818,7 +818,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             profil: { bg: 'rgba(0,186,255,0.15)', border: 'rgba(0,186,255,0.4)', text: '#00baff' },
             aksesuvar: { bg: 'rgba(186,104,200,0.15)', border: 'rgba(186,104,200,0.4)', text: '#BA68C8' },
             qoldiq: { bg: 'rgba(255,170,0,0.15)', border: 'rgba(255,170,0,0.4)', text: '#ffaa00' },
-            oynak: { bg: 'rgba(0,210,255,0.15)', border: 'rgba(0,210,255,0.4)', text: '#00d2ff' }
+            oynak: { bg: 'rgba(0,210,255,0.15)', border: 'rgba(0,210,255,0.4)', text: '#00d2ff' },
+            tarix: { bg: 'rgba(244,67,54,0.15)', border: 'rgba(244,67,54,0.4)', text: '#F44336' }
         };
         document.querySelectorAll('.buh-ombor-cat-tab').forEach(t => {
             const active = t.dataset.omborCat === cat;
@@ -831,6 +832,325 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.querySelectorAll('.buh-ombor-cat-panel').forEach(p => {
             p.style.display = (p.id === `buh-ombor-cat-panel-${cat}`) ? '' : 'none';
         });
+        if (cat === 'tarix') {
+            window.loadBuhHistoryData();
+        }
+    };
+
+    let _buhHistCache = [];
+    let _buhHistActiveType = 'barchasi';
+
+    window.loadBuhHistoryData = async () => {
+        const tbody = document.getElementById('buhHistoryTableBody');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: rgba(255,255,255,0.3); padding: 20px;">Yuklanmoqda...</td></tr>';
+        
+        try {
+            const { data, error } = await supabase.from('romix_transactions').select('*, romix_inventory(product_name, unit, price)').order('created_at', { ascending: false });
+            if (error) throw error;
+            _buhHistCache = data || [];
+            window.renderBuhHistoryTable();
+        } catch (e) {
+            console.error('Buh history load error:', e);
+            if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #ff4d4f; padding: 20px;">Ma\'lumotlarni yuklashda xatolik!</td></tr>';
+        }
+    };
+
+    window.setBuhHistType = (type) => {
+        _buhHistActiveType = type;
+        const colors = {
+            barchasi: { bg: 'rgba(0,186,255,0.15)', border: 'rgba(0,186,255,0.4)', text: '#00baff' },
+            IN: { bg: 'rgba(0,255,136,0.15)', border: 'rgba(0,255,136,0.4)', text: '#00ff88' },
+            OUT: { bg: 'rgba(255,77,79,0.15)', border: 'rgba(255,77,79,0.4)', text: '#ff4d4f' }
+        };
+        document.querySelectorAll('#buh-hist-type-filter .buh-hist-type-chip').forEach(btn => {
+            const active = btn.dataset.buhHistType === type;
+            const c = colors[btn.dataset.buhHistType];
+            btn.classList.toggle('active', active);
+            btn.style.background = active ? c.bg : 'rgba(255,255,255,0.03)';
+            btn.style.border = `1px solid ${active ? c.border : 'rgba(255,255,255,0.1)'}`;
+            btn.style.color = active ? c.text : 'rgba(255,255,255,0.6)';
+        });
+        window.renderBuhHistoryTable();
+    };
+
+    window.renderBuhHistoryTable = () => {
+        const tbody = document.getElementById('buhHistoryTableBody');
+        if (!tbody) return;
+        
+        let rows = _buhHistCache;
+        
+        // Filter by type
+        if (_buhHistActiveType !== 'barchasi') {
+            rows = rows.filter(tx => tx.type === _buhHistActiveType);
+        }
+        
+        // Filter by search query
+        const q = (document.getElementById('buh-hist-search')?.value || '').toLowerCase().trim();
+        if (q) {
+            rows = rows.filter(tx => (tx.romix_inventory?.product_name || "o'chirilgan mahsulot").toLowerCase().includes(q));
+        }
+        
+        // Filter by date range
+        const fromVal = document.getElementById('buh-hist-date-from')?.value;
+        const toVal = document.getElementById('buh-hist-date-to')?.value;
+        if (fromVal) {
+            const from = new Date(fromVal + 'T00:00:00');
+            rows = rows.filter(tx => new Date(tx.created_at) >= from);
+        }
+        if (toVal) {
+            const to = new Date(toVal + 'T23:59:59');
+            rows = rows.filter(tx => new Date(tx.created_at) <= to);
+        }
+        
+        tbody.innerHTML = '';
+        if (rows.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: rgba(255,255,255,0.3); padding: 20px;">Filtrga mos yozuv topilmadi</td></tr>';
+            return;
+        }
+        
+        rows.forEach(tx => {
+            const date = new Date(tx.created_at).toLocaleString('uz-UZ');
+            const prodName = tx.romix_inventory?.product_name || 'O\'chirilgan mahsulot';
+            const unit = tx.romix_inventory?.unit || '';
+            const price = Number(tx.romix_inventory?.price) || 0;
+            const total = price * tx.quantity;
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><small>${date}</small><br><strong>#${tx.id.slice(0, 8)}</strong></td>
+                <td>${prodName}</td>
+                <td><span style="color:${tx.type === 'IN' ? '#00ff88' : '#ff4d4f'}; font-weight:700;">${tx.type === 'IN' ? 'KIRIM' : 'CHIQIM'}</span></td>
+                <td style="text-align: right; font-weight: 700;">${tx.quantity} ${unit}</td>
+                <td style="text-align: right; color: #BA68C8;">${_buhFmt(price)}</td>
+                <td style="text-align: right; color: #00ff88; font-weight: 700;">${_buhFmt(total)}</td>
+                <td><small style="color: rgba(255,255,255,0.4);">${tx.note || ''}</small></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    };
+
+    window.resetBuhHistFilters = () => {
+        const searchInput = document.getElementById('buh-hist-search');
+        const fromInput = document.getElementById('buh-hist-date-from');
+        const toInput = document.getElementById('buh-hist-date-to');
+        if (searchInput) searchInput.value = '';
+        if (fromInput) fromInput.value = '';
+        if (toInput) toInput.value = '';
+        window.setBuhHistType('barchasi');
+    };
+
+    window.downloadBuhDailyReportPdf = function(type) {
+        const dateVal = document.getElementById('buh-hist-date-from').value || new Date().toISOString().slice(0, 10);
+        const targetDate = new Date(dateVal);
+        
+        const filteredTx = _buhHistCache.filter(tx => {
+            const txDate = new Date(tx.created_at);
+            return tx.type === type && 
+                   txDate.getFullYear() === targetDate.getFullYear() &&
+                   txDate.getMonth() === targetDate.getMonth() &&
+                   txDate.getDate() === targetDate.getDate();
+        });
+        
+        if (filteredTx.length === 0) {
+            alert(`Ushbu sanada (${dateVal}) hech qanday ${type === 'IN' ? 'kirim' : 'chiqim'} amallari topilmadi!`);
+            return;
+        }
+        
+        if (!window.jspdf || !window.jspdf.jsPDF) {
+            alert("jsPDF kutubxonasi yuklanmagan!");
+            return;
+        }
+        
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+        const pageW = 210;
+        
+        // Colors
+        const textDark = [30, 34, 45];
+        const redColor = [204, 0, 0];
+        
+        let y = 15;
+        
+        // Header Logo & Meta
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(16);
+        doc.setTextColor(...redColor);
+        doc.text('AKFA', 15, y);
+        doc.setTextColor(...textDark);
+        doc.text(' ROMIX', doc.getTextWidth('AKFA') + 15, y);
+        
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(100, 100, 100);
+        doc.text('Ombor xo\'jaligi boshqaruvi', 15, y + 5);
+        
+        const dateStr = targetDate.toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const formattedDateForDocId = dateStr.replace(/\./g, '_');
+        const docId = `${type === 'OUT' ? 'CHQ' : 'KRM'}-${targetDate.getFullYear()}/${String(targetDate.getMonth()+1).padStart(2,'0')}-${String(targetDate.getDate()).padStart(3,'0')}`;
+        
+        doc.setFontSize(8.5);
+        doc.setTextColor(...textDark);
+        doc.text(`Hujjat No: ${docId}`, pageW - 15, y, { align: 'right' });
+        doc.text(`Sana: ${dateStr}`, pageW - 15, y + 4, { align: 'right' });
+        doc.setTextColor(...redColor);
+        doc.text('www.akfagroup.com', pageW - 15, y + 8, { align: 'right' });
+        
+        y += 12;
+        
+        // Red decorative line
+        doc.setDrawColor(...redColor);
+        doc.setLineWidth(0.6);
+        doc.line(15, y, pageW - 15, y);
+        
+        y += 10;
+        
+        // Main Title
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(13);
+        doc.setTextColor(...textDark);
+        const titleText = type === 'OUT' ? 'CHIQIM MA\'LUMOTNOMASI' : 'KIRIM MA\'LUMOTNOMASI';
+        doc.text(titleText, pageW / 2, y, { align: 'center' });
+        
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9.5);
+        doc.setTextColor(100, 100, 100);
+        const subtitleText = type === 'OUT' ? 'Ombordan chiqarilgan mahsulotlar to\'g\'risida' : 'Omborga qabul qilingan mahsulotlar to\'g\'risida';
+        doc.text(subtitleText, pageW / 2, y + 4.5, { align: 'center' });
+        
+        y += 12;
+        
+        // Metadata Table layout (Korxona, Bo'lim, Chiqim turi, Sana)
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.2);
+        doc.rect(15, y, pageW - 30, 16);
+        doc.line(pageW / 2, y, pageW / 2, y + 16);
+        doc.line(15, y + 8, pageW - 15, y + 8);
+        
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(80, 80, 80);
+        
+        // Row 1
+        doc.text('Korxona:', 18, y + 5);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...textDark);
+        doc.text('AKFA Romix Ombori', 35, y + 5);
+        
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(80, 80, 80);
+        doc.text(type === 'OUT' ? 'Chiqim turi:' : 'Kirim turi:', pageW / 2 + 3, y + 5);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...textDark);
+        doc.text(type === 'OUT' ? 'Ombordan chiqim' : 'Omborga kirim', pageW / 2 + 25, y + 5);
+        
+        // Row 2
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(80, 80, 80);
+        doc.text('Bo\'lim:', 18, y + 13);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...textDark);
+        doc.text('Ombor xo\'jaligi', 35, y + 13);
+        
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(80, 80, 80);
+        doc.text('Sana:', pageW / 2 + 3, y + 13);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...textDark);
+        doc.text(`${dateStr}-yil`, pageW / 2 + 25, y + 13);
+        
+        y += 24;
+        
+        // Build rows
+        const tableData = filteredTx.map((tx, idx) => {
+            const prodName = tx.romix_inventory?.product_name || 'O\'chirilgan mahsulot';
+            const unit = tx.romix_inventory?.unit || 'dona';
+            const qty = tx.quantity || 0;
+            
+            let statusText = type === 'OUT' ? 'Chiqarildi ✓' : 'Qabul qilindi ✓';
+            if (tx.note) {
+                const match = tx.note.match(/ajratildi:\s*([^(#]+)/i);
+                if (match && match[1]) {
+                    statusText = `${type === 'OUT' ? 'Chiqarildi' : 'Kiritildi'} ✓ (${match[1].trim()})`;
+                } else if (tx.note.includes('Taminotchi')) {
+                    const suppMatch = tx.note.match(/Taminotchi:\s*([^|]+)/i);
+                    if (suppMatch && suppMatch[1]) {
+                        statusText = `Kirim ✓ (${suppMatch[1].trim()})`;
+                    }
+                }
+            }
+            
+            return [
+                idx + 1,
+                prodName,
+                unit,
+                qty,
+                statusText
+            ];
+        });
+        
+        doc.autoTable({
+            startY: y,
+            head: [['No', 'MAHSULOT NOMI', 'O\'LCHOV BIRLIGI', 'MIQDORI', 'HOLATI / IZOH']],
+            body: tableData,
+            theme: 'grid',
+            headStyles: {
+                fillColor: [15, 23, 42],
+                textColor: [255, 255, 255],
+                fontStyle: 'bold',
+                fontSize: 8.5,
+                halign: 'center'
+            },
+            bodyStyles: {
+                fontSize: 8,
+                textColor: textDark,
+                valign: 'middle'
+            },
+            columnStyles: {
+                0: { cellWidth: 12, halign: 'center' },
+                1: { cellWidth: 90, halign: 'left' },
+                2: { cellWidth: 25, halign: 'center' },
+                3: { cellWidth: 20, halign: 'center', fontStyle: 'bold' },
+                4: { cellWidth: 33, halign: 'left' }
+            },
+            didParseCell: function(data) {
+                if (data.section === 'body' && data.column.index === 4) {
+                    data.cell.styles.textColor = [34, 139, 34];
+                    data.cell.styles.fontStyle = 'bold';
+                }
+            }
+        });
+        
+        const finalY = doc.lastAutoTable.finalY + 8;
+        
+        const unitGroups = {};
+        filteredTx.forEach(tx => {
+            const unit = tx.romix_inventory?.unit || 'dona';
+            unitGroups[unit] = (unitGroups[unit] || 0) + tx.quantity;
+        });
+        const totalParts = [];
+        Object.entries(unitGroups).forEach(([unit, sum]) => {
+            totalParts.push(`${sum} ${unit}`);
+        });
+        const totalStr = `JAMI PO... ${totalParts.join(' • ')}`;
+        
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8.5);
+        doc.setTextColor(...textDark);
+        doc.text(totalStr, 15, finalY);
+        
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(120, 120, 120);
+        doc.text(`Izoh: Ushbu hisobot avtomatik tarzda tizimdan yuklab olindi.`, 15, finalY + 5);
+        
+        const sigY = finalY + 22;
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...textDark);
+        doc.text('Ombor mudiri: _______________________', 15, sigY);
+        doc.text('Qabul qildi: _______________________', pageW - 85, sigY);
+        
+        const filename = `AKFA_Romix_${type === 'OUT' ? 'Chiqim' : 'Kirim'}_Malumotnoma_${formattedDateForDocId}.pdf`;
+        doc.save(filename);
     };
 
     function _buhOmborCardHtml(source, id, name, qty, unit, price, icon, gradient, sizeLabel) {
