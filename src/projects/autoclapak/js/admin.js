@@ -565,10 +565,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const omborSearch = document.getElementById('buh-ombor-search');
         if (omborSearch) omborSearch.addEventListener('input', () => {
-            const q = omborSearch.value.trim().toLowerCase();
-            document.querySelectorAll('#buh-ombor-grid .buh-ombor-card').forEach(card => {
-                card.style.display = (!q || (card.dataset.search || '').includes(q)) ? '' : 'none';
-            });
+            _buhRenderOmborProfilGrid();
         });
         [['buh-ombor-acc-search', 'buh-ombor-acc-grid'], ['buh-ombor-qoldiq-search', 'buh-ombor-qoldiq-grid'], ['buh-ombor-oynak-search', 'buh-ombor-oynak-grid']].forEach(([searchId, gridId]) => {
             const el = document.getElementById(searchId);
@@ -1222,37 +1219,89 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    window._expandedBuhBrands = window._expandedBuhBrands || new Set();
+
+    window.toggleBuhBrandGroup = (brandKey) => {
+        if (window._expandedBuhBrands.has(brandKey)) {
+            window._expandedBuhBrands.delete(brandKey);
+        } else {
+            window._expandedBuhBrands.add(brandKey);
+        }
+        _buhRenderOmborProfilGrid();
+    };
+
     function _buhRenderOmborProfilGrid() {
         const gridEl = document.getElementById('buh-ombor-grid');
         if (!gridEl) return;
-        const items = window._buhOmborProfilItems || [];
+        
+        // Hide top filter chips to prevent visual clutter
         const filterEl = document.getElementById('buh-ombor-brand-filter');
-        const brandGroups = _buhGroupOmborProfilByBrand(items);
-        const activeBrand = window._buhOmborProfilBrandFilter || 'barchasi';
+        if (filterEl) filterEl.style.display = 'none';
 
-        if (filterEl) {
-            filterEl.innerHTML = `
-                <div class="buh-brand-chip ${activeBrand === 'barchasi' ? 'active' : ''}" onclick="window._buhSelectOmborProfilBrand('barchasi')">
-                    <span class="chip-name">🗂️ Barchasi</span>
-                    <span class="chip-meta">${items.length} mahsulot</span>
-                </div>
-                ${brandGroups.map(g => {
-                    const key = _buhSafeKey(g.name);
-                    return `<div class="buh-brand-chip ${activeBrand === key ? 'active' : ''}" onclick="window._buhSelectOmborProfilBrand('${key}')" title="${g.name.replace(/"/g, '&quot;')}">
-                        <span class="chip-name">${g.name}</span>
-                        <span class="chip-meta">${g.items.length} mahsulot</span>
-                    </div>`;
-                }).join('')}
-            `;
+        const items = window._buhOmborProfilItems || [];
+        const brandGroups = _buhGroupOmborProfilByBrand(items);
+        const searchInput = document.getElementById('buh-ombor-search');
+        const q = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
+        let html = '';
+        if (brandGroups.length === 0) {
+            gridEl.innerHTML = '<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Mahsulotlar topilmadi</div>';
+            return;
         }
 
-        const activeGroup = brandGroups.find(g => _buhSafeKey(g.name) === activeBrand);
-        const filteredItems = activeBrand === 'barchasi' ? items : (activeGroup ? activeGroup.items : []);
+        const brandColors = {
+            'akfa': '#00baff',
+            'retpen': '#BA68C8',
+            'ekopen': '#ffaa00',
+            'alta plast': '#ff4d4f',
+            'alubest': '#00d2ff',
+            'alutex': '#00ff88',
+            'cra': '#8c1aff',
+            'noma\'lum': '#b0bec5'
+        };
 
-        gridEl.innerHTML = filteredItems.map(p => _buhOmborCardHtml('inventory', p.id, p.product_name, Number(p.stock_quantity) || 0, p.unit, Number(p.price) || 0, '📦', 'linear-gradient(135deg,#00baff,#0072ff)')).join('')
-            || '<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Ushbu brendda mahsulot topilmadi</div>';
+        brandGroups.forEach(g => {
+            const brandName = g.name;
+            const brandKey = _buhSafeKey(brandName);
+            const color = brandColors[brandName.toLowerCase()] || '#0072ff';
 
-        _buhReapplySearchFilter('buh-ombor-search', gridEl);
+            const matchingItems = g.items.filter(p => (p.product_name || '').toLowerCase().includes(q));
+            if (matchingItems.length === 0) return;
+
+            const isExpanded = q ? true : window._expandedBuhBrands.has(brandKey);
+            const totalQty = matchingItems.reduce((s, p) => s + (Number(p.stock_quantity) || 0), 0);
+            const totalValue = matchingItems.reduce((s, p) => s + ((Number(p.stock_quantity) || 0) * (Number(p.price) || 0)), 0);
+            const unit = matchingItems[0]?.unit || 'metr';
+
+            html += `
+            <div class="buh-brand-group-header" onclick="window.toggleBuhBrandGroup('${brandKey}')" 
+                 style="grid-column: 1 / -1; background: linear-gradient(145deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%); border: 1px solid rgba(255, 255, 255, 0.08); border-left: 5px solid ${color}; border-radius: 20px; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.3s; margin-top: 15px; margin-bottom: 5px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="font-size: 1.8rem; filter: drop-shadow(0 0 8px ${color}50); color: ${color};">📁</div>
+                    <div>
+                        <h4 style="color: #fff; margin: 0; font-size: 1.15rem; font-weight: 800; font-family: 'Outfit', sans-serif; letter-spacing: 0.3px;">${brandName}</h4>
+                        <p style="color: rgba(255,255,255,0.45); margin: 4px 0 0; font-size: 0.8rem;">
+                            ${matchingItems.length} xil mahsulot • Jami zaxira: <strong style="color: #fff; font-weight: 700;">${totalQty.toLocaleString('uz-UZ')} ${unit}</strong>
+                        </p>
+                    </div>
+                </div>
+                <div style="text-align: right; display: flex; align-items: center; gap: 24px;">
+                    <div>
+                        <div style="font-size: 0.65rem; color: rgba(255,255,255,0.4); text-transform: uppercase; font-weight: 800; letter-spacing: 0.6px;">Umumiy Qiymati</div>
+                        <div style="font-size: 1.25rem; color: #00ff88; font-weight: 800; margin-top: 2px; text-shadow: 0 0 10px rgba(0,255,136,0.2);">${_buhFmt(totalValue)}</div>
+                    </div>
+                    <div class="brand-chevron" style="font-size: 1rem; color: rgba(255,255,255,0.4); transform: ${isExpanded ? 'rotate(90deg)' : 'rotate(0deg)'}; transition: transform 0.25s;">▶</div>
+                </div>
+            </div>
+            
+            <div id="buh-brand-subgrid-${brandKey}" 
+                 style="display: ${isExpanded ? 'grid' : 'none'}; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; grid-column: 1 / -1; margin-bottom: 25px; padding: 12px 10px; border-left: 2px dashed rgba(255,255,255,0.1); border-radius: 0 0 0 16px;">
+                ${matchingItems.map(p => _buhOmborCardHtml('inventory', p.id, p.product_name, Number(p.stock_quantity) || 0, p.unit, Number(p.price) || 0, '📦', 'linear-gradient(135deg,#00baff,#0072ff)')).join('')}
+            </div>
+            `;
+        });
+
+        gridEl.innerHTML = html;
     }
 
     window._buhSelectOmborProfilBrand = (brandKey) => {
