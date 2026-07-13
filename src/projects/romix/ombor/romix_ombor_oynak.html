@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AKFA Romix - Oynak Ombori</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/css/style.css" />
+    <link rel="stylesheet" href="./romix_ombor_oynak.css">
+</head>
+
+<body class="warehouse-body">
+    <div id="mainApp" class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar-slim">
+            <div class="logo-icon-v2" style="font-size: 1.5rem; color: #007c52; margin-bottom: 40px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(0, 124, 82, 0.1); width: 45px; height: 45px; border-radius: 12px;" onclick="window.location.href='romix_ombor.html'" title="Romix Omboriga Qaytish">
+                ↩️</div>
+            <div class="nav-icon active" title="Oynak">🪟</div>
+            <div class="nav-icon" id="logoutBtn" onclick="localStorage.removeItem('currentUser'); window.location.href = '/';">🚪</div>
+        </aside>
+
+        <main class="admin-main">
+            <!-- Top Nav -->
+            <nav class="top-nav-v2">
+                <div class="nav-links-v2" style="display: flex; align-items: center; gap: 8px;">
+                    <button class="tab-btn" onclick="window.location.href='romix_ombor.html'" style="background: rgba(0, 210, 255, 0.1); color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.2); border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; padding: 8px 16px; margin-right: 10px;">
+                        ⬅️ Orqaga Qaytish
+                    </button>
+                    <button class="tab-btn active">Oynak</button>
+                </div>
+                <div style="display: flex; gap: 20px; align-items: center;">
+                    <button id="themeToggle" class="theme-toggle" onclick="document.body.classList.toggle('dark-mode');">🌙</button>
+                    <div style="text-align: right;">
+                        <div id="userName" style="font-weight: 600; font-size: 0.9rem;">RAHBAR</div>
+                        <div id="userRole" style="font-size: 0.7rem; color: var(--adm-text-sec);">SENIOR OPERATOR</div>
+                    </div>
+                </div>
+            </nav>
+
+            <section id="oynak-view" class="warehouse-section">
+                <!-- Title Header -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px;">
+                    <div>
+                        <h1 style="font-size: 2.2rem; font-weight: 600;">Oynak (Shisha) Ombori</h1>
+                        <p style="color: var(--adm-text-sec);">Oynak/shisha zaxirasini hisobga olish</p>
+                    </div>
+                    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                        <button id="openOynakModal" class="btn-glass btn-outline-accent">
+                            <span style="font-size: 1.2rem;">+</span> Yangi Oynak Qo'shish
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="bento-container">
+                    <div class="bento-item" style="grid-column: span 4;">
+                        <span class="stat-label">Jami Turlari</span>
+                        <div class="stat-value" id="statTotalTypes">--</div>
+                        <div style="font-size: 0.8rem; color: #007c52; margin-top: 10px;">Faol turlar soni</div>
+                    </div>
+                    <div class="bento-item" style="grid-column: span 4;">
+                        <span class="stat-label">Jami Miqdor</span>
+                        <div class="stat-value" id="statTotalQty">--</div>
+                        <div style="font-size: 0.8rem; color: var(--adm-text-sec); margin-top: 10px;">Barcha turlar bo'yicha</div>
+                    </div>
+                    <div class="bento-item" style="grid-column: span 4;">
+                        <span class="stat-label">Jami Qiymati</span>
+                        <div class="stat-value" id="statTotalVal">--</div>
+                        <div style="font-size: 0.8rem; color: #42a5f5; margin-top: 10px;">Ombor qiymati</div>
+                    </div>
+                </div>
+
+                <!-- Search & Actions Bar -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="font-weight: 700; margin: 0;">Oynaklar Ro'yxati</h3>
+                    <input type="text" id="oynakSearch" placeholder="Turi, nomi yoki o'lchami bo'yicha qidirish..." class="form-input-v2" style="width: 320px; margin-bottom:0; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08);">
+                </div>
+
+                <!-- Main Grid -->
+                <div class="qoldiq-grid" id="oynakGrid">
+                    <!-- Oynak cards will load here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal: Yangi Oynak Qo'shish -->
+    <div id="oynakModal" class="hidden"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:3000; display:flex; align-items:center; justify-content:center; padding:20px;">
+        <div class="user-form-modal" style="width: 460px; background:var(--adm-surface);">
+            <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+                <span style="font-size: 1.8rem;">🪟</span>
+                <h2 style="color:var(--adm-text); font-size:1.3rem; margin:0;">Yangi Oynak Qo'shish</h2>
+            </div>
+
+            <label class="form-label">Turi / Brend</label>
+            <input type="text" id="okBrand" class="form-input-v2" placeholder="Masalan: Ikki Qavatli Shisha-Paket" style="margin-bottom:12px;">
+
+            <label class="form-label">Nomi</label>
+            <input type="text" id="okName" class="form-input-v2" placeholder="Masalan: Tinted Bronza 4mm" style="margin-bottom:12px;">
+
+            <label class="form-label">O'lcham</label>
+            <input type="text" id="okSize" class="form-input-v2" placeholder="Masalan: 1200x1500mm" style="margin-bottom:12px;">
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:12px;">
+                <div>
+                    <label class="form-label">Birlik</label>
+                    <select id="okUnit" class="form-input-v2 select-glass" style="margin:0;">
+                        <option value="dona">dona</option>
+                        <option value="m2">m²</option>
+                        <option value="list">list</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Miqdori</label>
+                    <input type="number" id="okQty" placeholder="0" min="0" step="0.01" class="form-input-v2" style="margin:0;">
+                </div>
+            </div>
+
+            <label class="form-label">Narxi (birlik uchun)</label>
+            <input type="number" id="okPrice" class="form-input-v2" placeholder="0" min="0" style="margin-bottom:20px;">
+
+            <div style="display:flex; gap:10px;">
+                <button id="saveOynakBtn" style="flex:1; background:#42a5f5; color:#000; border:none; padding:14px; border-radius:12px; font-weight:700; cursor:pointer;">Qo'shish</button>
+                <button id="closeOynakModal" style="flex:1; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; padding:14px; border-radius:12px; cursor:pointer;">Yopish</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script type="module" src="./romix_ombor_oynak.js"></script>
+</body>
+
+</html>

@@ -7,8 +7,8 @@
     { "path": "/api/daily-report", "schedule": "0 15 * * *" }
   ],
   "rewrites": [
-    { "source": "/akfa_hr_mini.html", "destination": "/src/projects/romix/hr/akfa_hr_mini.html" },
-    { "source": "/akfa_hr_mini", "destination": "/src/projects/romix/hr/akfa_hr_mini.html" },
+    { "source": "/akfa_hr_mini.html", "destination": "/src/projects/romix/xodimlar/akfa_hr_mini.html" },
+    { "source": "/akfa_hr_mini", "destination": "/src/projects/romix/xodimlar/akfa_hr_mini.html" },
     { "source": "/src/projects/romix/pages/(.*)", "destination": "/src/projects/romix/$1" },
     { "source": "/src/mini-app/stanok-app/(.*)", "destination": "/src/projects/autoclapak/mini-app/stanok-app/$1" },
     { "source": "/src/mini-app/kraska-app/(.*)", "destination": "/src/projects/autoclapak/mini-app/kraska-app/$1" },

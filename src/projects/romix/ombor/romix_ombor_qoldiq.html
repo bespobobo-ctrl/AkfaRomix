@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AKFA Romix - Qoldiq Profillar Ombori</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/css/style.css" />
+    <link rel="stylesheet" href="./romix_ombor_qoldiq.css">
+</head>
+
+<body class="warehouse-body">
+    <div id="mainApp" class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar-slim">
+            <div class="logo-icon-v2" style="font-size: 1.5rem; color: #007c52; margin-bottom: 40px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; background: rgba(0, 124, 82, 0.1); width: 45px; height: 45px; border-radius: 12px;" onclick="window.location.href='romix_ombor.html'" title="Romix Omboriga Qaytish">
+                ↩️</div>
+            <div class="nav-icon active" title="Qoldiq Profillar">📐</div>
+            <div class="nav-icon" id="logoutBtn" onclick="localStorage.removeItem('currentUser'); window.location.href = '/';">🚪</div>
+        </aside>
+
+        <main class="admin-main">
+            <!-- Top Nav -->
+            <nav class="top-nav-v2">
+                <div class="nav-links-v2" style="display: flex; align-items: center; gap: 8px;">
+                    <button class="tab-btn" onclick="window.location.href='romix_ombor.html'" style="background: rgba(0, 210, 255, 0.1); color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.2); border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; padding: 8px 16px; margin-right: 10px;">
+                        ⬅️ Orqaga Qaytish
+                    </button>
+                    <button class="tab-btn active">Qoldiq Profillar</button>
+                </div>
+                <div style="display: flex; gap: 20px; align-items: center;">
+                    <button id="themeToggle" class="theme-toggle" onclick="document.body.classList.toggle('dark-mode');">🌙</button>
+                    <div style="text-align: right;">
+                        <div id="userName" style="font-weight: 600; font-size: 0.9rem;">RAHBAR</div>
+                        <div id="userRole" style="font-size: 0.7rem; color: var(--adm-text-sec);">SENIOR OPERATOR</div>
+                    </div>
+                </div>
+            </nav>
+
+            <section id="qoldiq-view" class="warehouse-section">
+                <!-- Title Header -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px;">
+                    <div>
+                        <h1 style="font-size: 2.2rem; font-weight: 600;">Qoldiq Profillar</h1>
+                        <p style="color: var(--adm-text-sec);">Ishlab chiqarishdan ortib qolgan profil bo'laklarini hisobga olish</p>
+                    </div>
+                    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                        <button id="openQoldiqModal" class="btn-glass btn-outline-accent">
+                            <span style="font-size: 1.2rem;">+</span> Yangi Qoldiq Qo'shish
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="bento-container">
+                    <div class="bento-item" style="grid-column: span 4;">
+                        <span class="stat-label">Jami Qoldiq Bo'laklar</span>
+                        <div class="stat-value" id="statTotalItems">--</div>
+                        <div style="font-size: 0.8rem; color: #007c52; margin-top: 10px;">Faol foydalanishda</div>
+                    </div>
+                    <div class="bento-item" style="grid-column: span 4;">
+                        <span class="stat-label">Jami Uzunlik</span>
+                        <div class="stat-value" id="statTotalMeters">-- metr</div>
+                        <div style="font-size: 0.8rem; color: var(--adm-text-sec); margin-top: 10px;">Profil bo'laklari uzunligi</div>
+                    </div>
+                    <div class="bento-item" style="grid-column: span 4;">
+                        <span class="stat-label">Eng Uzun Qoldiq</span>
+                        <div class="stat-value" id="statLongestPiece">-- mm</div>
+                        <div style="font-size: 0.8rem; color: #4fc3f7; margin-top: 10px;">Birinchi foydalanish tavsiya etiladi</div>
+                    </div>
+                </div>
+
+                <!-- Brand Selectors -->
+                <div class="brand-selector-row" id="brandSelectorRow">
+                    <!-- Brands generated here -->
+                </div>
+
+                <!-- Category Tabs -->
+                <div class="category-tabs-row" id="categoryTabsRow">
+                    <!-- Categories generated here -->
+                </div>
+
+                <!-- Search & Actions Bar -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="font-weight: 700; margin: 0;">Qoldiqlar Ro'yxati</h3>
+                    <input type="text" id="qoldiqSearch" placeholder="Qoldiq nomi, seriyasi yoki rangi bo'yicha qidirish..." class="form-input-v2" style="width: 320px; margin-bottom:0; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08);">
+                </div>
+
+                <!-- Main Grid -->
+                <div class="qoldiq-grid" id="qoldiqGrid">
+                    <!-- Remnant cards will load here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal: Yangi Qoldiq Qo'shish -->
+    <div id="qoldiqModal" class="hidden"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:3000; display:flex; align-items:center; justify-content:center; padding:20px;">
+        <div class="user-form-modal" style="width: 500px; background:var(--adm-surface);">
+            <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+                <span style="font-size: 1.8rem;">📐</span>
+                <h2 style="color:var(--adm-text); font-size:1.3rem; margin:0;">Yangi Qoldiq Qo'shish</h2>
+            </div>
+            
+            <label class="form-label">Brend</label>
+            <select id="qkBrend" class="form-input-v2 select-glass" style="margin-bottom:12px;">
+                <option value="AKFA Plastik">AKFA Plastik</option>
+                <option value="AKFA Alyuminiy">AKFA Alyuminiy</option>
+                <option value="AKFA Termo">AKFA Termo</option>
+                <option value="RETPEN Plastik">RETPEN Plastik</option>
+                <option value="Ekopen Plastik">Ekopen Plastik</option>
+            </select>
+
+            <label class="form-label">Profil Turi</label>
+            <select id="qkProfil" class="form-input-v2 select-glass" style="margin-bottom:12px;">
+                <option value="Profil Frame">Profil Ramasi (Frame)</option>
+                <option value="Sash">Sash (Oyna ochiluvchi)</option>
+                <option value="Shtapik">Shtapik</option>
+                <option value="Tokcha">Tokcha (Impost)</option>
+                <option value="Lambri">Lambri</option>
+            </select>
+
+            <label class="form-label">Seriya</label>
+            <select id="qkSeriya" class="form-input-v2 select-glass" style="margin-bottom:12px;">
+                <option value="6000 QVT">6000 QVT</option>
+                <option value="6000 TRIO">6000 TRIO</option>
+                <option value="7000 AKFA EKO">7000 AKFA EKO</option>
+                <option value="5800 TRIO">5800 TRIO</option>
+                <option value="5200 QVT">5200 QVT</option>
+                <option value="Engelberg 7000">Engelberg 7000</option>
+            </select>
+
+            <label class="form-label">Rangi</label>
+            <select id="qkRangi" class="form-input-v2 select-glass" style="margin-bottom:12px;">
+                <option value="Oq">Oq</option>
+                <option value="Qora">Qora</option>
+                <option value="Zolotoy Dub">Zolotoy Dub</option>
+                <option value="Mocha">Mocha</option>
+            </select>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:20px;">
+                <div>
+                    <label class="form-label">Uzunligi (mm)</label>
+                    <input type="number" id="qkUzunlik" placeholder="Masalan: 1500" min="100" class="form-input-v2" style="margin:0;">
+                </div>
+                <div>
+                    <label class="form-label">Soni (dona)</label>
+                    <input type="number" id="qkSoni" placeholder="1" min="1" class="form-input-v2" style="margin:0;">
+                </div>
+            </div>
+
+            <div style="display:flex; gap:10px;">
+                <button id="saveQoldiqBtn" style="flex:1; background:#00d2ff; color:#000; border:none; padding:14px; border-radius:12px; font-weight:700; cursor:pointer;">Qo'shish</button>
+                <button id="closeQoldiqModal" style="flex:1; background:rgba(255,255,255,0.1); color:var(--adm-text); border:none; padding:14px; border-radius:12px; cursor:pointer;">Yopish</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- SCRIPTS -->
+    <script type="module" src="./romix_ombor_qoldiq.js"></script>
+</body>
+
+</html>

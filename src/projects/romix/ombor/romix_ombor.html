@@ -7,107 +7,7 @@
     <title>AKFA Romix - Ombor Tizimi</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/css/style.css" />
-    <style>
-        .warehouse-body {
-            background: var(--adm-bg);
-            color: var(--adm-text);
-            transition: 0.3s;
-            font-family: 'Outfit', sans-serif;
-        }
-
-        /* --- Premium Bento System --- */
-        .bento-container {
-            display: grid;
-            grid-template-columns: repeat(12, 1fr);
-            gap: 20px;
-            padding: 40px 0;
-        }
-
-        .bento-item {
-            background: var(--adm-surface);
-            border-radius: 24px;
-            padding: 30px;
-            border: 1px solid var(--adm-border);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            position: relative;
-            overflow: hidden;
-            text-decoration: none;
-            color: inherit;
-        }
-
-        .dark-mode .bento-item {
-            background: rgba(20, 30, 45, 0.6);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        }
-
-        .bento-item:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-        }
-
-        .bento-item.plast:hover {
-            border-color: #81C784;
-            box-shadow: 0 15px 35px rgba(129, 199, 132, 0.15);
-        }
-
-        .bento-item.aksesuar:hover {
-            border-color: #BA68C8;
-            box-shadow: 0 15px 35px rgba(186, 104, 200, 0.15);
-        }
-
-        .bento-item.qoldiq:hover {
-            border-color: #4fc3f7;
-            box-shadow: 0 15px 35px rgba(79, 195, 247, 0.15);
-        }
-
-        .bento-title {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin: 15px 0 10px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .plast .bento-title {
-            color: #81C784;
-        }
-
-        .aksesuar .bento-title {
-            color: #BA68C8;
-        }
-
-        .qoldiq .bento-title {
-            color: #4fc3f7;
-        }
-
-        /* --- Premium Buttons --- */
-        .btn-glass {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: var(--adm-text);
-            backdrop-filter: blur(10px);
-            padding: 12px 25px;
-            border-radius: 16px;
-            font-weight: 700;
-            font-size: 0.95rem;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-        }
-
-        .btn-glass:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-        }
-    </style>
+    <link rel="stylesheet" href="./romix_ombor.css">
     <script>
         // Anti-Flash & RBAC Role Protection (Ultimate Sync Edition)
         try {
@@ -213,17 +113,7 @@
         </main>
     </div>
 
-    <script>
-        // Set User profile
-        const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-        if (user) {
-            const name = user.full_name || user.username || 'RAHBAR';
-            document.getElementById('userName').textContent = name.toUpperCase();
-        }
-        
-        // Theme toggle memory
-        if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
-    </script>
+    <script type="module" src="./romix_ombor.js"></script>
 </body>
 
 </html>

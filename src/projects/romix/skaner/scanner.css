@@ -1,15 +1,5 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AKFA Romix - Davomat Skaneri</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;900&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="/style.css" />
-    <style>
-        .scanner-container {
+/* --- blok 1 --- */
+.scanner-container {
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -107,41 +97,3 @@
             opacity: 0;
             pointer-events: none;
         }
-    </style>
-</head>
-
-<body>
-    <!-- Smoke Effect -->
-    <div class="smoke-container">
-        <div class="smoke smoke-1"></div>
-        <div class="smoke smoke-2"></div>
-    </div>
-    <div class="bg-glow"></div>
-
-    <div class="scanner-container">
-        <div class="scanner-box">
-            <div class="time-display" id="clockBox">00:00:00</div>
-            <div class="date-display" id="dateBox">DD MM YYYY</div>
-
-            <div class="scan-area" id="scanArea">
-                <div class="scan-line"></div>
-                <span style="color: rgba(255,255,255,0.4); text-align:center;">QR Kodni tekshiring<br><br>(yoki
-                    tugmalarni bosing)</span>
-            </div>
-
-            <div style="margin-bottom: 20px;">
-                <input type="text" id="manualIdInput" class="auth-input" placeholder="ID ni yozib Enter bosing..."
-                    style="text-align:center; max-width:80%; margin-bottom:10px;">
-                <div id="mockButtonsContainer"
-                    style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; max-width: 400px; margin: 0 auto;">
-                </div>
-            </div>
-
-            <div class="status-msg" id="statusMessage">Davomat uchun QR Kodni o'qiting</div>
-        </div>
-    </div>
-
-    <script type="module" src="/src/projects/romix/scanner/scanner.js"></script>
-</body>
-
-</html>
