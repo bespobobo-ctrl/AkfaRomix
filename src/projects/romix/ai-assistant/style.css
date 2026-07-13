@@ -1,0 +1,348 @@
+:root {
+    --bg-dark: #05070a;
+    --card-bg: rgba(13, 20, 30, 0.6);
+    --border-light: rgba(255, 255, 255, 0.08);
+    --cyan: #00f2ff;
+    --cyan-glow: rgba(0, 242, 255, 0.4);
+    --purple: #ba00ff;
+    --emerald: #00ff88;
+    --amber: #fabb18;
+    --rose: #ff4d4f;
+    --text-main: #ffffff;
+    --text-muted: rgba(255, 255, 255, 0.45);
+    --glass: blur(15px);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', -apple-system, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    background-color: var(--bg-dark);
+    background-image:
+        radial-gradient(circle at 0% 0%, rgba(0, 242, 255, 0.03) 0%, transparent 40%),
+        radial-gradient(circle at 100% 100%, rgba(186, 0, 255, 0.03) 0%, transparent 40%);
+    color: var(--text-main);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+}
+
+#app {
+    height: 100%;
+    position: relative;
+}
+
+.screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    animation: screenFade 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes screenFade {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Auth screens --- */
+#login-screen, #notg-screen {
+    padding: 24px;
+}
+
+.logo-shield {
+    font-size: 3rem;
+    font-weight: 950;
+    letter-spacing: -3px;
+    background: linear-gradient(to bottom, #fff, var(--cyan));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 10px 30px var(--cyan-glow);
+    text-align: center;
+}
+
+.sub {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    margin-top: 4px;
+}
+
+.glass-auth {
+    width: 100%;
+    max-width: 360px;
+    background: var(--card-bg);
+    backdrop-filter: var(--glass);
+    border: 1px solid var(--border-light);
+    border-radius: 28px;
+    padding: 28px 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.setup-header { margin-bottom: 24px; }
+
+.elite-input-group { margin-top: 18px; }
+
+.elite-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.huge-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-light);
+    border-radius: 14px;
+    padding: 16px;
+    font-size: 1.1rem;
+    color: var(--text-main);
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.huge-input:focus { border-color: var(--cyan); }
+
+.btn-primary {
+    width: 100%;
+    margin-top: 20px;
+    padding: 16px;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--cyan), #0091ff);
+    color: #001018;
+    font-weight: 800;
+    font-size: 1rem;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.btn-primary:active { transform: scale(0.97); }
+.btn-primary:disabled { opacity: 0.6; }
+
+.error-text {
+    margin-top: 12px;
+    color: var(--rose);
+    font-size: 0.85rem;
+    text-align: center;
+    min-height: 1em;
+}
+
+/* --- Chat screen --- */
+.chat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-light);
+    background: rgba(13, 20, 30, 0.5);
+    backdrop-filter: var(--glass);
+}
+
+.chat-header-title { display: flex; align-items: center; gap: 10px; }
+
+.bot-avatar {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--cyan), var(--purple));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.chat-title { font-weight: 800; font-size: 0.95rem; }
+.chat-subtitle { font-size: 0.72rem; color: var(--text-muted); }
+
+.voice-toggle {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-light);
+    color: var(--text-main);
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.msg {
+    max-width: 82%;
+    padding: 12px 14px;
+    border-radius: 18px;
+    font-size: 0.92rem;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-break: break-word;
+    animation: screenFade 0.25s ease;
+}
+
+.msg.user {
+    align-self: flex-end;
+    background: linear-gradient(135deg, var(--cyan), #0091ff);
+    color: #001018;
+    border-bottom-right-radius: 4px;
+    font-weight: 500;
+}
+
+.msg.bot {
+    align-self: flex-start;
+    background: var(--card-bg);
+    border: 1px solid var(--border-light);
+    border-bottom-left-radius: 4px;
+}
+
+.msg.system {
+    align-self: center;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    text-align: center;
+}
+
+.msg b { color: var(--cyan); }
+.msg.user b { color: #001a2b; }
+
+.msg audio {
+    width: 100%;
+    margin-top: 8px;
+    height: 34px;
+}
+
+.confirm-box {
+    align-self: flex-start;
+    max-width: 82%;
+    background: var(--card-bg);
+    border: 1px solid var(--border-light);
+    border-radius: 18px;
+    border-bottom-left-radius: 4px;
+    padding: 14px;
+}
+
+.confirm-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.confirm-actions button {
+    flex: 1;
+    padding: 10px;
+    border-radius: 12px;
+    border: none;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.confirm-yes { background: var(--emerald); color: #002110; }
+.confirm-no { background: rgba(255, 77, 79, 0.15); color: var(--rose); border: 1px solid rgba(255, 77, 79, 0.3) !important; }
+.confirm-actions button:disabled { opacity: 0.5; }
+
+.typing {
+    align-self: flex-start;
+    display: flex;
+    gap: 4px;
+    padding: 14px 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-light);
+    border-radius: 18px;
+    border-bottom-left-radius: 4px;
+}
+
+.typing span {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    animation: bounce 1.2s infinite ease-in-out;
+}
+
+.typing span:nth-child(2) { animation-delay: 0.15s; }
+.typing span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-4px); opacity: 1; }
+}
+
+.composer {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 10px 12px;
+    border-top: 1px solid var(--border-light);
+    background: rgba(13, 20, 30, 0.5);
+    backdrop-filter: var(--glass);
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+}
+
+.text-input {
+    flex: 1;
+    resize: none;
+    max-height: 100px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-light);
+    border-radius: 18px;
+    padding: 10px 14px;
+    color: var(--text-main);
+    font-size: 0.92rem;
+    outline: none;
+    line-height: 1.4;
+}
+
+.text-input:focus { border-color: var(--cyan); }
+
+.mic-btn, .send-btn {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    border: none;
+    flex-shrink: 0;
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, transform 0.15s;
+}
+
+.mic-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-light);
+    color: var(--text-main);
+}
+
+.mic-btn.recording {
+    background: var(--rose);
+    color: #fff;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.5); }
+    50% { box-shadow: 0 0 0 8px rgba(255, 77, 79, 0); }
+}
+
+.send-btn {
+    background: linear-gradient(135deg, var(--cyan), #0091ff);
+    color: #001018;
+}
+
+.send-btn:active, .mic-btn:active { transform: scale(0.9); }

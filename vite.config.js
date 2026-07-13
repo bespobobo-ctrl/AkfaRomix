@@ -37,6 +37,7 @@ export default defineConfig({
                 showroom: resolve(__dirname, 'src/projects/romix/showroom/showroom_dashboard.html'),
                 scanner: resolve(__dirname, 'src/projects/romix/scanner/scanner.html'),
                 akfa_hr_mini: resolve(__dirname, 'src/projects/romix/hr/akfa_hr_mini.html'),
+                romix_ai_assistant: resolve(__dirname, 'src/projects/romix/ai-assistant/index.html'),
                 stanok: resolve(__dirname, 'src/projects/autoclapak/mini-app/stanok-app/index.html'),
                 kraska: resolve(__dirname, 'src/projects/autoclapak/mini-app/kraska-app/index.html'),
                 qadoqlash: resolve(__dirname, 'src/projects/autoclapak/mini-app/qadoqlash-app/index.html'),

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AKFA Romix Yordamchi</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div id="app">
+        <!-- 🔒 SCREEN: no telegram context -->
+        <div id="notg-screen" class="screen" style="display:none;">
+            <div class="glass-auth" style="margin:auto; text-align:center;">
+                <div class="logo-shield">AKFA</div>
+                <p class="sub">ROMIX YORDAMCHI</p>
+                <p style="margin-top:16px; color:var(--text-muted); font-size:0.9rem;">Iltimos, bu ilovani Telegram bot orqali oching.</p>
+            </div>
+        </div>
+
+        <!-- 🔐 SCREEN: login -->
+        <div id="login-screen" class="screen" style="display:none;">
+            <div class="glass-auth" style="margin:auto;">
+                <div class="setup-header">
+                    <div class="logo-shield">AKFA</div>
+                    <p class="sub">ROMIX YORDAMCHI</p>
+                </div>
+                <div class="elite-input-group">
+                    <label class="elite-label">KIRISH PAROLI</label>
+                    <input type="password" id="login-pass" class="huge-input" placeholder="••••" autocomplete="off">
+                </div>
+                <button id="login-btn" class="btn-primary">KIRISH</button>
+                <p id="login-error" class="error-text"></p>
+            </div>
+        </div>
+
+        <!-- 💬 SCREEN: chat -->
+        <div id="chat-screen" class="screen" style="display:none; padding:0;">
+            <div class="chat-header">
+                <div class="chat-header-title">
+                    <div class="bot-avatar">🤖</div>
+                    <div>
+                        <div class="chat-title">AKFA Romix Yordamchi</div>
+                        <div class="chat-subtitle" id="status-line">Loyiha haqida so'rang</div>
+                    </div>
+                </div>
+                <button id="voice-toggle-btn" class="voice-toggle" title="Ovoz tanlash">🎙️ Maftuna</button>
+            </div>
+
+            <div id="messages" class="messages"></div>
+
+            <div class="composer">
+                <button id="mic-btn" class="mic-btn" title="Ovozli xabar">🎤</button>
+                <textarea id="text-input" class="text-input" placeholder="Savolingizni yozing..." rows="1"></textarea>
+                <button id="send-btn" class="send-btn" title="Yuborish">➤</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+
+</html>
