@@ -331,7 +331,76 @@ export async function excelReport(oy) {
     };
 }
 
-export default { 
+// ── Tendentsiya tahlili: oxirgi N oy savdo/harajat/foyda taqqoslash ──
+export async function trendReport(months) {
+    const n = Math.min(Math.max(Number(months) || 3, 2), 6);
+    const [orders, exp] = await Promise.all([
+        sbGet("sales_orders", "select=created_at,total_price&order=created_at.asc"),
+        sbGet("romix_expenses", "select=date,amount&order=date.asc")
+    ]);
+    const now = new Date();
+    const keys = [];
+    for (let i = n - 1; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        keys.push(d.toISOString().slice(0, 7));
+    }
+    const oylar = keys.map(mk => {
+        const savdo = orders.filter(o => monthKey(o.created_at) === mk).reduce((s, o) => s + (Number(o.total_price) || 0), 0);
+        const harajat = exp.filter(e => monthKey(e.date) === mk).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+        return { oy: mk, savdo: fmt(savdo), harajat: fmt(harajat), foyda: fmt(savdo - harajat), savdo_raqam: round(savdo) };
+    });
+    const last = oylar[oylar.length - 1], prev = oylar[oylar.length - 2];
+    const ozgarish = prev && prev.savdo_raqam > 0 ? Math.round(((last.savdo_raqam - prev.savdo_raqam) / prev.savdo_raqam) * 100) : null;
+    return { oylar: oylar.map(({ savdo_raqam, ...rest }) => rest), shu_oy_savdo_ozgarishi_foizda: ozgarish };
+}
+
+// ── Diqqatga molik narsalar: muddati o'tgan qarz, kechikkan buyurtma, kam qolgan mahsulot ──
+export async function eslatmalar() {
+    const [debts, orders, inv, acc, oynak] = await Promise.all([
+        sbGet("romix_debts", "select=creditor,amount,paid_amount,due_date"),
+        sbGet("sales_orders", "select=customer_name,status,deadline_date,total_price,paid_amount"),
+        sbGet("romix_inventory", "select=product_name,stock_quantity,unit"),
+        sbGet("romix_accessories", "select=name,qty,unit"),
+        sbGet("romix_oynak", "select=product_name,stock_quantity,unit")
+    ]);
+    const td = today();
+    const muddatiOtganQarz = debts
+        .filter(d => d.due_date && d.due_date < td && Math.max(0, (Number(d.amount) || 0) - (Number(d.paid_amount) || 0)) > 0)
+        .map(d => ({ kimga: d.creditor, qoldiq: fmt(Math.max(0, (Number(d.amount) || 0) - (Number(d.paid_amount) || 0))), muddat: d.due_date }));
+    const kechikkanBuyurtma = orders
+        .filter(o => o.deadline_date && o.deadline_date < td && !/yetkaz/i.test(o.status || ""))
+        .map(o => ({ mijoz: o.customer_name, muddat: o.deadline_date, holat: o.status || "Kutilmoqda", qoldiq: fmt(Math.max(0, (Number(o.total_price) || 0) - (Number(o.paid_amount) || 0))) }));
+    const kamProfil = inv.filter(p => (Number(p.stock_quantity) || 0) <= 5).map(p => ({ nomi: p.product_name, qoldiq: (Number(p.stock_quantity) || 0) + " " + (p.unit || "kg") }));
+    const kamAcc = acc.filter(a => (Number(a.qty) || 0) <= 20).map(a => ({ nomi: a.name, qoldiq: (Number(a.qty) || 0) + " " + (a.unit || "dona") }));
+    const kamOynak = oynak.filter(o => (Number(o.stock_quantity) || 0) <= 5).map(o => ({ nomi: o.product_name, qoldiq: (Number(o.stock_quantity) || 0) + " " + (o.unit || "dona") }));
+    return {
+        muddati_otgan_qarzlar: muddatiOtganQarz.slice(0, 10),
+        kechikkan_buyurtmalar: kechikkanBuyurtma.slice(0, 10),
+        kam_qolgan_mahsulotlar: [...kamProfil, ...kamAcc, ...kamOynak].slice(0, 10)
+    };
+}
+
+// ── Eng katta hajmdagi mijozlar (jami buyurtma summasi bo'yicha) ──
+export async function topMijozlar(limit) {
+    const n = Math.min(Math.max(Number(limit) || 5, 1), 15);
+    const orders = await sbGet("sales_orders", "select=customer_name,total_price,paid_amount");
+    const byCustomer = {};
+    orders.forEach(o => {
+        const name = o.customer_name || "Noma'lum";
+        if (!byCustomer[name]) byCustomer[name] = { jami: 0, tolangan: 0, soni: 0 };
+        byCustomer[name].jami += Number(o.total_price) || 0;
+        byCustomer[name].tolangan += Number(o.paid_amount) || 0;
+        byCustomer[name].soni += 1;
+    });
+    const ranked = Object.entries(byCustomer)
+        .sort((a, b) => b[1].jami - a[1].jami)
+        .slice(0, n)
+        .map(([mijoz, v]) => ({ mijoz, jami_buyurtma: fmt(v.jami), tolangan: fmt(v.tolangan), qoldiq: fmt(Math.max(0, v.jami - v.tolangan)), buyurtmalar_soni: v.soni }));
+    return { mijozlar: ranked };
+}
+
+export default {
     overview, ordersReport, warehouse, expensesReport, debtsReport, hrReport, addExpense, payDebt, payOrder,
-    searchOrder, searchProduct, searchEmployee, productionReport, brigadesReport, materialRequestsReport, excelReport
+    searchOrder, searchProduct, searchEmployee, productionReport, brigadesReport, materialRequestsReport, excelReport,
+    trendReport, eslatmalar, topMijozlar
 };

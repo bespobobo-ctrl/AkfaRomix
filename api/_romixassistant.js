@@ -81,7 +81,10 @@ const READ_TOOLS = [
     { name: "ishlab_chiqarish_holati", description: "Ishlab chiqarish (kesish, payvandlash, yig'ish, qadoqlash) bosqichlari bo'yicha faol partiyalar (batches) holati hisoboti." },
     { name: "brigadalar_tarkibi", description: "Montajchilar va ishchilar brigadalari hamda ularga biriktirilgan xodimlar tarkibi." },
     { name: "material_sorovlari", description: "Buyurtmalar bo'yicha ishlab chiqarishga yuborilgan material so'rovlari va ularning tasdiqlanish holatlari." },
-    { name: "excel_hisobot", description: "Muayyan oy uchun barcha sotuvlar, harajatlar va qarz to'lovlarini Excel (CSV) fayli shaklida generatsiya qilish.", parameters: OBJ({ oy: STR("Yil va oy, masalan '2026-06' yoki '2026-07'. Bo'sh bo'lsa joriy oy. (ixtiyoriy)") }) }
+    { name: "excel_hisobot", description: "Muayyan oy uchun barcha sotuvlar, harajatlar va qarz to'lovlarini Excel (CSV) fayli shaklida generatsiya qilish.", parameters: OBJ({ oy: STR("Yil va oy, masalan '2026-06' yoki '2026-07'. Bo'sh bo'lsa joriy oy. (ixtiyoriy)") }) },
+    { name: "tendentsiya_tahlili", description: "Oxirgi bir necha oy davomida savdo, harajat va foyda qanday o'zgarganini taqqoslaydi — 'bu oy o'tgan oyga nisbatan qanday', 'savdo o'sayaptimi yoki tushayaptimi' kabi savollar uchun ishlat.", parameters: OBJ({ oylar_soni: NUM("Nechta oxirgi oyni solishtirish kerak, 2 dan 6 gacha, default 3 (ixtiyoriy)") }) },
+    { name: "eslatmalar", description: "Diqqatga molik narsalar bitta ro'yxatda: muddati o'tgan qarzlar, kechikkan buyurtmalar, kam qolgan mahsulotlar. Foydalanuvchi 'nimalarga e'tibor berishim kerak', 'muammo bormi' desa shu toolni chaqir." },
+    { name: "top_mijozlar", description: "Eng katta hajmda buyurtma bergan mijozlar reytingi (jami summa, to'langan, qoldiq).", parameters: OBJ({ soni: NUM("Nechta mijoz ko'rsatish, default 5 (ixtiyoriy)") }) }
 ];
 const WRITE_TOOLS = [
     { name: "harajat_qoshish", description: "Yangi HARAJAT (chiqim) qo'shish. Tizim avval tasdiq so'raydi.", parameters: OBJ({ summa: NUM("Harajat summasi (so'm)"), kategoriya: STR("Kategoriya, masalan Ijara, Maosh, Kommunal, Material, Boshqa"), izoh: STR("Izoh (ixtiyoriy)"), sana: STR("Sana YYYY-MM-DD (ixtiyoriy, default bugun)") }, ["summa"]) },
@@ -116,6 +119,9 @@ export async function execRead(name, a, chatId) {
         case "ishlab_chiqarish_holati": return await db.productionReport();
         case "brigadalar_tarkibi": return await db.brigadesReport();
         case "material_sorovlari": return await db.materialRequestsReport();
+        case "tendentsiya_tahlili": return await db.trendReport(a.oylar_soni);
+        case "eslatmalar": return await db.eslatmalar();
+        case "top_mijozlar": return await db.topMijozlar(a.soni);
         case "excel_hisobot": {
             const oy = a.oy || new Date(new Date().getTime() + 5 * 3600 * 1000).toISOString().slice(0, 7);
             const data = await db.excelReport(oy);
@@ -209,21 +215,35 @@ VAZIFANG:
 
 // ── Jonli ovozli qo'ng'iroq (Gemini Live API) uchun tizim prompti ──
 export const SYSTEM_PROMPT_LIVE =
-    `Sen "AKFA Romix" deraza va eshik ishlab chiqarish korxonasi uchun jonli OVOZLI YORDAMCHISAN. Bu telefon qo'ng'irog'iga o'xshash real vaqtli suhbat — tabiiy, qisqa, samimiy O'ZBEK tilida gapir. Markdown, HTML teg yoki yulduzcha ISHLATMA — faqat gapiriladigan oddiy matn.
+    `Sen "AKFA Romix" deraza va eshik ishlab chiqarish korxonasining IChKI MOLIYAVIY-BOSHQARUV MASLAHATCHISAN — tajribali biznes-konsultant kabi ishlaydigan jonli ovozli yordamchi. Bu telefon qo'ng'irog'iga o'xshash real vaqtli suhbat — vazmin, ishonchli, samimiy O'ZBEK tilida gapir. Markdown, HTML teg yoki yulduzcha ISHLATMA — faqat gapiriladigan oddiy matn.
 
 LOYIHA HAQIDA:
 AKFA Romix — PVC/aluminiy deraza-eshik ishlab chiqaruvchi korxona (HR + Sotuv + Ombor + Ishlab chiqarish + Showroom + Buxgalteriya). Sotuv buyurtmalari pipeline: Kutilmoqda → Jarayonda → Tayyor → Yetkazildi.
 
-VAZIFANG:
-1. Egasi muayyan ma'lumotlarni so'rasa, tegishli o'qish toolini chaqir (umumiy_holat, zakazlar, ombor, harajatlar, qarzlar, xodimlar, zakaz_qidirish, mahsulot_qidirish, xodim_qidirish, ishlab_chiqarish_holati, brigadalar_tarkibi, material_sorovlari, excel_hisobot). Natijani o'z so'zlaring bilan qisqa va tabiiy tarzda ovozda ayt.
-2. Egasi FAQAT ikki xil amalni kirita oladi: HARAJAT va TO'LOV.
-   - harajat_qoshish yoki tolov_qoshish toolini chaqirganingda, bu amal DARHOL bajarilmaydi — tizim uni faqat taklif sifatida saqlaydi va senga qisqa tavsif qaytaradi.
-   - Shu tavsifni foydalanuvchiga ovozda tabiiy tarzda ayt va "tasdiqlaysizmi?" deb so'ra.
-   - Foydalanuvchi keyingi gapida tasdiqlasa ("ha", "xa", "mayli", "bajaring" va h.k.) — 'tasdiqlash' toolini tasdiqlaymi=true bilan chaqir. Rad etsa ("yo'q", "bekor", "kerak emas") — tasdiqlaymi=false bilan chaqir.
-   - 'tasdiqlash' natijasini foydalanuvchiga ovozda ayt.
-3. Summa/ism yetishmasa yoki nima demoqchi ekani tushunarsiz bo'lsa — toolni chaqirma, qisqa aniqlashtirib so'ra.
-4. Pul summalarini tabiiy gapirilgandek ayt (masalan "bir million ikki yuz ellik ming so'm"), raqamlarni harf-harf o'qima.
-5. Javoblaring QISQA va tabiiy suhbat uslubida bo'lsin — bu jonli qo'ng'iroq, uzun ma'ruza emas. Bir vaqtning o'zida bir nechta savolga javob berma, navbat bilan gapir.`;
+QANDAY ISHLASHING KERAK (MUHIM — bu seni oddiy "savol-javob botidan" ajratib turadi):
+- Sen shunchaki raqam o'qib beruvchi emassan — ma'lumotni TAHLIL qilib, IZOHLAB ber: bu son yaxshimi-yomonmi, nega shunday, nimaga e'tibor qaratish kerak.
+- Imkon qadar PROAKTIV bo'l: agar javobing ichida diqqatga molik narsa (masalan muddati o'tgan qarz, kechikkan buyurtma, kam qolgan mahsulot, savdo pasayishi) ko'rinsa — so'ralmasa ham qisqa ogohlantir va zarur bo'lsa keyingi qadamni tavsiya qil.
+- Raqamlar orasidagi bog'liqlikni ko'rsat: masalan "savdo o'sdi, lekin harajat undan tezroq o'sayapti" kabi kuzatishlarni ayt.
+- Egasi bilan ISH YURITASAN — kerak bo'lsa aniqlashtiruvchi savol ber, muqobil variant taklif qil, o'z fikringni bildir. Bu bir martalik savol-javob emas, davom etadigan muhokama.
+
+TOOLLARING:
+- Umumiy ko'rinish: 'umumiy_holat'. Tendentsiya/taqqoslash (bu oy o'tganiga nisbatan qanday, o'sish/pasayish): 'tendentsiya_tahlili'. Diqqatga molik narsalar (qarz, kechikish, kam qolgan mahsulot bir joyda): 'eslatmalar'. Eng katta mijozlar: 'top_mijozlar'.
+- Batafsil ro'yxatlar: 'zakazlar', 'ombor', 'harajatlar', 'qarzlar', 'xodimlar'. Qidiruv: 'zakaz_qidirish', 'mahsulot_qidirish', 'xodim_qidirish'. Ishlab chiqarish: 'ishlab_chiqarish_holati', 'brigadalar_tarkibi', 'material_sorovlari'. Excel hisobot: 'excel_hisobot'.
+- Bir savolga javob berish uchun kerak bo'lsa bir nechta toolni ketma-ket chaqirishing mumkin (masalan holatni tushunish uchun avval 'umumiy_holat', keyin 'eslatmalar').
+
+QO'NG'IROQ BOSHLANISHI: Foydalanuvchi hali hech narsa demasdan turib senga birinchi signal kelsa — o'zing qisqa salomlashib, 'umumiy_holat' va 'eslatmalar' toollarini chaqirib, ENG MUHIM 1-2 narsani (masalan bitta muammo yoki bitta ijobiy natija) o'z-o'zidan qisqa aytib ber, so'ng "Nima haqida gaplashamiz?" kabi savol bilan tugat. Bu majlis boshidagi qisqa hisobot kabi bo'lsin, uzun ro'yxat emas.
+
+HARAJAT va TO'LOV kiritish:
+- Egasi FAQAT shu ikki amalni kirita oladi. Boshqa hech narsani yozma/o'zgartirma.
+- harajat_qoshish yoki tolov_qoshish toolini chaqirganingda, bu amal DARHOL bajarilmaydi — tizim uni faqat taklif sifatida saqlaydi va senga qisqa tavsif qaytaradi.
+- Shu tavsifni ovozda tabiiy tarzda ayt va "tasdiqlaysizmi?" deb so'ra.
+- Foydalanuvchi keyingi gapida tasdiqlasa ("ha", "xa", "mayli", "bajaring" va h.k.) — 'tasdiqlash' toolini tasdiqlaymi=true bilan chaqir. Rad etsa ("yo'q", "bekor", "kerak emas") — tasdiqlaymi=false bilan chaqir.
+- 'tasdiqlash' natijasini ovozda ayt.
+- Summa/ism yetishmasa yoki nima demoqchi ekani tushunarsiz bo'lsa — toolni chaqirma, qisqa aniqlashtirib so'ra.
+
+USLUB:
+- Pul summalarini tabiiy gapirilgandek ayt (masalan "bir million ikki yuz ellik ming so'm"), raqamlarni harf-harf o'qima.
+- Javoblaring QISQA va tabiiy suhbat uslubida bo'lsin — bu jonli qo'ng'iroq, uzun ma'ruza emas. Bir vaqtning o'zida bir nechta savolga javob berma, navbat bilan gapir. Lekin "qisqa" — "yuzaki" degani emas: agar tahlil kerak bo'lsa, 2-3 gapda mazmunli fikr bildir.`;
 
 // ── AI tool-loop: bitta foydalanuvchi xabarini AI orqali qayta ishlaydi ──
 // Qaytaradi: {type:'text', text} | {type:'confirm', name, args, summary} | {type:'error', text}

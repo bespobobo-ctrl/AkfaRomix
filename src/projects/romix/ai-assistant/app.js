@@ -14,9 +14,11 @@ const screens = {
 };
 const orb = document.getElementById('orb');
 const statusLine = document.getElementById('status-line');
-const captionUser = document.getElementById('caption-user');
-const captionBot = document.getElementById('caption-bot');
 const callToggleBtn = document.getElementById('call-toggle-btn');
+const transcriptEl = document.getElementById('transcript');
+const liveCaptionEl = document.getElementById('live-caption');
+const captionRoleEl = document.getElementById('caption-role');
+const captionTextEl = document.getElementById('caption-text');
 
 function showScreen(name) {
     Object.entries(screens).forEach(([k, el]) => { el.style.display = (k === name) ? 'flex' : 'none'; });
@@ -41,8 +43,31 @@ function renderRich(text) {
     return s;
 }
 
-function setOrbState(state) { orb.className = 'orb ' + state; }
+function setOrbState(state) { orb.className = 'presence-dot ' + state; }
 function setStatus(text) { statusLine.textContent = text; }
+
+// ── Transkript (doimiy suhbat yozuvi) ──
+function addTranscriptEntry(role, text) {
+    if (!text || !text.trim()) return;
+    const empty = document.getElementById('transcript-empty');
+    if (empty) empty.remove();
+    const div = document.createElement('div');
+    div.className = 'entry ' + role;
+    const roleLabel = role === 'user' ? 'Siz' : 'Yordamchi';
+    div.innerHTML = `<div class="entry-role">${roleLabel}</div><div class="entry-text">${renderRich(text)}</div>`;
+    transcriptEl.appendChild(div);
+    transcriptEl.scrollTop = transcriptEl.scrollHeight;
+}
+
+function showLiveCaption(role, text) {
+    liveCaptionEl.style.display = 'block';
+    captionRoleEl.textContent = role === 'user' ? 'Siz' : 'Yordamchi';
+    captionTextEl.innerHTML = renderRich(text);
+}
+function hideLiveCaption() {
+    liveCaptionEl.style.display = 'none';
+    captionTextEl.textContent = '';
+}
 
 // ═══════════════════════════════════════════════════════════
 // Gemini Live — real vaqtli ikki tomonlama ovozli suhbat
@@ -57,7 +82,6 @@ let micSource = null;
 let audioPlayer = null;
 let userTranscript = '';
 let botTranscript = '';
-let isModelSpeaking = false;
 
 function float32ToPCM16Base64(float32Array) {
     const int16 = new Int16Array(float32Array.length);
@@ -134,15 +158,26 @@ async function handleToolCall(toolCall) {
     wsSend({ toolResponse: { functionResponses } });
 }
 
+function commitTurn() {
+    addTranscriptEntry('user', userTranscript);
+    addTranscriptEntry('assistant', botTranscript);
+    userTranscript = '';
+    botTranscript = '';
+    hideLiveCaption();
+}
+
 function handleServerMessage(data) {
     if (data.setupComplete) {
         setStatus('Ulandi — gapiring');
         startMicCapture();
+        // Foydalanuvchi hali gapirmasdan turib, yordamchi o'zi qisqa hisobot bilan salomlashsin
+        wsSend({ realtimeInput: { text: '(qo\'ng\'iroq boshlandi — o\'zing qisqa salomlash va bugungi eng muhim narsani ayt)' } });
         return;
     }
 
     if (data.toolCall) {
         setOrbState('thinking');
+        setStatus('Ma\'lumot olmoqdaman...');
         handleToolCall(data.toolCall);
         return;
     }
@@ -153,7 +188,6 @@ function handleServerMessage(data) {
     const parts = (sc.modelTurn && sc.modelTurn.parts) || [];
     for (const part of parts) {
         if (part.inlineData && part.inlineData.data) {
-            isModelSpeaking = true;
             setOrbState('speaking');
             setStatus('Gapiryapman...');
             audioPlayer.play(part.inlineData.data);
@@ -162,23 +196,21 @@ function handleServerMessage(data) {
 
     if (sc.inputTranscription && sc.inputTranscription.text) {
         userTranscript += sc.inputTranscription.text;
-        captionUser.textContent = userTranscript;
+        showLiveCaption('user', userTranscript);
     }
     if (sc.outputTranscription && sc.outputTranscription.text) {
         botTranscript += sc.outputTranscription.text;
-        captionBot.innerHTML = renderRich(botTranscript);
+        showLiveCaption('assistant', botTranscript);
     }
 
     if (sc.interrupted) {
         audioPlayer.interrupt();
-        isModelSpeaking = false;
+        commitTurn();
         if (callActive) { setOrbState('listening'); setStatus('Tinglayapman...'); }
     }
 
     if (sc.turnComplete) {
-        isModelSpeaking = false;
-        userTranscript = '';
-        botTranscript = '';
+        commitTurn();
         if (callActive) { setOrbState('listening'); setStatus('Tinglayapman...'); }
     }
 }
@@ -189,7 +221,7 @@ async function startMicCapture() {
             audio: { sampleRate: 16000, echoCancellation: true, noiseSuppression: true, autoGainControl: true }
         });
     } catch (e) {
-        captionBot.textContent = '⚠️ Mikrofonga ruxsat berilmadi.';
+        addTranscriptEntry('assistant', '⚠️ Mikrofonga ruxsat berilmadi.');
         stopCall();
         return;
     }
@@ -213,8 +245,6 @@ async function startCall() {
     callToggleBtn.disabled = true;
     setOrbState('thinking');
     setStatus('Ulanmoqda...');
-    captionUser.textContent = '';
-    captionBot.textContent = '';
 
     let cfg;
     try {
@@ -227,13 +257,15 @@ async function startCall() {
     } catch (e) {
         callToggleBtn.disabled = false;
         setOrbState('idle');
-        captionBot.textContent = '⚠️ Tarmoq xatosi.';
+        setStatus("Qo'ng'iroqni boshlang");
+        addTranscriptEntry('assistant', '⚠️ Tarmoq xatosi.');
         return;
     }
     if (!cfg || !cfg.ok) {
         callToggleBtn.disabled = false;
         setOrbState('idle');
-        captionBot.textContent = '⚠️ Ulanib bo\'lmadi: ' + (cfg && cfg.error ? cfg.error : 'noma\'lum xato');
+        setStatus("Qo'ng'iroqni boshlang");
+        addTranscriptEntry('assistant', '⚠️ Ulanib bo\'lmadi: ' + (cfg && cfg.error ? cfg.error : 'noma\'lum xato'));
         return;
     }
 
@@ -266,7 +298,7 @@ async function startCall() {
         });
         callActive = true;
         callToggleBtn.disabled = false;
-        callToggleBtn.textContent = "📴 Qo'ng'iroqni tugatish";
+        callToggleBtn.textContent = "Qo'ng'iroqni tugatish";
         callToggleBtn.classList.remove('call-btn-start');
         callToggleBtn.classList.add('call-btn-end');
     };
@@ -281,7 +313,7 @@ async function startCall() {
     };
 
     ws.onerror = () => {
-        captionBot.textContent = '⚠️ Ulanish xatosi.';
+        addTranscriptEntry('assistant', '⚠️ Ulanish xatosi.');
     };
 
     ws.onclose = () => {
@@ -292,11 +324,12 @@ async function startCall() {
 function stopCall() {
     callActive = false;
     callToggleBtn.disabled = false;
-    callToggleBtn.textContent = "📞 Qo'ng'iroqni boshlash";
+    callToggleBtn.textContent = "Qo'ng'iroqni boshlash";
     callToggleBtn.classList.remove('call-btn-end');
     callToggleBtn.classList.add('call-btn-start');
     setOrbState('idle');
     setStatus("Qo'ng'iroqni boshlang");
+    commitTurn();
 
     if (ws) { try { ws.close(); } catch (e) { } ws = null; }
     if (micSource) { try { micSource.disconnect(); } catch (e) { } micSource = null; }
@@ -304,8 +337,6 @@ function stopCall() {
     if (captureCtx) { try { captureCtx.close(); } catch (e) { } captureCtx = null; }
     if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
     if (audioPlayer) { audioPlayer.destroy(); audioPlayer = null; }
-    userTranscript = '';
-    botTranscript = '';
 }
 
 callToggleBtn.onclick = () => { callActive ? stopCall() : startCall(); };
@@ -336,20 +367,20 @@ sendBtn.onclick = async () => {
     if (!text) return;
     textInput.value = '';
     autoResize();
-    captionUser.textContent = text;
+    addTranscriptEntry('user', text);
     setStatus("O'ylayapman...");
     try {
         const r = await api('chat', { text });
         setStatus(callActive ? 'Tinglayapman...' : "Qo'ng'iroqni boshlang");
         if (r.ok && r.result) {
             const result = r.result;
-            if (result.type === 'confirm') captionBot.innerHTML = renderRich(result.summary + " Tasdiqlaysizmi?");
-            else captionBot.innerHTML = renderRich(result.text || '');
+            if (result.type === 'confirm') addTranscriptEntry('assistant', result.summary + " Tasdiqlaysizmi?");
+            else addTranscriptEntry('assistant', result.text || '');
         } else {
-            captionBot.textContent = '⚠️ Xatolik yuz berdi.';
+            addTranscriptEntry('assistant', '⚠️ Xatolik yuz berdi.');
         }
     } catch (e) {
-        captionBot.textContent = '⚠️ Tarmoq xatosi.';
+        addTranscriptEntry('assistant', '⚠️ Tarmoq xatosi.');
         setStatus(callActive ? 'Tinglayapman...' : "Qo'ng'iroqni boshlang");
     }
 };
@@ -359,7 +390,6 @@ async function enterCall() {
     showScreen('call');
     setOrbState('idle');
     setStatus("Qo'ng'iroqni boshlash tugmasini bosing");
-    captionBot.textContent = '👋 Assalomu alaykum! "Qo\'ng\'iroqni boshlash" tugmasini bosib, loyiha haqida so\'rang.';
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

@@ -37,11 +37,11 @@
             </div>
         </div>
 
-        <!-- 📞 SCREEN: ovozli qo'ng'iroq -->
+        <!-- 📞 SCREEN: ovozli maslahat -->
         <div id="call-screen" class="screen" style="display:none; padding:0;">
             <div class="chat-header">
                 <div class="chat-header-title">
-                    <div class="bot-avatar">🤖</div>
+                    <div class="presence"><span id="orb" class="presence-dot idle"></span></div>
                     <div>
                         <div class="chat-title">AKFA Romix Yordamchi</div>
                         <div class="chat-subtitle" id="status-line">Qo'ng'iroqni boshlang</div>
@@ -49,17 +49,18 @@
                 </div>
             </div>
 
-            <div class="call-stage">
-                <div id="orb" class="orb idle"><div class="orb-core"></div></div>
-                <div class="captions">
-                    <div id="caption-user" class="caption caption-user"></div>
-                    <div id="caption-bot" class="caption caption-bot"></div>
-                </div>
+            <div id="transcript" class="transcript">
+                <div class="transcript-empty" id="transcript-empty">Suhbat shu yerda ko'rinadi.</div>
+            </div>
+
+            <div id="live-caption" class="live-caption" style="display:none;">
+                <span id="caption-role" class="live-caption-role"></span>
+                <span id="caption-text"></span>
             </div>
 
             <div class="call-controls">
                 <button id="text-fallback-toggle" class="text-fallback-toggle" title="Yozib yuborish">✍️</button>
-                <button id="call-toggle-btn" class="call-btn call-btn-start">📞 Qo'ng'iroqni boshlash</button>
+                <button id="call-toggle-btn" class="call-btn call-btn-start">Qo'ng'iroqni boshlash</button>
             </div>
 
             <div id="text-fallback" class="text-fallback-row" style="display:none;">
