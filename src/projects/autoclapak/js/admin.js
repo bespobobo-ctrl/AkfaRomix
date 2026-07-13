@@ -906,178 +906,380 @@ document.addEventListener('DOMContentLoaded', async () => {
         const kirimGrid = document.getElementById('buh-kirim-grid');
         const chiqimGrid = document.getElementById('buh-chiqim-grid');
 
-        // Filter and Render Kirim (IN)
-        if (kirimGrid) {
-            let inDocs = _buhGroupTransactionsIntoDocuments(_buhHistCache.filter(tx => tx.type === 'IN'));
-            const q = (document.getElementById('buh-in-search')?.value || '').toLowerCase().trim();
+        const _renderGrid = (gridEl, txType) => {
+            if (!gridEl) return;
+            const p = txType.toLowerCase();
+            let docs = _buhGroupTransactionsIntoDocuments(_buhHistCache.filter(tx => tx.type === txType));
+            const q = (document.getElementById(`buh-${p}-search`)?.value || '').toLowerCase().trim();
             if (q) {
-                inDocs = inDocs.filter(doc => {
-                    if (doc.id.toLowerCase().includes(q)) return true;
-                    return doc.items.some(tx => (tx.romix_inventory?.product_name || "o'chirilgan mahsulot").toLowerCase().includes(q));
-                });
+                docs = docs.filter(doc => doc.id.toLowerCase().includes(q) || doc.items.some(tx => (tx.romix_inventory?.product_name || "o'chirilgan mahsulot").toLowerCase().includes(q)));
             }
-            const fromVal = document.getElementById('buh-in-date-from')?.value;
-            const toVal = document.getElementById('buh-in-date-to')?.value;
-            if (fromVal) {
-                const from = new Date(fromVal + 'T00:00:00');
-                inDocs = inDocs.filter(doc => new Date(doc.created_at) >= from);
-            }
-            if (toVal) {
-                const to = new Date(toVal + 'T23:59:59');
-                inDocs = inDocs.filter(doc => new Date(doc.created_at) <= to);
+            const fromVal = document.getElementById(`buh-${p}-date-from`)?.value;
+            const toVal = document.getElementById(`buh-${p}-date-to`)?.value;
+            if (fromVal) { const from = new Date(fromVal + 'T00:00:00'); docs = docs.filter(doc => new Date(doc.created_at) >= from); }
+            if (toVal) { const to = new Date(toVal + 'T23:59:59'); docs = docs.filter(doc => new Date(doc.created_at) <= to); }
+
+            if (docs.length === 0) {
+                gridEl.innerHTML = `<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">${txType === 'IN' ? 'Kirim' : 'Chiqim'} amallari topilmadi</div>`;
+                return;
             }
 
-            if (inDocs.length === 0) {
-                kirimGrid.innerHTML = '<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Kirim amallari topilmadi</div>';
-            } else {
-                kirimGrid.innerHTML = inDocs.map(doc => {
-                    const date = new Date(doc.created_at).toLocaleString('uz-UZ');
-                    const isSingle = doc.items.length === 1;
-                    
-                    let titleText = '';
-                    let itemsPreview = '';
-                    let totalSum = 0;
-                    
+            // Group docs by calendar day (YYYY-MM-DD)
+            const byDay = {};
+            docs.forEach(doc => {
+                const dayKey = new Date(doc.created_at).toISOString().slice(0, 10);
+                if (!byDay[dayKey]) byDay[dayKey] = [];
+                byDay[dayKey].push(doc);
+            });
+
+            const isKirim = txType === 'IN';
+            const accentColor = isKirim ? '#00ff88' : '#ff4d4f';
+            const accentRgba = isKirim ? 'rgba(0,255,136,0.08)' : 'rgba(255,77,79,0.08)';
+            const accentBorder = isKirim ? 'rgba(0,255,136,0.25)' : 'rgba(255,77,79,0.25)';
+            const usdRate = getUsdRate();
+
+            let html = '';
+
+            Object.keys(byDay).sort((a, b) => b.localeCompare(a)).forEach(dayKey => {
+                const dayDocs = byDay[dayKey];
+                const dayDate = new Date(dayKey);
+                const dayLabel = dayDate.toLocaleDateString('uz-UZ', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+
+                // Compute daily totals
+                let dayTotalSum = 0;
+                let dayDocCount = dayDocs.length;
+                let dayItemCount = 0;
+                const dayUnitMap = {};
+                dayDocs.forEach(doc => {
                     doc.items.forEach(tx => {
                         const price = Number(tx.romix_inventory?.price) || 0;
                         const qty = Number(tx.quantity) || 0;
-                        totalSum += price * qty;
+                        const unit = tx.romix_inventory?.unit || 'dona';
+                        dayTotalSum += price * qty;
+                        dayItemCount += 1;
+                        dayUnitMap[unit] = (dayUnitMap[unit] || 0) + qty;
                     });
-                    
-                    if (isSingle) {
-                        const tx = doc.items[0];
-                        const prodName = tx.romix_inventory?.product_name || "O'chirilgan mahsulot";
-                        const unit = tx.romix_inventory?.unit || '';
-                        const qty = Number(tx.quantity) || 0;
-                        titleText = prodName;
-                        itemsPreview = `<strong style="color: #fff;">${qty} ${unit}</strong>`;
-                    } else {
-                        titleText = `📦 Guruhli Kirim (${doc.items.length} xil mahsulot)`;
-                        const previews = doc.items.slice(0, 2).map(tx => {
-                            const name = tx.romix_inventory?.product_name || "Mahsulot";
-                            const qty = Number(tx.quantity) || 0;
-                            const unit = tx.romix_inventory?.unit || '';
-                            return `• ${name.slice(0, 22)}${name.length > 22 ? '...' : ''}: ${qty} ${unit}`;
-                        });
-                        if (doc.items.length > 2) {
-                            previews.push(`+ yana ${doc.items.length - 2} ta mahsulot...`);
-                        }
-                        itemsPreview = `<div style="font-size:0.75rem; color:rgba(255,255,255,0.45); display:flex; flex-direction:column; gap:2px;">${previews.join('<br>')}</div>`;
-                    }
-                    
-                    return `
-                    <div class="buh-tx-card" onclick="window.viewBuhTxDetails('${doc.id}')"
-                         style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-left: 4px solid #00ff88; border-radius: 16px; padding: 16px; cursor: pointer; transition: all 0.25s; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="font-size: 0.72rem; color: rgba(255,255,255,0.4); font-weight: 700;">#${doc.id.slice(0, 8).toUpperCase()}</span>
-                            <span style="font-size: 0.72rem; color: rgba(255,255,255,0.4);">${date}</span>
-                        </div>
-                        <div style="font-weight: 800; color: #fff; font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${titleText.replace(/"/g, '&quot;')}">
-                            ${titleText}
-                        </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.06); padding-top: 10px; margin-top: 4px;">
-                            <div>
-                                <span style="font-size: 0.7rem; color: rgba(255,255,255,0.45); display: block; text-transform: uppercase; margin-bottom: 2px;">Miqdori</span>
-                                ${itemsPreview}
-                            </div>
-                            <div style="text-align: right;">
-                                <span style="font-size: 0.7rem; color: rgba(255,255,255,0.45); display: block; text-transform: uppercase; margin-bottom: 2px;">Jami summa</span>
-                                <strong style="font-size: 1.05rem; color: #00ff88; font-weight: 800;">${_buhFmt(totalSum)}</strong>
-                            </div>
-                        </div>
-                        ${doc.note && isSingle ? `<div style="font-size: 0.72rem; color: rgba(255,255,255,0.35); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: rgba(0,0,0,0.15); padding: 4px 8px; border-radius: 6px;">📝 ${doc.note.replace(/"/g, '&quot;')}</div>` : ''}
-                    </div>`;
-                }).join('');
-            }
-        }
-
-        // Filter and Render Chiqim (OUT)
-        if (chiqimGrid) {
-            let outDocs = _buhGroupTransactionsIntoDocuments(_buhHistCache.filter(tx => tx.type === 'OUT'));
-            const q = (document.getElementById('buh-out-search')?.value || '').toLowerCase().trim();
-            if (q) {
-                outDocs = outDocs.filter(doc => {
-                    if (doc.id.toLowerCase().includes(q)) return true;
-                    return doc.items.some(tx => (tx.romix_inventory?.product_name || "o'chirilgan mahsulot").toLowerCase().includes(q));
                 });
-            }
-            const fromVal = document.getElementById('buh-out-date-from')?.value;
-            const toVal = document.getElementById('buh-out-date-to')?.value;
-            if (fromVal) {
-                const from = new Date(fromVal + 'T00:00:00');
-                outDocs = outDocs.filter(doc => new Date(doc.created_at) >= from);
-            }
-            if (toVal) {
-                const to = new Date(toVal + 'T23:59:59');
-                outDocs = outDocs.filter(doc => new Date(doc.created_at) <= to);
-            }
+                const dayUnitStr = Object.entries(dayUnitMap).map(([u, v]) => `${v.toLocaleString('uz-UZ')} ${u}`).join(' • ');
+                const dayTotalUsd = usdRate > 0 ? (dayTotalSum / usdRate) : 0;
+                const dayTotalUsdStr = `$${dayTotalUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-            if (outDocs.length === 0) {
-                chiqimGrid.innerHTML = '<div style="text-align:center; color:rgba(255,255,255,0.3); padding:20px; grid-column:1/-1;">Chiqim amallari topilmadi</div>';
-            } else {
-                chiqimGrid.innerHTML = outDocs.map(doc => {
-                    const date = new Date(doc.created_at).toLocaleString('uz-UZ');
+                // Daily Summary Banner (clickable → PDF)
+                html += `
+                <div style="grid-column:1/-1; margin-top:10px; margin-bottom:4px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; background:${accentRgba}; border:1px solid ${accentBorder}; border-left:5px solid ${accentColor}; border-radius:18px; padding:14px 20px;">
+                        <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+                            <span style="font-size:1.5rem;">${isKirim ? '📥' : '📤'}</span>
+                            <div>
+                                <div style="font-size:0.88rem; font-weight:800; color:#fff; margin-bottom:2px;">${dayLabel}</div>
+                                <div style="font-size:0.74rem; color:rgba(255,255,255,0.5);">${dayDocCount} ta hujjat • ${dayItemCount} ta pozitsiya • Jami miqdor: <strong style="color:${accentColor};">${dayUnitStr || '—'}</strong></div>
+                            </div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+                            <div style="text-align:right;">
+                                <div style="font-size:0.65rem; color:rgba(255,255,255,0.4); text-transform:uppercase; font-weight:800; letter-spacing:0.5px;">Kunlik Jami</div>
+                                <div style="font-size:1.15rem; color:${accentColor}; font-weight:800; font-family:monospace;">${_buhFmt(dayTotalSum)}</div>
+                                <div style="font-size:0.7rem; color:rgba(255,200,100,0.8); font-weight:700; font-family:monospace;">${dayTotalUsdStr}</div>
+                            </div>
+                            <button onclick="window.downloadBuhDailyPdf('${dayKey}', '${txType}')"
+                                style="display:flex; align-items:center; gap:6px; background:${isKirim ? 'rgba(0,255,136,0.12)' : 'rgba(255,77,79,0.12)'}; border:1px solid ${accentBorder}; color:${accentColor}; padding:10px 16px; border-radius:12px; font-weight:800; font-size:0.78rem; cursor:pointer; white-space:nowrap; transition:all 0.2s;">
+                                📄 Kunlik PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+
+                // Day's document cards
+                dayDocs.forEach(doc => {
+                    const date = new Date(doc.created_at).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
                     const isSingle = doc.items.length === 1;
-                    
                     let titleText = '';
                     let itemsPreview = '';
                     let totalSum = 0;
-                    
                     doc.items.forEach(tx => {
-                        const price = Number(tx.romix_inventory?.price) || 0;
-                        const qty = Number(tx.quantity) || 0;
-                        totalSum += price * qty;
+                        totalSum += (Number(tx.romix_inventory?.price) || 0) * (Number(tx.quantity) || 0);
                     });
-                    
                     if (isSingle) {
                         const tx = doc.items[0];
-                        const prodName = tx.romix_inventory?.product_name || "O'chirilgan mahsulot";
-                        const unit = tx.romix_inventory?.unit || '';
-                        const qty = Number(tx.quantity) || 0;
-                        titleText = prodName;
-                        itemsPreview = `<strong style="color: #fff;">${qty} ${unit}</strong>`;
+                        titleText = tx.romix_inventory?.product_name || "O'chirilgan mahsulot";
+                        itemsPreview = `<strong style="color:#fff;">${Number(tx.quantity) || 0} ${tx.romix_inventory?.unit || ''}</strong>`;
                     } else {
-                        titleText = `📦 Guruhli Chiqim (${doc.items.length} xil mahsulot)`;
-                        const previews = doc.items.slice(0, 2).map(tx => {
-                            const name = tx.romix_inventory?.product_name || "Mahsulot";
-                            const qty = Number(tx.quantity) || 0;
-                            const unit = tx.romix_inventory?.unit || '';
-                            return `• ${name.slice(0, 22)}${name.length > 22 ? '...' : ''}: ${qty} ${unit}`;
-                        });
-                        if (doc.items.length > 2) {
-                            previews.push(`+ yana ${doc.items.length - 2} ta mahsulot...`);
-                        }
-                        itemsPreview = `<div style="font-size:0.75rem; color:rgba(255,255,255,0.45); display:flex; flex-direction:column; gap:2px;">${previews.join('<br>')}</div>`;
+                        titleText = `${isKirim ? '📦 Guruhli Kirim' : '📦 Guruhli Chiqim'} (${doc.items.length} xil)`;
+                        const prev = doc.items.slice(0, 2).map(tx => `• ${(tx.romix_inventory?.product_name || 'Mahsulot').slice(0, 20)}: ${Number(tx.quantity) || 0} ${tx.romix_inventory?.unit || ''}`);
+                        if (doc.items.length > 2) prev.push(`+ yana ${doc.items.length - 2} ta...`);
+                        itemsPreview = `<div style="font-size:0.74rem; color:rgba(255,255,255,0.45); display:flex; flex-direction:column; gap:2px;">${prev.join('<br>')}</div>`;
                     }
-                    
-                    return `
+
+                    html += `
                     <div class="buh-tx-card" onclick="window.viewBuhTxDetails('${doc.id}')"
-                         style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-left: 4px solid #ff4d4f; border-radius: 16px; padding: 16px; cursor: pointer; transition: all 0.25s; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="font-size: 0.72rem; color: rgba(255,255,255,0.4); font-weight: 700;">#${doc.id.slice(0, 8).toUpperCase()}</span>
-                            <span style="font-size: 0.72rem; color: rgba(255,255,255,0.4);">${date}</span>
+                         style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-left:4px solid ${accentColor}; border-radius:16px; padding:16px; cursor:pointer; transition:all 0.25s; display:flex; flex-direction:column; gap:10px; box-shadow:0 4px 15px rgba(0,0,0,0.15);">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:0.72rem; color:rgba(255,255,255,0.4); font-weight:700;">#${doc.id.slice(0, 8).toUpperCase()}</span>
+                            <span style="font-size:0.72rem; color:rgba(255,255,255,0.4);">🕐 ${date}</span>
                         </div>
-                        <div style="font-weight: 800; color: #fff; font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${titleText.replace(/"/g, '&quot;')}">
-                            ${titleText}
-                        </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.06); padding-top: 10px; margin-top: 4px;">
+                        <div style="font-weight:800; color:#fff; font-size:0.95rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${titleText.replace(/"/g, '&quot;')}">${titleText}</div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed rgba(255,255,255,0.06); padding-top:10px; margin-top:4px;">
                             <div>
-                                <span style="font-size: 0.72rem; color: rgba(255,255,255,0.45); display: block; text-transform: uppercase; margin-bottom: 2px;">Miqdori</span>
+                                <span style="font-size:0.7rem; color:rgba(255,255,255,0.45); display:block; text-transform:uppercase; margin-bottom:2px;">Miqdori</span>
                                 ${itemsPreview}
                             </div>
-                            <div style="text-align: right;">
-                                <span style="font-size: 0.72rem; color: rgba(255,255,255,0.45); display: block; text-transform: uppercase; margin-bottom: 2px;">Jami summa</span>
-                                <strong style="font-size: 1.05rem; color: #ff4d4f; font-weight: 800;">${_buhFmt(totalSum)}</strong>
+                            <div style="text-align:right;">
+                                <span style="font-size:0.7rem; color:rgba(255,255,255,0.45); display:block; text-transform:uppercase; margin-bottom:2px;">Jami summa</span>
+                                <strong style="font-size:1.05rem; color:${accentColor}; font-weight:800;">${_buhFmt(totalSum)}</strong>
                             </div>
                         </div>
-                        ${doc.note && isSingle ? `<div style="font-size: 0.72rem; color: rgba(255,255,255,0.35); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: rgba(0,0,0,0.15); padding: 4px 8px; border-radius: 6px;">📝 ${doc.note.replace(/"/g, '&quot;')}</div>` : ''}
+                        ${doc.note && isSingle ? `<div style="font-size:0.72rem; color:rgba(255,255,255,0.35); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; background:rgba(0,0,0,0.15); padding:4px 8px; border-radius:6px;">📝 ${doc.note.replace(/"/g, '&quot;')}</div>` : ''}
                     </div>`;
-                }).join('');
-            }
-        }
+                });
+            });
+
+            gridEl.innerHTML = html;
+        };
+
+        _renderGrid(kirimGrid, 'IN');
+        _renderGrid(chiqimGrid, 'OUT');
     };
 
+    window.downloadBuhDailyPdf = (dayKey, txType) => {
+        const isKirim = txType === 'IN';
+
+        // Get all docs for this day and type
+        const allDocs = _buhGroupTransactionsIntoDocuments(_buhHistCache.filter(tx => tx.type === txType));
+        const dayDocs = allDocs.filter(doc => new Date(doc.created_at).toISOString().slice(0, 10) === dayKey);
+
+        if (dayDocs.length === 0) {
+            alert("Bu kun uchun ma'lumot topilmadi!");
+            return;
+        }
+        if (!window.jspdf || !window.jspdf.jsPDF) {
+            alert("jsPDF kutubxonasi yuklanmagan!");
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+        const pageW = 210;
+
+        const themeColor = isKirim ? [0, 150, 80] : [180, 0, 0];
+        const textDark = [30, 34, 45];
+        const usdRate = getUsdRate();
+
+        // Parse date
+        const dateObj = new Date(dayKey + 'T12:00:00');
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        const docDateStr = `${day}.${month}.${year}`;
+        const reportNo = `${isKirim ? 'KRM' : 'CHQ'}-${year}/${month}/${day}`;
+
+        let y = 15;
+
+        // ─── HEADER ───────────────────────────────────────────────
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(18);
+        doc.setTextColor(...themeColor);
+        doc.text('AKFA', 15, y);
+        doc.setTextColor(...textDark);
+        doc.text(' ROMIX', doc.getTextWidth('AKFA') + 15, y);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(120, 120, 120);
+        doc.text('Ombor xo\'jaligi boshqaruvi tizimi', 15, y + 5.5);
+        doc.text('www.akfagroup.com • romix.akfagroup.com', 15, y + 10);
+
+        doc.setFontSize(9);
+        doc.setTextColor(...textDark);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Hisobot raqami: ${reportNo}`, pageW - 15, y, { align: 'right' });
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Sana: ${docDateStr}-yil`, pageW - 15, y + 5, { align: 'right' });
+        doc.setTextColor(...themeColor);
+        doc.text(`Hujjatlar soni: ${dayDocs.length} ta`, pageW - 15, y + 10, { align: 'right' });
+
+        y += 14;
+
+        // Decorative line
+        doc.setDrawColor(...themeColor);
+        doc.setLineWidth(0.8);
+        doc.line(15, y, pageW - 15, y);
+        y += 7;
+
+        // ─── TITLE ───────────────────────────────────────────────
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(13);
+        doc.setTextColor(...textDark);
+        const titleText = isKirim ? 'KUNLIK KIRIM HISOBOTI' : 'KUNLIK CHIQIM HISOBOTI';
+        doc.text(titleText, pageW / 2, y, { align: 'center' });
+        y += 5;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(100, 100, 100);
+        const subtitle = isKirim
+            ? `${docDateStr} sanasida omborga qabul qilingan barcha mahsulotlar ro'yxati`
+            : `${docDateStr} sanasida ombordan chiqarilgan barcha mahsulotlar ro'yxati`;
+        doc.text(subtitle, pageW / 2, y, { align: 'center' });
+        y += 9;
+
+        // ─── META TABLE ────────────────────────────────────────────
+        doc.setDrawColor(210, 210, 210);
+        doc.setLineWidth(0.2);
+        doc.rect(15, y, pageW - 30, 20);
+        doc.line(pageW / 2, y, pageW / 2, y + 20);
+        doc.line(15, y + 10, pageW - 15, y + 10);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        doc.text('Korxona:', 18, y + 6); doc.setFont('helvetica', 'bold'); doc.setTextColor(...textDark); doc.text('AKFA Romix Ombori', 38, y + 6);
+        doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 100, 100);
+        doc.text('Hisobot turi:', pageW / 2 + 3, y + 6); doc.setFont('helvetica', 'bold'); doc.setTextColor(...themeColor); doc.text(isKirim ? 'Kunlik Kirim' : 'Kunlik Chiqim', pageW / 2 + 26, y + 6);
+        doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 100, 100);
+        doc.text('Bo\'lim:', 18, y + 16); doc.setFont('helvetica', 'bold'); doc.setTextColor(...textDark); doc.text('Ombor bo\'limi', 38, y + 16);
+        doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 100, 100);
+        doc.text('Sana:', pageW / 2 + 3, y + 16); doc.setFont('helvetica', 'bold'); doc.setTextColor(...textDark); doc.text(`${docDateStr}-yil`, pageW / 2 + 26, y + 16);
+        y += 26;
+
+        // ─── DOCUMENTS LOOP ────────────────────────────────────────
+        let grandTotalSum = 0;
+        const grandUnitMap = {};
+
+        dayDocs.forEach((docItem, dIdx) => {
+            if (y > 240) { doc.addPage(); y = 15; }
+
+            const docTime = new Date(docItem.created_at).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+            const shortId = docItem.id.slice(0, 8).toUpperCase();
+
+            // Sub-header for each document
+            doc.setFillColor(...themeColor);
+            doc.roundedRect(15, y, pageW - 30, 7, 1, 1, 'F');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8);
+            doc.setTextColor(255, 255, 255);
+            doc.text(`${dIdx + 1}. Hujjat: #${shortId}`, 18, y + 4.5);
+            doc.text(`Vaqt: ${docTime}`, pageW - 18, y + 4.5, { align: 'right' });
+            y += 9;
+
+            // Table rows for this document
+            let docSum = 0;
+            const tableData = docItem.items.map((tx, idx) => {
+                const prodName = tx.romix_inventory?.product_name || "O'chirilgan mahsulot";
+                const unit = tx.romix_inventory?.unit || 'dona';
+                const price = Number(tx.romix_inventory?.price) || 0;
+                const qty = Number(tx.quantity) || 0;
+                const total = price * qty;
+                docSum += total;
+                grandTotalSum += total;
+                grandUnitMap[unit] = (grandUnitMap[unit] || 0) + qty;
+                const note = tx.note ? tx.note.replace(/\[BatchID:[^\]]+\]/g, '').trim().slice(0, 20) : (isKirim ? 'Qabul ✓' : 'Chiqim ✓');
+                return [idx + 1, prodName, unit, qty, _buhFmt(price), _buhFmt(total), note];
+            });
+
+            doc.autoTable({
+                startY: y,
+                head: [['#', 'MAHSULOT NOMI', 'BIRLIK', 'MIQDOR', 'NARX', 'JAMI SUMMA', 'IZOH']],
+                body: tableData,
+                theme: 'grid',
+                headStyles: {
+                    fillColor: isKirim ? [220, 245, 232] : [250, 220, 220],
+                    textColor: themeColor,
+                    fontStyle: 'bold',
+                    fontSize: 7.5,
+                    halign: 'center'
+                },
+                bodyStyles: { fontSize: 7.5, textColor: textDark, valign: 'middle' },
+                columnStyles: {
+                    0: { cellWidth: 9, halign: 'center' },
+                    1: { cellWidth: 65, halign: 'left' },
+                    2: { cellWidth: 18, halign: 'center' },
+                    3: { cellWidth: 16, halign: 'center', fontStyle: 'bold' },
+                    4: { cellWidth: 25, halign: 'right' },
+                    5: { cellWidth: 27, halign: 'right', fontStyle: 'bold' },
+                    6: { cellWidth: 20, halign: 'left' }
+                },
+                didParseCell: (data) => {
+                    if (data.section === 'body' && data.column.index === 5) {
+                        data.cell.styles.textColor = themeColor;
+                    }
+                }
+            });
+
+            y = doc.lastAutoTable.finalY;
+
+            // Doc subtotal row
+            doc.setFillColor(isKirim ? 240 : 255, isKirim ? 255 : 235, isKirim ? 248 : 235);
+            doc.rect(15, y, pageW - 30, 6, 'F');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(8);
+            doc.setTextColor(...themeColor);
+            doc.text(`Hujjat jami: ${_buhFmt(docSum)}  ($${(docSum / usdRate).toFixed(2)})   •   ${docItem.items.length} ta pozitsiya`, pageW - 17, y + 4, { align: 'right' });
+            y += 10;
+        });
+
+        // ─── GRAND TOTAL SUMMARY ───────────────────────────────────
+        if (y > 245) { doc.addPage(); y = 15; }
+
+        doc.setDrawColor(...themeColor);
+        doc.setLineWidth(0.6);
+        doc.line(15, y, pageW - 15, y);
+        y += 6;
+
+        const grandUnitStr = Object.entries(grandUnitMap).map(([u, v]) => `${v.toLocaleString('uz-UZ')} ${u}`).join('  •  ');
+        const grandTotalUsd = grandTotalSum / usdRate;
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(...textDark);
+        doc.text('KUNLIK YAKUNIY HISOBOT:', 15, y);
+        y += 5;
+
+        // Summary table
+        doc.autoTable({
+            startY: y,
+            head: [['Ko\'rsatkich', 'Qiymat']],
+            body: [
+                ['Jami hujjatlar soni', `${dayDocs.length} ta`],
+                ['Jami pozitsiyalar', `${Object.values(grandUnitMap).reduce((s, v) => s + v, 0)} ta`],
+                [`Jami miqdor (birliklar bo'yicha)`, grandUnitStr || '—'],
+                ['Jami summa (UZS)', _buhFmt(grandTotalSum)],
+                ['Jami summa (USD)', `$${grandTotalUsd.toFixed(2)} (Kurs: ${usdRate.toLocaleString()} UZS)`],
+            ],
+            theme: 'grid',
+            headStyles: { fillColor: themeColor, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+            bodyStyles: { fontSize: 8.5, textColor: textDark },
+            columnStyles: {
+                0: { cellWidth: 90, fontStyle: 'bold' },
+                1: { cellWidth: 90, halign: 'right', fontStyle: 'bold', textColor: themeColor }
+            }
+        });
+
+        y = doc.lastAutoTable.finalY + 10;
+
+        // Signatures
+        if (y > 255) { doc.addPage(); y = 15; }
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(...textDark);
+        doc.text('Ombor mudiri: _______________________________', 15, y);
+        doc.text('Bosh buxgalter: _______________________________', pageW - 15, y, { align: 'right' });
+        y += 10;
+        doc.text('Imzo: ________________', 15, y);
+        doc.text('Imzo: ________________', pageW - 15, y, { align: 'right' });
+
+        y += 14;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        doc.setTextColor(160, 160, 160);
+        doc.text(`AKFA Romix Ombori — ${isKirim ? 'Kunlik Kirim' : 'Kunlik Chiqim'} Hisoboti  •  Hisobot sanasi: ${docDateStr}  •  Hisobot №: ${reportNo}  •  Ushbu hujjat ombor hisobi uchun rasmiy asos hisoblanadi.`, pageW / 2, y, { align: 'center', maxWidth: pageW - 30 });
+
+        const filename = `AKFA_Romix_Kunlik_${isKirim ? 'Kirim' : 'Chiqim'}_${dayKey.replace(/-/g, '_')}.pdf`;
+        doc.save(filename);
+    };
+
+
+
     window.resetBuhHistFilters = (type) => {
+
         const p = type.toLowerCase();
         const searchInput = document.getElementById(`buh-${p}-search`);
         const fromInput = document.getElementById(`buh-${p}-date-from`);
