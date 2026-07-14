@@ -92,8 +92,8 @@ export async function ordersReport(status) {
     };
 }
 
-// Ombor (zaxira)
-export async function warehouse() {
+// Ombor (zaxira). bolim: 'profil'|'aksessuar'|'qoldiq'|'oynak' — ko'rsatilsa, shu panelning TO'LIQ ro'yxatini ham qaytaradi.
+export async function warehouse(bolim) {
     const [inv, acc, qoldiq, oynak] = await Promise.all([
         sbGet("romix_inventory", "select=product_name,stock_quantity,price,unit&order=stock_quantity.asc"),
         sbGet("romix_accessories", "select=name,qty,price,unit"),
@@ -119,7 +119,7 @@ export async function warehouse() {
     const kamAcc = acc.filter(a => (Number(a.qty) || 0) <= 20).map(a => ({ nomi: a.name, qoldiq: (Number(a.qty) || 0) + " " + (a.unit || "dona"), narx: fmt(a.price) }));
     const kamOynak = oynak.filter(o => (Number(o.stock_quantity) || 0) <= 5).map(o => ({ nomi: o.product_name, qoldiq: (Number(o.stock_quantity) || 0) + " " + (o.unit || "dona"), narx: fmt(o.price) }));
 
-    return {
+    const result = {
         mahsulot_turlari: inv.length + acc.length + oynak.length,
         ombor_qiymati: fmt(jamiVal),
         bolimlar: [
@@ -131,6 +131,13 @@ export async function warehouse() {
         kam_qolganlar: [...kamProfil, ...kamAcc, ...kamOynak].slice(0, 15),
         royxat: inv.slice(0, 15).map(p => ({ nomi: p.product_name, qoldiq: (Number(p.stock_quantity) || 0) + " " + (p.unit || ""), narx: fmt(p.price) }))
     };
+
+    if (bolim === 'profil') result.toliq_royxat = inv.map(p => ({ nomi: p.product_name, qoldiq: (Number(p.stock_quantity) || 0) + " " + (p.unit || ""), narx: fmt(p.price) }));
+    else if (bolim === 'aksessuar') result.toliq_royxat = acc.map(a => ({ nomi: a.name, qoldiq: (Number(a.qty) || 0) + " " + (a.unit || "dona"), narx: fmt(a.price) }));
+    else if (bolim === 'qoldiq') result.toliq_royxat = qoldiq.map(q => ({ nomi: q.product_name, qoldiq: (Number(q.stock_quantity) || 0) + " dona", uzunlik: (Number(q.length) || 0) + " mm" }));
+    else if (bolim === 'oynak') result.toliq_royxat = oynak.map(o => ({ nomi: o.product_name, qoldiq: (Number(o.stock_quantity) || 0) + " " + (o.unit || ""), narx: fmt(o.price) }));
+
+    return result;
 }
 
 // Moliya: harajatlar
@@ -226,12 +233,22 @@ export async function searchOrder(query) {
 }
 
 // Mahsulot qidirish
+// Barcha 4 ta ombor paneli (profil, aksessuar, qoldiq, oynak) bo'yicha birga qidiradi — faqat profilda emas.
 export async function searchProduct(query) {
-    const inv = await sbGet("romix_inventory", `product_name=ilike.*${encodeURIComponent(query)}*&limit=15`);
-    return {
-        topildi: inv.length,
-        royxat: inv.map(p => ({ nomi: p.product_name, qoldiq: (Number(p.stock_quantity) || 0) + " " + (p.unit || ""), narx: fmt(p.price) }))
-    };
+    const q = encodeURIComponent(query);
+    const [inv, acc, qoldiq, oynak] = await Promise.all([
+        sbGet("romix_inventory", `product_name=ilike.*${q}*&limit=10`),
+        sbGet("romix_accessories", `name=ilike.*${q}*&limit=10`),
+        sbGet("romix_qoldiq_profillar", `product_name=ilike.*${q}*&limit=10`),
+        sbGet("romix_oynak", `product_name=ilike.*${q}*&limit=10`)
+    ]);
+    const royxat = [
+        ...inv.map(p => ({ bolim: "Profil", nomi: p.product_name, qoldiq: (Number(p.stock_quantity) || 0) + " " + (p.unit || ""), narx: fmt(p.price) })),
+        ...acc.map(a => ({ bolim: "Aksessuar", nomi: a.name, qoldiq: (Number(a.qty) || 0) + " " + (a.unit || "dona"), narx: fmt(a.price) })),
+        ...qoldiq.map(x => ({ bolim: "Qoldiq profil", nomi: x.product_name, qoldiq: (Number(x.stock_quantity) || 0) + " dona", uzunlik: (Number(x.length) || 0) + " mm" })),
+        ...oynak.map(o => ({ bolim: "Oynak", nomi: o.product_name, qoldiq: (Number(o.stock_quantity) || 0) + " " + (o.unit || ""), narx: fmt(o.price) }))
+    ];
+    return { topildi: royxat.length, royxat };
 }
 
 // Xodim qidirish

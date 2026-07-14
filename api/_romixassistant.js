@@ -71,12 +71,12 @@ const OBJ = (props, req) => ({ type: "object", properties: props, required: req 
 const READ_TOOLS = [
     { name: "umumiy_holat", description: "Loyihaning umumiy holati: zakazlar soni, oylik savdo, mijoz qarzi, ombor qiymati, oylik harajat, tashqi qarz." },
     { name: "zakazlar", description: "Sotuv buyurtmalari ro'yxati va holati (mijoz, summa, to'langan, qoldiq, muddat, brigada).", parameters: OBJ({ holat: STR("Holat bo'yicha filtr, masalan 'Jarayonda', 'Tayyor', 'Yetkazildi' (ixtiyoriy)") }) },
-    { name: "ombor", description: "Ombor zaxirasi: mahsulot turlari, umumiy qiymat, kam qolgan mahsulotlar." },
+    { name: "ombor", description: "Ombor zaxirasi: mahsulot turlari, umumiy qiymat, kam qolgan mahsulotlar. Ombor 4 ta alohida panelga bo'linadi: profil, aksessuar, qoldiq profillar, oynak — 'bolim' bilan aynan bittasining TO'LIQ ro'yxatini so'ra.", parameters: OBJ({ bolim: STR("'profil', 'aksessuar', 'qoldiq' yoki 'oynak' — shu panelning to'liq ro'yxatini olish uchun (ixtiyoriy, bo'sh bo'lsa faqat umumiy statistika)") }) },
     { name: "harajatlar", description: "Harajatlar hisoboti.", parameters: OBJ({ davr: STR("'oy' = shu oy, bo'sh = hammasi (ixtiyoriy)") }) },
     { name: "qarzlar", description: "Tashqi qarzlar (ta'minotchi/kreditorlarga): kimga, qancha, qoldiq, muddat." },
     { name: "xodimlar", description: "Xodimlar (HR): jami/faol xodim, bugun kelganlar, oylik fond, ro'yxat." },
     { name: "zakaz_qidirish", description: "Buyurtmalarni mijoz ismi yoki telefoni bo'yicha to'liq ma'lumotlar bazasidan qidirish.", parameters: OBJ({ qidiruv: STR("Mijoz ismi yoki telefon raqami") }, ["qidiruv"]) },
-    { name: "mahsulot_qidirish", description: "Omborda bor mahsulotlarni nomi bo'yicha to'liq qidirish.", parameters: OBJ({ qidiruv: STR("Mahsulot nomi yoki kalit so'zi") }, ["qidiruv"]) },
+    { name: "mahsulot_qidirish", description: "Omborning barcha 4 ta paneli (profil, aksessuar, qoldiq profil, oynak) bo'ylab nomi bo'yicha qidiradi — qaysi panelda ekanini ham ko'rsatadi.", parameters: OBJ({ qidiruv: STR("Mahsulot nomi yoki kalit so'zi") }, ["qidiruv"]) },
     { name: "xodim_qidirish", description: "Xodimlarni ismi bo'yicha qidirish.", parameters: OBJ({ qidiruv: STR("Xodim ismi") }, ["qidiruv"]) },
     { name: "ishlab_chiqarish_holati", description: "Ishlab chiqarish (kesish, payvandlash, yig'ish, qadoqlash) bosqichlari bo'yicha faol partiyalar (batches) holati hisoboti." },
     { name: "brigadalar_tarkibi", description: "Montajchilar va ishchilar brigadalari hamda ularga biriktirilgan xodimlar tarkibi." },
@@ -114,7 +114,7 @@ export async function execRead(name, a, chatId) {
     switch (name) {
         case "umumiy_holat": return await db.overview();
         case "zakazlar": return await db.ordersReport(a.holat);
-        case "ombor": return await db.warehouse();
+        case "ombor": return await db.warehouse(a.bolim);
         case "harajatlar": return await db.expensesReport(a.davr);
         case "qarzlar": return await db.debtsReport();
         case "xodimlar": return await db.hrReport();
@@ -207,7 +207,8 @@ VAZIFANG:
 1. Egasi muayyan ma'lumotlarni so'rasa, tegishli o'qish toolini chaqir.
    - Umumiy holat uchun 'umumiy_holat'.
    - Muayyan bir mijozning zakazini bilish uchun 'zakaz_qidirish' toolidan foydalan (masalan: "Ali zakazi nima bo'ldi?", "Maftuna opa zakazi").
-   - Omborda muayyan mahsulot borligini bilish uchun 'mahsulot_qidirish' toolidan foydalan (masalan: "oyna qancha qolgan", "ruchka bormi").
+   - Omborda muayyan mahsulot borligini bilish uchun 'mahsulot_qidirish' toolidan foydalan (masalan: "oyna qancha qolgan", "ruchka bormi") — bu barcha 4 panelni (profil, aksessuar, qoldiq, oynak) qamrab oladi.
+   - Agar aynan bitta ombor paneli haqida to'liq ro'yxat so'ralsa (masalan "aksessuarda nima bor", "qoldiq profillarni sanab ber"), 'ombor' toolini tegishli bolim=... bilan chaqir — umumiy statistika emas, o'sha panelning to'liq ro'yxatini olasan.
    - Xodimni qidirish uchun 'xodim_qidirish' toolidan foydalan.
    - Ishlab chiqarish jarayonidagi partiyalar, kesish, payvandlash bosqichlari uchun 'ishlab_chiqarish_holati' toolini chaqir.
    - Ustalar va montajchilar guruhlari/brigadalari uchun 'brigadalar_tarkibi' toolini chaqir.
@@ -244,7 +245,7 @@ QANDAY ISHLASHING KERAK (MUHIM — bu seni oddiy "savol-javob botidan" ajratib t
 
 TOOLLARING:
 - Umumiy ko'rinish: 'umumiy_holat'. Tendentsiya/taqqoslash (bu oy o'tganiga nisbatan qanday, o'sish/pasayish): 'tendentsiya_tahlili'. Diqqatga molik narsalar (qarz, kechikish, kam qolgan mahsulot bir joyda): 'eslatmalar'. Eng katta mijozlar: 'top_mijozlar'.
-- Batafsil ro'yxatlar: 'zakazlar', 'ombor', 'harajatlar', 'qarzlar', 'xodimlar'. Ombor kirim/chiqim tarixi (joriy zaxira emas): 'ombor_harakati'. Qidiruv: 'zakaz_qidirish', 'mahsulot_qidirish', 'xodim_qidirish'. Ishlab chiqarish: 'ishlab_chiqarish_holati', 'brigadalar_tarkibi', 'material_sorovlari'. Excel hisobot: 'excel_hisobot'.
+- Batafsil ro'yxatlar: 'zakazlar', 'ombor', 'harajatlar', 'qarzlar', 'xodimlar'. Ombor 4 panelga bo'linadi (profil/aksessuar/qoldiq/oynak) — bittasining to'liq ro'yxati kerak bo'lsa 'ombor' toolini bolim=... bilan chaqir; 'mahsulot_qidirish' esa barcha 4 panelni birdan qidiradi. Ombor kirim/chiqim tarixi (joriy zaxira emas): 'ombor_harakati'. Qidiruv: 'zakaz_qidirish', 'mahsulot_qidirish', 'xodim_qidirish'. Ishlab chiqarish: 'ishlab_chiqarish_holati', 'brigadalar_tarkibi', 'material_sorovlari'. Excel hisobot: 'excel_hisobot'.
 - Bog'langan (360°) ko'rinishlar — bir nechta toolni ketma-ket chaqirish o'rniga BITTASINI chaqir: bitta mijoz haqida hammasi (buyurtmalar+to'lov+ishlab chiqarish) — 'mijoz_360'; bitta xodim haqida hammasi (lavozim+brigada+ish+davomat) — 'xodim_360'; bitta buyurtmaning xronologiyasi/nega kechikayapti — 'buyurtma_hayot_yoli'.
 - G'ayrioddiy narsa/nostandart holat qidirilsa (masalan qo'ng'iroq boshida umumiy holatni ko'rib chiqayotganda) — 'anomaliyalar' toolini ham chaqir, u o'rtachadan sezilarli chetga chiqqan naqshlarni topadi.
 - Bir savolga javob berish uchun kerak bo'lsa bir nechta toolni ketma-ket chaqirishing mumkin (masalan holatni tushunish uchun avval 'umumiy_holat', keyin 'eslatmalar').
