@@ -5,11 +5,12 @@
 //  Frontend Buxgalter modeli bilan mos (romix_expenses/romix_debts/sales_orders).
 // ═══════════════════════════════════════════════════════════
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "https://dzsswblbpnjuluyqvewt.supabase.co";
-const ANON = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY ||
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6c3N3YmxicG5qdWx1eXF2ZXd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4OTI2NzcsImV4cCI6MjA5MzQ2ODY3N30.Kwgh1DIzb_j7AH2iEfI5LMboObXBaIm3SGk1JWF3LIk";
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+// Bot backendi ishonchli server konteksti (Telegram parol bilan himoyalangan) — RLS/ustun
+// cheklovlarini chetlab o'tadigan service_role kalitini ishlatadi, anon kalitga zaxira sifatida tayanadi.
+const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
-const H = { apikey: ANON, Authorization: `Bearer ${ANON}`, "Content-Type": "application/json" };
+const H = { apikey: KEY, Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" };
 const round = n => Math.round(Number(n) || 0);
 const fmt = n => round(n).toLocaleString("uz-UZ") + " so'm";
 const today = () => new Date().toISOString().slice(0, 10);
@@ -399,8 +400,80 @@ export async function topMijozlar(limit) {
     return { mijozlar: ranked };
 }
 
+// ── Mijoz 360°: bitta mijozning barcha buyurtmalari + har biri uchun ishlab chiqarish/material holati bir joyda ──
+export async function customer360(query) {
+    const q = encodeURIComponent(query);
+    const orders = await sbGet("sales_orders", `or=(customer_name.ilike.*${q}*,customer_phone.ilike.*${q}*)&order=created_at.desc&limit=10`);
+    if (!orders.length) return { topildi: 0 };
+    const ids = orders.map(o => o.id).join(",");
+    const [batches, matReqs] = await Promise.all([
+        sbGet("romix_production_batches", `order_id=in.(${ids})&select=order_id,stage,quantity`),
+        sbGet("material_requests", `order_id=in.(${ids})&select=order_id,status,created_at`)
+    ]);
+    const buyurtmalar = orders.map(o => {
+        const obatches = batches.filter(b => b.order_id === o.id);
+        const omat = matReqs.filter(m => m.order_id === o.id);
+        return {
+            sana: (o.created_at || "").slice(0, 10),
+            summa: fmt(o.total_price), tolangan: fmt(o.paid_amount || 0),
+            qoldiq: fmt(Math.max(0, (Number(o.total_price) || 0) - (Number(o.paid_amount) || 0))),
+            holat: o.status || "Kutilmoqda", muddat: o.deadline_date || "—",
+            ishlab_chiqarish: obatches.length ? obatches.map(b => `${b.stage}: ${b.quantity} dona`) : "Hali boshlanmagan",
+            material_sorovi: omat.length ? omat.map(m => m.status) : "Yo'q"
+        };
+    });
+    return { mijoz: orders[0].customer_name, tel: orders[0].customer_phone || "", buyurtmalar_soni: orders.length, buyurtmalar };
+}
+
+// ── Xodim 360°: shaxsiy ma'lumot + brigada + ishlagan partiyalar + oxirgi davomat bir joyda ──
+export async function employee360(query) {
+    const emp = await sbGet("employees", `full_name=ilike.*${encodeURIComponent(query)}*&limit=1`);
+    if (!emp.length) return { topildi: 0 };
+    const e = emp[0];
+    const [batches, brigadeMembers, brigades, att] = await Promise.all([
+        sbGet("romix_production_batches", `employee_id=eq.${e.id}&select=order_id,stage,quantity&order=created_at.desc&limit=15`),
+        sbGet("romix_brigade_members", `employee_id=eq.${e.id}&select=brigade_id`),
+        sbGet("romix_brigades", "select=id,name"),
+        sbGet("attendance", `employee_id=eq.${e.id}&order=date.desc&limit=10&select=date,status`)
+    ]);
+    const bMap = Object.fromEntries(brigades.map(b => [b.id, b.name]));
+    const myBrigades = brigadeMembers.map(m => bMap[m.brigade_id]).filter(Boolean);
+    return {
+        ism: e.full_name, lavozim: e.role || e.department || "", holat: e.status || "Faol", oylik: fmt(Number(String(e.salary_info || "").replace(/\D/g, "")) || 0),
+        brigadalar: myBrigades.length ? myBrigades : "Biriktirilmagan",
+        ishlagan_partiyalar_soni: batches.length,
+        oxirgi_partiyalar: batches.map(b => `${b.stage}: ${b.quantity} dona`),
+        oxirgi_davomat: att.map(a => `${a.date}: ${a.status}`)
+    };
+}
+
+// ── Buyurtma hayot yo'li: bitta buyurtmaning boshidan hozirgacha xronologiyasi ──
+export async function orderLifecycle(query) {
+    const q = encodeURIComponent(query);
+    const orders = await sbGet("sales_orders", `or=(customer_name.ilike.*${q}*,customer_phone.ilike.*${q}*)&order=created_at.desc&limit=1`);
+    if (!orders.length) return { topildi: 0 };
+    const o = orders[0];
+    const [batches, matReqs, emp] = await Promise.all([
+        sbGet("romix_production_batches", `order_id=eq.${o.id}&select=stage,quantity,employee_id,created_at&order=created_at.asc`),
+        sbGet("material_requests", `order_id=eq.${o.id}&select=status,created_at&order=created_at.asc`),
+        sbGet("employees", "select=id,full_name")
+    ]);
+    const empMap = Object.fromEntries(emp.map(e => [e.id, e.full_name]));
+    const voqealar = [];
+    voqealar.push({ sana: (o.created_at || "").slice(0, 10), hodisa: `Buyurtma qabul qilindi (${fmt(o.total_price)})` });
+    matReqs.forEach(m => voqealar.push({ sana: (m.created_at || "").slice(0, 10), hodisa: `Material so'rovi: ${m.status}` }));
+    batches.forEach(b => voqealar.push({ sana: (b.created_at || "").slice(0, 10), hodisa: `${b.stage}: ${b.quantity} dona (${empMap[b.employee_id] || "noma'lum xodim"})` }));
+    voqealar.sort((a, b) => (a.sana || "").localeCompare(b.sana || ""));
+    return {
+        mijoz: o.customer_name, holat: o.status || "Kutilmoqda", muddat: o.deadline_date || "—",
+        summa: fmt(o.total_price), tolangan: fmt(o.paid_amount || 0),
+        qoldiq: fmt(Math.max(0, (Number(o.total_price) || 0) - (Number(o.paid_amount) || 0))),
+        voqealar_tarixi: voqealar
+    };
+}
+
 export default {
     overview, ordersReport, warehouse, expensesReport, debtsReport, hrReport, addExpense, payDebt, payOrder,
     searchOrder, searchProduct, searchEmployee, productionReport, brigadesReport, materialRequestsReport, excelReport,
-    trendReport, eslatmalar, topMijozlar
+    trendReport, eslatmalar, topMijozlar, customer360, employee360, orderLifecycle
 };

@@ -84,7 +84,10 @@ const READ_TOOLS = [
     { name: "excel_hisobot", description: "Muayyan oy uchun barcha sotuvlar, harajatlar va qarz to'lovlarini Excel (CSV) fayli shaklida generatsiya qilish.", parameters: OBJ({ oy: STR("Yil va oy, masalan '2026-06' yoki '2026-07'. Bo'sh bo'lsa joriy oy. (ixtiyoriy)") }) },
     { name: "tendentsiya_tahlili", description: "Oxirgi bir necha oy davomida savdo, harajat va foyda qanday o'zgarganini taqqoslaydi — 'bu oy o'tgan oyga nisbatan qanday', 'savdo o'sayaptimi yoki tushayaptimi' kabi savollar uchun ishlat.", parameters: OBJ({ oylar_soni: NUM("Nechta oxirgi oyni solishtirish kerak, 2 dan 6 gacha, default 3 (ixtiyoriy)") }) },
     { name: "eslatmalar", description: "Diqqatga molik narsalar bitta ro'yxatda: muddati o'tgan qarzlar, kechikkan buyurtmalar, kam qolgan mahsulotlar. Foydalanuvchi 'nimalarga e'tibor berishim kerak', 'muammo bormi' desa shu toolni chaqir." },
-    { name: "top_mijozlar", description: "Eng katta hajmda buyurtma bergan mijozlar reytingi (jami summa, to'langan, qoldiq).", parameters: OBJ({ soni: NUM("Nechta mijoz ko'rsatish, default 5 (ixtiyoriy)") }) }
+    { name: "top_mijozlar", description: "Eng katta hajmda buyurtma bergan mijozlar reytingi (jami summa, to'langan, qoldiq).", parameters: OBJ({ soni: NUM("Nechta mijoz ko'rsatish, default 5 (ixtiyoriy)") }) },
+    { name: "mijoz_360", description: "Bitta mijozning BARCHA buyurtmalari + har bir buyurtma uchun to'lov, ishlab chiqarish bosqichi va material so'rovi holatini bitta bog'langan ko'rinishda beradi. 'Ali haqida hammasini ayt', 'Malika opaning buyurtmalari qanday ketyapti' kabi keng savollar uchun ishlat.", parameters: OBJ({ qidiruv: STR("Mijoz ismi yoki telefon raqami") }, ["qidiruv"]) },
+    { name: "xodim_360", description: "Bitta xodim haqida to'liq ko'rinish: lavozimi, maoshi, qaysi brigadada, oxirgi ishlagan partiyalari, oxirgi davomati — bitta bog'langan javobda.", parameters: OBJ({ qidiruv: STR("Xodim ismi") }, ["qidiruv"]) },
+    { name: "buyurtma_hayot_yoli", description: "Bitta buyurtmaning boshidan hozirgacha bo'lgan to'liq xronologiyasi (qabul qilingan sana, material so'ralgan sana, ishlab chiqarish bosqichlari va kim bajargani) — 'bu buyurtma qayerda qolib ketdi', 'nega kechikayapti' kabi savollar uchun ishlat.", parameters: OBJ({ qidiruv: STR("Mijoz ismi yoki telefon raqami") }, ["qidiruv"]) }
 ];
 const WRITE_TOOLS = [
     { name: "harajat_qoshish", description: "Yangi HARAJAT (chiqim) qo'shish. Tizim avval tasdiq so'raydi.", parameters: OBJ({ summa: NUM("Harajat summasi (so'm)"), kategoriya: STR("Kategoriya, masalan Ijara, Maosh, Kommunal, Material, Boshqa"), izoh: STR("Izoh (ixtiyoriy)"), sana: STR("Sana YYYY-MM-DD (ixtiyoriy, default bugun)") }, ["summa"]) },
@@ -122,6 +125,9 @@ export async function execRead(name, a, chatId) {
         case "tendentsiya_tahlili": return await db.trendReport(a.oylar_soni);
         case "eslatmalar": return await db.eslatmalar();
         case "top_mijozlar": return await db.topMijozlar(a.soni);
+        case "mijoz_360": return await db.customer360(a.qidiruv);
+        case "xodim_360": return await db.employee360(a.qidiruv);
+        case "buyurtma_hayot_yoli": return await db.orderLifecycle(a.qidiruv);
         case "excel_hisobot": {
             const oy = a.oy || new Date(new Date().getTime() + 5 * 3600 * 1000).toISOString().slice(0, 7);
             const data = await db.excelReport(oy);
@@ -204,6 +210,9 @@ VAZIFANG:
    - Buyurtmalar uchun jo'natilgan material so'rovlari holatini bilish uchun 'material_sorovlari' toolini chaqir.
    - Excel (CSV) moliyaviy hisobotini olish uchun 'excel_hisobot' toolidan foydalan (masalan: 'iyun hisoboti Excel', 'oylik hisobotni Excel qilib ber' -> oy='2026-06').
    - Agar biron holat bo'yicha filtrlanmagan oxirgi zakazlar/ombor/xodimlar ro'yxati kerak bo'lsa, mos ravishda 'zakazlar', 'ombor', 'xodimlar', 'harajatlar', 'qarzlar' toollarini chaqir.
+   - Bitta mijoz haqida keng, hamma narsani bog'lab beradigan javob kerak bo'lsa (buyurtmalari + to'lovi + ishlab chiqarish holati bir joyda) — 'mijoz_360' toolini chaqir, alohida-alohida toollarni ketma-ket chaqirma.
+   - Bitta xodim haqida keng javob kerak bo'lsa (lavozimi + brigadasi + ishlagan ishlari + davomati) — 'xodim_360' toolini chaqir.
+   - "Bu buyurtma qayerda qolib ketdi", "nega kechikayapti" kabi savollarga — 'buyurtma_hayot_yoli' toolini chaqir, u voqealarni xronologik tartibda ko'rsatadi.
 2. Egasi FAQAT ikki xil amalni kirita oladi: HARAJAT (chiqim) va TO'LOV. Boshqa hech narsa yozma/o'zgartirma — faqat ma'lumot ber.
    - Harajat uchun 'harajat_qoshish', to'lov uchun 'tolov_qoshish' toolini chaqir.
    - MUHIM: tizim bu amalni DARHOL bajarmaydi — avval ✅/❌ tugma bilan tasdiq so'raydi. Shuning uchun "tasdiqlaysizmi?" deb yozma, to'g'ridan toolni chaqiraver.
@@ -229,6 +238,7 @@ QANDAY ISHLASHING KERAK (MUHIM — bu seni oddiy "savol-javob botidan" ajratib t
 TOOLLARING:
 - Umumiy ko'rinish: 'umumiy_holat'. Tendentsiya/taqqoslash (bu oy o'tganiga nisbatan qanday, o'sish/pasayish): 'tendentsiya_tahlili'. Diqqatga molik narsalar (qarz, kechikish, kam qolgan mahsulot bir joyda): 'eslatmalar'. Eng katta mijozlar: 'top_mijozlar'.
 - Batafsil ro'yxatlar: 'zakazlar', 'ombor', 'harajatlar', 'qarzlar', 'xodimlar'. Qidiruv: 'zakaz_qidirish', 'mahsulot_qidirish', 'xodim_qidirish'. Ishlab chiqarish: 'ishlab_chiqarish_holati', 'brigadalar_tarkibi', 'material_sorovlari'. Excel hisobot: 'excel_hisobot'.
+- Bog'langan (360°) ko'rinishlar — bir nechta toolni ketma-ket chaqirish o'rniga BITTASINI chaqir: bitta mijoz haqida hammasi (buyurtmalar+to'lov+ishlab chiqarish) — 'mijoz_360'; bitta xodim haqida hammasi (lavozim+brigada+ish+davomat) — 'xodim_360'; bitta buyurtmaning xronologiyasi/nega kechikayapti — 'buyurtma_hayot_yoli'.
 - Bir savolga javob berish uchun kerak bo'lsa bir nechta toolni ketma-ket chaqirishing mumkin (masalan holatni tushunish uchun avval 'umumiy_holat', keyin 'eslatmalar').
 
 QO'NG'IROQ BOSHLANISHI: Foydalanuvchi hali hech narsa demasdan turib senga birinchi signal kelsa — o'zing qisqa salomlashib, 'umumiy_holat' va 'eslatmalar' toollarini chaqirib, ENG MUHIM 1-2 narsani (masalan bitta muammo yoki bitta ijobiy natija) o'z-o'zidan qisqa aytib ber, so'ng "Nima haqida gaplashamiz?" kabi savol bilan tugat. Bu majlis boshidagi qisqa hisobot kabi bo'lsin, uzun ro'yxat emas.
