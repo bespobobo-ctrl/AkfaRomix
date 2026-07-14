@@ -705,7 +705,40 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (historyGrid) historyGrid.innerHTML = '<div style="text-align:center; color:red; padding:20px; grid-column:1/-1;">Tarixni yuklashda xatolik!</div>';
             return;
         }
-        _histCache = data || [];
+
+        // Aksessuar kirim/chiqim (Dona/Spiska/Rasmdan-AI, Buxgalteriya tomonidan) romix_transactions'ga
+        // yozilmaydi — chunki product_id ustuni faqat romix_inventory'ga (profil) FK bilan bog'langan,
+        // aksessuarlar esa romix_accessories'da saqlanadi. Shu sabab bu harakatlar bu tarixda ko'rinmay
+        // qolardi — romix_accessories_history'dan o'qib, xuddi shu shakldagi psevdo-tranzaksiya qo'shamiz.
+        let accTx = [];
+        try {
+            const { data: histData, error: histErr } = await supabase.from('romix_accessories_history').select('*').order('created_at', { ascending: false });
+            if (histErr) throw histErr;
+            accTx = (histData || []).reduce((acc, log) => {
+                const actionText = log.action || '';
+                let type = null;
+                if (actionText.includes('Chiqim')) type = 'OUT';
+                else if (actionText.includes('Kirim')) type = 'IN';
+                if (!type) return acc;
+                const m = (log.details || '').match(/^"(.+?)"\s*mahsulotidan\s*([\d.,\s]+)\s*(\S+)/);
+                const productName = m ? m[1] : (log.details || 'Aksessuar');
+                const qty = m ? parseFloat(m[2].replace(/[,\s]/g, '')) || 0 : 0;
+                const unit = m ? m[3] : 'dona';
+                acc.push({
+                    id: log.id,
+                    created_at: log.created_at,
+                    type,
+                    quantity: qty,
+                    note: `${actionText} - ${log.operator || 'Buxgalteriya'}`,
+                    romix_inventory: { product_name: productName, unit }
+                });
+                return acc;
+            }, []);
+        } catch (histE) {
+            console.warn('Ombor accessories history load error:', histE);
+        }
+
+        _histCache = [...(data || []), ...accTx];
 
         document.querySelectorAll('#histTypeFilter .om-brand-chip').forEach(chip => {
             chip.onclick = () => {
@@ -2044,6 +2077,56 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderOmborJami();
     };
 
+    window._ojHoverPart = function(part, isHover) {
+        const activePart = window._ojActivePart || 'barchasi';
+        if (part === activePart) return;
+
+        let color = 'rgba(255,255,255,0.15)';
+        let strokeWOuter = 1.5;
+        let strokeWInner = 1;
+        let dash = '3,3';
+        
+        if (isHover) {
+            if (part === 'Kosa') { color = '#007aff'; strokeWOuter = 4; strokeWInner = 1.5; dash = 'none'; }
+            else if (part === 'Qanot') { color = '#ff9500'; strokeWOuter = 3; strokeWInner = 1.5; dash = 'none'; }
+            else if (part === 'O\'rta') { color = '#af52de'; strokeWOuter = 3; strokeWInner = 1.5; dash = 'none'; }
+            else if (part === 'Shtapik') { color = '#ffcc00'; strokeWOuter = 2; strokeWInner = 1; dash = 'none'; }
+        } else {
+            if (part === 'Kosa') { color = 'rgba(255,255,255,0.15)'; strokeWOuter = 2; strokeWInner = 1; dash = '3,3'; }
+            else if (part === 'Qanot') { color = 'rgba(255,255,255,0.15)'; strokeWOuter = 1.5; strokeWInner = 1; dash = '3,3'; }
+            else if (part === 'O\'rta') { color = 'rgba(255,255,255,0.15)'; strokeWOuter = 1.5; strokeWInner = 1; dash = '4,4'; }
+            else if (part === 'Shtapik') { color = 'rgba(255,255,255,0.08)'; strokeWOuter = 1; strokeWInner = 0.5; dash = 'none'; }
+        }
+
+        if (part === 'Kosa') {
+            const outer = document.getElementById('cad-kosa-outer');
+            const inner = document.getElementById('cad-kosa-inner');
+            const steel = document.getElementById('cad-kosa-steel');
+            if (outer) { outer.setAttribute('stroke', color); outer.setAttribute('stroke-width', strokeWOuter); }
+            if (inner) { inner.setAttribute('stroke', isHover ? color : 'rgba(255,255,255,0.08)'); inner.setAttribute('stroke-dasharray', dash); }
+            if (steel) steel.setAttribute('stroke', isHover ? color : 'rgba(255,255,255,0.1)');
+        } else if (part === 'Qanot') {
+            const outer = document.getElementById('cad-qanot-outer');
+            const inner = document.getElementById('cad-qanot-inner');
+            const steel = document.getElementById('cad-qanot-steel');
+            if (outer) { outer.setAttribute('stroke', color); outer.setAttribute('stroke-width', strokeWOuter); }
+            if (inner) { inner.setAttribute('stroke', isHover ? color : 'rgba(255,255,255,0.08)'); inner.setAttribute('stroke-dasharray', dash); }
+            if (steel) steel.setAttribute('stroke', isHover ? color : 'rgba(255,255,255,0.1)');
+        } else if (part === 'O\'rta') {
+            const outer = document.getElementById('cad-orta-outer');
+            const inner = document.getElementById('cad-orta-inner');
+            const steel = document.getElementById('cad-orta-steel');
+            if (outer) { outer.setAttribute('stroke', color); outer.setAttribute('stroke-width', strokeWOuter); }
+            if (inner) { inner.setAttribute('stroke', isHover ? color : 'rgba(255,255,255,0.08)'); inner.setAttribute('stroke-dasharray', dash); }
+            if (steel) steel.setAttribute('stroke', isHover ? color : 'rgba(255,255,255,0.1)');
+        } else if (part === 'Shtapik') {
+            const left = document.getElementById('cad-shtapik-l');
+            const right = document.getElementById('cad-shtapik-r');
+            if (left) { left.setAttribute('stroke', color); left.setAttribute('stroke-width', strokeWOuter); }
+            if (right) { right.setAttribute('stroke', color); right.setAttribute('stroke-width', strokeWOuter); }
+        }
+    };
+
     let tsBrand = null;
     let tsSeries = null;
 
@@ -2309,55 +2392,86 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <span style="font-size: 0.65rem; color: rgba(255,255,255,0.3); font-weight: 800; letter-spacing: 1px; text-transform: uppercase; position: absolute; top: 12px; left: 15px;">2D CAD Chizma</span>
                         
                         <svg viewBox="0 0 240 240" style="width: 170px; height: 170px; filter: drop-shadow(0 0 15px rgba(0,210,255,0.08));">
-                            <!-- Outer Frame (Kosa) -->
-                            <rect x="15" y="15" width="210" height="210" rx="8" fill="none" 
-                                stroke="${kActive ? '#007aff' : 'rgba(255,255,255,0.15)'}" 
-                                stroke-width="${kActive ? 14 : 10}" 
-                                style="cursor: pointer; transition: all 0.3s; stroke-linecap: round;" 
-                                onclick="window._ojSetProfilePart('Kosa')"
-                                onmouseover="this.setAttribute('stroke', '#007aff'); this.setAttribute('stroke-width', '14')"
-                                onmouseout="this.setAttribute('stroke', '${kActive ? '#007aff' : 'rgba(255,255,255,0.15)'}'); this.setAttribute('stroke-width', '${kActive ? 14 : 10}')"
-                                title="Kosa (Frame)" />
+                            <defs>
+                                <pattern id="cad-grid" width="12" height="12" patternUnits="userSpaceOnUse">
+                                    <path d="M 12 0 L 0 0 0 12" fill="none" stroke="rgba(255, 255, 255, 0.04)" stroke-width="0.5"/>
+                                </pattern>
+                                <pattern id="hatch-steel" width="5" height="5" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                                    <line x1="0" y1="0" x2="0" y2="5" stroke="rgba(255,255,255,0.15)" stroke-width="0.8" />
+                                </pattern>
+                            </defs>
                             
-                            <!-- Mullion / Divider (O'rta) -->
-                            <line x1="120" y1="20" x2="120" y2="220" 
-                                stroke="${oActive ? '#af52de' : 'rgba(255,255,255,0.15)'}" 
-                                stroke-width="${oActive ? 14 : 10}" 
-                                style="cursor: pointer; transition: all 0.3s; stroke-linecap: round;" 
-                                onclick="window._ojSetProfilePart('O\'rta')"
-                                onmouseover="this.setAttribute('stroke', '#af52de'); this.setAttribute('stroke-width', '14')"
-                                onmouseout="this.setAttribute('stroke', '${oActive ? '#af52de' : 'rgba(255,255,255,0.15)'}'); this.setAttribute('stroke-width', '${oActive ? 14 : 10}')"
-                                title="O'rta (Mullion)" />
+                            <rect width="100%" height="100%" fill="url(#cad-grid)" />
 
-                            <!-- Left Sash (Qanot) -->
-                            <rect x="30" y="30" width="80" height="180" rx="6" fill="none" 
-                                stroke="${qActive ? '#ff9500' : 'rgba(255,255,255,0.15)'}" 
-                                stroke-width="${qActive ? 10 : 7}" 
-                                style="cursor: pointer; transition: all 0.3s; stroke-linecap: round;" 
-                                onclick="window._ojSetProfilePart('Qanot')"
-                                onmouseover="this.setAttribute('stroke', '#ff9500'); this.setAttribute('stroke-width', '10')"
-                                onmouseout="this.setAttribute('stroke', '${qActive ? '#ff9500' : 'rgba(255,255,255,0.15)'}'); this.setAttribute('stroke-width', '${qActive ? 10 : 7}')"
-                                title="Qanot (Sash)" />
+                            <!-- Group 1: Kosa (Frame) -->
+                            <g class="cad-group" onclick="window._ojSetProfilePart('Kosa')"
+                               onmouseover="window._ojHoverPart('Kosa', true)" onmouseout="window._ojHoverPart('Kosa', false)">
+                                <!-- Outer Frame Boundary -->
+                                <rect id="cad-kosa-outer" x="15" y="15" width="210" height="210" rx="8" fill="none" 
+                                    stroke="${kActive ? '#007aff' : 'rgba(255,255,255,0.15)'}" stroke-width="${kActive ? 4 : 2}" style="transition: all 0.3s; cursor: pointer;" />
+                                <!-- Inner Chamber Wall -->
+                                <rect id="cad-kosa-inner" x="22" y="22" width="196" height="196" rx="6" fill="none" 
+                                    stroke="${kActive ? '#007aff' : 'rgba(255,255,255,0.08)'}" stroke-width="1" stroke-dasharray="${kActive ? 'none' : '3,3'}" style="transition: all 0.3s; cursor: pointer;" />
+                                <!-- Steel Reinforcement Hatching Box -->
+                                <rect id="cad-kosa-steel" x="25" y="25" width="15" height="15" fill="url(#hatch-steel)" 
+                                    stroke="${kActive ? '#007aff' : 'rgba(255,255,255,0.1)'}" stroke-width="0.8" style="transition: all 0.3s; cursor: pointer;" />
+                                <rect x="200" y="25" width="15" height="15" fill="url(#hatch-steel)" 
+                                    stroke="${kActive ? '#007aff' : 'rgba(255,255,255,0.1)'}" stroke-width="0.8" style="transition: all 0.3s; cursor: pointer;" />
+                                <rect x="25" y="200" width="15" height="15" fill="url(#hatch-steel)" 
+                                    stroke="${kActive ? '#007aff' : 'rgba(255,255,255,0.1)'}" stroke-width="0.8" style="transition: all 0.3s; cursor: pointer;" />
+                                <rect x="200" y="200" width="15" height="15" fill="url(#hatch-steel)" 
+                                    stroke="${kActive ? '#007aff' : 'rgba(255,255,255,0.1)'}" stroke-width="0.8" style="transition: all 0.3s; cursor: pointer;" />
+                            </g>
 
-                            <!-- Left Glass Bead (Shtapik) -->
-                            <rect x="40" y="40" width="60" height="160" rx="4" fill="none" 
-                                stroke="${sActive ? '#ffcc00' : 'rgba(255,255,255,0.08)'}" 
-                                stroke-width="${sActive ? 5 : 3}" 
-                                style="cursor: pointer; transition: all 0.3s; stroke-linecap: round;" 
-                                onclick="window._ojSetProfilePart('Shtapik')"
-                                onmouseover="this.setAttribute('stroke', '#ffcc00'); this.setAttribute('stroke-width', '5')"
-                                onmouseout="this.setAttribute('stroke', '${sActive ? '#ffcc00' : 'rgba(255,255,255,0.08)'}'); this.setAttribute('stroke-width', '${sActive ? 5 : 3}')"
-                                title="Shtapik (Glass Bead)" />
+                            <!-- Group 2: O'rta (Impost) -->
+                            <g class="cad-group" onclick="window._ojSetProfilePart('O\'rta')"
+                               onmouseover="window._ojHoverPart('O\'rta', true)" onmouseout="window._ojHoverPart('O\'rta', false)">
+                                <!-- Impost Column Boundary -->
+                                <rect id="cad-orta-outer" x="113" y="15" width="14" height="210" fill="none" 
+                                    stroke="${oActive ? '#af52de' : 'rgba(255,255,255,0.15)'}" stroke-width="${oActive ? 3 : 1.5}" style="transition: all 0.3s; cursor: pointer;" />
+                                <!-- Impost Inner Chamber Wall -->
+                                <line id="cad-orta-inner" x1="120" y1="20" x2="120" y2="220" 
+                                    stroke="${oActive ? '#af52de' : 'rgba(255,255,255,0.08)'}" stroke-width="1" stroke-dasharray="${oActive ? 'none' : '4,4'}" style="transition: all 0.3s; cursor: pointer;" />
+                                <!-- Impost Steel Reinforcement Box -->
+                                <rect id="cad-orta-steel" x="116" y="100" width="8" height="40" fill="url(#hatch-steel)" 
+                                    stroke="${oActive ? '#af52de' : 'rgba(255,255,255,0.1)'}" stroke-width="0.8" style="transition: all 0.3s; cursor: pointer;" />
+                            </g>
 
-                            <!-- Right Glass Bead (Shtapik) -->
-                            <rect x="130" y="30" width="80" height="180" rx="4" fill="none" 
-                                stroke="${sActive ? '#ffcc00' : 'rgba(255,255,255,0.08)'}" 
-                                stroke-width="${sActive ? 5 : 3}" 
-                                style="cursor: pointer; transition: all 0.3s; stroke-linecap: round;" 
-                                onclick="window._ojSetProfilePart('Shtapik')"
-                                onmouseover="this.setAttribute('stroke', '#ffcc00'); this.setAttribute('stroke-width', '5')"
-                                onmouseout="this.setAttribute('stroke', '${sActive ? '#ffcc00' : 'rgba(255,255,255,0.08)'}'); this.setAttribute('stroke-width', '${sActive ? 5 : 3}')"
-                                title="Shtapik (Glass Bead)" />
+                            <!-- Group 3: Qanot (Sash) -->
+                            <g class="cad-group" onclick="window._ojSetProfilePart('Qanot')"
+                               onmouseover="window._ojHoverPart('Qanot', true)" onmouseout="window._ojHoverPart('Qanot', false)">
+                                <!-- Left Sash Leaf Outer Boundary -->
+                                <rect id="cad-qanot-outer" x="30" y="30" width="80" height="180" rx="6" fill="none" 
+                                    stroke="${qActive ? '#ff9500' : 'rgba(255,255,255,0.15)'}" stroke-width="${qActive ? 3 : 1.5}" style="transition: all 0.3s; cursor: pointer;" />
+                                <!-- Left Sash Inner Chambers -->
+                                <rect id="cad-qanot-inner" x="36" y="36" width="68" height="168" rx="4" fill="none" 
+                                    stroke="${qActive ? '#ff9500' : 'rgba(255,255,255,0.08)'}" stroke-width="1" stroke-dasharray="${qActive ? 'none' : '3,3'}" style="transition: all 0.3s; cursor: pointer;" />
+                                <!-- Left Sash Steel Reinforcement -->
+                                <rect id="cad-qanot-steel" x="42" y="90" width="22" height="60" fill="url(#hatch-steel)" 
+                                    stroke="${qActive ? '#ff9500' : 'rgba(255,255,255,0.1)'}" stroke-width="0.8" style="transition: all 0.3s; cursor: pointer;" />
+                            </g>
+
+                            <!-- Group 4: Shtapik (Glass Bead) -->
+                            <g class="cad-group" onclick="window._ojSetProfilePart('Shtapik')"
+                               onmouseover="window._ojHoverPart('Shtapik', true)" onmouseout="window._ojHoverPart('Shtapik', false)">
+                                <!-- Left Glass Bead profile -->
+                                <path id="cad-shtapik-l" d="M 85,40 L 98,40 L 98,200 L 85,200 Z" fill="none" 
+                                    stroke="${sActive ? '#ffcc00' : 'rgba(255,255,255,0.08)'}" stroke-width="${sActive ? 2 : 1}" style="transition: all 0.3s; cursor: pointer;" />
+                                <!-- Right Glass Bead profile -->
+                                <path id="cad-shtapik-r" d="M 132,30 L 145,30 L 145,210 L 132,210 Z" fill="none" 
+                                    stroke="${sActive ? '#ffcc00' : 'rgba(255,255,255,0.08)'}" stroke-width="${sActive ? 2 : 1}" style="transition: all 0.3s; cursor: pointer;" />
+                                <!-- Gasket Seals details -->
+                                <line x1="84" y1="40" x2="84" y2="200" stroke="#000" stroke-width="1.5" />
+                                <line x1="131" y1="30" x2="131" y2="210" stroke="#000" stroke-width="1.5" />
+                            </g>
+
+                            <!-- Glass Pane details (Static, decorative, gives CAD sense) -->
+                            <!-- Left Glass Panes (Double Unit) -->
+                            <rect x="52" y="50" width="4" height="140" fill="rgba(0,210,255,0.1)" stroke="rgba(0,210,255,0.3)" stroke-width="0.5" />
+                            <rect x="62" y="50" width="4" height="140" fill="rgba(0,210,255,0.1)" stroke="rgba(0,210,255,0.3)" stroke-width="0.5" />
+                            <!-- Right Glass Panes (Double Unit) -->
+                            <rect x="156" y="40" width="4" height="160" fill="rgba(0,210,255,0.1)" stroke="rgba(0,210,255,0.3)" stroke-width="0.5" />
+                            <rect x="166" y="40" width="4" height="160" fill="rgba(0,210,255,0.1)" stroke="rgba(0,210,255,0.3)" stroke-width="0.5" />
                         </svg>
                         
                         <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 10px; font-weight: 500; text-align: center;">Chizmadan elementni bosing ☝️</div>
