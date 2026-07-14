@@ -467,6 +467,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         return new Date(now.getFullYear(), now.getMonth(), now.getDate());
     }
     function _buhSetText(id, val) { const el = document.getElementById(id); if (el) el.textContent = _buhFmt(val); }
+    function _buhNormName(s) { return String(s || '').trim().toLowerCase().replace(/\s+/g, ' '); }
+    // AI rasmdan o'qigan nom omordagi to'liq saqlangan nom bilan kamdan-kam 100% mos keladi
+    // (masalan rasmda "Zamok Vreznoy" deb qisqa yozilgan bo'lsa-yu, ombordagi to'liq nom
+    // "Zamok Vreznoy 153/25/85 S Rolikom (Uz)" bo'lsa). Aniq moslik topilmasa, bittasi
+    // ikkinchisini o'z ichiga olishini tekshiradi — lekin BIR NECHTA nomzod chiqsa (masalan
+    // ikki xil o'lchamdagi bir xil nomli mahsulot), noto'g'ri mahsulotdan xato ayirib
+    // qo'ymaslik uchun mosligi "aniqmas" deb belgilaydi (foydalanuvchi qo'lda aniqlashtirsin).
+    function _buhFindByFuzzyName(list, name, nameField) {
+        const n = _buhNormName(name);
+        if (!n) return {};
+        let candidates = list.filter(inv => _buhNormName(inv[nameField]) === n);
+        if (candidates.length === 1) return { match: candidates[0] };
+        if (candidates.length > 1) return { ambiguous: candidates };
+        if (n.length >= 4) {
+            candidates = list.filter(inv => {
+                const invN = _buhNormName(inv[nameField]);
+                return invN && (invN.includes(n) || n.includes(invN));
+            });
+            if (candidates.length === 1) return { match: candidates[0] };
+            if (candidates.length > 1) return { ambiguous: candidates };
+        }
+        return {};
+    }
 
     async function romixBuhSelect(table, localKey) {
         try {
@@ -3550,16 +3573,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 allInventory = data || [];
             } catch (err) { console.error('Vision chiqim (profil) ombor ro\'yxatini olishda xatolik:', err); }
 
-            // Aniq (case-sensitive) moslik o'rniga katta-kichik harf va bo'shliqlarga sezgirmas
-            // solishtirish ishlatiladi — AI rasmdan o'qigan nom Kirim paytida saqlangan nom bilan
-            // deyarli hech qachon 100% harf-ba-harf mos kelmaydi (masalan katta/kichik harf farqi).
-            const norm = s => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
             for (const it of profilItems) {
                 try {
                     const useLength = Number(it.lengthMm) > 0;
                     const finalQty = useLength ? (it.qty * Number(it.lengthMm) / 1000) : it.qty;
 
-                    const existing = allInventory.find(inv => norm(inv.product_name) === norm(it.name));
+                    const { match: existing, ambiguous } = _buhFindByFuzzyName(allInventory, it.name, 'product_name');
+                    if (ambiguous) { notFound.push(`${it.name} (bir nechta mos nom bor: ${ambiguous.map(a => a.product_name).join(' / ')} — aniqroq nom kiriting)`); continue; }
                     if (!existing) { notFound.push(it.name); continue; }
 
                     const currentQty = parseFloat(existing.stock_quantity) || 0;
@@ -3590,7 +3610,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const operator = (curUser.full_name || curUser.username || 'BUXGALTERIYA').toUpperCase();
             for (const it of accItems) {
                 try {
-                    const matched = inventory.find(inv => (inv.name || '').toLowerCase().trim() === String(it.name || '').toLowerCase().trim());
+                    const { match: matched, ambiguous } = _buhFindByFuzzyName(inventory, it.name, 'name');
+                    if (ambiguous) { notFound.push(`${it.name} (bir nechta mos nom bor: ${ambiguous.map(a => a.name).join(' / ')} — aniqroq nom kiriting)`); continue; }
                     if (!matched) { notFound.push(it.name); continue; }
 
                     const currentQty = Number(matched.qty) || 0;
@@ -5926,12 +5947,13 @@ ALTER TABLE employees ADD COLUMN IF NOT EXISTS advance_paid NUMERIC DEFAULT 0;`;
         toast.style.transform = 'translateY(0)';
         toast.style.pointerEvents = 'auto';
 
-        // Hide toast after 4 seconds
+        // Muvaffaqiyatli xabar 4 soniyada, xatolik/diqqat xabari (odatda uzunroq, o'qib
+        // ulgurish kerak) 10 soniyada yopiladi.
         setTimeout(() => {
             toast.style.opacity = '0';
             toast.style.transform = 'translateY(-100px)';
             toast.style.pointerEvents = 'none';
-        }, 4000);
+        }, isSuccess ? 4000 : 10000);
     };
 
     window.renderAutoFinishedGoods = () => {
