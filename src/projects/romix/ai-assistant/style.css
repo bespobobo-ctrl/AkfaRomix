@@ -173,6 +173,13 @@ body {
     transition: color 0.3s;
 }
 
+.call-duration {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    opacity: 0.7;
+}
+
 .chat-title { font-weight: 700; font-size: 0.94rem; }
 .chat-subtitle { font-size: 0.72rem; color: var(--text-muted); margin-top: 1px; }
 

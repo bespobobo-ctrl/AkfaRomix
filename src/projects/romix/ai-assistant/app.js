@@ -47,6 +47,7 @@ function renderRich(text) {
 }
 
 const deptLabelEl = document.getElementById('dept-label');
+const durationLabelEl = document.getElementById('call-duration');
 let orb3d = null;
 function ensureOrb3d() {
     if (!orb3d && orbCanvas) {
@@ -298,10 +299,12 @@ function handleServerMessage(data) {
     if (sc.inputTranscription && sc.inputTranscription.text) {
         userTranscript += sc.inputTranscription.text;
         showLiveCaption('user', userTranscript);
+        lastActivityAt = Date.now();
     }
     if (sc.outputTranscription && sc.outputTranscription.text) {
         botTranscript += sc.outputTranscription.text;
         showLiveCaption('assistant', botTranscript);
+        lastActivityAt = Date.now();
     }
 
     if (sc.interrupted) {
@@ -374,6 +377,48 @@ function startWatchdog() {
 }
 function stopWatchdog() { if (watchdogTimer) { clearInterval(watchdogTimer); watchdogTimer = null; } }
 
+// ── Xarajatni nazorat qilish: uzoq sukunatda va cheksiz uzun qo'ng'iroqda avtomatik tugatish ──
+let lastActivityAt = 0;
+let callStartedAt = 0;
+let costGuardTimer = null;
+let durationTimer = null;
+const SILENCE_HANGUP_MS = 75000;
+const MAX_CALL_MS = 8 * 60 * 1000;
+
+function startCostGuard() {
+    stopCostGuard();
+    lastActivityAt = Date.now();
+    costGuardTimer = setInterval(() => {
+        if (!callActive || manualStop) return;
+        if (Date.now() - lastActivityAt > SILENCE_HANGUP_MS) {
+            addTranscriptEntry('assistant', "⏸️ Uzoq sukunat sababli qo'ng'iroq avtomatik tugatildi (xarajatni tejash uchun).");
+            stopCall();
+            return;
+        }
+        if (Date.now() - callStartedAt > MAX_CALL_MS) {
+            addTranscriptEntry('assistant', "⏱️ Qo'ng'iroq vaqt chegarasiga yetdi (8 daqiqa). Kerak bo'lsa qayta boshlang.");
+            stopCall();
+        }
+    }, 5000);
+}
+function stopCostGuard() { if (costGuardTimer) { clearInterval(costGuardTimer); costGuardTimer = null; } }
+
+function startDurationTimer() {
+    stopDurationTimer();
+    callStartedAt = Date.now();
+    updateDurationLabel();
+    durationTimer = setInterval(updateDurationLabel, 1000);
+}
+function stopDurationTimer() {
+    if (durationTimer) { clearInterval(durationTimer); durationTimer = null; }
+    if (durationLabelEl) durationLabelEl.textContent = '';
+}
+function updateDurationLabel() {
+    if (!durationLabelEl) return;
+    const s = Math.floor((Date.now() - callStartedAt) / 1000);
+    durationLabelEl.textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+
 async function openLiveSocket(isReconnect) {
     let cfg;
     try {
@@ -420,7 +465,7 @@ async function openLiveSocket(isReconnect) {
                         disabled: false,
                         startOfSpeechSensitivity: 'START_SENSITIVITY_HIGH',
                         endOfSpeechSensitivity: 'END_SENSITIVITY_HIGH',
-                        silenceDurationMs: 550,
+                        silenceDurationMs: 800,
                         prefixPaddingMs: 200
                     },
                     turnCoverage: 'TURN_INCLUDES_ONLY_ACTIVITY'
@@ -479,6 +524,8 @@ async function startCall() {
     manualStop = false;
     reconnectAttempts = 0;
     hasGreeted = false;
+    startDurationTimer();
+    startCostGuard();
     requestMicPermission().catch(() => { }); // token so'rovi bilan bir vaqtda — ruxsat oldindan tayyor bo'ladi (xato startMicCapture'da qayta ushlanadi)
 
     const ok = await openLiveSocket(false);
@@ -486,6 +533,8 @@ async function startCall() {
         callToggleBtn.disabled = false;
         setOrbState('idle');
         setStatus("Qo'ng'iroqni boshlang");
+        stopDurationTimer();
+        stopCostGuard();
     }
 }
 
@@ -502,6 +551,8 @@ function stopCall() {
     commitTurn();
     sendRecap();
     stopWatchdog();
+    stopDurationTimer();
+    stopCostGuard();
 
     if (ws) { try { ws.close(); } catch (e) { } ws = null; }
     if (micSource) { try { micSource.disconnect(); } catch (e) { } micSource = null; }
