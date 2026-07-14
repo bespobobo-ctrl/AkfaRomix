@@ -1701,6 +1701,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <span style="color:${typeColor}; font-weight:700;">Jami: ${_buhFmt(itemTotal)}</span>
                 </div>
                 ${tx.note ? `<div style="font-size:0.7rem; color:rgba(255,255,255,0.35); margin-top:6px; font-style:italic;">Izoh: ${tx.note}</div>` : ''}
+                <div style="display:flex; gap:8px; margin-top:8px;">
+                    <button onclick="window.editBuhTxItem('${tx.id}', '${docId}')" style="flex:1; background:rgba(0,186,255,0.1); border:1px solid rgba(0,186,255,0.3); color:#00baff; padding:6px; border-radius:8px; font-size:0.72rem; font-weight:700; cursor:pointer;">✏️ Tahrirlash</button>
+                    <button onclick="window.deleteBuhTxItem('${tx.id}', '${docId}')" style="flex:1; background:rgba(255,77,79,0.1); border:1px solid rgba(255,77,79,0.3); color:#ff4d4f; padding:6px; border-radius:8px; font-size:0.72rem; font-weight:700; cursor:pointer;">🗑️ O'chirish</button>
+                </div>
             </div>
             `;
         }).join('');
@@ -1739,6 +1743,94 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const modal = document.getElementById('buh-tx-details-modal');
         if (modal) modal.style.display = 'flex';
+    };
+
+    // Kirim/Chiqim Tarixidagi bitta pozitsiyani tahrirlash. Ikki xil manba bor:
+    // profil (romix_transactions'dagi haqiqiy qator, id — UUID) va aksessuar
+    // (romix_accessories_history'dan o'qib psevdo-tranzaksiya sifatida qurilgan, id — "HIST-...").
+    // Ikkalasida ham miqdor o'zgarsa, tegishli ombor zaxirasi (romix_inventory/romix_accessories)
+    // farqga (delta) qarab qayta hisoblanadi — aks holda tarix bilan haqiqiy zaxira mos kelmay qoladi.
+    window.editBuhTxItem = async (txId, docId) => {
+        const tx = _buhHistCache.find(t => t.id === txId);
+        if (!tx) return;
+        const isAcc = String(txId).startsWith('HIST-');
+        const prodName = tx.romix_inventory?.product_name || "Noma'lum mahsulot";
+        const currentQty = Number(tx.quantity) || 0;
+        const input = prompt(`"${prodName}" — yangi miqdorni kiriting:`, currentQty);
+        if (input === null) return;
+        const newQty = parseFloat(input);
+        if (isNaN(newQty) || newQty < 0) { alert("Noto'g'ri miqdor kiritildi!"); return; }
+        const delta = newQty - currentQty;
+        const stockDelta = tx.type === 'IN' ? delta : -delta;
+
+        try {
+            if (isAcc) {
+                const { data: acc } = await supabase.from('romix_accessories').select('*').ilike('name', prodName).maybeSingle();
+                if (acc) {
+                    const newStock = Math.max(0, (Number(acc.qty) || 0) + stockDelta);
+                    await supabase.from('romix_accessories').update({ qty: newStock }).eq('id', acc.id);
+                }
+                const { data: histRow } = await supabase.from('romix_accessories_history').select('*').eq('id', txId).maybeSingle();
+                if (histRow) {
+                    const newDetails = (histRow.details || '').replace(/(mahsulotidan\s*)[\d.,\s]+\s*(\S+)/, `$1${newQty.toLocaleString()} $2`);
+                    await supabase.from('romix_accessories_history').update({ details: newDetails }).eq('id', txId);
+                }
+            } else {
+                const { data: prod } = await supabase.from('romix_inventory').select('*').eq('id', tx.product_id).maybeSingle();
+                if (prod) {
+                    const newStock = Math.max(0, (Number(prod.stock_quantity) || 0) + stockDelta);
+                    await supabase.from('romix_inventory').update({ stock_quantity: newStock }).eq('id', prod.id);
+                }
+                await supabase.from('romix_transactions').update({ quantity: newQty }).eq('id', txId);
+            }
+        } catch (err) {
+            alert('Xatolik: ' + err.message);
+            return;
+        }
+
+        window.showPremiumToast && window.showPremiumToast('Yangilandi', "Miqdor tahrirlandi, ombor zaxirasi qayta hisoblandi.", true);
+        await window.loadBuhHistoryData();
+        if (typeof renderRomixBuhOmbor === 'function') await renderRomixBuhOmbor();
+        if (_buhHistCache.some(t => t.id === txId)) window.viewBuhTxDetails(docId);
+        else window.closeBuhTxDetailsModal();
+    };
+
+    window.deleteBuhTxItem = async (txId, docId) => {
+        const tx = _buhHistCache.find(t => t.id === txId);
+        if (!tx) return;
+        const isAcc = String(txId).startsWith('HIST-');
+        const prodName = tx.romix_inventory?.product_name || "Noma'lum mahsulot";
+        const qty = Number(tx.quantity) || 0;
+        if (!confirm(`"${prodName}" — ${qty} ${tx.romix_inventory?.unit || ''} yozuvini butunlay o'chirmoqchimisiz? Ombor zaxirasi ham shu bo'yicha qaytariladi.`)) return;
+        const stockDelta = tx.type === 'IN' ? -qty : qty;
+
+        try {
+            if (isAcc) {
+                const { data: acc } = await supabase.from('romix_accessories').select('*').ilike('name', prodName).maybeSingle();
+                if (acc) {
+                    const newStock = Math.max(0, (Number(acc.qty) || 0) + stockDelta);
+                    await supabase.from('romix_accessories').update({ qty: newStock }).eq('id', acc.id);
+                }
+                await supabase.from('romix_accessories_history').delete().eq('id', txId);
+            } else {
+                const { data: prod } = await supabase.from('romix_inventory').select('*').eq('id', tx.product_id).maybeSingle();
+                if (prod) {
+                    const newStock = Math.max(0, (Number(prod.stock_quantity) || 0) + stockDelta);
+                    await supabase.from('romix_inventory').update({ stock_quantity: newStock }).eq('id', prod.id);
+                }
+                await supabase.from('romix_transactions').delete().eq('id', txId);
+            }
+        } catch (err) {
+            alert('Xatolik: ' + err.message);
+            return;
+        }
+
+        window.showPremiumToast && window.showPremiumToast("O'chirildi", "Yozuv o'chirildi, ombor zaxirasi qayta hisoblandi.", true);
+        await window.loadBuhHistoryData();
+        if (typeof renderRomixBuhOmbor === 'function') await renderRomixBuhOmbor();
+        const stillExists = _buhGroupTransactionsIntoDocuments(_buhHistCache).some(d => d.id === docId);
+        if (stillExists) window.viewBuhTxDetails(docId);
+        else window.closeBuhTxDetailsModal();
     };
 
     window.closeBuhTxDetailsModal = () => {
