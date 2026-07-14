@@ -382,8 +382,11 @@ let lastActivityAt = 0;
 let callStartedAt = 0;
 let costGuardTimer = null;
 let durationTimer = null;
+let outputSecondsAccrued = 0;
 const SILENCE_HANGUP_MS = 75000;
 const MAX_CALL_MS = 8 * 60 * 1000;
+const COST_PER_MIN_IN = 0.005;
+const COST_PER_MIN_OUT = 0.018;
 
 function startCostGuard() {
     stopCostGuard();
@@ -406,6 +409,7 @@ function stopCostGuard() { if (costGuardTimer) { clearInterval(costGuardTimer); 
 function startDurationTimer() {
     stopDurationTimer();
     callStartedAt = Date.now();
+    outputSecondsAccrued = 0;
     updateDurationLabel();
     durationTimer = setInterval(updateDurationLabel, 1000);
 }
@@ -416,7 +420,10 @@ function stopDurationTimer() {
 function updateDurationLabel() {
     if (!durationLabelEl) return;
     const s = Math.floor((Date.now() - callStartedAt) / 1000);
-    durationLabelEl.textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    const inputMin = s / 60;
+    const outputMin = outputSecondsAccrued / 60;
+    const cost = inputMin * COST_PER_MIN_IN + outputMin * COST_PER_MIN_OUT;
+    durationLabelEl.textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') + '  ·  ~$' + cost.toFixed(3);
 }
 
 async function openLiveSocket(isReconnect) {
@@ -439,7 +446,10 @@ async function openLiveSocket(isReconnect) {
 
     if (!audioPlayer) {
         audioPlayer = new LivePlayer();
-        audioPlayer.onLevel = (float32) => feedOrbLevel(computeRMS(float32));
+        audioPlayer.onLevel = (float32) => {
+            feedOrbLevel(computeRMS(float32));
+            outputSecondsAccrued += float32.length / 24000;
+        };
         try { await audioPlayer.init(); }
         catch (e) {
             audioPlayer = null;
@@ -464,8 +474,8 @@ async function openLiveSocket(isReconnect) {
                     automaticActivityDetection: {
                         disabled: false,
                         startOfSpeechSensitivity: 'START_SENSITIVITY_HIGH',
-                        endOfSpeechSensitivity: 'END_SENSITIVITY_HIGH',
-                        silenceDurationMs: 800,
+                        endOfSpeechSensitivity: 'END_SENSITIVITY_LOW',
+                        silenceDurationMs: 1200,
                         prefixPaddingMs: 200
                     },
                     turnCoverage: 'TURN_INCLUDES_ONLY_ACTIVITY'
