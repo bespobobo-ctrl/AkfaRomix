@@ -3529,28 +3529,45 @@ document.addEventListener('DOMContentLoaded', async () => {
         const accItems = items.filter(it => it.type === 'aksessuar');
         const notFound = [];
         const insufficient = [];
+        const saveErrors = [];
         let doneCount = 0;
 
-        for (const it of profilItems) {
+        if (profilItems.length > 0) {
+            let allInventory = [];
             try {
-                const useLength = Number(it.lengthMm) > 0;
-                const finalQty = useLength ? (it.qty * Number(it.lengthMm) / 1000) : it.qty;
+                const { data } = await supabase.from('romix_inventory').select('*');
+                allInventory = data || [];
+            } catch (err) { console.error('Vision chiqim (profil) ombor ro\'yxatini olishda xatolik:', err); }
 
-                const { data: existing } = await supabase.from('romix_inventory').select('*').eq('product_name', it.name).maybeSingle();
-                if (!existing) { notFound.push(it.name); continue; }
+            // Aniq (case-sensitive) moslik o'rniga katta-kichik harf va bo'shliqlarga sezgirmas
+            // solishtirish ishlatiladi — AI rasmdan o'qigan nom Kirim paytida saqlangan nom bilan
+            // deyarli hech qachon 100% harf-ba-harf mos kelmaydi (masalan katta/kichik harf farqi).
+            const norm = s => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+            for (const it of profilItems) {
+                try {
+                    const useLength = Number(it.lengthMm) > 0;
+                    const finalQty = useLength ? (it.qty * Number(it.lengthMm) / 1000) : it.qty;
 
-                const currentQty = parseFloat(existing.stock_quantity) || 0;
-                if (currentQty < finalQty) insufficient.push(`${it.name} (bor: ${currentQty}, so'ralgan: ${finalQty})`);
-                const newQty = Math.max(0, currentQty - finalQty);
+                    const existing = allInventory.find(inv => norm(inv.product_name) === norm(it.name));
+                    if (!existing) { notFound.push(it.name); continue; }
 
-                await supabase.from('romix_inventory').update({ stock_quantity: newQty }).eq('id', existing.id);
-                await supabase.from('romix_transactions').insert([{
-                    product_id: existing.id, type: 'OUT', quantity: finalQty,
-                    note: `Rasmdan Chiqim (AI) - Buxgalteriya`
-                }]);
-                doneCount++;
-            } catch (err) {
-                console.error('Vision chiqim (profil) xatolik:', it.name, err);
+                    const currentQty = parseFloat(existing.stock_quantity) || 0;
+                    if (currentQty < finalQty) insufficient.push(`${it.name} (bor: ${currentQty}, so'ralgan: ${finalQty})`);
+                    const newQty = Math.max(0, currentQty - finalQty);
+
+                    const { error: updErr } = await supabase.from('romix_inventory').update({ stock_quantity: newQty }).eq('id', existing.id);
+                    if (updErr) throw updErr;
+                    const { error: txErr } = await supabase.from('romix_transactions').insert([{
+                        product_id: existing.id, type: 'OUT', quantity: finalQty,
+                        note: `Rasmdan Chiqim (AI) - Buxgalteriya`
+                    }]);
+                    if (txErr) throw txErr;
+                    existing.stock_quantity = newQty;
+                    doneCount++;
+                } catch (err) {
+                    console.error('Vision chiqim (profil) xatolik:', it.name, err);
+                    saveErrors.push(it.name);
+                }
             }
         }
 
@@ -3562,14 +3579,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             const operator = (curUser.full_name || curUser.username || 'BUXGALTERIYA').toUpperCase();
             for (const it of accItems) {
                 try {
-                    const matched = inventory.find(inv => (inv.name || '').toLowerCase() === String(it.name || '').toLowerCase());
+                    const matched = inventory.find(inv => (inv.name || '').toLowerCase().trim() === String(it.name || '').toLowerCase().trim());
                     if (!matched) { notFound.push(it.name); continue; }
 
                     const currentQty = Number(matched.qty) || 0;
                     if (currentQty < it.qty) insufficient.push(`${it.name} (bor: ${currentQty}, so'ralgan: ${it.qty})`);
                     const newQty = Math.max(0, currentQty - it.qty);
 
-                    await romixBuhUpdate('romix_accessories', ROMIX_BUH_KEYS.accessories, matched.id, { qty: newQty });
+                    const updRes = await romixBuhUpdate('romix_accessories', ROMIX_BUH_KEYS.accessories, matched.id, { qty: newQty });
+                    if (updRes && updRes.ok === false) { saveErrors.push(it.name); continue; }
                     matched.qty = newQty;
                     doneCount++;
 
@@ -3584,14 +3602,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                     });
                 } catch (err) {
                     console.error('Vision chiqim (aksessuar) xatolik:', it.name, err);
+                    saveErrors.push(it.name);
                 }
             }
         }
 
-        const hasIssues = notFound.length > 0 || insufficient.length > 0;
+        const hasIssues = notFound.length > 0 || insufficient.length > 0 || saveErrors.length > 0;
         let msg = `${doneCount} ta mahsulot chiqim qilindi.`;
         if (notFound.length > 0) msg += ` Omborda topilmadi: ${notFound.join(', ')}.`;
         if (insufficient.length > 0) msg += ` Yetarli zaxira yo'q edi: ${insufficient.join(', ')}.`;
+        if (saveErrors.length > 0) msg += ` Saqlashda xatolik: ${saveErrors.join(', ')}.`;
         window.showPremiumToast(hasIssues ? 'Diqqat' : 'Muvaffaqiyatli', msg, !hasIssues);
         window.closeBuhVisionChiqimModal();
         await renderRomixBuhOmbor();
