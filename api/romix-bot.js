@@ -12,7 +12,7 @@ import asst from "./_romixassistant.js";
 const { TOKEN, PASSWORD, stGet, stSet, stDel, tg, esc, send, sendVoice, tgFilePath, downloadB64, runAssistantTurn, runConfirm } = asst;
 const WEBHOOK_SECRET = process.env.TG_WEBHOOK_SECRET || "";
 // ?v= — Telegram WebView eski nusxani keshlab qolmasligi uchun har katta o'zgarishda oshiriladi
-const MINI_APP_VERSION = "12";
+const MINI_APP_VERSION = "13";
 const MINI_APP_URL = (process.env.ROMIX_MINI_APP_URL || "https://akfa-romix.vercel.app/src/mini-app/romix-ai/index.html") + "?v=" + MINI_APP_VERSION;
 
 const YESNO = { inline_keyboard: [[{ text: "✅ Ha, bajar", callback_data: "romix:yes" }, { text: "❌ Bekor", callback_data: "romix:no" }]] };
