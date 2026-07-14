@@ -1,12 +1,33 @@
-// Yordamchining 3D "yuzi" — holatga (tinglash/o'ylash/gapirish) va real ovoz balandligiga
-// qarab shakli va rangi o'zgaradigan, doimiy aylanib turadigan shar.
+// Korxonaning 3D "xaritasi" — har bir bo'lim alohida tugun. AI qaysi bo'lim haqida
+// ma'lumot olayotgan bo'lsa, kamera o'sha tugunga fokus qiladi va u "jonlanadi"
+// (real ovoz balandligiga reaksiya bilan); qolganlari sokin, xira turadi.
 import * as THREE from 'three';
 
+export const DEPARTMENTS = {
+    umumiy: { label: 'Umumiy holat', color: 0x3987e5, pos: [0, 0.3, 0] },
+    sotuv: { label: 'Sotuv', color: 0xc9a668, pos: [1.9, 1.05, -0.3] },
+    ombor: { label: 'Ombor', color: 0x4caf7d, pos: [-1.9, 1.05, -0.3] },
+    ishlab: { label: 'Ishlab chiqarish', color: 0x9d7cc9, pos: [1.9, -0.95, -0.7] },
+    xodimlar: { label: 'Xodimlar', color: 0xc0605f, pos: [-1.9, -0.95, -0.7] },
+    buxgalteriya: { label: "Buxgalteriya", color: 0xeda100, pos: [0, -1.9, -1.0] }
+};
+
+const TOOL_DEPARTMENT = {
+    umumiy_holat: 'umumiy', eslatmalar: 'umumiy', anomaliyalar: 'umumiy',
+    zakazlar: 'sotuv', zakaz_qidirish: 'sotuv', mijoz_360: 'sotuv', buyurtma_hayot_yoli: 'sotuv', top_mijozlar: 'sotuv',
+    ombor: 'ombor', mahsulot_qidirish: 'ombor',
+    ishlab_chiqarish_holati: 'ishlab', brigadalar_tarkibi: 'ishlab', material_sorovlari: 'ishlab',
+    xodimlar: 'xodimlar', xodim_qidirish: 'xodimlar', xodim_360: 'xodimlar',
+    harajatlar: 'buxgalteriya', qarzlar: 'buxgalteriya', tendentsiya_tahlili: 'buxgalteriya', excel_hisobot: 'buxgalteriya',
+    harajat_qoshish: 'buxgalteriya', tolov_qoshish: 'buxgalteriya', tasdiqlash: 'buxgalteriya'
+};
+export function departmentForTool(name) { return TOOL_DEPARTMENT[name] || 'umumiy'; }
+
 const STATE_PARAMS = {
-    idle: { baseAmp: 0.025, speed: 0.18, rotSpeed: 0.05, color: 0x3987e5, emissive: 0.28 },
-    listening: { baseAmp: 0.045, speed: 0.55, rotSpeed: 0.16, color: 0x3987e5, emissive: 0.55 },
-    thinking: { baseAmp: 0.075, speed: 1.5, rotSpeed: 0.85, color: 0x7c96a8, emissive: 0.5 },
-    speaking: { baseAmp: 0.1, speed: 0.9, rotSpeed: 0.22, color: 0xc9a668, emissive: 0.75 }
+    idle: { baseAmp: 0.025, speed: 0.18 },
+    listening: { baseAmp: 0.045, speed: 0.55 },
+    thinking: { baseAmp: 0.075, speed: 1.5 },
+    speaking: { baseAmp: 0.1, speed: 0.9 }
 };
 
 function pseudoNoise(x, y, z, t) {
@@ -24,44 +45,47 @@ export class Orb3D {
         this.state = 'idle';
         this.level = 0;
         this.targetLevel = 0;
-        this._color = new THREE.Color(STATE_PARAMS.idle.color);
-        this._targetColor = new THREE.Color(STATE_PARAMS.idle.color);
-        this._emissive = STATE_PARAMS.idle.emissive;
-        this._targetEmissive = STATE_PARAMS.idle.emissive;
+        this.activeDept = 'umumiy';
+        this.onDeptChange = null;
 
         this.renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 
         this.scene = new THREE.Scene();
-        this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-        this.camera.position.set(0, 0, 4.2);
+        this.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+        this.cameraDefaultPos = new THREE.Vector3(0, 0.4, 7.6);
+        this.camera.position.copy(this.cameraDefaultPos);
+        this.cameraTarget = new THREE.Vector3(0, 0, 0);
 
-        const geometry = new THREE.IcosahedronGeometry(1, 3);
-        this._orig = new Float32Array(geometry.attributes.position.array);
+        this.nodes = {};
+        Object.entries(DEPARTMENTS).forEach(([key, d]) => {
+            const isHub = key === 'umumiy';
+            const geometry = new THREE.IcosahedronGeometry(isHub ? 1 : 0.6, isHub ? 3 : 1);
+            const orig = new Float32Array(geometry.attributes.position.array);
+            const material = new THREE.MeshStandardMaterial({
+                color: d.color, emissive: d.color, emissiveIntensity: 0.22,
+                metalness: 0.32, roughness: 0.4, transparent: true, opacity: 0.92
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(...d.pos);
+            this.scene.add(mesh);
 
-        const material = new THREE.MeshStandardMaterial({
-            color: STATE_PARAMS.idle.color,
-            emissive: STATE_PARAMS.idle.color,
-            emissiveIntensity: STATE_PARAMS.idle.emissive,
-            metalness: 0.35,
-            roughness: 0.35,
-            transparent: true,
-            opacity: 0.92
+            if (!isHub) {
+                const hubPos = new THREE.Vector3(...DEPARTMENTS.umumiy.pos);
+                const lineGeom = new THREE.BufferGeometry().setFromPoints([hubPos, new THREE.Vector3(...d.pos)]);
+                const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.08 });
+                this.scene.add(new THREE.Line(lineGeom, lineMat));
+            }
+
+            this.nodes[key] = { mesh, orig, pulsePhase: Math.random() * 10, curEmissive: 0.22, curScale: isHub ? 1 : 0.85 };
         });
-        this.mesh = new THREE.Mesh(geometry, material);
-        this.scene.add(this.mesh);
-
-        const wireGeom = new THREE.IcosahedronGeometry(1.012, 2);
-        const wireMat = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.06 });
-        this.wireMesh = new THREE.Mesh(wireGeom, wireMat);
-        this.scene.add(this.wireMesh);
 
         this.scene.add(new THREE.AmbientLight(0xffffff, 0.55));
-        const key = new THREE.PointLight(0x3987e5, 1.4, 12);
-        key.position.set(2.5, 2, 3);
-        this.scene.add(key);
-        const rim = new THREE.PointLight(0xc9a668, 1.1, 12);
-        rim.position.set(-2.5, -1.5, -2);
+        const key1 = new THREE.PointLight(0xffffff, 1.3, 24);
+        key1.position.set(3, 3, 6);
+        this.scene.add(key1);
+        const rim = new THREE.PointLight(0xc9a668, 0.6, 24);
+        rim.position.set(-3, -2, -3);
         this.scene.add(rim);
 
         this.clock = new THREE.Clock();
@@ -73,20 +97,17 @@ export class Orb3D {
         this._tick();
     }
 
-    setState(state) {
-        if (!STATE_PARAMS[state]) return;
-        this.state = state;
-        this._targetColor.setHex(STATE_PARAMS[state].color);
-        this._targetEmissive = STATE_PARAMS[state].emissive;
+    focus(deptKey) {
+        if (!this.nodes[deptKey] || deptKey === this.activeDept) return;
+        this.activeDept = deptKey;
+        if (this.onDeptChange) this.onDeptChange(deptKey, DEPARTMENTS[deptKey].label);
     }
 
-    // rms: taxminan 0..0.3 oralig'idagi xom ovoz balandligi (Float32Array RMS)
-    feedLevel(rms) {
-        this.targetLevel = Math.min(1, Math.max(0, rms * 6));
-    }
+    setState(state) { if (STATE_PARAMS[state]) this.state = state; }
+    feedLevel(rms) { this.targetLevel = Math.min(1, Math.max(0, rms * 6)); }
 
     _onResize() {
-        const size = Math.min(this.canvas.clientWidth, this.canvas.clientHeight) || 200;
+        const size = Math.min(this.canvas.clientWidth, this.canvas.clientHeight) || 240;
         this.renderer.setSize(size, size, false);
         this.camera.aspect = 1;
         this.camera.updateProjectionMatrix();
@@ -97,36 +118,47 @@ export class Orb3D {
         requestAnimationFrame(() => this._tick());
 
         const t = this.clock.getElapsedTime();
-        const params = STATE_PARAMS[this.state] || STATE_PARAMS.idle;
-
         this.level += (this.targetLevel - this.level) * 0.18;
         this.targetLevel *= 0.88;
 
-        const amp = params.baseAmp + this.level * 0.4;
-        const positions = this.mesh.geometry.attributes.position;
-        const orig = this._orig;
-        for (let i = 0; i < positions.count; i++) {
-            const ox = orig[i * 3], oy = orig[i * 3 + 1], oz = orig[i * 3 + 2];
-            const n = pseudoNoise(ox, oy, oz, t * params.speed);
-            const scale = 1 + n * amp;
-            positions.setXYZ(i, ox * scale, oy * scale, oz * scale);
-        }
-        positions.needsUpdate = true;
-        this.mesh.geometry.computeVertexNormals();
+        const activeDef = DEPARTMENTS[this.activeDept];
+        const activePos = new THREE.Vector3(...activeDef.pos);
+        const desiredCamPos = this.activeDept === 'umumiy'
+            ? this.cameraDefaultPos
+            : new THREE.Vector3(activePos.x * 0.75, activePos.y * 0.75 + 0.5, activePos.z + 4.6);
+        this.camera.position.lerp(desiredCamPos, 0.035);
+        this.cameraTarget.lerp(activePos, 0.05);
+        this.camera.lookAt(this.cameraTarget);
 
-        this.mesh.rotation.y += 0.0025 + params.rotSpeed * 0.01;
-        this.mesh.rotation.x += 0.0012;
-        this.wireMesh.rotation.copy(this.mesh.rotation);
-        this.wireMesh.scale.setScalar(1 + this.level * 0.06);
+        Object.entries(this.nodes).forEach(([key, n]) => {
+            const isActive = key === this.activeDept;
+            const isHub = key === 'umumiy';
+            const params = isActive ? (STATE_PARAMS[this.state] || STATE_PARAMS.idle) : STATE_PARAMS.idle;
+            const amp = isActive ? params.baseAmp + this.level * 0.4 : 0.018;
+            const speed = isActive ? params.speed : 0.1;
 
-        this._color.lerp(this._targetColor, 0.06);
-        this._emissive += (this._targetEmissive - this._emissive) * 0.06;
-        this.mesh.material.color.copy(this._color);
-        this.mesh.material.emissive.copy(this._color);
-        this.mesh.material.emissiveIntensity = this._emissive + this.level * 0.5;
+            const positions = n.mesh.geometry.attributes.position;
+            for (let i = 0; i < positions.count; i++) {
+                const ox = n.orig[i * 3], oy = n.orig[i * 3 + 1], oz = n.orig[i * 3 + 2];
+                const noise = pseudoNoise(ox, oy, oz, t * speed + n.pulsePhase);
+                const scale = 1 + noise * amp;
+                positions.setXYZ(i, ox * scale, oy * scale, oz * scale);
+            }
+            positions.needsUpdate = true;
+            n.mesh.geometry.computeVertexNormals();
+            n.mesh.rotation.y += isActive ? 0.006 : 0.0012;
+            n.mesh.rotation.x += isActive ? 0.002 : 0;
 
-        const s = 1 + this.level * 0.08;
-        this.mesh.scale.setScalar(s);
+            const targetEmissive = isActive ? 0.55 + this.level * 0.6 : (isHub ? 0.2 : 0.14);
+            n.curEmissive += (targetEmissive - n.curEmissive) * 0.08;
+            n.mesh.material.emissiveIntensity = n.curEmissive;
+
+            const targetScale = isActive ? 1 + this.level * 0.1 : (isHub ? 0.9 : 0.8);
+            n.curScale += (targetScale - n.curScale) * 0.06;
+            n.mesh.scale.setScalar(n.curScale);
+
+            n.mesh.material.opacity = isActive ? 0.95 : 0.55;
+        });
 
         this.renderer.render(this.scene, this.camera);
     }

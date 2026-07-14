@@ -151,15 +151,26 @@ body {
 .orb-stage {
     flex-shrink: 0;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 18px 0 8px;
+    gap: 6px;
+    padding: 14px 0 6px;
 }
 
 #orb-canvas {
-    width: min(210px, 48vw);
-    height: min(210px, 48vw);
+    width: min(280px, 78vw);
+    height: min(280px, 78vw);
     display: block;
+}
+
+.dept-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    transition: color 0.3s;
 }
 
 .chat-title { font-weight: 700; font-size: 0.94rem; }

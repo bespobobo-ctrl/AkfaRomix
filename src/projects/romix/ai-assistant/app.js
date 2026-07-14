@@ -1,4 +1,4 @@
-import { Orb3D } from './orb3d.js';
+import { Orb3D, departmentForTool } from './orb3d.js';
 
 const API_URL = '/api/romix-ai-chat';
 const LIVE_TOKEN_URL = '/api/romix-live-token';
@@ -46,10 +46,18 @@ function renderRich(text) {
     return s;
 }
 
+const deptLabelEl = document.getElementById('dept-label');
 let orb3d = null;
-function ensureOrb3d() { if (!orb3d && orbCanvas) orb3d = new Orb3D(orbCanvas); return orb3d; }
+function ensureOrb3d() {
+    if (!orb3d && orbCanvas) {
+        orb3d = new Orb3D(orbCanvas);
+        orb3d.onDeptChange = (key, label) => { if (deptLabelEl) deptLabelEl.textContent = label; };
+    }
+    return orb3d;
+}
 function setOrbState(state) { ensureOrb3d()?.setState(state); }
 function feedOrbLevel(rms) { orb3d?.feedLevel(rms); }
+function focusDepartmentForTool(toolName) { ensureOrb3d()?.focus(departmentForTool(toolName)); }
 function setStatus(text) { statusLine.textContent = text; }
 
 function computeRMS(float32Array) {
@@ -219,6 +227,7 @@ function renderVizCard(name, response) {
 
 async function handleToolCall(toolCall) {
     const calls = toolCall.functionCalls || [];
+    if (calls[0]) focusDepartmentForTool(calls[0].name);
     const functionResponses = await Promise.all(calls.map(async fc => {
         const response = await callLiveTool(fc.name, fc.args || {});
         renderVizCard(fc.name, response);
@@ -488,6 +497,7 @@ function stopCall() {
     callToggleBtn.classList.remove('call-btn-end');
     callToggleBtn.classList.add('call-btn-start');
     setOrbState('idle');
+    orb3d?.focus('umumiy');
     setStatus("Qo'ng'iroqni boshlang");
     commitTurn();
     sendRecap();
