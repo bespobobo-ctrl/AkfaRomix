@@ -551,8 +551,41 @@ export async function anomaliyalar() {
     return natijalar;
 }
 
+// ── Ombor harakati: so'nggi kirim/chiqim tranzaksiyalari (profil + aksessuar) ──
+export async function omborHarakati(turi) {
+    const [tx, inv, accHist] = await Promise.all([
+        sbGet("romix_transactions", "select=type,quantity,note,created_at,product_id&order=created_at.desc&limit=25"),
+        sbGet("romix_inventory", "select=id,product_name"),
+        sbGet("romix_accessories_history", "select=action,details,operator,created_at&order=created_at.desc&limit=15")
+    ]);
+    const invMap = Object.fromEntries(inv.map(i => [i.id, i.product_name]));
+
+    let profilHarakat = tx.map(t => ({
+        sana: (t.created_at || "").slice(0, 16).replace("T", " "),
+        turi: t.type === "IN" ? "Kirim" : "Chiqim",
+        mahsulot: invMap[t.product_id] || "Noma'lum profil",
+        miqdor: t.quantity,
+        izoh: t.note || ""
+    }));
+    if (turi === "kirim") profilHarakat = profilHarakat.filter(h => h.turi === "Kirim");
+    else if (turi === "chiqim") profilHarakat = profilHarakat.filter(h => h.turi === "Chiqim");
+
+    const aksessuarHarakat = accHist.slice(0, 10).map(a => ({
+        sana: (a.created_at || "").slice(0, 16).replace("T", " "),
+        amal: a.action || "O'zgarish",
+        tafsilot: a.details || "",
+        mas_ul: a.operator || ""
+    }));
+
+    return {
+        profil_harakati_soni: profilHarakat.length,
+        profil_harakati: profilHarakat.slice(0, 15),
+        aksessuar_harakati: aksessuarHarakat
+    };
+}
+
 export default {
     overview, ordersReport, warehouse, expensesReport, debtsReport, hrReport, addExpense, payDebt, payOrder,
     searchOrder, searchProduct, searchEmployee, productionReport, brigadesReport, materialRequestsReport, excelReport,
-    trendReport, eslatmalar, topMijozlar, customer360, employee360, orderLifecycle, anomaliyalar
+    trendReport, eslatmalar, topMijozlar, customer360, employee360, orderLifecycle, anomaliyalar, omborHarakati
 };

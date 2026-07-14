@@ -15,7 +15,7 @@ export const DEPARTMENTS = {
 const TOOL_DEPARTMENT = {
     umumiy_holat: 'umumiy', eslatmalar: 'umumiy', anomaliyalar: 'umumiy',
     zakazlar: 'sotuv', zakaz_qidirish: 'sotuv', mijoz_360: 'sotuv', buyurtma_hayot_yoli: 'sotuv', top_mijozlar: 'sotuv',
-    ombor: 'ombor', mahsulot_qidirish: 'ombor',
+    ombor: 'ombor', mahsulot_qidirish: 'ombor', ombor_harakati: 'ombor',
     ishlab_chiqarish_holati: 'ishlab', brigadalar_tarkibi: 'ishlab', material_sorovlari: 'ishlab',
     xodimlar: 'xodimlar', xodim_qidirish: 'xodimlar', xodim_360: 'xodimlar',
     harajatlar: 'buxgalteriya', qarzlar: 'buxgalteriya', tendentsiya_tahlili: 'buxgalteriya', excel_hisobot: 'buxgalteriya',

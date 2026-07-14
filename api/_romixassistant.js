@@ -88,7 +88,8 @@ const READ_TOOLS = [
     { name: "mijoz_360", description: "Bitta mijozning BARCHA buyurtmalari + har bir buyurtma uchun to'lov, ishlab chiqarish bosqichi va material so'rovi holatini bitta bog'langan ko'rinishda beradi. 'Ali haqida hammasini ayt', 'Malika opaning buyurtmalari qanday ketyapti' kabi keng savollar uchun ishlat.", parameters: OBJ({ qidiruv: STR("Mijoz ismi yoki telefon raqami") }, ["qidiruv"]) },
     { name: "xodim_360", description: "Bitta xodim haqida to'liq ko'rinish: lavozimi, maoshi, qaysi brigadada, oxirgi ishlagan partiyalari, oxirgi davomati — bitta bog'langan javobda.", parameters: OBJ({ qidiruv: STR("Xodim ismi") }, ["qidiruv"]) },
     { name: "buyurtma_hayot_yoli", description: "Bitta buyurtmaning boshidan hozirgacha bo'lgan to'liq xronologiyasi (qabul qilingan sana, material so'ralgan sana, ishlab chiqarish bosqichlari va kim bajargani) — 'bu buyurtma qayerda qolib ketdi', 'nega kechikayapti' kabi savollar uchun ishlat.", parameters: OBJ({ qidiruv: STR("Mijoz ismi yoki telefon raqami") }, ["qidiruv"]) },
-    { name: "anomaliyalar", description: "O'rtacha holatdan sezilarli chetga chiqqan g'ayrioddiy naqshlarni topadi: qaysi harajat toifasi kutilganidan ancha oshib ketgan, qaysi mijozning to'lamagan ulushi boshqalarnikidan sezilarli yuqori, qaysi brigada boshqalarga nisbatan sust ishlayapti. 'Nostandart narsa bormi', 'kimga alohida e'tibor berish kerak' kabi savollar uchun ishlat — bu 'eslatmalar'dan farqli, u qattiq chegara emas, nisbiy og'ishni topadi." }
+    { name: "anomaliyalar", description: "O'rtacha holatdan sezilarli chetga chiqqan g'ayrioddiy naqshlarni topadi: qaysi harajat toifasi kutilganidan ancha oshib ketgan, qaysi mijozning to'lamagan ulushi boshqalarnikidan sezilarli yuqori, qaysi brigada boshqalarga nisbatan sust ishlayapti. 'Nostandart narsa bormi', 'kimga alohida e'tibor berish kerak' kabi savollar uchun ishlat — bu 'eslatmalar'dan farqli, u qattiq chegara emas, nisbiy og'ishni topadi." },
+    { name: "ombor_harakati", description: "Omborga so'nggi kirim/chiqim tranzaksiyalari (profil metrajlari va aksessuarlar) — 'oxirgi ombor kirimi', 'nima keldi', 'nima chiqarildi' kabi savollar uchun ishlat.", parameters: OBJ({ turi: STR("'kirim' = faqat kirim, 'chiqim' = faqat chiqim, bo'sh = hammasi (ixtiyoriy)") }) }
 ];
 const WRITE_TOOLS = [
     { name: "harajat_qoshish", description: "Yangi HARAJAT (chiqim) qo'shish. Tizim avval tasdiq so'raydi.", parameters: OBJ({ summa: NUM("Harajat summasi (so'm)"), kategoriya: STR("Kategoriya, masalan Ijara, Maosh, Kommunal, Material, Boshqa"), izoh: STR("Izoh (ixtiyoriy)"), sana: STR("Sana YYYY-MM-DD (ixtiyoriy, default bugun)") }, ["summa"]) },
@@ -130,6 +131,7 @@ export async function execRead(name, a, chatId) {
         case "xodim_360": return await db.employee360(a.qidiruv);
         case "buyurtma_hayot_yoli": return await db.orderLifecycle(a.qidiruv);
         case "anomaliyalar": return await db.anomaliyalar();
+        case "ombor_harakati": return await db.omborHarakati(a.turi);
         case "excel_hisobot": {
             const oy = a.oy || new Date(new Date().getTime() + 5 * 3600 * 1000).toISOString().slice(0, 7);
             const data = await db.excelReport(oy);
@@ -212,6 +214,7 @@ VAZIFANG:
    - Buyurtmalar uchun jo'natilgan material so'rovlari holatini bilish uchun 'material_sorovlari' toolini chaqir.
    - Excel (CSV) moliyaviy hisobotini olish uchun 'excel_hisobot' toolidan foydalan (masalan: 'iyun hisoboti Excel', 'oylik hisobotni Excel qilib ber' -> oy='2026-06').
    - Agar biron holat bo'yicha filtrlanmagan oxirgi zakazlar/ombor/xodimlar ro'yxati kerak bo'lsa, mos ravishda 'zakazlar', 'ombor', 'xodimlar', 'harajatlar', 'qarzlar' toollarini chaqir.
+   - "Oxirgi ombor kirimi", "nima keldi", "nima chiqarildi" kabi savollarga — 'ombor_harakati' toolini chaqir (bu 'ombor' toolidan farqli — u joriy zaxira, bu esa kirim/chiqim tarixi).
    - Bitta mijoz haqida keng, hamma narsani bog'lab beradigan javob kerak bo'lsa (buyurtmalari + to'lovi + ishlab chiqarish holati bir joyda) — 'mijoz_360' toolini chaqir, alohida-alohida toollarni ketma-ket chaqirma.
    - Bitta xodim haqida keng javob kerak bo'lsa (lavozimi + brigadasi + ishlagan ishlari + davomati) — 'xodim_360' toolini chaqir.
    - "Bu buyurtma qayerda qolib ketdi", "nega kechikayapti" kabi savollarga — 'buyurtma_hayot_yoli' toolini chaqir, u voqealarni xronologik tartibda ko'rsatadi.
@@ -221,6 +224,7 @@ VAZIFANG:
    - MUHIM: tizim bu amalni DARHOL bajarmaydi — avval ✅/❌ tugma bilan tasdiq so'raydi. Shuning uchun "tasdiqlaysizmi?" deb yozma, to'g'ridan toolni chaqiraver.
    - To'lov: kreditorga/ta'minotchiga bo'lsa tur='qarz'; mijoz o'z zakazini to'lasa tur='zakaz'. Noaniq bo'lsa qisqa so'ra.
 3. Summa/ism yetishmasa yoki so'rov (ayniqsa ovozdan) tushunarsiz bo'lsa — toolni chaqirma, nimani aniqlashtirish kerakligini qisqa so'ra.
+3.1. MUHIM — HECH QACHON SOXTA VA'DA BERMA: agar so'ralgan ma'lumot uchun sendagi toollarning birortasi ham mos kelmasa, "kutib turing", "10-15 daqiqada tayyorlab beraman", "keyinroq yuboraman" kabi hech qanday vaqt/kutish va'dasi berma — senda buni bajaradigan mexanizm yo'q, bu yolg'on bo'ladi. Buning o'rniga darhol, ochiq-oydin ayt: "Bu ma'lumot uchun hozircha imkoniyatim yo'q" yoki eng yaqin mos toolni chaqirib, o'sha natija asosida javob ber.
 4. Pul summalarini minglarni probel bilan yoz, "so'm" qo'sh (masalan 1 250 000 so'm). "mln"=million, "ming"=1000.
 5. Sen matnli va ovozli muloqot qila olasan. Agar egasi "gapir", "ovozli javob ber" desa yoki ovozli xabar yuborsa, tizim sening javobingni avtomatik ravishda ovozga aylantirib yuboradi. Hech qachon "ovoz yubora olmayman" deb aytma.
 6. Markdown sarlavha ishlatma — oddiy matn, <b>qalin</b> va emoji. Javoblar qisqa, Telegram uchun mos.`;
@@ -240,7 +244,7 @@ QANDAY ISHLASHING KERAK (MUHIM — bu seni oddiy "savol-javob botidan" ajratib t
 
 TOOLLARING:
 - Umumiy ko'rinish: 'umumiy_holat'. Tendentsiya/taqqoslash (bu oy o'tganiga nisbatan qanday, o'sish/pasayish): 'tendentsiya_tahlili'. Diqqatga molik narsalar (qarz, kechikish, kam qolgan mahsulot bir joyda): 'eslatmalar'. Eng katta mijozlar: 'top_mijozlar'.
-- Batafsil ro'yxatlar: 'zakazlar', 'ombor', 'harajatlar', 'qarzlar', 'xodimlar'. Qidiruv: 'zakaz_qidirish', 'mahsulot_qidirish', 'xodim_qidirish'. Ishlab chiqarish: 'ishlab_chiqarish_holati', 'brigadalar_tarkibi', 'material_sorovlari'. Excel hisobot: 'excel_hisobot'.
+- Batafsil ro'yxatlar: 'zakazlar', 'ombor', 'harajatlar', 'qarzlar', 'xodimlar'. Ombor kirim/chiqim tarixi (joriy zaxira emas): 'ombor_harakati'. Qidiruv: 'zakaz_qidirish', 'mahsulot_qidirish', 'xodim_qidirish'. Ishlab chiqarish: 'ishlab_chiqarish_holati', 'brigadalar_tarkibi', 'material_sorovlari'. Excel hisobot: 'excel_hisobot'.
 - Bog'langan (360°) ko'rinishlar — bir nechta toolni ketma-ket chaqirish o'rniga BITTASINI chaqir: bitta mijoz haqida hammasi (buyurtmalar+to'lov+ishlab chiqarish) — 'mijoz_360'; bitta xodim haqida hammasi (lavozim+brigada+ish+davomat) — 'xodim_360'; bitta buyurtmaning xronologiyasi/nega kechikayapti — 'buyurtma_hayot_yoli'.
 - G'ayrioddiy narsa/nostandart holat qidirilsa (masalan qo'ng'iroq boshida umumiy holatni ko'rib chiqayotganda) — 'anomaliyalar' toolini ham chaqir, u o'rtachadan sezilarli chetga chiqqan naqshlarni topadi.
 - Bir savolga javob berish uchun kerak bo'lsa bir nechta toolni ketma-ket chaqirishing mumkin (masalan holatni tushunish uchun avval 'umumiy_holat', keyin 'eslatmalar').
@@ -254,6 +258,7 @@ HARAJAT va TO'LOV kiritish:
 - Foydalanuvchi keyingi gapida tasdiqlasa ("ha", "xa", "mayli", "bajaring" va h.k.) — 'tasdiqlash' toolini tasdiqlaymi=true bilan chaqir. Rad etsa ("yo'q", "bekor", "kerak emas") — tasdiqlaymi=false bilan chaqir.
 - 'tasdiqlash' natijasini ovozda ayt.
 - Summa/ism yetishmasa yoki nima demoqchi ekani tushunarsiz bo'lsa — toolni chaqirma, qisqa aniqlashtirib so'ra.
+- MUHIM — HECH QACHON SOXTA VA'DA BERMA: agar so'ralgan narsa uchun sendagi toollarning birortasi ham mos kelmasa, "kutib turing", "10-15 daqiqada tayyorlab beraman", "keyinroq aytaman" kabi vaqt/kutish va'dasi berma — buni bajaradigan imkoniyating yo'q, bu yolg'on eshitiladi. Darhol ochiq-oydin ayt: "Bu haqda hozircha ma'lumotim yo'q" — yoki eng yaqin mos toolni chaqir.
 
 USLUB:
 - Pul summalarini tabiiy gapirilgandek ayt (masalan "bir million ikki yuz ellik ming so'm"), raqamlarni harf-harf o'qima.
