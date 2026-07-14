@@ -1668,8 +1668,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         doc.save(filename);
     };
 
-    // Hujjat (spiska) ichidagi qaysi pozitsiya hozir tahrirlash rejimida ekanini saqlaydi —
-    // faqat shu id uchun input maydonlari chiziladi, qolganlari oddiy ko'rinishda qoladi.
+    // Hujjat (spiska) ichida tahrirlash rejimi holati: null — hech biri tahrirlanmayapti,
+    // aniq tx id — faqat o'sha bitta pozitsiya, 'ALL' — butun spiska (hammasi bir vaqtda) tahrirlanmoqda.
     let _buhTxEditingId = null;
 
     window.viewBuhTxDetails = (docId) => {
@@ -1686,6 +1686,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('buhDetailsIcon').textContent = typeIcon;
         document.getElementById('buhDetailsTitle').textContent = isKirim ? 'Kirim Hujjati Tafsilotlari' : 'Chiqim Hujjati Tafsilotlari';
 
+        const editingAll = _buhTxEditingId === 'ALL';
+
         let docTotalSum = 0;
         const itemsHtml = docObj.items.map((tx, idx) => {
             const prodName = tx.romix_inventory?.product_name || "O'chirilgan mahsulot";
@@ -1695,20 +1697,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             const itemTotal = price * qty;
             docTotalSum += itemTotal;
 
-            if (tx.id === _buhTxEditingId) {
+            if (editingAll || tx.id === _buhTxEditingId) {
                 return `
                 <div style="border: 1px solid rgba(0,186,255,0.35); background: rgba(0,186,255,0.05); border-radius: 12px; padding: 12px; margin-bottom: 8px;">
-                    <div style="font-size:0.7rem; color:#00baff; font-weight:800; margin-bottom:8px;">✏️ ${idx + 1}-pozitsiyani tahrirlash</div>
-                    <input type="text" id="buhTxEditName" value="${prodName.replace(/"/g, '&quot;')}" placeholder="Nomi" style="width:100%; margin-bottom:6px; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff; padding:9px 10px; border-radius:8px; font-size:0.82rem; box-sizing:border-box; font-weight:700;">
+                    <div style="font-size:0.7rem; color:#00baff; font-weight:800; margin-bottom:8px;">✏️ ${idx + 1}-pozitsiya</div>
+                    <input type="text" id="buhTxEditName-${tx.id}" value="${prodName.replace(/"/g, '&quot;')}" placeholder="Nomi" style="width:100%; margin-bottom:6px; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff; padding:9px 10px; border-radius:8px; font-size:0.82rem; box-sizing:border-box; font-weight:700;">
                     <div style="display:flex; gap:6px; margin-bottom:6px;">
-                        <input type="number" id="buhTxEditQty" value="${qty}" placeholder="Miqdori" style="flex:1; min-width:0; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff; padding:9px 10px; border-radius:8px; font-size:0.82rem; box-sizing:border-box;">
-                        <input type="text" id="buhTxEditUnit" value="${unit}" placeholder="Hajmi (dona/kg/metr...)" style="flex:1; min-width:0; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff; padding:9px 10px; border-radius:8px; font-size:0.82rem; box-sizing:border-box;">
+                        <input type="number" id="buhTxEditQty-${tx.id}" value="${qty}" placeholder="Miqdori" style="flex:1; min-width:0; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff; padding:9px 10px; border-radius:8px; font-size:0.82rem; box-sizing:border-box;">
+                        <input type="text" id="buhTxEditUnit-${tx.id}" value="${unit}" placeholder="Hajmi (dona/kg/metr...)" style="flex:1; min-width:0; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff; padding:9px 10px; border-radius:8px; font-size:0.82rem; box-sizing:border-box;">
                     </div>
-                    <input type="number" id="buhTxEditPrice" value="${price}" placeholder="Narxi (1 birlik, so'mda)" style="width:100%; margin-bottom:10px; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff; padding:9px 10px; border-radius:8px; font-size:0.82rem; box-sizing:border-box;">
-                    <div style="display:flex; gap:8px;">
+                    <input type="number" id="buhTxEditPrice-${tx.id}" value="${price}" placeholder="Narxi (1 birlik, so'mda)" style="width:100%; ${editingAll ? '' : 'margin-bottom:10px;'} background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff; padding:9px 10px; border-radius:8px; font-size:0.82rem; box-sizing:border-box;">
+                    ${editingAll ? '' : `
+                    <div style="display:flex; gap:8px; margin-top:10px;">
                         <button onclick="window.saveBuhTxItemEdit('${tx.id}', '${docId}')" style="flex:1; background:rgba(0,255,136,0.15); border:1px solid rgba(0,255,136,0.4); color:#00ff88; padding:9px; border-radius:8px; font-weight:800; font-size:0.78rem; cursor:pointer;">💾 Saqlash</button>
                         <button onclick="window.cancelBuhTxItemEdit('${docId}')" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); padding:9px; border-radius:8px; font-weight:700; font-size:0.78rem; cursor:pointer;">Bekor qilish</button>
                     </div>
+                    `}
                 </div>
                 `;
             }
@@ -1731,6 +1735,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
             `;
         }).join('');
+
+        const docToolbarHtml = editingAll
+            ? `
+            <div style="display:flex; gap:8px; margin-top:12px;">
+                <button onclick="window.saveBuhTxDocEdits('${docId}')" style="flex:1; background:rgba(0,255,136,0.15); border:1px solid rgba(0,255,136,0.4); color:#00ff88; padding:10px; border-radius:10px; font-weight:800; font-size:0.8rem; cursor:pointer;">💾 Hammasini saqlash</button>
+                <button onclick="window.cancelBuhTxItemEdit('${docId}')" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); padding:10px; border-radius:10px; font-weight:700; font-size:0.8rem; cursor:pointer;">Bekor qilish</button>
+            </div>
+            `
+            : (docObj.items.length > 1 ? `
+            <button onclick="window.editBuhTxDoc('${docId}')" style="width:100%; margin-top:12px; background:linear-gradient(135deg, rgba(255,105,180,0.12), rgba(0,210,255,0.12)); border:1px solid rgba(255,105,180,0.35); color:#ff69b4; padding:10px; border-radius:10px; font-weight:800; font-size:0.8rem; cursor:pointer;">✏️ Butun spiskani tahrirlash (${docObj.items.length} ta)</button>
+            ` : '');
 
         const contentEl = document.getElementById('buhDetailsContent');
         contentEl.innerHTML = `
@@ -1755,6 +1770,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div style="max-height: 250px; overflow-y: auto; padding-right: 4px;">
                     ${itemsHtml}
                 </div>
+                ${docToolbarHtml}
             </div>
         `;
 
@@ -1780,25 +1796,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.viewBuhTxDetails(docId);
     };
 
+    // Butun spiskani (hujjatdagi barcha pozitsiyalarni) bir vaqtda tahrirlash rejimiga o'tkazadi.
+    window.editBuhTxDoc = (docId) => {
+        _buhTxEditingId = 'ALL';
+        window.viewBuhTxDetails(docId);
+    };
+
     window.cancelBuhTxItemEdit = (docId) => {
         _buhTxEditingId = null;
         window.viewBuhTxDetails(docId);
     };
 
-    window.saveBuhTxItemEdit = async (txId, docId) => {
-        const tx = _buhHistCache.find(t => t.id === txId);
-        if (!tx) return;
+    // Bitta pozitsiyaning input maydonlaridan o'qib, ombor zaxirasini (delta bo'yicha) va
+    // mahsulot yozuvini yangilaydi. Xato bo'lsa string qaytaradi (xabar sifatida ko'rsatish uchun),
+    // muvaffaqiyatli bo'lsa null qaytaradi. Ham bitta-pozitsiya, ham butun-spiska saqlashda ishlatiladi.
+    async function _buhSaveTxItemFromInputs(tx) {
+        const txId = tx.id;
         const isAcc = String(txId).startsWith('HIST-');
         const oldName = tx.romix_inventory?.product_name || "Noma'lum mahsulot";
         const oldQty = Number(tx.quantity) || 0;
 
-        const newName = (document.getElementById('buhTxEditName').value || '').trim();
-        const newQtyStr = document.getElementById('buhTxEditQty').value;
-        const newUnit = (document.getElementById('buhTxEditUnit').value || '').trim();
-        const newPriceStr = document.getElementById('buhTxEditPrice').value;
-        const newQty = parseFloat(newQtyStr);
-        const newPrice = parseFloat(newPriceStr);
-        if (!newName || isNaN(newQty) || newQty < 0) { alert("Nomi va miqdorni to'g'ri kiriting!"); return; }
+        const nameEl = document.getElementById(`buhTxEditName-${txId}`);
+        const qtyEl = document.getElementById(`buhTxEditQty-${txId}`);
+        const unitEl = document.getElementById(`buhTxEditUnit-${txId}`);
+        const priceEl = document.getElementById(`buhTxEditPrice-${txId}`);
+        if (!nameEl || !qtyEl) return `"${oldName}" — forma topilmadi.`;
+
+        const newName = (nameEl.value || '').trim();
+        const newQty = parseFloat(qtyEl.value);
+        const newUnit = (unitEl?.value || '').trim();
+        const newPrice = parseFloat(priceEl?.value);
+        if (!newName || isNaN(newQty) || newQty < 0) return `"${oldName}" — nomi/miqdori noto'g'ri.`;
         const finalPrice = isNaN(newPrice) || newPrice < 0 ? 0 : newPrice;
         const finalUnit = newUnit || 'dona';
         const delta = newQty - oldQty;
@@ -1833,12 +1861,44 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await supabase.from('romix_transactions').update({ quantity: newQty }).eq('id', txId);
             }
         } catch (err) {
-            alert('Xatolik: ' + err.message);
-            return;
+            return `"${oldName}" — ${err.message}`;
         }
+        return null;
+    }
+
+    window.saveBuhTxItemEdit = async (txId, docId) => {
+        const tx = _buhHistCache.find(t => t.id === txId);
+        if (!tx) return;
+        const err = await _buhSaveTxItemFromInputs(tx);
+        if (err) { alert('Xatolik: ' + err); return; }
 
         _buhTxEditingId = null;
         window.showPremiumToast && window.showPremiumToast('Yangilandi', "Mahsulot ma'lumotlari tahrirlandi, ombor zaxirasi qayta hisoblandi.", true);
+        await window.loadBuhHistoryData();
+        if (typeof renderRomixBuhOmbor === 'function') await renderRomixBuhOmbor();
+        const stillExists = _buhGroupTransactionsIntoDocuments(_buhHistCache).some(d => d.id === docId);
+        if (stillExists) window.viewBuhTxDetails(docId);
+        else window.closeBuhTxDetailsModal();
+    };
+
+    // Butun spiskadagi barcha pozitsiyalarni bitta amalda saqlaydi (har biri o'z inputlaridan o'qiladi).
+    window.saveBuhTxDocEdits = async (docId) => {
+        const docs = _buhGroupTransactionsIntoDocuments(_buhHistCache);
+        const docObj = docs.find(d => d.id === docId);
+        if (!docObj) return;
+
+        const errors = [];
+        for (const tx of docObj.items) {
+            const err = await _buhSaveTxItemFromInputs(tx);
+            if (err) errors.push(err);
+        }
+
+        _buhTxEditingId = null;
+        if (errors.length) {
+            alert(`${docObj.items.length - errors.length}/${docObj.items.length} ta pozitsiya saqlandi. Xatoliklar:\n` + errors.join('\n'));
+        } else {
+            window.showPremiumToast && window.showPremiumToast('Yangilandi', `Spiskadagi ${docObj.items.length} ta pozitsiya tahrirlandi, ombor zaxirasi qayta hisoblandi.`, true);
+        }
         await window.loadBuhHistoryData();
         if (typeof renderRomixBuhOmbor === 'function') await renderRomixBuhOmbor();
         const stillExists = _buhGroupTransactionsIntoDocuments(_buhHistCache).some(d => d.id === docId);
