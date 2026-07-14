@@ -308,8 +308,37 @@ export async function runLiveTool(chatId, name, args) {
     return result;
 }
 
+// ── Qo'ng'iroq xulosasi: transkriptdan qisqa yozma xulosa yasab, Telegram'ga yuborish + keyingi safar uchun saqlash ──
+export async function summarizeCall(transcriptText) {
+    if (!transcriptText || !transcriptText.trim() || !ai.isConfigured()) return null;
+    const prompt = `Quyida "AKFA Romix" korxonasi egasi bilan uning AI moliyaviy maslahatchisi o'rtasidagi OVOZLI SUHBAT transkripti berilgan. Shu asosida QISQA, professional xulosa yoz — Telegram uchun HTML formatda (faqat <b>qalin</b> ishlatish mumkin, boshqa teg yo'q):
+
+1. Muhokama qilingan asosiy mavzular (1-3 band, qisqa)
+2. Qabul qilingan qarorlar yoki bajarilgan amallar (agar bo'lsa; bo'lmasa bu bandni butunlay tashla)
+3. Keyingi safar davom ettirish uchun eslatma (agar tegishli bo'lsa; bo'lmasa tashla)
+
+Juda qisqa yoz (5-8 qatordan oshmasin), suvsiz, faqat muhim narsalarni yoz. Boshida "📋 <b>Qo'ng'iroq xulosasi</b>" deb boshla. Agar suhbatda hech qanday muhim narsa muhokama qilinmagan bo'lsa (masalan faqat salomlashish bo'lgan), bo'sh matn qaytar.
+
+SUHBAT TRANSKRIPTI:
+${transcriptText}`;
+    try {
+        const text = await ai.chatText("Sen professional yig'ilish kotibisan, qisqa va aniq xulosa yozasan.", prompt);
+        return (text || "").trim() || null;
+    } catch (e) {
+        console.error("[SUMMARIZE ERROR]", e);
+        return null;
+    }
+}
+export async function saveCallSummary(chatId, summaryText) {
+    await stSet("last_call_summary_" + chatId, { text: summaryText, at: new Date().toISOString() });
+}
+export async function getCallSummary(chatId) {
+    return await stGet("last_call_summary_" + chatId, null);
+}
+
 export default {
     TOKEN, PASSWORD, stGet, stSet, stDel, tg, esc, send, sendVoice, tgFilePath, downloadB64,
     ALL_TOOLS, LIVE_TOOLS, WRITE_NAMES, fmtSom, execRead, execWrite, writeSummary, resultSummary, stripHtml,
-    SYSTEM_PROMPT, SYSTEM_PROMPT_LIVE, runAssistantTurn, runConfirm, runLiveTool
+    SYSTEM_PROMPT, SYSTEM_PROMPT_LIVE, runAssistantTurn, runConfirm, runLiveTool,
+    summarizeCall, saveCallSummary, getCallSummary
 };

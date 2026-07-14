@@ -1,6 +1,7 @@
 const API_URL = '/api/romix-ai-chat';
 const LIVE_TOKEN_URL = '/api/romix-live-token';
 const LIVE_TOOL_URL = '/api/romix-live-tool';
+const LIVE_RECAP_URL = '/api/romix-live-recap';
 
 const tg = window.Telegram && window.Telegram.WebApp;
 if (tg) { try { tg.ready(); tg.expand(); } catch (e) { } }
@@ -82,6 +83,7 @@ let micSource = null;
 let audioPlayer = null;
 let userTranscript = '';
 let botTranscript = '';
+let callTranscript = [];
 
 function float32ToPCM16Base64(float32Array) {
     const int16 = new Int16Array(float32Array.length);
@@ -161,17 +163,40 @@ async function handleToolCall(toolCall) {
 function commitTurn() {
     addTranscriptEntry('user', userTranscript);
     addTranscriptEntry('assistant', botTranscript);
+    if (userTranscript.trim()) callTranscript.push({ role: 'user', text: userTranscript.trim() });
+    if (botTranscript.trim()) callTranscript.push({ role: 'assistant', text: botTranscript.trim() });
     userTranscript = '';
     botTranscript = '';
     hideLiveCaption();
 }
 
+async function sendRecap() {
+    if (!callTranscript.length) return;
+    const transcript = callTranscript;
+    callTranscript = [];
+    try {
+        await fetch(LIVE_RECAP_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chatId, transcript })
+        });
+    } catch (e) { /* xulosa yuborilmasa ham qo'ng'iroqni yopishga xalaqit bermasin */ }
+}
+
 function handleServerMessage(data) {
     if (data.setupComplete) {
-        setStatus('Ulandi — gapiring');
-        startMicCapture();
-        // Foydalanuvchi hali gapirmasdan turib, yordamchi o'zi qisqa hisobot bilan salomlashsin
-        wsSend({ realtimeInput: { text: '(qo\'ng\'iroq boshlandi — o\'zing qisqa salomlash va bugungi eng muhim narsani ayt)' } });
+        if (!micStream) {
+            setStatus('Ulandi — gapiring');
+            startMicCapture();
+        } else {
+            setOrbState('listening');
+            setStatus('Tinglayapman...');
+        }
+        if (!hasGreeted) {
+            hasGreeted = true;
+            // Foydalanuvchi hali gapirmasdan turib, yordamchi o'zi qisqa hisobot bilan salomlashsin
+            wsSend({ realtimeInput: { text: '(qo\'ng\'iroq boshlandi — o\'zing qisqa salomlash va bugungi eng muhim narsani ayt)' } });
+        }
         return;
     }
 
@@ -240,12 +265,12 @@ async function startMicCapture() {
     setStatus('Tinglayapman...');
 }
 
-async function startCall() {
-    if (callActive) return;
-    callToggleBtn.disabled = true;
-    setOrbState('thinking');
-    setStatus('Ulanmoqda...');
+let manualStop = true;
+let reconnectAttempts = 0;
+let hasGreeted = false;
+const MAX_RECONNECT = 3;
 
+async function openLiveSocket(isReconnect) {
     let cfg;
     try {
         const r = await fetch(LIVE_TOKEN_URL, {
@@ -255,22 +280,15 @@ async function startCall() {
         });
         cfg = await r.json();
     } catch (e) {
-        callToggleBtn.disabled = false;
-        setOrbState('idle');
-        setStatus("Qo'ng'iroqni boshlang");
-        addTranscriptEntry('assistant', '⚠️ Tarmoq xatosi.');
-        return;
+        if (!isReconnect) addTranscriptEntry('assistant', '⚠️ Tarmoq xatosi.');
+        return false;
     }
     if (!cfg || !cfg.ok) {
-        callToggleBtn.disabled = false;
-        setOrbState('idle');
-        setStatus("Qo'ng'iroqni boshlang");
-        addTranscriptEntry('assistant', '⚠️ Ulanib bo\'lmadi: ' + (cfg && cfg.error ? cfg.error : 'noma\'lum xato'));
-        return;
+        if (!isReconnect) addTranscriptEntry('assistant', '⚠️ Ulanib bo\'lmadi: ' + (cfg && cfg.error ? cfg.error : 'noma\'lum xato'));
+        return false;
     }
 
-    audioPlayer = new LivePlayer();
-    await audioPlayer.init();
+    if (!audioPlayer) { audioPlayer = new LivePlayer(); await audioPlayer.init(); }
 
     const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained?access_token=${cfg.token}`;
     ws = new WebSocket(wsUrl);
@@ -297,6 +315,8 @@ async function startCall() {
             }
         });
         callActive = true;
+        manualStop = false;
+        reconnectAttempts = 0;
         callToggleBtn.disabled = false;
         callToggleBtn.textContent = "Qo'ng'iroqni tugatish";
         callToggleBtn.classList.remove('call-btn-start');
@@ -312,16 +332,49 @@ async function startCall() {
         handleServerMessage(data);
     };
 
-    ws.onerror = () => {
-        addTranscriptEntry('assistant', '⚠️ Ulanish xatosi.');
-    };
+    ws.onerror = () => { };
 
     ws.onclose = () => {
-        if (callActive) stopCall();
+        if (manualStop || !callActive) return;
+        handleUnexpectedClose();
     };
+    return true;
+}
+
+async function handleUnexpectedClose() {
+    reconnectAttempts++;
+    if (reconnectAttempts > MAX_RECONNECT) {
+        addTranscriptEntry('assistant', "⚠️ Ulanish uzildi, qo'ng'iroq to'xtatildi.");
+        stopCall();
+        return;
+    }
+    setOrbState('thinking');
+    setStatus(`Qayta ulanmoqda... (${reconnectAttempts}/${MAX_RECONNECT})`);
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    if (manualStop) return;
+    const ok = await openLiveSocket(true);
+    if (!ok) handleUnexpectedClose();
+}
+
+async function startCall() {
+    if (callActive) return;
+    callToggleBtn.disabled = true;
+    setOrbState('thinking');
+    setStatus('Ulanmoqda...');
+    manualStop = false;
+    reconnectAttempts = 0;
+    hasGreeted = false;
+
+    const ok = await openLiveSocket(false);
+    if (!ok) {
+        callToggleBtn.disabled = false;
+        setOrbState('idle');
+        setStatus("Qo'ng'iroqni boshlang");
+    }
 }
 
 function stopCall() {
+    manualStop = true;
     callActive = false;
     callToggleBtn.disabled = false;
     callToggleBtn.textContent = "Qo'ng'iroqni boshlash";
@@ -330,6 +383,7 @@ function stopCall() {
     setOrbState('idle');
     setStatus("Qo'ng'iroqni boshlang");
     commitTurn();
+    sendRecap();
 
     if (ws) { try { ws.close(); } catch (e) { } ws = null; }
     if (micSource) { try { micSource.disconnect(); } catch (e) { } micSource = null; }

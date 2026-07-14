@@ -7,7 +7,7 @@
 import { GoogleGenAI } from "@google/genai";
 import asst from "./_romixassistant.js";
 
-const { stGet, LIVE_TOOLS, SYSTEM_PROMPT_LIVE } = asst;
+const { stGet, LIVE_TOOLS, SYSTEM_PROMPT_LIVE, getCallSummary } = asst;
 const LIVE_MODEL = process.env.GEMINI_LIVE_MODEL || "gemini-3.1-flash-live-preview";
 
 async function isAuthed(chatId) {
@@ -46,11 +46,18 @@ export default async function handler(req, res) {
             }
         });
 
+        let systemInstruction = SYSTEM_PROMPT_LIVE;
+        const lastSummary = await getCallSummary(chatId);
+        if (lastSummary && lastSummary.text) {
+            const plain = String(lastSummary.text).replace(/<[^>]*>/g, "");
+            systemInstruction += `\n\nOLDINGI QO'NG'IROQ XULOSASI (kerak bo'lsa tabiiy ravishda eslatib o'ting, majburiy o'qib bermang):\n${plain}`;
+        }
+
         return res.status(200).json({
             ok: true,
             token: token.name,
             model: LIVE_MODEL,
-            systemInstruction: SYSTEM_PROMPT_LIVE,
+            systemInstruction,
             tools: LIVE_TOOLS
         });
     } catch (e) {
