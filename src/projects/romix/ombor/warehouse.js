@@ -705,7 +705,40 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (historyGrid) historyGrid.innerHTML = '<div style="text-align:center; color:red; padding:20px; grid-column:1/-1;">Tarixni yuklashda xatolik!</div>';
             return;
         }
-        _histCache = data || [];
+
+        // Aksessuar kirim/chiqim (Dona/Spiska/Rasmdan-AI, Buxgalteriya tomonidan) romix_transactions'ga
+        // yozilmaydi — chunki product_id ustuni faqat romix_inventory'ga (profil) FK bilan bog'langan,
+        // aksessuarlar esa romix_accessories'da saqlanadi. Shu sabab bu harakatlar bu tarixda ko'rinmay
+        // qolardi — romix_accessories_history'dan o'qib, xuddi shu shakldagi psevdo-tranzaksiya qo'shamiz.
+        let accTx = [];
+        try {
+            const { data: histData, error: histErr } = await supabase.from('romix_accessories_history').select('*').order('created_at', { ascending: false });
+            if (histErr) throw histErr;
+            accTx = (histData || []).reduce((acc, log) => {
+                const actionText = log.action || '';
+                let type = null;
+                if (actionText.includes('Chiqim')) type = 'OUT';
+                else if (actionText.includes('Kirim')) type = 'IN';
+                if (!type) return acc;
+                const m = (log.details || '').match(/^"(.+?)"\s*mahsulotidan\s*([\d.,\s]+)\s*(\S+)/);
+                const productName = m ? m[1] : (log.details || 'Aksessuar');
+                const qty = m ? parseFloat(m[2].replace(/[,\s]/g, '')) || 0 : 0;
+                const unit = m ? m[3] : 'dona';
+                acc.push({
+                    id: log.id,
+                    created_at: log.created_at,
+                    type,
+                    quantity: qty,
+                    note: `${actionText} - ${log.operator || 'Buxgalteriya'}`,
+                    romix_inventory: { product_name: productName, unit }
+                });
+                return acc;
+            }, []);
+        } catch (histE) {
+            console.warn('Ombor accessories history load error:', histE);
+        }
+
+        _histCache = [...(data || []), ...accTx];
 
         document.querySelectorAll('#histTypeFilter .om-brand-chip').forEach(chip => {
             chip.onclick = () => {
