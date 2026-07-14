@@ -48,10 +48,28 @@ export default async function handler(req, res) {
 
     if (!SUPABASE_URL || !SERVICE_KEY) return res.status(500).json({ ok: false, error: "Server sozlanmagan (SUPABASE_SERVICE_ROLE_KEY yo'q)" });
 
+    const H = { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": "application/json" };
+
+    // "self": xodim o'zining ID'si + o'z paroli (authService.js dagi xodim o'z-o'ziga kirish
+    // mantiqi bilan bir xil) orqali FAQAT o'z maosh ma'lumotini ko'ra oladi.
+    if (action === "self") {
+        const { id } = body;
+        if (!id || !password) return res.status(400).json({ ok: false, error: "id va parol kerak" });
+        if (password !== id && password !== "123456") return res.status(401).json({ ok: false, error: "Login yoki parol xato" });
+        try {
+            const r = await fetch(`${SUPABASE_URL}/rest/v1/employees?id=eq.${encodeURIComponent(id)}&select=id,salary_info,advance_paid`, { headers: H });
+            if (!r.ok) throw new Error(`employees self: ${r.status} ${await r.text()}`);
+            const rows = await r.json();
+            if (!rows || !rows[0]) return res.status(404).json({ ok: false, error: "Xodim topilmadi" });
+            return res.status(200).json({ ok: true, employees: rows });
+        } catch (e) {
+            console.error("[EMPLOYEES SECURE SELF ERROR]", e);
+            return res.status(500).json({ ok: false, error: String((e && e.message) || e) });
+        }
+    }
+
     const caller = await verifyCaller(username, password);
     if (!caller) return res.status(401).json({ ok: false, error: "Login yoki parol xato" });
-
-    const H = { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": "application/json" };
 
     try {
         if (action === "list") {

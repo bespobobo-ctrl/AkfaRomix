@@ -3,6 +3,9 @@ import { supabase } from '@/core/supabase.js';
 import { authService } from '@/services/auth/authService.js';
 import { LayoutService } from '@/components/LayoutService.js';
 import { ROLES, ATTENDANCE_STATUS } from '@/constants';
+import { attachSalaries, updateEmployeeSalary } from '@/core/employeesSecure.js';
+
+const EMPLOYEE_COLUMNS_NO_SALARY = 'id, full_name, first_name, last_name, role, status, created_at, birth_year, avatar_url, department, joined_year, experience, phone';
 
 let employeesData = [];
 let todayAtt = [];
@@ -237,9 +240,10 @@ async function loadInitialData() {
 
         let staff = [];
         try {
-            const { data, error } = await supabase.from('employees').select('*').order('full_name', { ascending: true });
+            const { data, error } = await supabase.from('employees').select(EMPLOYEE_COLUMNS_NO_SALARY).order('full_name', { ascending: true });
             if (error) throw error;
             staff = data || [];
+            await attachSalaries(staff);
         } catch (dbErr) {
             console.warn("Supabase employees fetch failed, falling back to local storage:", dbErr);
             const localRaw = localStorage.getItem('romix_employees_local');
@@ -405,9 +409,10 @@ window.viewDetails = async function (id) {
     // 1. FRESH DATA FETCH
     let freshEmp = null;
     try {
-        const { data, error } = await supabase.from('employees').select('*').eq('id', id).single();
+        const { data, error } = await supabase.from('employees').select(EMPLOYEE_COLUMNS_NO_SALARY).eq('id', id).single();
         if (error) throw error;
         freshEmp = data;
+        if (freshEmp) await attachSalaries([freshEmp]);
     } catch (err) {
         console.warn("Supabase viewDetails fetch failed, using local storage:", err);
         const localEmployees = JSON.parse(localStorage.getItem('romix_employees_local') || '[]');
@@ -764,7 +769,6 @@ async function saveWorker() {
         first_name: fname,
         last_name: lname,
         role: role,
-        salary_info: salary || '0',
         phone: phone || '',
         birth_year: birthYear ? parseInt(birthYear) : null,
         avatar_url: tempPhotoData || (currentEditId ? currentEmp.avatar_url : `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=1a7b7c&color=fff`)
@@ -776,7 +780,7 @@ async function saveWorker() {
     let res = null;
     let savedSuccessfully = false;
 
-    // 1. Try to save to Supabase
+    // 1. Try to save to Supabase (maosh alohida, himoyalangan endpoint orqali)
     try {
         if (currentEditId) {
             res = await supabase.from('employees').update(payload).eq('id', currentEditId).select();
@@ -785,6 +789,8 @@ async function saveWorker() {
         }
         if (res && !res.error) {
             savedSuccessfully = true;
+            const savedId = currentEditId || (res.data && res.data[0] && res.data[0].id);
+            if (savedId) await updateEmployeeSalary(savedId, { salary_info: salary || '0' });
         }
     } catch (e) {
         console.warn("Database insert/update failed:", e);
@@ -1750,10 +1756,9 @@ window.saveAnalyticsEdit = async function (id) {
     btn.textContent = 'SAQLANMOQDA...';
     btn.disabled = true;
 
-    // 1. Oylikni yangilash
-    const { error: salaryErr } = await supabase.from('employees')
-        .update({ salary_info: salary })
-        .eq('id', id);
+    // 1. Oylikni yangilash (himoyalangan endpoint orqali)
+    const salaryRes = await updateEmployeeSalary(id, { salary_info: salary });
+    const salaryErr = salaryRes && !salaryRes.ok ? new Error(salaryRes.error || 'Noma\'lum xato') : null;
 
     if (salaryErr) {
         alert("Oylik saqlashda xato: " + salaryErr.message);

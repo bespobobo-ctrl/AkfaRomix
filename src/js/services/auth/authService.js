@@ -4,7 +4,7 @@ export const authService = {
     async login(username, password) {
         // 0. Check Auto Clapak Manager (Hardcoded)
         if (username.toUpperCase().replace(/\s+/g, '') === 'AC1' && password === '123') {
-            const userData = { id: 'AC1', username: 'AC1', role: 'ac_manager', full_name: 'Ishlab Chiqarish Boshlig\'i' };
+            const userData = { id: 'AC1', username: 'AC1', role: 'ac_manager', full_name: 'Ishlab Chiqarish Boshlig\'i', password };
             localStorage.setItem('currentUser', JSON.stringify(userData));
             return userData;
         }
@@ -64,7 +64,8 @@ export const authService = {
                 id: foundUser.id,
                 username: foundUser.username,
                 role: foundUser.role,
-                full_name: foundUser.full_name
+                full_name: foundUser.full_name,
+                password
             };
             localStorage.setItem('currentUser', JSON.stringify(userData));
             return userData;
@@ -81,7 +82,8 @@ export const authService = {
                 username: foundEmp.full_name,
                 role: 'employee',
                 full_name: foundEmp.full_name,
-                avatar_url: foundEmp.avatar_url
+                avatar_url: foundEmp.avatar_url,
+                password: effectivePassword
             };
             localStorage.setItem('currentUser', JSON.stringify(userData));
             return userData;
@@ -103,7 +105,8 @@ export const authService = {
                     id: user.id || 'sys',
                     username: user.username,
                     role: user.role,
-                    full_name: user.full_name
+                    full_name: user.full_name,
+                    password
                 };
                 localStorage.setItem('currentUser', JSON.stringify(userData));
                 return userData;
@@ -128,7 +131,8 @@ export const authService = {
                     username: emp.full_name,
                     role: 'employee',
                     full_name: emp.full_name,
-                    avatar_url: emp.avatar_url
+                    avatar_url: emp.avatar_url,
+                    password: effectivePassword
                 };
                 localStorage.setItem('currentUser', JSON.stringify(userData));
                 return userData;
