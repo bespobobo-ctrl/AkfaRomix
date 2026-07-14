@@ -48,6 +48,14 @@ Yangi migratsiya fayli yaratganingizda:
 
 Bu ikki fayl hozir eskirgan (`src/pages/`, `src/js/pages/` kabi mavjud bo'lmagan papkalarni tasvirlaydi — haqiqiy joylashuv `src/projects/romix/*` va `src/projects/autoclapak/*`). Katta strukturaviy o'zgarish (yangi modul, papka ko'chirish) qilsangiz, shu ikki faylni ham bir vaqtda yangilang.
 
+## 7. `admin.js`ga tegingandan keyin — uni yuklaydigan HAR BIR sahifada `?v=` raqamini oshiring
+
+`admin.js` 8 ta HTML sahifadan `<script type="module" src=".../admin.js?v=X.Y">` orqali yuklanadi (`romix_dashboard.html` + 7 ta `autoclapak/pages/admin_*.html`). Bu `?v=` — cache-buster: raqam o'zgarmasa, avval shu sahifaga kirgan brauzer ESKI `admin.js`ni cheksiz keshda saqlab, hech qachon serverdan qayta yuklamaydi — hatto fayl serverda o'zgargan va tuzatish push+deploy qilingan bo'lsa ham.
+
+**Sabab:** 2026-07-14 da `admin.js`ga ikkita tuzatish ketma-ket push qilindi (Buxgalteriya "Rasmdan Chiqim (AI)" saqlanmaslik bug'i), lekin `?v=` hech birida oshirilmagan edi — foydalanuvchi push+deploydan keyin ham "hali ham ishlamayapti" deb qayta xabar berdi, chunki brauzeri eski faylni keshdan olardi. Alohida commit bilan tuzatildi (`129997c`).
+
+`admin.js`ga har qanday funksional o'zgarish (yangi funksiya, bug fix — CSS/kommentariya emas) kiritganingizda, shu 8 ta faylning har birida `?v=` raqamini bittaga oshiring.
+
 ## Ma'lum, ataylab qoldirilgan tanlovlar (tasodifiy emas, deb hisoblang)
 
 - Supabase Auth ishlatilmaydi, login `system_users` jadvali + qo'lda parol solishtirish orqali. RLS siyosati ko'p jadvalda `USING (true)` — amalda cheklovsiz. Bu kichik ishonchli jamoa uchun vaqtincha qabul qilingan, lekin xavfsizlik kamchiligi sifatida qayd etilgan — kengaytirmang, lekin ham "tuzatilishi shart" deb o'zboshimchalik bilan o'zgartirmang, avval foydalanuvchi bilan kelishing.
