@@ -2,6 +2,7 @@ import { supabase } from '@/core/supabase.js';
 import { authService } from '@/services/auth/authService.js';
 import { LayoutService } from '@/components/LayoutService.js';
 import { ROLES } from '@/constants';
+import { attachSalaries, updateEmployeeSalary } from '@/core/employeesSecure.js';
 import malibuCalpak from '../../../assets/images/malibu_calpak.png';
 import gentraCalpak from '../../../assets/images/gentra_calpak.png';
 
@@ -652,8 +653,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const todayStr = _buhToday();
         let emps = [], att = [];
         try {
-            const { data: eData } = await supabase.from('employees').select('id, full_name, role, salary_info');
+            const { data: eData } = await supabase.from('employees').select('id, full_name, role');
             emps = eData || [];
+            await attachSalaries(emps);
             const { data: aData } = await supabase.from('attendance').select('status, check_in, check_out, employee_id').eq('date', todayStr);
             att = aData || [];
         } catch (e) { console.warn('Buh Xodimlar fetch error:', e); }
@@ -5207,7 +5209,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             romixBuhSelect('romix_expenses', ROMIX_BUH_KEYS.expenses),
             romixBuhSelect('romix_payment_log', ROMIX_BUH_KEYS.payments),
             (async () => {
-                try { const { data } = await supabase.from('employees').select('id, full_name, role, salary_info'); return data || []; }
+                try { const { data } = await supabase.from('employees').select('id, full_name, role'); const emps = data || []; await attachSalaries(emps); return emps; }
                 catch (e) { console.warn('Buh Umumiy xodimlar fetch error:', e); return []; }
             })(),
             (async () => {
@@ -8979,7 +8981,7 @@ ALTER TABLE employees ADD COLUMN IF NOT EXISTS advance_paid NUMERIC DEFAULT 0;`;
             // keshiga qaytamiz — bo'sh (lekin xatosiz) natijani "internet yo'q" deb noto'g'ri
             // talqin qilib, boshqa qurilmadagi eski keshni tiklab yubormaslik uchun (Tozalash
             // tugmasi faqat joriy qurilma keshini tozalaydi, boshqalarini emas).
-            const { data: eData, error: eErr } = await supabase.from('employees').select('id, full_name, role, salary_info');
+            const { data: eData, error: eErr } = await supabase.from('employees').select('id, full_name, role');
             const { data: aData, error: aErr } = await supabase.from('attendance').select('status, check_in, check_out, employee_id').eq('date', todayStr);
 
             let finalEmps = eData;
@@ -8987,7 +8989,7 @@ ALTER TABLE employees ADD COLUMN IF NOT EXISTS advance_paid NUMERIC DEFAULT 0;`;
                 const localEmps = localStorage.getItem('romix_db_employees');
                 if (localEmps) finalEmps = JSON.parse(localEmps);
             }
-            if (finalEmps) emps = finalEmps;
+            if (finalEmps) { emps = finalEmps; await attachSalaries(emps); }
 
             let finalAtt = aData;
             if (aErr) {
@@ -9404,12 +9406,13 @@ ALTER TABLE employees ADD COLUMN IF NOT EXISTS advance_paid NUMERIC DEFAULT 0;`;
 
     // --- ROMIX HR DATA (ELITE COMMAND) ---
     async function loadRomixHRData() {
-        const { data: emps, error } = await supabase.from('employees').select('*').order('full_name', { ascending: true });
+        const { data: emps, error } = await supabase.from('employees').select('id, full_name, first_name, last_name, role, status, created_at, birth_year, avatar_url, department, joined_year, experience, phone').order('full_name', { ascending: true });
         if (error) {
             console.error("HR Load Error:", error);
             return;
         }
         allEmployees = emps;
+        await attachSalaries(allEmployees);
 
         renderStaffList(allEmployees);
         initHRPills();
@@ -9643,7 +9646,7 @@ ALTER TABLE employees ADD COLUMN IF NOT EXISTS advance_paid NUMERIC DEFAULT 0;`;
                     if (val && parseFloat(val) > 0) {
                         currentSaveBtn.innerHTML = "Saqlanmoqda...";
                         const today = new Date().toISOString().split('T')[0];
-                        await supabase.from('employees').update({ salary_info: val }).eq('id', selectedWorkerId);
+                        await updateEmployeeSalary(selectedWorkerId, { salary_info: val });
                         const { error } = await supabase.from('attendance').insert({ employee_id: selectedWorkerId, date: today, status: `Oylik oshirildi: ${val}` });
                         if (error) { alert("Xatolik saqlashda: " + error.message); return; }
                         window.logToHistory(`Xodimning oyligi o'zgartirildi: ${val}`);
@@ -9780,7 +9783,6 @@ ALTER TABLE employees ADD COLUMN IF NOT EXISTS advance_paid NUMERIC DEFAULT 0;`;
                     department,
                     role,
                     phone,
-                    salary_info: salary.includes("so'm") ? salary : salary + " so'm",
                     experience: joined_year ? `Ishga kirgan yili: ${joined_year}` : 'Yangi',
                     birth_year: birth_year || null,
                     status: 'Ishlamoqda'
@@ -9788,13 +9790,15 @@ ALTER TABLE employees ADD COLUMN IF NOT EXISTS advance_paid NUMERIC DEFAULT 0;`;
 
                 let result;
                 if (editingStaffId) {
-                    result = await supabase.from('employees').update(staffData).eq('id', editingStaffId);
+                    result = await supabase.from('employees').update(staffData).eq('id', editingStaffId).select('id');
                 } else {
-                    result = await supabase.from('employees').insert([staffData]);
+                    result = await supabase.from('employees').insert([staffData]).select('id');
                 }
 
                 saveBtn.textContent = "Xodimni Saqlash";
                 if (!result.error) {
+                    const savedId = editingStaffId || (result.data && result.data[0] && result.data[0].id);
+                    if (savedId) await updateEmployeeSalary(savedId, { salary_info: salary.includes("so'm") ? salary : salary + " so'm" });
                     overlay.style.display = 'none';
                     loadRomixHRData();
                     alert(editingStaffId ? "Ma'lumotlar yangilandi!" : "Yangi xodim qo'shildi!");
@@ -10452,7 +10456,7 @@ ALTER TABLE employees ADD COLUMN IF NOT EXISTS advance_paid NUMERIC DEFAULT 0;`;
                     status: `Premya: ${val.toLocaleString()} UZS`
                 }]);
             } else if (type === 'Oylik') {
-                await supabase.from('employees').update({ salary_info: val.toLocaleString() + " UZS" }).eq('id', selectedWorkerId);
+                await updateEmployeeSalary(selectedWorkerId, { salary_info: val.toLocaleString() + " UZS" });
             }
 
             setTimeout(() => {

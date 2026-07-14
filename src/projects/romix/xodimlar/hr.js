@@ -783,9 +783,9 @@ async function saveWorker() {
     // 1. Try to save to Supabase (maosh alohida, himoyalangan endpoint orqali)
     try {
         if (currentEditId) {
-            res = await supabase.from('employees').update(payload).eq('id', currentEditId).select();
+            res = await supabase.from('employees').update(payload).eq('id', currentEditId).select('id');
         } else {
-            res = await supabase.from('employees').insert([payload]).select();
+            res = await supabase.from('employees').insert([payload]).select('id');
         }
         if (res && !res.error) {
             savedSuccessfully = true;
