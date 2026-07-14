@@ -1688,53 +1688,90 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const editingAll = _buhTxEditingId === 'ALL';
 
-        let docTotalSum = 0;
-        const itemsHtml = docObj.items.map((tx, idx) => {
-            const prodName = tx.romix_inventory?.product_name || "O'chirilgan mahsulot";
-            const unit = tx.romix_inventory?.unit || '';
-            const price = Number(tx.romix_inventory?.price) || 0;
-            const qty = Number(tx.quantity) || 0;
-            const itemTotal = price * qty;
-            docTotalSum += itemTotal;
+        const docTotalSum = docObj.items.reduce((s, tx) => s + (Number(tx.romix_inventory?.price) || 0) * (Number(tx.quantity) || 0), 0);
 
-            if (editingAll || tx.id === _buhTxEditingId) {
-                return `
-                <div style="border: 1px solid rgba(0,186,255,0.35); background: rgba(0,186,255,0.05); border-radius: 12px; padding: 12px; margin-bottom: 8px;">
-                    <div style="font-size:0.7rem; color:#00baff; font-weight:800; margin-bottom:8px;">✏️ ${idx + 1}-pozitsiya</div>
-                    <input type="text" id="buhTxEditName-${tx.id}" value="${prodName.replace(/"/g, '&quot;')}" placeholder="Nomi" style="width:100%; margin-bottom:6px; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff; padding:9px 10px; border-radius:8px; font-size:0.82rem; box-sizing:border-box; font-weight:700;">
-                    <div style="display:flex; gap:6px; margin-bottom:6px;">
-                        <input type="number" id="buhTxEditQty-${tx.id}" value="${qty}" placeholder="Miqdori" style="flex:1; min-width:0; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff; padding:9px 10px; border-radius:8px; font-size:0.82rem; box-sizing:border-box;">
-                        <input type="text" id="buhTxEditUnit-${tx.id}" value="${unit}" placeholder="Hajmi (dona/kg/metr...)" style="flex:1; min-width:0; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff; padding:9px 10px; border-radius:8px; font-size:0.82rem; box-sizing:border-box;">
-                    </div>
-                    <input type="number" id="buhTxEditPrice-${tx.id}" value="${price}" placeholder="Narxi (1 birlik, so'mda)" style="width:100%; ${editingAll ? '' : 'margin-bottom:10px;'} background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff; padding:9px 10px; border-radius:8px; font-size:0.82rem; box-sizing:border-box;">
-                    ${editingAll ? '' : `
-                    <div style="display:flex; gap:8px; margin-top:10px;">
-                        <button onclick="window.saveBuhTxItemEdit('${tx.id}', '${docId}')" style="flex:1; background:rgba(0,255,136,0.15); border:1px solid rgba(0,255,136,0.4); color:#00ff88; padding:9px; border-radius:8px; font-weight:800; font-size:0.78rem; cursor:pointer;">💾 Saqlash</button>
-                        <button onclick="window.cancelBuhTxItemEdit('${docId}')" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); padding:9px; border-radius:8px; font-weight:700; font-size:0.78rem; cursor:pointer;">Bekor qilish</button>
-                    </div>
-                    `}
-                </div>
-                `;
-            }
-
-            return `
-            <div style="border: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.01); border-radius: 12px; padding: 12px; margin-bottom: 8px;">
-                <div style="display:flex; justify-content:space-between; font-weight:700; color:#fff; font-size:0.85rem; margin-bottom:6px;">
-                    <span>${idx + 1}. ${prodName}</span>
-                    <span style="color:#00ff88;">${qty} ${unit}</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:rgba(255,255,255,0.45);">
-                    <span>Narxi: ${_buhFmt(price)}</span>
-                    <span style="color:${typeColor}; font-weight:700;">Jami: ${_buhFmt(itemTotal)}</span>
-                </div>
-                ${tx.note ? `<div style="font-size:0.7rem; color:rgba(255,255,255,0.35); margin-top:6px; font-style:italic;">Izoh: ${tx.note}</div>` : ''}
-                <div style="display:flex; gap:8px; margin-top:8px;">
-                    <button onclick="window.editBuhTxItem('${tx.id}', '${docId}')" style="flex:1; background:rgba(0,186,255,0.1); border:1px solid rgba(0,186,255,0.3); color:#00baff; padding:6px; border-radius:8px; font-size:0.72rem; font-weight:700; cursor:pointer;">✏️ Tahrirlash</button>
-                    <button onclick="window.deleteBuhTxItem('${tx.id}', '${docId}')" style="flex:1; background:rgba(255,77,79,0.1); border:1px solid rgba(255,77,79,0.3); color:#ff4d4f; padding:6px; border-radius:8px; font-size:0.72rem; font-weight:700; cursor:pointer;">🗑️ O'chirish</button>
-                </div>
+        // Butun spiskani tahrirlash rejimida — "Rasmdan Kirim (AI)" natija jadvali bilan bir xil
+        // ko'rinish (jadval, har bir qator = mahsulot): Nomi | Hajmi (birlik) | Miqdor | Narx | O'chirish.
+        const itemsHtml = editingAll ? `
+            <div style="max-height:320px; overflow-y:auto; border-radius:12px; border:1px solid rgba(0,186,255,0.15);">
+                <table style="width:100%; border-collapse:collapse; font-size:0.78rem;">
+                    <thead style="position:sticky; top:0; background:#0f172a;">
+                        <tr>
+                            <th style="padding:8px; text-align:left; color:rgba(255,255,255,0.5); font-size:0.68rem;">Nomi</th>
+                            <th style="padding:8px; text-align:left; color:rgba(255,255,255,0.5); font-size:0.68rem;">Hajmi</th>
+                            <th style="padding:8px; text-align:right; color:rgba(255,255,255,0.5); font-size:0.68rem;">Miqdor</th>
+                            <th style="padding:8px; text-align:right; color:rgba(0,255,136,0.6); font-size:0.68rem;">Narx</th>
+                            <th style="padding:8px; width:30px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${docObj.items.map(tx => {
+                            const prodName = tx.romix_inventory?.product_name || "O'chirilgan mahsulot";
+                            const unit = tx.romix_inventory?.unit || 'dona';
+                            const price = Number(tx.romix_inventory?.price) || 0;
+                            const qty = Number(tx.quantity) || 0;
+                            return `<tr style="border-top:1px solid rgba(255,255,255,0.05);">
+                                <td style="padding:6px;"><input type="text" id="buhTxEditName-${tx.id}" value="${prodName.replace(/"/g, '&quot;')}" style="width:100%; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:5px 8px; border-radius:6px; font-size:0.76rem; box-sizing:border-box;"></td>
+                                <td style="padding:6px;">
+                                    <select id="buhTxEditUnit-${tx.id}" style="width:100%; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:5px; border-radius:6px; font-size:0.76rem;">
+                                        ${BUH_VISION_UNITS.map(u => `<option value="${u}" ${unit === u ? 'selected' : ''}>${u}</option>`).join('')}
+                                    </select>
+                                </td>
+                                <td style="padding:6px;"><input type="number" id="buhTxEditQty-${tx.id}" value="${qty}" min="0" style="width:70px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#00ff88; font-weight:700; padding:5px 8px; border-radius:6px; font-size:0.76rem; text-align:right;"></td>
+                                <td style="padding:6px;"><input type="number" id="buhTxEditPrice-${tx.id}" value="${price}" min="0" style="width:90px; background:rgba(0,255,136,0.06); border:1px solid rgba(0,255,136,0.25); color:#00ff88; font-weight:700; padding:5px 8px; border-radius:6px; font-size:0.76rem; text-align:right;"></td>
+                                <td style="padding:6px; text-align:center;"><button onclick="window.deleteBuhTxItem('${tx.id}', '${docId}')" style="background:none; border:none; color:#ff4d4f; cursor:pointer; font-size:0.85rem;">🗑️</button></td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
             </div>
-            `;
-        }).join('');
+        ` : `
+            <div style="max-height: 250px; overflow-y: auto; padding-right: 4px;">
+                ${docObj.items.map((tx, idx) => {
+                    const prodName = tx.romix_inventory?.product_name || "O'chirilgan mahsulot";
+                    const unit = tx.romix_inventory?.unit || '';
+                    const price = Number(tx.romix_inventory?.price) || 0;
+                    const qty = Number(tx.quantity) || 0;
+                    const itemTotal = price * qty;
+
+                    if (tx.id === _buhTxEditingId) {
+                        return `
+                        <div style="border: 1px solid rgba(0,186,255,0.35); background: rgba(0,186,255,0.05); border-radius: 12px; padding: 12px; margin-bottom: 8px;">
+                            <div style="font-size:0.7rem; color:#00baff; font-weight:800; margin-bottom:8px;">✏️ ${idx + 1}-pozitsiya</div>
+                            <input type="text" id="buhTxEditName-${tx.id}" value="${prodName.replace(/"/g, '&quot;')}" placeholder="Nomi" style="width:100%; margin-bottom:6px; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff; padding:9px 10px; border-radius:8px; font-size:0.82rem; box-sizing:border-box; font-weight:700;">
+                            <div style="display:flex; gap:6px; margin-bottom:6px;">
+                                <input type="number" id="buhTxEditQty-${tx.id}" value="${qty}" placeholder="Miqdori" style="flex:1; min-width:0; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff; padding:9px 10px; border-radius:8px; font-size:0.82rem; box-sizing:border-box;">
+                                <input type="text" id="buhTxEditUnit-${tx.id}" value="${unit}" placeholder="Hajmi (dona/kg/metr...)" style="flex:1; min-width:0; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff; padding:9px 10px; border-radius:8px; font-size:0.82rem; box-sizing:border-box;">
+                            </div>
+                            <input type="number" id="buhTxEditPrice-${tx.id}" value="${price}" placeholder="Narxi (1 birlik, so'mda)" style="width:100%; margin-bottom:10px; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff; padding:9px 10px; border-radius:8px; font-size:0.82rem; box-sizing:border-box;">
+                            <div style="display:flex; gap:8px;">
+                                <button onclick="window.saveBuhTxItemEdit('${tx.id}', '${docId}')" style="flex:1; background:rgba(0,255,136,0.15); border:1px solid rgba(0,255,136,0.4); color:#00ff88; padding:9px; border-radius:8px; font-weight:800; font-size:0.78rem; cursor:pointer;">💾 Saqlash</button>
+                                <button onclick="window.cancelBuhTxItemEdit('${docId}')" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); padding:9px; border-radius:8px; font-weight:700; font-size:0.78rem; cursor:pointer;">Bekor qilish</button>
+                            </div>
+                        </div>
+                        `;
+                    }
+
+                    return `
+                    <div style="border: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.01); border-radius: 12px; padding: 12px; margin-bottom: 8px;">
+                        <div style="display:flex; justify-content:space-between; font-weight:700; color:#fff; font-size:0.85rem; margin-bottom:6px;">
+                            <span>${idx + 1}. ${prodName}</span>
+                            <span style="color:#00ff88;">${qty} ${unit}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:rgba(255,255,255,0.45);">
+                            <span>Narxi: ${_buhFmt(price)}</span>
+                            <span style="color:${typeColor}; font-weight:700;">Jami: ${_buhFmt(itemTotal)}</span>
+                        </div>
+                        ${tx.note ? `<div style="font-size:0.7rem; color:rgba(255,255,255,0.35); margin-top:6px; font-style:italic;">Izoh: ${tx.note}</div>` : ''}
+                        <div style="display:flex; gap:8px; margin-top:8px;">
+                            <button onclick="window.editBuhTxItem('${tx.id}', '${docId}')" style="flex:1; background:rgba(0,186,255,0.1); border:1px solid rgba(0,186,255,0.3); color:#00baff; padding:6px; border-radius:8px; font-size:0.72rem; font-weight:700; cursor:pointer;">✏️ Tahrirlash</button>
+                            <button onclick="window.deleteBuhTxItem('${tx.id}', '${docId}')" style="flex:1; background:rgba(255,77,79,0.1); border:1px solid rgba(255,77,79,0.3); color:#ff4d4f; padding:6px; border-radius:8px; font-size:0.72rem; font-weight:700; cursor:pointer;">🗑️ O'chirish</button>
+                        </div>
+                    </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
 
         const docToolbarHtml = editingAll
             ? `
@@ -1767,9 +1804,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
             <div style="margin-top:15px;">
                 <span style="color:rgba(255,255,255,0.45); font-size:0.8rem; font-weight:700; display:block; margin-bottom:8px;">Mahsulotlar ro'yxati (${docObj.items.length} ta pozitsiya):</span>
-                <div style="max-height: 250px; overflow-y: auto; padding-right: 4px;">
-                    ${itemsHtml}
-                </div>
+                ${itemsHtml}
                 ${docToolbarHtml}
             </div>
         `;
