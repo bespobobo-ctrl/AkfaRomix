@@ -148,31 +148,18 @@ body {
 
 .chat-header-title { display: flex; align-items: center; gap: 12px; }
 
-.presence {
-    width: 34px; height: 34px;
-    border-radius: 50%;
-    border: 1px solid var(--border-light);
+.orb-stage {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
+    padding: 18px 0 8px;
 }
 
-.presence-dot {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    background: var(--text-muted);
-    transition: background 0.3s;
-}
-
-.presence-dot.listening { background: var(--accent); animation: dotPulse 1.8s ease-in-out infinite; }
-.presence-dot.thinking { background: var(--accent-2); animation: dotPulse 0.9s ease-in-out infinite; }
-.presence-dot.speaking { background: var(--accent); animation: dotPulse 0.7s ease-in-out infinite; }
-
-@keyframes dotPulse {
-    0%, 100% { box-shadow: 0 0 0 0 var(--accent-glow); }
-    50% { box-shadow: 0 0 0 6px transparent; }
+#orb-canvas {
+    width: min(210px, 48vw);
+    height: min(210px, 48vw);
+    display: block;
 }
 
 .chat-title { font-weight: 700; font-size: 0.94rem; }

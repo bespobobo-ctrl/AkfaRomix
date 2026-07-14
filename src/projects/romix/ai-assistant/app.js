@@ -1,3 +1,5 @@
+import { Orb3D } from './orb3d.js';
+
 const API_URL = '/api/romix-ai-chat';
 const LIVE_TOKEN_URL = '/api/romix-live-token';
 const LIVE_TOOL_URL = '/api/romix-live-tool';
@@ -13,7 +15,7 @@ const screens = {
     login: document.getElementById('login-screen'),
     call: document.getElementById('call-screen'),
 };
-const orb = document.getElementById('orb');
+const orbCanvas = document.getElementById('orb-canvas');
 const statusLine = document.getElementById('status-line');
 const callToggleBtn = document.getElementById('call-toggle-btn');
 const transcriptEl = document.getElementById('transcript');
@@ -44,8 +46,17 @@ function renderRich(text) {
     return s;
 }
 
-function setOrbState(state) { orb.className = 'presence-dot ' + state; }
+let orb3d = null;
+function ensureOrb3d() { if (!orb3d && orbCanvas) orb3d = new Orb3D(orbCanvas); return orb3d; }
+function setOrbState(state) { ensureOrb3d()?.setState(state); }
+function feedOrbLevel(rms) { orb3d?.feedLevel(rms); }
 function setStatus(text) { statusLine.textContent = text; }
+
+function computeRMS(float32Array) {
+    let sum = 0;
+    for (let i = 0; i < float32Array.length; i++) sum += float32Array[i] * float32Array[i];
+    return Math.sqrt(sum / float32Array.length);
+}
 
 // ── Transkript (doimiy suhbat yozuvi) ──
 function addTranscriptEntry(role, text) {
@@ -132,6 +143,7 @@ class LivePlayer {
         const float32 = new Float32Array(int16.length);
         for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 32768;
         this.worklet.port.postMessage(float32);
+        if (this.onLevel) this.onLevel(float32);
     }
     interrupt() { if (this.worklet) this.worklet.port.postMessage('interrupt'); }
     destroy() { if (this.ctx) { try { this.ctx.close(); } catch (e) { } } this.ctx = null; this.worklet = null; this.ready = null; }
@@ -319,6 +331,7 @@ async function startMicCapture() {
             if (!callActive || e.data.type !== 'audio') return;
             const base64 = float32ToPCM16Base64(e.data.data);
             wsSend({ realtimeInput: { audio: { data: base64, mimeType: 'audio/pcm;rate=16000' } } });
+            feedOrbLevel(computeRMS(e.data.data));
         };
         micSource = captureCtx.createMediaStreamSource(micStream);
         micSource.connect(captureWorklet);
@@ -372,6 +385,7 @@ async function openLiveSocket(isReconnect) {
 
     if (!audioPlayer) {
         audioPlayer = new LivePlayer();
+        audioPlayer.onLevel = (float32) => feedOrbLevel(computeRMS(float32));
         try { await audioPlayer.init(); }
         catch (e) {
             audioPlayer = null;
