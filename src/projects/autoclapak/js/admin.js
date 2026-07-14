@@ -468,12 +468,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     function _buhSetText(id, val) { const el = document.getElementById(id); if (el) el.textContent = _buhFmt(val); }
     function _buhNormName(s) { return String(s || '').trim().toLowerCase().replace(/\s+/g, ' '); }
+    function _buhTokenizeName(s) {
+        return _buhNormName(s).replace(/[·•\-_(),./]+/g, ' ').split(/\s+/).filter(t => t.length >= 2);
+    }
     // AI rasmdan o'qigan nom omordagi to'liq saqlangan nom bilan kamdan-kam 100% mos keladi
-    // (masalan rasmda "Zamok Vreznoy" deb qisqa yozilgan bo'lsa-yu, ombordagi to'liq nom
-    // "Zamok Vreznoy 153/25/85 S Rolikom (Uz)" bo'lsa). Aniq moslik topilmasa, bittasi
-    // ikkinchisini o'z ichiga olishini tekshiradi — lekin BIR NECHTA nomzod chiqsa (masalan
-    // ikki xil o'lchamdagi bir xil nomli mahsulot), noto'g'ri mahsulotdan xato ayirib
-    // qo'ymaslik uchun mosligi "aniqmas" deb belgilaydi (foydalanuvchi qo'lda aniqlashtirsin).
+    // — masalan rasmda qisqa/qayta tartiblangan "Chempion (j-306) - Kosa" deb yozilgan
+    // bo'lsa-yu, ombordagi to'liq nom "(A) WDC 50 Chempion SW 306 g · F002 Kosa" bo'lsa,
+    // bu ikki satr bir-birining ICHIDA ham emas (substring emas) — shu sabab 3-bosqich
+    // so'z(token)larga ajratib solishtiradi: rasmdagi nomning HAR bir so'zi ombordagi
+    // nomda (tartibidan qat'iy nazar) bor-yo'qligini tekshiradi. Har qaysi bosqichda
+    // BIR NECHTA nomzod chiqsa (masalan ikki xil o'lchamdagi bir xil nomli mahsulot),
+    // noto'g'ri mahsulotdan xato ayirib qo'ymaslik uchun mosligi "aniqmas" deb
+    // belgilaydi (foydalanuvchi qo'lda aniqlashtirsin) — hech qachon taxmin qilmaydi.
     function _buhFindByFuzzyName(list, name, nameField) {
         const n = _buhNormName(name);
         if (!n) return {};
@@ -487,6 +493,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             if (candidates.length === 1) return { match: candidates[0] };
             if (candidates.length > 1) return { ambiguous: candidates };
+        }
+        const nameTokens = _buhTokenizeName(name);
+        if (nameTokens.length >= 2) {
+            const found = list.filter(inv => {
+                const invTokens = new Set(_buhTokenizeName(inv[nameField]));
+                return nameTokens.every(t => invTokens.has(t));
+            });
+            if (found.length === 1) return { match: found[0] };
+            if (found.length > 1) return { ambiguous: found };
         }
         return {};
     }
