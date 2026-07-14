@@ -1,4 +1,5 @@
 import { supabase, checkAuth } from '@/core/supabase.js';
+import { attachSalaries } from '@/core/employeesSecure.js';
 
 let employees = [];
 let html5QrScanner = null;
@@ -61,7 +62,7 @@ async function loadMiniData(user) {
     // Fetch Employees
     let staff = [];
     try {
-        let query = supabase.from('employees').select('*');
+        let query = supabase.from('employees').select('id, full_name, first_name, last_name, role, status, created_at, birth_year, avatar_url, department, joined_year, experience, phone');
         if (user.role === 'employee') {
             query = query.eq('id', user.id);
         } else {
@@ -70,6 +71,7 @@ async function loadMiniData(user) {
         const res = await query;
         if (res.error) throw res.error;
         staff = res.data || [];
+        await attachSalaries(staff);
     } catch(err) {
         console.warn("Supabase loadMiniData fetch failed, using local storage:", err);
         const localRaw = localStorage.getItem('romix_employees_local');
