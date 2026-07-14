@@ -222,6 +222,61 @@ body {
 .entry.user .entry-text { color: rgba(238, 240, 242, 0.82); }
 .entry-text b { color: var(--accent); font-weight: 600; }
 
+/* --- Vizual kartochka (tendentsiya/mijozlar grafiklari) --- */
+.viz-card {
+    --series-1: #3987e5;
+    --series-2: #c98500;
+    margin-top: 8px;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+}
+
+.viz-legend {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 10px;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.viz-legend-item { display: flex; align-items: center; gap: 6px; }
+
+.viz-swatch {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.viz-swatch.s1, .viz-bar.s1 { background: var(--series-1); }
+.viz-swatch.s2, .viz-bar.s2 { background: var(--series-2); }
+
+.viz-bars { display: flex; flex-direction: column; gap: 12px; }
+
+.viz-group { display: flex; flex-direction: column; gap: 4px; }
+.viz-group-label { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 1px; }
+
+.viz-row { display: flex; flex-direction: column; gap: 4px; }
+.viz-row-label { font-size: 0.8rem; color: var(--text-main); }
+
+.viz-bar-row {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    height: 11px;
+    overflow: hidden;
+}
+
+.viz-bar {
+    height: 100%;
+    min-width: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+    transition: width 0.4s ease;
+}
+
 /* --- Live caption (joriy gapirilayotgan qism) --- */
 .live-caption {
     padding: 10px 20px;

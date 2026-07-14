@@ -107,13 +107,18 @@ class LivePlayer {
     async init() {
         if (this.ready) return this.ready;
         this.ready = (async () => {
-            this.ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
-            if (this.ctx.state === 'suspended') await this.ctx.resume();
-            await this.ctx.audioWorklet.addModule('/audio-processors/playback.worklet.js');
-            this.worklet = new AudioWorkletNode(this.ctx, 'pcm-processor');
-            this.gain = this.ctx.createGain();
-            this.worklet.connect(this.gain);
-            this.gain.connect(this.ctx.destination);
+            try {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+                if (this.ctx.state === 'suspended') await this.ctx.resume();
+                await this.ctx.audioWorklet.addModule('/audio-processors/playback.worklet.js');
+                this.worklet = new AudioWorkletNode(this.ctx, 'pcm-processor');
+                this.gain = this.ctx.createGain();
+                this.worklet.connect(this.gain);
+                this.gain.connect(this.ctx.destination);
+            } catch (e) {
+                this.ready = null;
+                throw e;
+            }
         })();
         return this.ready;
     }
@@ -150,13 +155,63 @@ async function callLiveTool(name, args) {
     }
 }
 
+// ── Vizual kartochka: ayrim toollar natijasi ovoz bilan bir vaqtda grafik sifatida ham ko'rsatiladi ──
+function parseSom(str) { return Number(String(str || '').replace(/[^\d]/g, '')) || 0; }
+function fmtSomShort(n) { return Math.round(n).toLocaleString('uz-UZ') + " so'm"; }
+
+function addVizCard(innerHtml) {
+    const empty = document.getElementById('transcript-empty');
+    if (empty) empty.remove();
+    const div = document.createElement('div');
+    div.className = 'entry assistant';
+    div.innerHTML = `<div class="entry-role">Yordamchi</div><div class="viz-card">${innerHtml}</div>`;
+    transcriptEl.appendChild(div);
+    transcriptEl.scrollTop = transcriptEl.scrollHeight;
+}
+
+function renderTrendChart(oylar) {
+    if (!Array.isArray(oylar) || !oylar.length) return;
+    const parsed = oylar.map(o => ({ oy: o.oy, savdo: parseSom(o.savdo), harajat: parseSom(o.harajat) }));
+    const max = Math.max(1, ...parsed.flatMap(o => [o.savdo, o.harajat]));
+    const legend = `<div class="viz-legend">
+        <span class="viz-legend-item"><i class="viz-swatch s1"></i>Savdo</span>
+        <span class="viz-legend-item"><i class="viz-swatch s2"></i>Harajat</span>
+    </div>`;
+    const groups = parsed.map(o => `
+        <div class="viz-group">
+            <div class="viz-group-label">${renderRich(o.oy)}</div>
+            <div class="viz-bar-row"><div class="viz-bar s1" style="width:${Math.max(4, o.savdo / max * 100)}%" title="Savdo: ${fmtSomShort(o.savdo)}"></div></div>
+            <div class="viz-bar-row"><div class="viz-bar s2" style="width:${Math.max(4, o.harajat / max * 100)}%" title="Harajat: ${fmtSomShort(o.harajat)}"></div></div>
+        </div>`).join('');
+    addVizCard(legend + `<div class="viz-bars">${groups}</div>`);
+}
+
+function renderTopCustomersChart(mijozlar) {
+    if (!Array.isArray(mijozlar) || !mijozlar.length) return;
+    const parsed = mijozlar.slice(0, 6).map(m => ({ mijoz: m.mijoz, val: parseSom(m.jami_buyurtma) }));
+    const max = Math.max(1, ...parsed.map(m => m.val));
+    const rows = parsed.map(m => `
+        <div class="viz-row">
+            <div class="viz-row-label">${renderRich(m.mijoz)}</div>
+            <div class="viz-bar-row"><div class="viz-bar s1" style="width:${Math.max(4, m.val / max * 100)}%" title="${fmtSomShort(m.val)}"></div></div>
+        </div>`).join('');
+    addVizCard(`<div class="viz-bars">${rows}</div>`);
+}
+
+function renderVizCard(name, response) {
+    try {
+        if (name === 'tendentsiya_tahlili' && response && response.oylar) renderTrendChart(response.oylar);
+        else if (name === 'top_mijozlar' && response && response.mijozlar) renderTopCustomersChart(response.mijozlar);
+    } catch (e) { /* vizual muvaffaqiyatsiz bo'lsa ham ovozli javobga xalaqit bermasin */ }
+}
+
 async function handleToolCall(toolCall) {
     const calls = toolCall.functionCalls || [];
-    const functionResponses = [];
-    for (const fc of calls) {
+    const functionResponses = await Promise.all(calls.map(async fc => {
         const response = await callLiveTool(fc.name, fc.args || {});
-        functionResponses.push({ id: fc.id, name: fc.name, response });
-    }
+        renderVizCard(fc.name, response);
+        return { id: fc.id, name: fc.name, response };
+    }));
     wsSend({ toolResponse: { functionResponses } });
 }
 
@@ -240,26 +295,38 @@ function handleServerMessage(data) {
     }
 }
 
+let micPermissionPromise = null;
+function requestMicPermission() {
+    micPermissionPromise = navigator.mediaDevices.getUserMedia({
+        audio: { sampleRate: 16000, echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+    }).catch(e => { micPermissionPromise = null; throw e; });
+    return micPermissionPromise;
+}
+
 async function startMicCapture() {
     try {
-        micStream = await navigator.mediaDevices.getUserMedia({
-            audio: { sampleRate: 16000, echoCancellation: true, noiseSuppression: true, autoGainControl: true }
-        });
+        micStream = await (micPermissionPromise || requestMicPermission());
     } catch (e) {
         addTranscriptEntry('assistant', '⚠️ Mikrofonga ruxsat berilmadi.');
         stopCall();
         return;
     }
-    captureCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-    await captureCtx.audioWorklet.addModule('/audio-processors/capture.worklet.js');
-    captureWorklet = new AudioWorkletNode(captureCtx, 'audio-capture-processor');
-    captureWorklet.port.onmessage = (e) => {
-        if (!callActive || e.data.type !== 'audio') return;
-        const base64 = float32ToPCM16Base64(e.data.data);
-        wsSend({ realtimeInput: { audio: { data: base64, mimeType: 'audio/pcm;rate=16000' } } });
-    };
-    micSource = captureCtx.createMediaStreamSource(micStream);
-    micSource.connect(captureWorklet);
+    try {
+        captureCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+        await captureCtx.audioWorklet.addModule('/audio-processors/capture.worklet.js');
+        captureWorklet = new AudioWorkletNode(captureCtx, 'audio-capture-processor');
+        captureWorklet.port.onmessage = (e) => {
+            if (!callActive || e.data.type !== 'audio') return;
+            const base64 = float32ToPCM16Base64(e.data.data);
+            wsSend({ realtimeInput: { audio: { data: base64, mimeType: 'audio/pcm;rate=16000' } } });
+        };
+        micSource = captureCtx.createMediaStreamSource(micStream);
+        micSource.connect(captureWorklet);
+    } catch (e) {
+        addTranscriptEntry('assistant', '⚠️ Audio tizimini ishga tushirib bo\'lmadi (brauzer qo\'llamasligi mumkin).');
+        stopCall();
+        return;
+    }
 
     setOrbState('listening');
     setStatus('Tinglayapman...');
@@ -268,7 +335,22 @@ async function startMicCapture() {
 let manualStop = true;
 let reconnectAttempts = 0;
 let hasGreeted = false;
+let lastMessageAt = 0;
+let watchdogTimer = null;
 const MAX_RECONNECT = 3;
+const STALL_MS = 20000;
+
+function startWatchdog() {
+    stopWatchdog();
+    lastMessageAt = Date.now();
+    watchdogTimer = setInterval(() => {
+        if (!callActive || manualStop) return;
+        if (Date.now() - lastMessageAt > STALL_MS) {
+            try { ws && ws.close(); } catch (e) { }
+        }
+    }, 5000);
+}
+function stopWatchdog() { if (watchdogTimer) { clearInterval(watchdogTimer); watchdogTimer = null; } }
 
 async function openLiveSocket(isReconnect) {
     let cfg;
@@ -288,7 +370,15 @@ async function openLiveSocket(isReconnect) {
         return false;
     }
 
-    if (!audioPlayer) { audioPlayer = new LivePlayer(); await audioPlayer.init(); }
+    if (!audioPlayer) {
+        audioPlayer = new LivePlayer();
+        try { await audioPlayer.init(); }
+        catch (e) {
+            audioPlayer = null;
+            if (!isReconnect) addTranscriptEntry('assistant', '⚠️ Audio pleer ishga tushmadi.');
+            return false;
+        }
+    }
 
     const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained?access_token=${cfg.token}`;
     ws = new WebSocket(wsUrl);
@@ -307,7 +397,7 @@ async function openLiveSocket(isReconnect) {
                         disabled: false,
                         startOfSpeechSensitivity: 'START_SENSITIVITY_HIGH',
                         endOfSpeechSensitivity: 'END_SENSITIVITY_HIGH',
-                        silenceDurationMs: 700,
+                        silenceDurationMs: 550,
                         prefixPaddingMs: 200
                     },
                     turnCoverage: 'TURN_INCLUDES_ONLY_ACTIVITY'
@@ -321,9 +411,11 @@ async function openLiveSocket(isReconnect) {
         callToggleBtn.textContent = "Qo'ng'iroqni tugatish";
         callToggleBtn.classList.remove('call-btn-start');
         callToggleBtn.classList.add('call-btn-end');
+        startWatchdog();
     };
 
     ws.onmessage = async (event) => {
+        lastMessageAt = Date.now();
         let data;
         try {
             const raw = (event.data instanceof Blob) ? await event.data.text() : event.data;
@@ -364,6 +456,7 @@ async function startCall() {
     manualStop = false;
     reconnectAttempts = 0;
     hasGreeted = false;
+    requestMicPermission().catch(() => { }); // token so'rovi bilan bir vaqtda — ruxsat oldindan tayyor bo'ladi (xato startMicCapture'da qayta ushlanadi)
 
     const ok = await openLiveSocket(false);
     if (!ok) {
@@ -384,6 +477,7 @@ function stopCall() {
     setStatus("Qo'ng'iroqni boshlang");
     commitTurn();
     sendRecap();
+    stopWatchdog();
 
     if (ws) { try { ws.close(); } catch (e) { } ws = null; }
     if (micSource) { try { micSource.disconnect(); } catch (e) { } micSource = null; }
@@ -391,6 +485,7 @@ function stopCall() {
     if (captureCtx) { try { captureCtx.close(); } catch (e) { } captureCtx = null; }
     if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
     if (audioPlayer) { audioPlayer.destroy(); audioPlayer = null; }
+    micPermissionPromise = null;
 }
 
 callToggleBtn.onclick = () => { callActive ? stopCall() : startCall(); };

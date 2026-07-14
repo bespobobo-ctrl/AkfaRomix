@@ -1,4 +1,6 @@
 import fetch from 'node-fetch';
+import db from './_romixdb.js';
+import ai from './_romixai.js';
 
 const TOKEN = process.env.ROMIX_BOT_TOKEN || "";
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "https://dzsswblbpnjuluyqvewt.supabase.co";
@@ -100,16 +102,35 @@ export default async function handler(req, res) {
             `👥 <b>Bugun ishga kelmaganlar:</b>\n` +
             `${absentListText}`;
 
-        // Send report to all authorized chats
+        // 7. Diqqatga molik narsalar bo'lsa — AI orqali qisqa proaktiv ogohlantirish tuzish
+        let alertMsg = null;
+        try {
+            const [alerts, trend] = await Promise.all([db.eslatmalar(), db.trendReport(2)]);
+            const hasAlerts = (alerts.muddati_otgan_qarzlar || []).length
+                || (alerts.kechikkan_buyurtmalar || []).length
+                || (alerts.kam_qolgan_mahsulotlar || []).length;
+            const change = trend.shu_oy_savdo_ozgarishi_foizda;
+            const badTrend = typeof change === "number" && change <= -15;
+            if ((hasAlerts || badTrend) && ai.isConfigured()) {
+                const prompt = `Quyida "AKFA Romix" korxonasining bugungi diqqatga molik ma'lumotlari (JSON) berilgan. Shu asosida egasiga QISQA (4-6 qatordan oshmasin), professional, harakatga chorlaydigan ogohlantirish xabari yoz. Telegram uchun HTML formatda (faqat <b>qalin</b>), "🔔 <b>Diqqat kerak</b>" bilan boshla. Faqat haqiqiy muammolarni ayt, bo'sh gap yozma.\n\nMA'LUMOT: ${JSON.stringify({ alerts, savdo_ozgarishi_foizda: change })}`;
+                alertMsg = await ai.chatText("Sen qisqa va aniq yozadigan biznes maslahatchisan.", prompt);
+                if (alertMsg) alertMsg = alertMsg.trim();
+            }
+        } catch (err) {
+            console.error('Proactive alert build error:', err);
+        }
+
+        // Send report (+ proaktiv ogohlantirish bo'lsa) barcha avtorizatsiyadan o'tgan chatlarga
         for (const chatId of auth) {
             try {
                 await send(chatId, reportMsg);
+                if (alertMsg) await send(chatId, alertMsg);
             } catch (err) {
                 console.error(`Failed to send daily report to ${chatId}:`, err);
             }
         }
 
-        res.status(200).json({ ok: true, sent: auth.length, date: todayStr });
+        res.status(200).json({ ok: true, sent: auth.length, date: todayStr, alert: !!alertMsg });
     } catch (e) {
         console.error('Daily report handler error:', e);
         res.status(500).json({ ok: false, error: e.message });
