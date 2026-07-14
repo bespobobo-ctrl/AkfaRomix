@@ -1668,6 +1668,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         doc.save(filename);
     };
 
+    // Hujjat (spiska) ichidagi qaysi pozitsiya hozir tahrirlash rejimida ekanini saqlaydi —
+    // faqat shu id uchun input maydonlari chiziladi, qolganlari oddiy ko'rinishda qoladi.
+    let _buhTxEditingId = null;
+
     window.viewBuhTxDetails = (docId) => {
         const docs = _buhGroupTransactionsIntoDocuments(_buhHistCache);
         const docObj = docs.find(d => d.id === docId);
@@ -1690,6 +1694,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             const qty = Number(tx.quantity) || 0;
             const itemTotal = price * qty;
             docTotalSum += itemTotal;
+
+            if (tx.id === _buhTxEditingId) {
+                return `
+                <div style="border: 1px solid rgba(0,186,255,0.35); background: rgba(0,186,255,0.05); border-radius: 12px; padding: 12px; margin-bottom: 8px;">
+                    <div style="font-size:0.7rem; color:#00baff; font-weight:800; margin-bottom:8px;">✏️ ${idx + 1}-pozitsiyani tahrirlash</div>
+                    <input type="text" id="buhTxEditName" value="${prodName.replace(/"/g, '&quot;')}" placeholder="Nomi" style="width:100%; margin-bottom:6px; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff; padding:9px 10px; border-radius:8px; font-size:0.82rem; box-sizing:border-box; font-weight:700;">
+                    <div style="display:flex; gap:6px; margin-bottom:6px;">
+                        <input type="number" id="buhTxEditQty" value="${qty}" placeholder="Miqdori" style="flex:1; min-width:0; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff; padding:9px 10px; border-radius:8px; font-size:0.82rem; box-sizing:border-box;">
+                        <input type="text" id="buhTxEditUnit" value="${unit}" placeholder="Hajmi (dona/kg/metr...)" style="flex:1; min-width:0; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff; padding:9px 10px; border-radius:8px; font-size:0.82rem; box-sizing:border-box;">
+                    </div>
+                    <input type="number" id="buhTxEditPrice" value="${price}" placeholder="Narxi (1 birlik, so'mda)" style="width:100%; margin-bottom:10px; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12); color:#fff; padding:9px 10px; border-radius:8px; font-size:0.82rem; box-sizing:border-box;">
+                    <div style="display:flex; gap:8px;">
+                        <button onclick="window.saveBuhTxItemEdit('${tx.id}', '${docId}')" style="flex:1; background:rgba(0,255,136,0.15); border:1px solid rgba(0,255,136,0.4); color:#00ff88; padding:9px; border-radius:8px; font-weight:800; font-size:0.78rem; cursor:pointer;">💾 Saqlash</button>
+                        <button onclick="window.cancelBuhTxItemEdit('${docId}')" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); padding:9px; border-radius:8px; font-weight:700; font-size:0.78rem; cursor:pointer;">Bekor qilish</button>
+                    </div>
+                </div>
+                `;
+            }
+
             return `
             <div style="border: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.01); border-radius: 12px; padding: 12px; margin-bottom: 8px;">
                 <div style="display:flex; justify-content:space-between; font-weight:700; color:#fff; font-size:0.85rem; margin-bottom:6px;">
@@ -1745,41 +1768,67 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (modal) modal.style.display = 'flex';
     };
 
-    // Kirim/Chiqim Tarixidagi bitta pozitsiyani tahrirlash. Ikki xil manba bor:
-    // profil (romix_transactions'dagi haqiqiy qator, id — UUID) va aksessuar
-    // (romix_accessories_history'dan o'qib psevdo-tranzaksiya sifatida qurilgan, id — "HIST-...").
-    // Ikkalasida ham miqdor o'zgarsa, tegishli ombor zaxirasi (romix_inventory/romix_accessories)
-    // farqga (delta) qarab qayta hisoblanadi — aks holda tarix bilan haqiqiy zaxira mos kelmay qoladi.
-    window.editBuhTxItem = async (txId, docId) => {
+    // Kirim/Chiqim Tarixidagi (spiska hujjati ichidagi) bitta pozitsiyani TO'LIQ tahrirlash —
+    // nomi, hajmi (birlik), miqdori, narxi. Ikki xil manba bor: profil (romix_transactions'dagi
+    // haqiqiy qator, id — UUID) va aksessuar (romix_accessories_history'dan o'qib psevdo-tranzaksiya
+    // sifatida qurilgan, id — "HIST-..."). Miqdor o'zgarsa, tegishli ombor zaxirasi
+    // (romix_inventory/romix_accessories) farqga (delta) qarab qayta hisoblanadi — aks holda
+    // tarix bilan haqiqiy zaxira mos kelmay qoladi. Bu faqat shu (Buxgalteriya) panelda bor —
+    // mustaqil Ombor Panelidagi (warehouse.js) Kirim/Chiqim Tarixida atayin YO'Q.
+    window.editBuhTxItem = (txId, docId) => {
+        _buhTxEditingId = txId;
+        window.viewBuhTxDetails(docId);
+    };
+
+    window.cancelBuhTxItemEdit = (docId) => {
+        _buhTxEditingId = null;
+        window.viewBuhTxDetails(docId);
+    };
+
+    window.saveBuhTxItemEdit = async (txId, docId) => {
         const tx = _buhHistCache.find(t => t.id === txId);
         if (!tx) return;
         const isAcc = String(txId).startsWith('HIST-');
-        const prodName = tx.romix_inventory?.product_name || "Noma'lum mahsulot";
-        const currentQty = Number(tx.quantity) || 0;
-        const input = prompt(`"${prodName}" — yangi miqdorni kiriting:`, currentQty);
-        if (input === null) return;
-        const newQty = parseFloat(input);
-        if (isNaN(newQty) || newQty < 0) { alert("Noto'g'ri miqdor kiritildi!"); return; }
-        const delta = newQty - currentQty;
+        const oldName = tx.romix_inventory?.product_name || "Noma'lum mahsulot";
+        const oldQty = Number(tx.quantity) || 0;
+
+        const newName = (document.getElementById('buhTxEditName').value || '').trim();
+        const newQtyStr = document.getElementById('buhTxEditQty').value;
+        const newUnit = (document.getElementById('buhTxEditUnit').value || '').trim();
+        const newPriceStr = document.getElementById('buhTxEditPrice').value;
+        const newQty = parseFloat(newQtyStr);
+        const newPrice = parseFloat(newPriceStr);
+        if (!newName || isNaN(newQty) || newQty < 0) { alert("Nomi va miqdorni to'g'ri kiriting!"); return; }
+        const finalPrice = isNaN(newPrice) || newPrice < 0 ? 0 : newPrice;
+        const finalUnit = newUnit || 'dona';
+        const delta = newQty - oldQty;
         const stockDelta = tx.type === 'IN' ? delta : -delta;
 
         try {
             if (isAcc) {
-                const { data: acc } = await supabase.from('romix_accessories').select('*').ilike('name', prodName).maybeSingle();
+                const { data: acc } = await supabase.from('romix_accessories').select('*').ilike('name', oldName).maybeSingle();
                 if (acc) {
                     const newStock = Math.max(0, (Number(acc.qty) || 0) + stockDelta);
-                    await supabase.from('romix_accessories').update({ qty: newStock }).eq('id', acc.id);
+                    await supabase.from('romix_accessories').update({ name: newName, unit: finalUnit, price: finalPrice, qty: newStock }).eq('id', acc.id);
+                } else {
+                    await supabase.from('romix_accessories').insert([{
+                        id: 'ACC-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+                        name: newName, category: 'Boshqa...', qty: Math.max(0, newQty), unit: finalUnit, spec: '', price: finalPrice
+                    }]);
                 }
                 const { data: histRow } = await supabase.from('romix_accessories_history').select('*').eq('id', txId).maybeSingle();
                 if (histRow) {
-                    const newDetails = (histRow.details || '').replace(/(mahsulotidan\s*)[\d.,\s]+\s*(\S+)/, `$1${newQty.toLocaleString()} $2`);
+                    const newDetails = (histRow.details || '')
+                        .replace(/^"(.+?)"/, `"${newName}"`)
+                        .replace(/(mahsulotidan\s*)[\d.,\s]+\s*\S+/, `$1${newQty.toLocaleString()} ${finalUnit}`);
                     await supabase.from('romix_accessories_history').update({ details: newDetails }).eq('id', txId);
                 }
             } else {
-                const { data: prod } = await supabase.from('romix_inventory').select('*').eq('id', tx.product_id).maybeSingle();
-                if (prod) {
-                    const newStock = Math.max(0, (Number(prod.stock_quantity) || 0) + stockDelta);
-                    await supabase.from('romix_inventory').update({ stock_quantity: newStock }).eq('id', prod.id);
+                if (tx.product_id) {
+                    const { data: prod } = await supabase.from('romix_inventory').select('*').eq('id', tx.product_id).maybeSingle();
+                    const patch = { product_name: newName, unit: finalUnit, price: finalPrice };
+                    if (prod) patch.stock_quantity = Math.max(0, (Number(prod.stock_quantity) || 0) + stockDelta);
+                    await supabase.from('romix_inventory').update(patch).eq('id', tx.product_id);
                 }
                 await supabase.from('romix_transactions').update({ quantity: newQty }).eq('id', txId);
             }
@@ -1788,10 +1837,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        window.showPremiumToast && window.showPremiumToast('Yangilandi', "Miqdor tahrirlandi, ombor zaxirasi qayta hisoblandi.", true);
+        _buhTxEditingId = null;
+        window.showPremiumToast && window.showPremiumToast('Yangilandi', "Mahsulot ma'lumotlari tahrirlandi, ombor zaxirasi qayta hisoblandi.", true);
         await window.loadBuhHistoryData();
         if (typeof renderRomixBuhOmbor === 'function') await renderRomixBuhOmbor();
-        if (_buhHistCache.some(t => t.id === txId)) window.viewBuhTxDetails(docId);
+        const stillExists = _buhGroupTransactionsIntoDocuments(_buhHistCache).some(d => d.id === docId);
+        if (stillExists) window.viewBuhTxDetails(docId);
         else window.closeBuhTxDetailsModal();
     };
 
@@ -1834,6 +1885,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     window.closeBuhTxDetailsModal = () => {
+        _buhTxEditingId = null;
         const modal = document.getElementById('buh-tx-details-modal');
         if (modal) modal.style.display = 'none';
     };
