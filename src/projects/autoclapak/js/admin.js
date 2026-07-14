@@ -3300,11 +3300,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.renderBuhVisionResults();
     };
     window.confirmBuhVisionKirim = async () => {
+        const btn = document.getElementById('buhVisionKirimConfirmBtn');
+        if (btn && btn.disabled) return; // ikki marta bosishdan (dublikat yozuv) himoya
         const items = (window.__buhVisionItems || []).filter(it => it.name && it.qty > 0);
         if (items.length === 0) {
             alert("Tasdiqlash uchun hech bo'lmaganda bitta to'g'ri mahsulot bo'lishi kerak!");
             return;
         }
+        if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'not-allowed'; }
+        try {
         const profilItems = items.filter(it => it.type === 'profil');
         const accItems = items.filter(it => it.type === 'aksessuar');
 
@@ -3381,6 +3385,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.showPremiumToast('Muvaffaqiyatli', `${items.length} ta mahsulot kirim qilindi (${profilItems.length} profil, ${accItems.length} aksessuar).`, true);
         window.closeBuhVisionModal();
         await renderRomixBuhOmbor();
+        } finally {
+            if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer'; }
+        }
     };
 
     // ========================================================
@@ -3520,11 +3527,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.renderBuhVisionChiqimResults();
     };
     window.confirmBuhVisionChiqim = async () => {
+        const btn = document.getElementById('buhVisionChiqimConfirmBtn');
+        if (btn && btn.disabled) return; // ikki marta bosishdan (dublikat yozuv) himoya
         const items = (window.__buhVisionChiqimItems || []).filter(it => it.name && it.qty > 0);
         if (items.length === 0) {
             alert("Tasdiqlash uchun hech bo'lmaganda bitta to'g'ri mahsulot bo'lishi kerak!");
             return;
         }
+        if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'not-allowed'; }
+        try {
         const profilItems = items.filter(it => it.type === 'profil');
         const accItems = items.filter(it => it.type === 'aksessuar');
         const notFound = [];
@@ -3615,6 +3626,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.showPremiumToast(hasIssues ? 'Diqqat' : 'Muvaffaqiyatli', msg, !hasIssues);
         window.closeBuhVisionChiqimModal();
         await renderRomixBuhOmbor();
+        } finally {
+            if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer'; }
+        }
     };
 
     async function renderBuhTayyorMahsulot() {
