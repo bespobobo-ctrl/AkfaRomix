@@ -32,11 +32,46 @@ const NEUTRAL_2 = 0xf4f3fa;
 const DIM = 0x9a97b3;
 
 function mat(color, opts = {}) {
-    return new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: 0.75, metalness: 0.05, transparent: true, opacity: 1, ...opts });
+    return new THREE.MeshStandardMaterial({ color, flatShading: false, roughness: 0.45, metalness: 0.08, transparent: true, opacity: 1, ...opts });
 }
 
 function ring(radius) {
-    return new THREE.Mesh(new THREE.CylinderGeometry(radius, radius * 1.08, 0.1, 24), mat(NEUTRAL_2));
+    return new THREE.Mesh(new THREE.CylinderGeometry(radius, radius * 1.08, 0.1, 32), mat(NEUTRAL_2, { roughness: 0.6 }));
+}
+
+// Yumshoq, xira "soya" doirasi — obyektni platformaga "tortib" turadi.
+function makeShadowBlob(radius, opacity = 0.32) {
+    const size = 128;
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    grad.addColorStop(0, `rgba(35,30,55,${opacity})`);
+    grad.addColorStop(0.7, `rgba(35,30,55,${opacity * 0.5})`);
+    grad.addColorStop(1, 'rgba(35,30,55,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size, size);
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false });
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(radius * 2, radius * 2), material);
+    mesh.rotation.x = -Math.PI / 2;
+    return mesh;
+}
+
+// Dumaloq burchakli tekis shakl (platforma uchun).
+function roundedRectShape(w, h, r) {
+    const shape = new THREE.Shape();
+    const x = -w / 2, y = -h / 2;
+    shape.moveTo(x + r, y);
+    shape.lineTo(x + w - r, y);
+    shape.quadraticCurveTo(x + w, y, x + w, y + r);
+    shape.lineTo(x + w, y + h - r);
+    shape.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    shape.lineTo(x + r, y + h);
+    shape.quadraticCurveTo(x, y + h, x, y + h - r);
+    shape.lineTo(x, y + r);
+    shape.quadraticCurveTo(x, y, x + r, y);
+    return shape;
 }
 
 function buildIcon(key) {
@@ -161,10 +196,36 @@ export class Orb3D {
         this.camera.position.set(5.2, 4.6, 5.2);
         this.camera.lookAt(0, 0.3, 0);
 
-        // Platforma (kvadrat plita)
-        const platform = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 3.4, 0.16, 4, 1), mat(0xf1f0f8, { roughness: 0.95 }));
+        // Yumshoq orqa fon nuri — sahnani qora bo'shliqdan "asosga tortadi"
+        const backdrop = new THREE.Mesh(
+            new THREE.PlaneGeometry(14, 14),
+            (() => {
+                const size = 256;
+                const canvas = document.createElement('canvas');
+                canvas.width = canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+                grad.addColorStop(0, 'rgba(76,175,125,0.14)');
+                grad.addColorStop(0.55, 'rgba(76,175,125,0.05)');
+                grad.addColorStop(1, 'rgba(76,175,125,0)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, size, size);
+                return new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true, depthWrite: false });
+            })()
+        );
+        backdrop.rotation.x = -Math.PI / 2;
+        backdrop.position.y = -1.1;
+        this.scene.add(backdrop);
+
+        // Platforma — dumaloq burchakli, yengil qavariq (bevel) plita
+        const platformShape = roundedRectShape(6.2, 6.2, 1.1);
+        const platformGeom = new THREE.ExtrudeGeometry(platformShape, {
+            depth: 0.22, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05, bevelSegments: 6, curveSegments: 12
+        });
+        platformGeom.rotateX(-Math.PI / 2);
+        platformGeom.translate(0, -0.26, 0);
+        const platform = new THREE.Mesh(platformGeom, mat(0xf1f0f8, { roughness: 0.55, metalness: 0.04 }));
         platform.rotation.y = Math.PI / 4;
-        platform.position.y = -0.08;
         this.scene.add(platform);
 
         this.nodes = {};
@@ -173,6 +234,10 @@ export class Orb3D {
             const group = buildIcon(key);
             group.position.set(...d.pos);
             this.scene.add(group);
+
+            const shadow = makeShadowBlob(key === 'umumiy' ? 0.95 : 0.62, key === 'umumiy' ? 0.28 : 0.34);
+            shadow.position.set(d.pos[0], 0.005, d.pos[2]);
+            this.scene.add(shadow);
 
             const label = makeLabelSprite(d.label, { height: 0.26 });
             label.position.set(d.pos[0], 1.55, d.pos[2]);
@@ -197,13 +262,16 @@ export class Orb3D {
 
         this.verbSprite = null;
 
-        this.scene.add(new THREE.AmbientLight(0xffffff, 0.75));
-        const key1 = new THREE.DirectionalLight(0xffffff, 0.55);
+        this.scene.add(new THREE.AmbientLight(0xffffff, 0.68));
+        const key1 = new THREE.DirectionalLight(0xffffff, 0.62);
         key1.position.set(4, 6, 3);
         this.scene.add(key1);
-        const fill = new THREE.DirectionalLight(0x4caf7d, 0.15);
+        const fill = new THREE.DirectionalLight(0x4caf7d, 0.18);
         fill.position.set(-3, 2, -3);
         this.scene.add(fill);
+        const rim = new THREE.DirectionalLight(0xffffff, 0.25);
+        rim.position.set(-2, 3, 5);
+        this.scene.add(rim);
 
         this.clock = new THREE.Clock();
         this._resizeObserver = new ResizeObserver(() => this._onResize());
