@@ -3344,31 +3344,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (accItems.length > 0) {
-            const inventory = await _buhGetAccessories();
-            const curUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            let inventory = [];
+            try { inventory = await _buhGetAccessories(); } catch (err) { console.error('Vision kirim (aksessuar) ombor ro\'yxatini olishda xatolik:', err); }
+            let curUser = {};
+            try { curUser = JSON.parse(localStorage.getItem('currentUser') || '{}'); } catch (err) { console.warn('currentUser JSON buzilgan:', err); }
             const operator = (curUser.full_name || curUser.username || 'BUXGALTERIYA').toUpperCase();
             for (const it of accItems) {
-                const finalCategory = it.category && it.category !== '' ? it.category : "Boshqa...";
-                const matched = inventory.find(inv => (inv.name || '').toLowerCase() === it.name.toLowerCase());
-                if (matched) {
-                    const patch = { qty: (Number(matched.qty) || 0) + it.qty, spec: it.spec, category: finalCategory };
-                    if (it.price > 0) patch.price = it.price;
-                    await romixBuhUpdate('romix_accessories', ROMIX_BUH_KEYS.accessories, matched.id, patch);
-                    matched.qty = patch.qty;
-                } else {
-                    const newItem = { id: 'ACC-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), name: it.name, category: finalCategory, qty: it.qty, unit: it.unit, spec: it.spec, price: it.price || 0 };
-                    await romixBuhInsert('romix_accessories', ROMIX_BUH_KEYS.accessories, newItem);
-                    inventory.push(newItem);
+                try {
+                    const finalCategory = it.category && it.category !== '' ? it.category : "Boshqa...";
+                    const matched = inventory.find(inv => (inv.name || '').toLowerCase() === String(it.name || '').toLowerCase());
+                    if (matched) {
+                        const patch = { qty: (Number(matched.qty) || 0) + it.qty, spec: it.spec, category: finalCategory };
+                        if (it.price > 0) patch.price = it.price;
+                        await romixBuhUpdate('romix_accessories', ROMIX_BUH_KEYS.accessories, matched.id, patch);
+                        matched.qty = patch.qty;
+                    } else {
+                        const newItem = { id: 'ACC-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), name: it.name, category: finalCategory, qty: it.qty, unit: it.unit, spec: it.spec, price: it.price || 0 };
+                        await romixBuhInsert('romix_accessories', ROMIX_BUH_KEYS.accessories, newItem);
+                        inventory.push(newItem);
+                    }
+                    const now = new Date();
+                    const timeStr = now.toLocaleDateString('uz-UZ') + ' ' + now.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+                    await romixBuhInsert('romix_accessories_history', 'romix_accessories_history_log', {
+                        id: 'HIST-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+                        timestamp: timeStr,
+                        action: 'Rasmdan Kirim (AI) 📷',
+                        details: `"${it.name}" mahsulotidan ${it.qty.toLocaleString()} ${it.unit} rasm orqali (AI) kirim qilindi. Kategoriya: ${finalCategory}.`,
+                        operator: operator
+                    });
+                } catch (err) {
+                    console.error('Vision kirim (aksessuar) xatolik:', it.name, err);
                 }
-                const now = new Date();
-                const timeStr = now.toLocaleDateString('uz-UZ') + ' ' + now.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
-                await romixBuhInsert('romix_accessories_history', 'romix_accessories_history_log', {
-                    id: 'HIST-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-                    timestamp: timeStr,
-                    action: 'Rasmdan Kirim (AI) 📷',
-                    details: `"${it.name}" mahsulotidan ${it.qty.toLocaleString()} ${it.unit} rasm orqali (AI) kirim qilindi. Kategoriya: ${finalCategory}.`,
-                    operator: operator
-                });
             }
         }
 
@@ -3549,30 +3555,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (accItems.length > 0) {
-            const inventory = await _buhGetAccessories();
-            const curUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            let inventory = [];
+            try { inventory = await _buhGetAccessories(); } catch (err) { console.error('Vision chiqim (aksessuar) ombor ro\'yxatini olishda xatolik:', err); }
+            let curUser = {};
+            try { curUser = JSON.parse(localStorage.getItem('currentUser') || '{}'); } catch (err) { console.warn('currentUser JSON buzilgan:', err); }
             const operator = (curUser.full_name || curUser.username || 'BUXGALTERIYA').toUpperCase();
             for (const it of accItems) {
-                const matched = inventory.find(inv => (inv.name || '').toLowerCase() === it.name.toLowerCase());
-                if (!matched) { notFound.push(it.name); continue; }
+                try {
+                    const matched = inventory.find(inv => (inv.name || '').toLowerCase() === String(it.name || '').toLowerCase());
+                    if (!matched) { notFound.push(it.name); continue; }
 
-                const currentQty = Number(matched.qty) || 0;
-                if (currentQty < it.qty) insufficient.push(`${it.name} (bor: ${currentQty}, so'ralgan: ${it.qty})`);
-                const newQty = Math.max(0, currentQty - it.qty);
+                    const currentQty = Number(matched.qty) || 0;
+                    if (currentQty < it.qty) insufficient.push(`${it.name} (bor: ${currentQty}, so'ralgan: ${it.qty})`);
+                    const newQty = Math.max(0, currentQty - it.qty);
 
-                await romixBuhUpdate('romix_accessories', ROMIX_BUH_KEYS.accessories, matched.id, { qty: newQty });
-                matched.qty = newQty;
-                doneCount++;
+                    await romixBuhUpdate('romix_accessories', ROMIX_BUH_KEYS.accessories, matched.id, { qty: newQty });
+                    matched.qty = newQty;
+                    doneCount++;
 
-                const now = new Date();
-                const timeStr = now.toLocaleDateString('uz-UZ') + ' ' + now.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
-                await romixBuhInsert('romix_accessories_history', 'romix_accessories_history_log', {
-                    id: 'HIST-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-                    timestamp: timeStr,
-                    action: 'Rasmdan Chiqim (AI) 📷',
-                    details: `"${it.name}" mahsulotidan ${it.qty.toLocaleString()} ${it.unit} rasm orqali (AI) chiqim qilindi.`,
-                    operator: operator
-                });
+                    const now = new Date();
+                    const timeStr = now.toLocaleDateString('uz-UZ') + ' ' + now.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+                    await romixBuhInsert('romix_accessories_history', 'romix_accessories_history_log', {
+                        id: 'HIST-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+                        timestamp: timeStr,
+                        action: 'Rasmdan Chiqim (AI) 📷',
+                        details: `"${it.name}" mahsulotidan ${it.qty.toLocaleString()} ${it.unit} rasm orqali (AI) chiqim qilindi.`,
+                        operator: operator
+                    });
+                } catch (err) {
+                    console.error('Vision chiqim (aksessuar) xatolik:', it.name, err);
+                }
             }
         }
 
