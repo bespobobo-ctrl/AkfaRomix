@@ -286,22 +286,9 @@
                         </div>
                     </div>
 
-                    <!-- Table Bento Item -->
-                    <div class="bento-item" style="grid-column: span 12; padding: 0; overflow: hidden; border-radius: 20px;">
-                        <div style="overflow-x: auto; width: 100%;">
-                            <table class="v2-table" style="margin: 0; width: 100%;">
-                                <thead>
-                                    <tr>
-                                        <th>Sana / Hujjat №</th>
-                                        <th>Mahsulot nomi</th>
-                                        <th>Harakat turi</th>
-                                        <th>Miqdor / Birlik</th>
-                                        <th style="width: 110px; text-align: center;">Amal</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="historyTable"></tbody>
-                            </table>
-                        </div>
+                    <!-- Cards Grid Container -->
+                    <div id="historyGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:16px; width: 100%; grid-column: span 12;">
+                        <!-- Grouped daily cards will be loaded here -->
                     </div>
                 </div>
 
@@ -517,7 +504,7 @@
                                 <th style="padding:15px; text-align:right;">Narxi</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="invoiceTableBody">
                             <tr>
                                 <td style="padding:20px 15px; border-bottom:1px solid #eee;">
                                     <strong id="invProdName"></strong><br>
