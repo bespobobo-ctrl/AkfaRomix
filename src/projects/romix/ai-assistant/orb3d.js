@@ -1,15 +1,16 @@
-// Korxonaning 3D "xaritasi" — har bir bo'lim alohida tugun. AI qaysi bo'lim haqida
-// ma'lumot olayotgan bo'lsa, kamera o'sha tugunga fokus qiladi va u "jonlanadi"
-// (real ovoz balandligiga reaksiya bilan); qolganlari sokin, xira turadi.
+// Korxonaning "ontologiya" xaritasi — Palantir Foundry uslubidagi izometrik diagramma.
+// Har bir bo'lim tekis, sodda ikonka-shaklidagi 3D obyekt sifatida platformada turadi,
+// nuqtali chiziqlar bilan markazga bog'langan. AI qaysi bo'lim haqida gapirsa — o'sha
+// obyekt va bog'lovchi chiziq yashil rangda yonadi (ovozga ham reaksiya bilan), qolganlari xira turadi.
 import * as THREE from 'three';
 
 export const DEPARTMENTS = {
-    umumiy: { label: 'Umumiy holat', color: 0x3987e5, pos: [0, 0.3, 0] },
-    sotuv: { label: 'Sotuv', color: 0xc9a668, pos: [1.9, 1.05, -0.3] },
-    ombor: { label: 'Ombor', color: 0x4caf7d, pos: [-1.9, 1.05, -0.3] },
-    ishlab: { label: 'Ishlab chiqarish', color: 0x9d7cc9, pos: [1.9, -0.95, -0.7] },
-    xodimlar: { label: 'Xodimlar', color: 0xc0605f, pos: [-1.9, -0.95, -0.7] },
-    buxgalteriya: { label: "Buxgalteriya", color: 0xeda100, pos: [0, -1.9, -1.0] }
+    umumiy: { label: 'Umumiy', pos: [0, 0, 0], verb: null },
+    sotuv: { label: 'Sotuv', pos: [2.15, 0, -1.25], verb: "Buyurtma beradi" },
+    ombor: { label: 'Ombor', pos: [2.15, 0, 1.25], verb: 'Materialni tortadi' },
+    ishlab: { label: 'Ishlab chiqarish', pos: [0, 0, 2.5], verb: 'Ishlab chiqaradi' },
+    xodimlar: { label: 'Xodimlar', pos: [-2.15, 0, 1.25], verb: 'Bajaradi' },
+    buxgalteriya: { label: "Buxgalteriya", pos: [-2.15, 0, -1.25], verb: 'Sarflaydi/to\'laydi' }
 };
 
 const TOOL_DEPARTMENT = {
@@ -23,20 +24,123 @@ const TOOL_DEPARTMENT = {
 };
 export function departmentForTool(name) { return TOOL_DEPARTMENT[name] || 'umumiy'; }
 
-const STATE_PARAMS = {
-    idle: { baseAmp: 0.025, speed: 0.18 },
-    listening: { baseAmp: 0.045, speed: 0.55 },
-    thinking: { baseAmp: 0.075, speed: 1.5 },
-    speaking: { baseAmp: 0.1, speed: 0.9 }
-};
+const STATE_SPEED = { idle: 0.5, listening: 1, thinking: 2.2, speaking: 1.4 };
 
-function pseudoNoise(x, y, z, t) {
-    return (
-        Math.sin(x * 2.1 + t * 0.6) +
-        Math.sin(y * 2.3 + t * 0.5) +
-        Math.sin(z * 1.9 + t * 0.7) +
-        Math.sin((x + y + z) * 1.3 + t * 0.9)
-    ) / 4;
+const ACCENT = 0x4caf7d;
+const NEUTRAL = 0xe4e2f1;
+const NEUTRAL_2 = 0xf4f3fa;
+const DIM = 0x9a97b3;
+
+function mat(color, opts = {}) {
+    return new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: 0.75, metalness: 0.05, transparent: true, opacity: 1, ...opts });
+}
+
+function ring(radius) {
+    return new THREE.Mesh(new THREE.CylinderGeometry(radius, radius * 1.08, 0.1, 24), mat(NEUTRAL_2));
+}
+
+function buildIcon(key) {
+    const group = new THREE.Group();
+    const accent = mat(ACCENT);
+    switch (key) {
+        case 'umumiy': {
+            const base = ring(0.55); base.position.y = 0.05; group.add(base);
+            const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.3, 0.95, 8), accent);
+            tower.position.y = 0.1 + 0.475; group.add(tower);
+            const cap = new THREE.Mesh(new THREE.ConeGeometry(0.26, 0.28, 8), accent);
+            cap.position.y = 0.1 + 0.95 + 0.14; group.add(cap);
+            group.userData.accent = [tower, cap];
+            break;
+        }
+        case 'sotuv': {
+            const base = ring(0.5); base.position.y = 0.05; group.add(base);
+            const shop = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.5, 0.5), accent);
+            shop.position.y = 0.1 + 0.25; group.add(shop);
+            const roof = new THREE.Mesh(new THREE.ConeGeometry(0.44, 0.3, 4), accent.clone());
+            roof.rotation.y = Math.PI / 4; roof.position.y = 0.1 + 0.5 + 0.15; group.add(roof);
+            group.userData.accent = [shop, roof];
+            break;
+        }
+        case 'ombor': {
+            const base = ring(0.56); base.position.y = 0.05; group.add(base);
+            const box = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.4, 0.5), accent);
+            box.position.y = 0.1 + 0.2; group.add(box);
+            const roofL = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.08, 0.56), accent.clone());
+            roofL.position.set(-0.18, 0.1 + 0.4 + 0.16, 0); roofL.rotation.z = 0.35; group.add(roofL);
+            const roofR = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.08, 0.56), accent.clone());
+            roofR.position.set(0.18, 0.1 + 0.4 + 0.16, 0); roofR.rotation.z = -0.35; group.add(roofR);
+            group.userData.accent = [box, roofL, roofR];
+            break;
+        }
+        case 'ishlab': {
+            const base = ring(0.5); base.position.y = 0.05; group.add(base);
+            const post = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.12, 0.42, 10), accent);
+            post.position.y = 0.1 + 0.21; group.add(post);
+            const arm = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 0.1), accent.clone());
+            arm.position.set(0.2, 0.1 + 0.44, 0); group.add(arm);
+            const claw = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 10), mat(NEUTRAL_2));
+            claw.position.set(0.42, 0.1 + 0.44, 0); group.add(claw);
+            group.userData.accent = [post, arm];
+            break;
+        }
+        case 'xodimlar': {
+            const base = ring(0.46); base.position.y = 0.05; group.add(base);
+            const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.17, 0.34, 4, 10), accent);
+            body.position.y = 0.1 + 0.17 + 0.17; group.add(body);
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 14, 14), mat(NEUTRAL_2));
+            head.position.y = 0.1 + 0.34 + 0.17 + 0.15; group.add(head);
+            group.userData.accent = [body];
+            break;
+        }
+        case 'buxgalteriya': {
+            const base = ring(0.54); base.position.y = 0.05; group.add(base);
+            const bank = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.46, 0.5), accent);
+            bank.position.y = 0.1 + 0.23; group.add(bank);
+            const coin = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.045, 10, 22), mat(NEUTRAL_2));
+            coin.rotation.x = Math.PI / 2; coin.position.y = 0.1 + 0.46 + 0.16; group.add(coin);
+            group.userData.accent = [bank];
+            break;
+        }
+    }
+    return group;
+}
+
+function roundRectPath(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+function makeLabelSprite(text, { bg = 'rgba(255,255,255,0.94)', fg = '#2a2a33', height = 0.32 } = {}) {
+    const scale = 3;
+    const measure = document.createElement('canvas').getContext('2d');
+    measure.font = '700 26px Inter, sans-serif';
+    const textW = measure.measureText(text).width;
+    const padX = 18, h = 48;
+    const w = textW + padX * 2;
+    const canvas = document.createElement('canvas');
+    canvas.width = w * scale; canvas.height = h * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+    roundRectPath(ctx, 0, 0, w, h, h / 2);
+    ctx.fillStyle = bg; ctx.fill();
+    ctx.font = '700 26px Inter, sans-serif';
+    ctx.fillStyle = fg;
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, padX, h / 2 + 1);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    const material = new THREE.SpriteMaterial({ map: texture, depthTest: false, transparent: true });
+    const sprite = new THREE.Sprite(material);
+    const aspect = w / h;
+    sprite.scale.set(height * aspect, height, 1);
+    sprite.renderOrder = 10;
+    return sprite;
 }
 
 export class Orb3D {
@@ -52,41 +156,54 @@ export class Orb3D {
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 
         this.scene = new THREE.Scene();
-        this.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
-        this.cameraDefaultPos = new THREE.Vector3(0, 0.4, 7.6);
-        this.camera.position.copy(this.cameraDefaultPos);
-        this.cameraTarget = new THREE.Vector3(0, 0, 0);
+        const viewSize = 5.6;
+        this.camera = new THREE.OrthographicCamera(-viewSize / 2, viewSize / 2, viewSize / 2, -viewSize / 2, 0.1, 100);
+        this.camera.position.set(5.2, 4.6, 5.2);
+        this.camera.lookAt(0, 0.3, 0);
+
+        // Platforma (kvadrat plita)
+        const platform = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 3.4, 0.16, 4, 1), mat(0xf1f0f8, { roughness: 0.95 }));
+        platform.rotation.y = Math.PI / 4;
+        platform.position.y = -0.08;
+        this.scene.add(platform);
 
         this.nodes = {};
+        this.connections = {};
         Object.entries(DEPARTMENTS).forEach(([key, d]) => {
-            const isHub = key === 'umumiy';
-            const geometry = new THREE.IcosahedronGeometry(isHub ? 1 : 0.6, isHub ? 3 : 1);
-            const orig = new Float32Array(geometry.attributes.position.array);
-            const material = new THREE.MeshStandardMaterial({
-                color: d.color, emissive: d.color, emissiveIntensity: 0.22,
-                metalness: 0.32, roughness: 0.4, transparent: true, opacity: 0.92
-            });
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.set(...d.pos);
-            this.scene.add(mesh);
+            const group = buildIcon(key);
+            group.position.set(...d.pos);
+            this.scene.add(group);
 
-            if (!isHub) {
-                const hubPos = new THREE.Vector3(...DEPARTMENTS.umumiy.pos);
-                const lineGeom = new THREE.BufferGeometry().setFromPoints([hubPos, new THREE.Vector3(...d.pos)]);
-                const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.08 });
-                this.scene.add(new THREE.Line(lineGeom, lineMat));
+            const label = makeLabelSprite(d.label, { height: 0.26 });
+            label.position.set(d.pos[0], 1.55, d.pos[2]);
+            this.scene.add(label);
+
+            this.nodes[key] = {
+                group, label, accent: group.userData.accent || [],
+                phase: Math.random() * 10, curScale: key === 'umumiy' ? 1 : 1, curEmissive: 0
+            };
+
+            if (key !== 'umumiy') {
+                const hubPos = new THREE.Vector3(...DEPARTMENTS.umumiy.pos).setY(0.03);
+                const pts = [hubPos, new THREE.Vector3(...d.pos).setY(0.03)];
+                const geom = new THREE.BufferGeometry().setFromPoints(pts);
+                const lmat = new THREE.LineDashedMaterial({ color: DIM, dashSize: 0.09, gapSize: 0.07, transparent: true, opacity: 0.3 });
+                const line = new THREE.Line(geom, lmat);
+                line.computeLineDistances();
+                this.scene.add(line);
+                this.connections[key] = { line, mat: lmat };
             }
-
-            this.nodes[key] = { mesh, orig, pulsePhase: Math.random() * 10, curEmissive: 0.22, curScale: isHub ? 1 : 0.85 };
         });
 
-        this.scene.add(new THREE.AmbientLight(0xffffff, 0.55));
-        const key1 = new THREE.PointLight(0xffffff, 1.3, 24);
-        key1.position.set(3, 3, 6);
+        this.verbSprite = null;
+
+        this.scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+        const key1 = new THREE.DirectionalLight(0xffffff, 0.55);
+        key1.position.set(4, 6, 3);
         this.scene.add(key1);
-        const rim = new THREE.PointLight(0xc9a668, 0.6, 24);
-        rim.position.set(-3, -2, -3);
-        this.scene.add(rim);
+        const fill = new THREE.DirectionalLight(0x4caf7d, 0.15);
+        fill.position.set(-3, 2, -3);
+        this.scene.add(fill);
 
         this.clock = new THREE.Clock();
         this._resizeObserver = new ResizeObserver(() => this._onResize());
@@ -100,17 +217,25 @@ export class Orb3D {
     focus(deptKey) {
         if (!this.nodes[deptKey] || deptKey === this.activeDept) return;
         this.activeDept = deptKey;
-        if (this.onDeptChange) this.onDeptChange(deptKey, DEPARTMENTS[deptKey].label);
+        const def = DEPARTMENTS[deptKey];
+
+        if (this.verbSprite) { this.scene.remove(this.verbSprite); this.verbSprite = null; }
+        if (def.verb) {
+            const mid = new THREE.Vector3(...DEPARTMENTS.umumiy.pos).add(new THREE.Vector3(...def.pos)).multiplyScalar(0.5);
+            mid.y = 0.85;
+            this.verbSprite = makeLabelSprite(def.verb, { bg: 'rgba(76,175,125,0.95)', fg: '#ffffff', height: 0.24 });
+            this.verbSprite.position.copy(mid);
+            this.scene.add(this.verbSprite);
+        }
+        if (this.onDeptChange) this.onDeptChange(deptKey, def.label);
     }
 
-    setState(state) { if (STATE_PARAMS[state]) this.state = state; }
+    setState(state) { if (STATE_SPEED[state]) this.state = state; }
     feedLevel(rms) { this.targetLevel = Math.min(1, Math.max(0, rms * 6)); }
 
     _onResize() {
-        const size = Math.min(this.canvas.clientWidth, this.canvas.clientHeight) || 240;
+        const size = Math.min(this.canvas.clientWidth, this.canvas.clientHeight) || 260;
         this.renderer.setSize(size, size, false);
-        this.camera.aspect = 1;
-        this.camera.updateProjectionMatrix();
     }
 
     _tick() {
@@ -120,45 +245,38 @@ export class Orb3D {
         const t = this.clock.getElapsedTime();
         this.level += (this.targetLevel - this.level) * 0.18;
         this.targetLevel *= 0.88;
-
-        const activeDef = DEPARTMENTS[this.activeDept];
-        const activePos = new THREE.Vector3(...activeDef.pos);
-        const desiredCamPos = this.activeDept === 'umumiy'
-            ? this.cameraDefaultPos
-            : new THREE.Vector3(activePos.x * 0.75, activePos.y * 0.75 + 0.5, activePos.z + 4.6);
-        this.camera.position.lerp(desiredCamPos, 0.035);
-        this.cameraTarget.lerp(activePos, 0.05);
-        this.camera.lookAt(this.cameraTarget);
+        const speed = STATE_SPEED[this.state] || 0.5;
 
         Object.entries(this.nodes).forEach(([key, n]) => {
             const isActive = key === this.activeDept;
-            const isHub = key === 'umumiy';
-            const params = isActive ? (STATE_PARAMS[this.state] || STATE_PARAMS.idle) : STATE_PARAMS.idle;
-            const amp = isActive ? params.baseAmp + this.level * 0.4 : 0.018;
-            const speed = isActive ? params.speed : 0.1;
+            const bob = Math.sin(t * (isActive ? speed * 1.3 : 0.5) + n.phase) * (isActive ? 0.05 + this.level * 0.04 : 0.015);
+            n.group.position.y = bob;
 
-            const positions = n.mesh.geometry.attributes.position;
-            for (let i = 0; i < positions.count; i++) {
-                const ox = n.orig[i * 3], oy = n.orig[i * 3 + 1], oz = n.orig[i * 3 + 2];
-                const noise = pseudoNoise(ox, oy, oz, t * speed + n.pulsePhase);
-                const scale = 1 + noise * amp;
-                positions.setXYZ(i, ox * scale, oy * scale, oz * scale);
-            }
-            positions.needsUpdate = true;
-            n.mesh.geometry.computeVertexNormals();
-            n.mesh.rotation.y += isActive ? 0.006 : 0.0012;
-            n.mesh.rotation.x += isActive ? 0.002 : 0;
+            const targetScale = isActive ? 1.15 + this.level * 0.08 : 1;
+            n.curScale += (targetScale - n.curScale) * 0.08;
+            n.group.scale.setScalar(n.curScale);
 
-            const targetEmissive = isActive ? 0.55 + this.level * 0.6 : (isHub ? 0.2 : 0.14);
-            n.curEmissive += (targetEmissive - n.curEmissive) * 0.08;
-            n.mesh.material.emissiveIntensity = n.curEmissive;
+            const targetEmissive = isActive ? 0.55 + this.level * 0.7 : 0.05;
+            n.curEmissive += (targetEmissive - n.curEmissive) * 0.09;
+            n.accent.forEach(mesh => {
+                mesh.material.emissive = mesh.material.emissive || new THREE.Color(ACCENT);
+                mesh.material.emissive.set(ACCENT);
+                mesh.material.emissiveIntensity = n.curEmissive;
+                mesh.material.opacity = isActive ? 1 : 0.55;
+            });
 
-            const targetScale = isActive ? 1 + this.level * 0.1 : (isHub ? 0.9 : 0.8);
-            n.curScale += (targetScale - n.curScale) * 0.06;
-            n.mesh.scale.setScalar(n.curScale);
-
-            n.mesh.material.opacity = isActive ? 0.95 : 0.55;
+            n.label.material.opacity += ((isActive ? 1 : 0.55) - n.label.material.opacity) * 0.1;
         });
+
+        Object.entries(this.connections).forEach(([key, c]) => {
+            const isActive = key === this.activeDept;
+            c.mat.opacity += ((isActive ? 0.9 : 0.28) - c.mat.opacity) * 0.1;
+            c.mat.color.lerp(new THREE.Color(isActive ? ACCENT : DIM), 0.08);
+        });
+
+        if (this.verbSprite) {
+            this.verbSprite.material.opacity = 0.85 + Math.sin(t * 2) * 0.15;
+        }
 
         this.renderer.render(this.scene, this.camera);
     }
