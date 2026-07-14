@@ -2011,6 +2011,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     window._ojActiveBrand = { profil: 'barchasi', aksesuvar: 'barchasi', qoldiq: 'barchasi', oynak: 'barchasi' };
     window._ojActiveSeries = { profil: 'barchasi', aksesuvar: 'barchasi', qoldiq: 'barchasi', oynak: 'barchasi' };
     window._ojSearchTerm = '';
+    window._ojActivePart = 'barchasi';
+
+    function detectProfileElement(p) {
+        if (!p) return 'Boshqalar';
+        const metaEl = p.metadata?.element;
+        if (metaEl) {
+            const lower = metaEl.toLowerCase().trim();
+            if (lower.includes('kosa') || lower.includes('ramka') || lower.includes('rama')) return 'Kosa';
+            if (lower.includes('qanot') || lower.includes('stvorka') || lower.includes('eshab')) return 'Qanot';
+            if (lower.includes('o\'rta') || lower.includes('impost') || lower.includes('orta')) return 'O\'rta';
+            if (lower.includes('shtapik')) return 'Shtapik';
+            return 'Boshqalar';
+        }
+        const name = (p.product_name || p.name || '').toLowerCase();
+        if (name.includes('kosa') || name.includes('ramka') || name.includes('rama')) return 'Kosa';
+        if (name.includes('qanot') || name.includes('stvorka')) return 'Qanot';
+        if (name.includes('o\'rta') || name.includes('impost') || name.includes('orta')) return 'O\'rta';
+        if (name.includes('shtapik')) return 'Shtapik';
+
+        const desc = (p.description || '').toLowerCase();
+        if (desc.includes('kosa') || desc.includes('ramka') || desc.includes('rama')) return 'Kosa';
+        if (desc.includes('qanot') || desc.includes('stvorka')) return 'Qanot';
+        if (desc.includes('o\'rta') || desc.includes('impost') || desc.includes('orta')) return 'O\'rta';
+        if (desc.includes('shtapik')) return 'Shtapik';
+
+        return 'Boshqalar';
+    }
+
+    window._ojSetProfilePart = function(part) {
+        window._ojActivePart = part;
+        renderOmborJami();
+    };
 
     let tsBrand = null;
     let tsSeries = null;
@@ -2252,31 +2284,229 @@ document.addEventListener('DOMContentLoaded', async () => {
         const isAdmin = user && user.role === 'admin';
 
         if (cat === 'profil') {
-            const rows = items.length ? items.map(p => {
-                const meta = p.metadata || {};
-                const qty = Number(p.stock_quantity) || 0;
-                return `<tr>
-                    <td>${p.product_name || "Noma'lum"}</td>
-                    <td>${meta.brend || '-'}</td>
-                    <td>${meta.seriya || '-'}</td>
-                    <td style="text-align:right;">${meta.uzunligi || '-'}</td>
-                    <td>${meta.shakli || '-'}</td>
-                    <td>${meta.rangi || '-'}</td>
-                    <td style="text-align:right; font-weight:700; color:#00d2ff;">${qty.toLocaleString('uz-UZ')} ${p.unit || ''}</td>
-                    ${isAdmin ? `
-                    <td>
-                        <div style="display:flex; gap:6px; justify-content:center;">
-                            <button class="oj-edit-btn" data-id="${p.id}" style="background:none; border:none; cursor:pointer;" title="Tahrirlash">✏️</button>
-                            <button class="oj-delete-btn" data-id="${p.id}" style="background:none; border:none; cursor:pointer; color:#ff4d4f;" title="O'chirish">🗑️</button>
+            tableWrap.style.background = 'none';
+            tableWrap.style.border = 'none';
+            tableWrap.style.borderRadius = '0';
+            tableWrap.style.overflowX = 'visible';
+
+            // Filter profiles by the active visual part
+            if (window._ojActivePart && window._ojActivePart !== 'barchasi') {
+                items = items.filter(it => detectProfileElement(it) === window._ojActivePart);
+            }
+
+            const activePart = window._ojActivePart || 'barchasi';
+            const kActive = activePart === 'Kosa';
+            const qActive = activePart === 'Qanot';
+            const oActive = activePart === 'O\'rta';
+            const sActive = activePart === 'Shtapik';
+            const allActive = activePart === 'barchasi';
+            const bActive = activePart === 'Boshqalar';
+
+            const blueprintHtml = `
+                <div style="display: grid; grid-template-columns: 1.2fr 2fr; gap: 24px; background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.06); border-radius: 24px; padding: 24px; margin-bottom: 24px; align-items: center; box-shadow: 0 8px 32px rgba(0,0,0,0.2); backdrop-filter: blur(10px); width: 100%; box-sizing: border-box;">
+                    <!-- Left: Interactive Vector Blueprint -->
+                    <div style="background: rgba(0,0,0,0.3); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.04); position: relative; min-height: 220px; box-sizing: border-box;">
+                        <span style="font-size: 0.65rem; color: rgba(255,255,255,0.3); font-weight: 800; letter-spacing: 1px; text-transform: uppercase; position: absolute; top: 12px; left: 15px;">2D CAD Chizma</span>
+                        
+                        <svg viewBox="0 0 240 240" style="width: 170px; height: 170px; filter: drop-shadow(0 0 15px rgba(0,210,255,0.08));">
+                            <!-- Outer Frame (Kosa) -->
+                            <rect x="15" y="15" width="210" height="210" rx="8" fill="none" 
+                                stroke="${kActive ? '#007aff' : 'rgba(255,255,255,0.15)'}" 
+                                stroke-width="${kActive ? 14 : 10}" 
+                                style="cursor: pointer; transition: all 0.3s; stroke-linecap: round;" 
+                                onclick="window._ojSetProfilePart('Kosa')"
+                                onmouseover="this.setAttribute('stroke', '#007aff'); this.setAttribute('stroke-width', '14')"
+                                onmouseout="this.setAttribute('stroke', '${kActive ? '#007aff' : 'rgba(255,255,255,0.15)'}'); this.setAttribute('stroke-width', '${kActive ? 14 : 10}')"
+                                title="Kosa (Frame)" />
+                            
+                            <!-- Mullion / Divider (O'rta) -->
+                            <line x1="120" y1="20" x2="120" y2="220" 
+                                stroke="${oActive ? '#af52de' : 'rgba(255,255,255,0.15)'}" 
+                                stroke-width="${oActive ? 14 : 10}" 
+                                style="cursor: pointer; transition: all 0.3s; stroke-linecap: round;" 
+                                onclick="window._ojSetProfilePart('O\'rta')"
+                                onmouseover="this.setAttribute('stroke', '#af52de'); this.setAttribute('stroke-width', '14')"
+                                onmouseout="this.setAttribute('stroke', '${oActive ? '#af52de' : 'rgba(255,255,255,0.15)'}'); this.setAttribute('stroke-width', '${oActive ? 14 : 10}')"
+                                title="O'rta (Mullion)" />
+
+                            <!-- Left Sash (Qanot) -->
+                            <rect x="30" y="30" width="80" height="180" rx="6" fill="none" 
+                                stroke="${qActive ? '#ff9500' : 'rgba(255,255,255,0.15)'}" 
+                                stroke-width="${qActive ? 10 : 7}" 
+                                style="cursor: pointer; transition: all 0.3s; stroke-linecap: round;" 
+                                onclick="window._ojSetProfilePart('Qanot')"
+                                onmouseover="this.setAttribute('stroke', '#ff9500'); this.setAttribute('stroke-width', '10')"
+                                onmouseout="this.setAttribute('stroke', '${qActive ? '#ff9500' : 'rgba(255,255,255,0.15)'}'); this.setAttribute('stroke-width', '${qActive ? 10 : 7}')"
+                                title="Qanot (Sash)" />
+
+                            <!-- Left Glass Bead (Shtapik) -->
+                            <rect x="40" y="40" width="60" height="160" rx="4" fill="none" 
+                                stroke="${sActive ? '#ffcc00' : 'rgba(255,255,255,0.08)'}" 
+                                stroke-width="${sActive ? 5 : 3}" 
+                                style="cursor: pointer; transition: all 0.3s; stroke-linecap: round;" 
+                                onclick="window._ojSetProfilePart('Shtapik')"
+                                onmouseover="this.setAttribute('stroke', '#ffcc00'); this.setAttribute('stroke-width', '5')"
+                                onmouseout="this.setAttribute('stroke', '${sActive ? '#ffcc00' : 'rgba(255,255,255,0.08)'}'); this.setAttribute('stroke-width', '${sActive ? 5 : 3}')"
+                                title="Shtapik (Glass Bead)" />
+
+                            <!-- Right Glass Bead (Shtapik) -->
+                            <rect x="130" y="30" width="80" height="180" rx="4" fill="none" 
+                                stroke="${sActive ? '#ffcc00' : 'rgba(255,255,255,0.08)'}" 
+                                stroke-width="${sActive ? 5 : 3}" 
+                                style="cursor: pointer; transition: all 0.3s; stroke-linecap: round;" 
+                                onclick="window._ojSetProfilePart('Shtapik')"
+                                onmouseover="this.setAttribute('stroke', '#ffcc00'); this.setAttribute('stroke-width', '5')"
+                                onmouseout="this.setAttribute('stroke', '${sActive ? '#ffcc00' : 'rgba(255,255,255,0.08)'}'); this.setAttribute('stroke-width', '${sActive ? 5 : 3}')"
+                                title="Shtapik (Glass Bead)" />
+                        </svg>
+                        
+                        <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 10px; font-weight: 500; text-align: center;">Chizmadan elementni bosing ☝️</div>
+                    </div>
+
+                    <!-- Right: Bento Filter Grid -->
+                    <div style="display: flex; flex-direction: column; gap: 10px; justify-content: center; box-sizing: border-box;">
+                        <h4 style="margin: 0 0 5px 0; color: #fff; font-weight: 800; font-size: 1.05rem;">Profil Qismlari bo'yicha saralash</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; box-sizing: border-box;">
+                            <!-- All Parts Card -->
+                            <div onclick="window._ojSetProfilePart('barchasi')" style="background: ${allActive ? 'rgba(52, 199, 89, 0.08)' : 'rgba(255,255,255,0.01)'}; border: 1px solid ${allActive ? '#34c759' : 'rgba(255,255,255,0.05)'}; border-radius: 16px; padding: 12px; cursor: pointer; transition: all 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.04)'" onmouseleave="this.style.background='${allActive ? 'rgba(52, 199, 89, 0.08)' : 'rgba(255,255,255,0.01)'}'">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                                    <span style="font-size: 1.15rem; color: #34c759;">📋</span>
+                                    <span style="font-weight: 700; color: #fff; font-size: 0.85rem;">Barchasi</span>
+                                </div>
+                                <span style="font-size: 0.68rem; color: rgba(255,255,255,0.45);">Barcha profillar to'plami</span>
+                            </div>
+
+                            <!-- Frame Card -->
+                            <div onclick="window._ojSetProfilePart('Kosa')" style="background: ${kActive ? 'rgba(0, 122, 255, 0.08)' : 'rgba(255,255,255,0.01)'}; border: 1px solid ${kActive ? '#007aff' : 'rgba(255,255,255,0.05)'}; border-radius: 16px; padding: 12px; cursor: pointer; transition: all 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.04)'" onmouseleave="this.style.background='${kActive ? 'rgba(0, 122, 255, 0.08)' : 'rgba(255,255,255,0.01)'}'">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                                    <span style="font-size: 1.15rem; color: #007aff;">🔲</span>
+                                    <span style="font-weight: 700; color: #fff; font-size: 0.85rem;">Kosa / Ramka</span>
+                                </div>
+                                <span style="font-size: 0.68rem; color: rgba(255,255,255,0.45);">Ramani qamrab turuvchi qism</span>
+                            </div>
+
+                            <!-- Sash Card -->
+                            <div onclick="window._ojSetProfilePart('Qanot')" style="background: ${qActive ? 'rgba(255, 149, 0, 0.08)' : 'rgba(255,255,255,0.01)'}; border: 1px solid ${qActive ? '#ff9500' : 'rgba(255,255,255,0.05)'}; border-radius: 16px; padding: 12px; cursor: pointer; transition: all 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.04)'" onmouseleave="this.style.background='${qActive ? 'rgba(255, 149, 0, 0.08)' : 'rgba(255,255,255,0.01)'}'">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                                    <span style="font-size: 1.15rem; color: #ff9500;">🚪</span>
+                                    <span style="font-weight: 700; color: #fff; font-size: 0.85rem;">Qanot / Stvorka</span>
+                                </div>
+                                <span style="font-size: 0.68rem; color: rgba(255,255,255,0.45);">Ochilib-yopiluvchi bargi</span>
+                            </div>
+
+                            <!-- Mullion Card -->
+                            <div onclick="window._ojSetProfilePart('O\'rta')" style="background: ${oActive ? 'rgba(175, 82, 222, 0.08)' : 'rgba(255,255,255,0.01)'}; border: 1px solid ${oActive ? '#af52de' : 'rgba(255,255,255,0.05)'}; border-radius: 16px; padding: 12px; cursor: pointer; transition: all 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.04)'" onmouseleave="this.style.background='${oActive ? 'rgba(175, 82, 222, 0.08)' : 'rgba(255,255,255,0.01)'}'">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                                    <span style="font-size: 1.15rem; color: #af52de;">➖</span>
+                                    <span style="font-weight: 700; color: #fff; font-size: 0.85rem;">O'rta / Impost</span>
+                                </div>
+                                <span style="font-size: 0.68rem; color: rgba(255,255,255,0.45);">Divider / Bo'luvchi profil</span>
+                            </div>
+
+                            <!-- Shtapik Card -->
+                            <div onclick="window._ojSetProfilePart('Shtapik')" style="background: ${sActive ? 'rgba(255, 204, 0, 0.08)' : 'rgba(255,255,255,0.01)'}; border: 1px solid ${sActive ? '#ffcc00' : 'rgba(255,255,255,0.05)'}; border-radius: 16px; padding: 12px; cursor: pointer; transition: all 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.04)'" onmouseleave="this.style.background='${sActive ? 'rgba(255, 204, 0, 0.08)' : 'rgba(255,255,255,0.01)'}'">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                                    <span style="font-size: 1.15rem; color: #ffcc00;">🥢</span>
+                                    <span style="font-weight: 700; color: #fff; font-size: 0.85rem;">Shtapik / Bead</span>
+                                </div>
+                                <span style="font-size: 0.68rem; color: rgba(255,255,255,0.45);">Oynani mahkamlovchi chiziq</span>
+                            </div>
+
+                            <!-- Others Card -->
+                            <div onclick="window._ojSetProfilePart('Boshqalar')" style="background: ${bActive ? 'rgba(142, 142, 147, 0.08)' : 'rgba(255,255,255,0.01)'}; border: 1px solid ${bActive ? '#8e8e93' : 'rgba(255,255,255,0.05)'}; border-radius: 16px; padding: 12px; cursor: pointer; transition: all 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.04)'" onmouseleave="this.style.background='${bActive ? 'rgba(142, 142, 147, 0.08)' : 'rgba(255,255,255,0.01)'}'">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                                    <span style="font-size: 1.15rem; color: #8e8e93;">⚙️</span>
+                                    <span style="font-weight: 700; color: #fff; font-size: 0.85rem;">Boshqalar</span>
+                                </div>
+                                <span style="font-size: 0.68rem; color: rgba(255,255,255,0.45);">Dekor, ulagich va boshqalar</span>
+                            </div>
                         </div>
-                    </td>` : ''}
-                </tr>`;
-            }).join('') : `<tr><td colspan="${isAdmin ? 8 : 7}" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Mahsulot topilmadi</td></tr>`;
-            tableWrap.innerHTML = `<table class="v2-table"><thead><tr>
-                <th>Mahsulot</th><th>Brend</th><th>Seriya</th><th style="text-align:right;">Uzunligi (mm)</th><th>Shakli</th><th>Rangi</th>
-                <th style="text-align:right;">Miqdor</th>
-                ${isAdmin ? '<th style="text-align:center;">Harakat</th>' : ''}
-            </tr></thead><tbody>${rows}</tbody></table>`;
+                    </div>
+                </div>
+            `;
+
+            let cardsHtml = '';
+            if (items.length === 0) {
+                cardsHtml = `<div style="grid-column: 1 / -1; text-align: center; padding: 50px; color: rgba(255,255,255,0.3); font-weight: 700; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.08); border-radius: 20px;">Ushbu bo'limda mahsulotlar topilmadi.</div>`;
+            } else {
+                items.forEach(p => {
+                    const meta = p.metadata || {};
+                    const qty = Number(p.stock_quantity) || 0;
+                    const pPart = detectProfileElement(p);
+
+                    let partColor = '#8e8e93';
+                    let partLabel = 'Boshqa';
+                    if (pPart === 'Kosa') { partColor = '#007aff'; partLabel = 'Kosa'; }
+                    else if (pPart === 'Qanot') { partColor = '#ff9500'; partLabel = 'Qanot'; }
+                    else if (pPart === 'O\'rta') { partColor = '#af52de'; partLabel = 'O\'rta'; }
+                    else if (pPart === 'Shtapik') { partColor = '#ffcc00'; partLabel = 'Shtapik'; }
+
+                    const qtyColor = qty < 10 ? '#ff4d4f' : '#00ff88';
+
+                    let displayName = p.product_name || "Noma'lum";
+                    const b = meta.brend || '';
+                    const s = meta.seriya || '';
+                    if (b) displayName = displayName.replace(new RegExp(b, 'gi'), '');
+                    if (s) displayName = displayName.replace(new RegExp(s, 'gi'), '');
+                    displayName = displayName.replace(/·/g, '').replace(/\s+/g, ' ').trim();
+                    if (!displayName) displayName = p.product_name;
+
+                    cardsHtml += `
+                        <div class="oj-profile-card" style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.06); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 12px; transition: all 0.3s; position: relative; overflow: hidden; box-sizing: border-box;" onmouseenter="this.style.transform='translateY(-4px)'; this.style.borderColor='${partColor}'; this.style.boxShadow='0 8px 24px ${partColor}11';" onmouseleave="this.style.transform='translateY(0)'; this.style.borderColor='rgba(255,255,255,0.06)'; this.style.boxShadow='none';">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 0.68rem; font-weight: 800; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; background: ${partColor}18; color: ${partColor}; border: 1px solid ${partColor}33;">
+                                    ${partLabel}
+                                </span>
+                                <span style="font-size: 0.68rem; color: rgba(255,255,255,0.3); font-family: monospace;">#${p.id.slice(0, 8).toUpperCase()}</span>
+                            </div>
+
+                            <div>
+                                <h4 style="margin: 0 0 4px 0; font-size: 0.95rem; font-weight: 800; color: #fff; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${p.product_name}">${displayName}</h4>
+                                <span style="font-size: 0.76rem; color: rgba(255,255,255,0.4); font-weight: 600; display: block;">${meta.brend || '-'} • ${meta.seriya || '-'}</span>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border-top: 1px dashed rgba(255,255,255,0.06); padding-top: 10px;">
+                                <div>
+                                    <span style="font-size: 0.62rem; color: rgba(255,255,255,0.35); text-transform: uppercase; display: block; margin-bottom: 2px;">Uzunligi</span>
+                                    <span style="font-size: 0.78rem; color: #fff; font-weight: 700;">📏 ${meta.uzunligi || '-'} mm</span>
+                                </div>
+                                <div>
+                                    <span style="font-size: 0.62rem; color: rgba(255,255,255,0.35); text-transform: uppercase; display: block; margin-bottom: 2px;">Shakli</span>
+                                    <span style="font-size: 0.78rem; color: #fff; font-weight: 700;">💠 ${meta.shakli || '-'}</span>
+                                </div>
+                                <div>
+                                    <span style="font-size: 0.62rem; color: rgba(255,255,255,0.35); text-transform: uppercase; display: block; margin-bottom: 2px;">Rangi</span>
+                                    <span style="font-size: 0.78rem; color: #fff; font-weight: 700;">🎨 ${meta.rangi || '-'}</span>
+                                </div>
+                                <div>
+                                    <span style="font-size: 0.62rem; color: rgba(255,255,255,0.35); text-transform: uppercase; display: block; margin-bottom: 2px;">Rang turi</span>
+                                    <span style="font-size: 0.74rem; color: ${partColor}; font-weight: 700;">✨ ${meta.rangTuri || '-'}</span>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.06); padding-top: 12px; margin-top: 4px;">
+                                <div>
+                                    <span style="font-size: 0.62rem; color: rgba(255,255,255,0.45); display: block; text-transform: uppercase; margin-bottom: 2px;">Zaxira qoldig'i</span>
+                                    <span style="font-size: 1.05rem; font-weight: 900; color: ${qtyColor};">${qty.toLocaleString('uz-UZ')} ${p.unit || ''}</span>
+                                </div>
+                                
+                                ${isAdmin ? `
+                                <div style="display: flex; gap: 6px;">
+                                    <button class="oj-edit-btn" data-id="${p.id}" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; transition: 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.1)'" onmouseleave="this.style.background='rgba(255,255,255,0.03)'" title="Tahrirlash">✏️</button>
+                                    <button class="oj-delete-btn" data-id="${p.id}" style="background: rgba(255,77,79,0.05); border: 1px solid rgba(255,77,79,0.15); border-radius: 10px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; color: #ff4d4f; transition: 0.2s;" onmouseenter="this.style.background='rgba(255,77,79,0.15)'" onmouseleave="this.style.background='rgba(255,77,79,0.05)'" title="O'chirish">🗑️</button>
+                                </div>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            tableWrap.innerHTML = `
+                ${blueprintHtml}
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; width: 100%;">
+                    ${cardsHtml}
+                </div>
+            `;
         } else if (cat === 'aksesuvar') {
             const rows = items.length ? items.map(a => {
                 const qty = Number(a.qty) || 0;
