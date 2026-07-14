@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Elements
     const inventoryTable = document.getElementById('inventoryTable');
-    const historyTable = document.getElementById('historyTable');
+    const historyGrid = document.getElementById('historyGrid');
     const sections = document.querySelectorAll('.warehouse-section');
     const navButtons = document.querySelectorAll('.nav-icon, .tab-btn');
 
@@ -656,8 +656,45 @@ document.addEventListener('DOMContentLoaded', async () => {
     let _histCache = [];
     let _histActiveType = 'barchasi';
 
+    function _groupTransactionsIntoDocuments(rows) {
+        const docs = [];
+        const sorted = [...rows].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        
+        sorted.forEach(tx => {
+            const txTime = new Date(tx.created_at).getTime();
+            let foundDoc = docs.find(doc => {
+                if (doc.type !== tx.type) return false;
+                const docTime = new Date(doc.created_at).getTime();
+                const timeDiff = Math.abs(docTime - txTime);
+                if (timeDiff > 3000) return false;
+                
+                const orderIdMatchTx = tx.note ? tx.note.match(/#([a-fA-F0-9-]{8,})/i) : null;
+                const orderIdMatchDoc = doc.note ? doc.note.match(/#([a-fA-F0-9-]{8,})/i) : null;
+                
+                if (orderIdMatchTx && orderIdMatchDoc) {
+                    return orderIdMatchTx[1] === orderIdMatchDoc[1];
+                }
+                if (orderIdMatchTx || orderIdMatchDoc) return false;
+                return true;
+            });
+            
+            if (foundDoc) {
+                foundDoc.items.push(tx);
+            } else {
+                docs.push({
+                    id: tx.id,
+                    created_at: tx.created_at,
+                    type: tx.type,
+                    note: tx.note || '',
+                    items: [tx]
+                });
+            }
+        });
+        return docs;
+    }
+
     async function loadHistory() {
-        historyTable.innerHTML = '<tr><td colspan="5" style="text-align:center;">Yuklanmoqda...</td></tr>';
+        if (historyGrid) historyGrid.innerHTML = '<div style="text-align:center; color:var(--adm-text-sec); padding:20px; grid-column:1/-1;">Yuklanmoqda...</div>';
         const { data, error } = await supabase
             .from('romix_transactions')
             .select(`*, romix_inventory(product_name, unit)`)
@@ -665,7 +702,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (error) {
             console.error("History loading error:", error);
-            historyTable.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Tarixni yuklashda xatolik!</td></tr>';
+            if (historyGrid) historyGrid.innerHTML = '<div style="text-align:center; color:red; padding:20px; grid-column:1/-1;">Tarixni yuklashda xatolik!</div>';
             return;
         }
         _histCache = data || [];
@@ -699,6 +736,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function renderHistoryTable() {
+        if (!historyGrid) return;
         let rows = _histCache;
 
         if (_histActiveType !== 'barchasi') {
@@ -719,31 +757,125 @@ document.addEventListener('DOMContentLoaded', async () => {
             rows = rows.filter(tx => new Date(tx.created_at) <= to);
         }
 
-        historyTable.innerHTML = '';
+        historyGrid.innerHTML = '';
         if (rows.length === 0) {
-            historyTable.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Filtrga mos yozuv topilmadi</td></tr>';
+            historyGrid.innerHTML = '<div style="text-align:center; padding:20px; color:var(--adm-text-sec); grid-column:1/-1;">Filtrga mos yozuv topilmadi</div>';
             return;
         }
-        rows.forEach(tx => {
-            const date = new Date(tx.created_at).toLocaleString();
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><small>${date}</small><br><strong>#${tx.id.slice(0, 8)}</strong></td>
-                <td>${tx.romix_inventory?.product_name || 'O\'chirilgan mahsulot'}</td>
-                <td><span style="color:${tx.type === 'IN' ? '#007c52' : '#ff4d4f'}; font-weight:700;">${tx.type === 'IN' ? 'KIRIM' : 'CHIQIM'}</span></td>
-                <td>${tx.quantity} ${tx.romix_inventory?.unit || ''}</td>
-                <td>
-                    <button class="view-inv-btn" data-tx='${JSON.stringify(tx)}' style="background:#eee; border:none; padding:5px 12px; border-radius:10px; cursor:pointer;">👁️ Ko'rish</button>
-                </td>
-            `;
-            historyTable.appendChild(tr);
+
+        const docs = _groupTransactionsIntoDocuments(rows);
+        const byDay = {};
+        docs.forEach(doc => {
+            const dayKey = new Date(doc.created_at).toISOString().slice(0, 10);
+            if (!byDay[dayKey]) byDay[dayKey] = [];
+            byDay[dayKey].push(doc);
         });
 
-        document.querySelectorAll('.view-inv-btn').forEach(b => {
-            b.onclick = () => {
-                const tx = JSON.parse(b.dataset.tx);
-                showInvoice(tx);
-            };
+        Object.keys(byDay).sort((a, b) => b.localeCompare(a)).forEach(dayKey => {
+            const dayDocs = byDay[dayKey];
+            const dayDate = new Date(dayKey);
+            const dayLabel = dayDate.toLocaleDateString('uz-UZ', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+
+            let dayDocCount = dayDocs.length;
+            let dayItemCount = 0;
+            const dayUnitMap = {};
+            dayDocs.forEach(doc => {
+                doc.items.forEach(tx => {
+                    const qty = Number(tx.quantity) || 0;
+                    const unit = tx.romix_inventory?.unit || 'dona';
+                    dayItemCount += 1;
+                    dayUnitMap[unit] = (dayUnitMap[unit] || 0) + qty;
+                });
+            });
+            const dayUnitStr = Object.entries(dayUnitMap).map(([u, v]) => `${v.toLocaleString('uz-UZ')} ${u}`).join(' • ');
+
+            let accentColor = '#00d2ff';
+            let accentRgba = 'rgba(0, 210, 255, 0.04)';
+            let accentBorder = 'rgba(0, 210, 255, 0.15)';
+            if (_histActiveType === 'IN') {
+                accentColor = '#00ff88';
+                accentRgba = 'rgba(0, 255, 136, 0.04)';
+                accentBorder = 'rgba(0, 255, 136, 0.15)';
+            } else if (_histActiveType === 'OUT') {
+                accentColor = '#ff4d4f';
+                accentRgba = 'rgba(255, 77, 79, 0.04)';
+                accentBorder = 'rgba(255, 77, 79, 0.15)';
+            }
+
+            const hasIn = dayDocs.some(d => d.type === 'IN');
+            const hasOut = dayDocs.some(d => d.type === 'OUT');
+            let pdfButtonsHtml = '';
+            if (hasIn) {
+                pdfButtonsHtml += `<button onclick="window.downloadDailyReportPdf('IN', '${dayKey}')" class="btn-glass" style="padding: 6px 12px; border-radius: 10px; font-size: 0.78rem; font-weight: 700; cursor: pointer; border-color: rgba(16, 185, 129, 0.2); color: #10b981; background: rgba(16, 185, 129, 0.08); display: inline-flex; align-items: center; gap: 6px; height: auto; line-height: 1;">📥 Kirim PDF</button>`;
+            }
+            if (hasOut) {
+                pdfButtonsHtml += `<button onclick="window.downloadDailyReportPdf('OUT', '${dayKey}')" class="btn-glass" style="padding: 6px 12px; border-radius: 10px; font-size: 0.78rem; font-weight: 700; cursor: pointer; border-color: rgba(239, 68, 68, 0.2); color: #ff4d4f; background: rgba(239, 68, 68, 0.08); display: inline-flex; align-items: center; gap: 6px; height: auto; margin-left: 6px; line-height: 1;">📤 Chiqim PDF</button>`;
+            }
+
+            const banner = document.createElement('div');
+            banner.style.cssText = 'grid-column: 1 / -1; margin-top: 20px; margin-bottom: 8px;';
+            banner.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; background:${accentRgba}; border:1px solid ${accentBorder}; border-left:5px solid ${accentColor}; border-radius:18px; padding:14px 20px;">
+                    <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+                        <span style="font-size:1.5rem;">📅</span>
+                        <div>
+                            <div style="font-size:0.88rem; font-weight:800; color:#fff; margin-bottom:2px;">${dayLabel}</div>
+                            <div style="font-size:0.74rem; color:rgba(255,255,255,0.5);">${dayDocCount} ta hujjat • ${dayItemCount} ta pozitsiya • Jami: <strong style="color:${accentColor};">${dayUnitStr || '—'}</strong></div>
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                        ${pdfButtonsHtml}
+                    </div>
+                </div>
+            `;
+            historyGrid.appendChild(banner);
+
+            dayDocs.forEach(doc => {
+                const docTime = new Date(doc.created_at).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+                const isKirim = doc.type === 'IN';
+                const docColor = isKirim ? '#00ff88' : '#ff4d4f';
+                const isSingle = doc.items.length === 1;
+                
+                let titleText = '';
+                let itemsPreview = '';
+                if (isSingle) {
+                    const tx = doc.items[0];
+                    titleText = tx.romix_inventory?.product_name || "O'chirilgan mahsulot";
+                    itemsPreview = `<strong style="color:#fff;">${tx.quantity} ${tx.romix_inventory?.unit || ''}</strong>`;
+                } else {
+                    titleText = `${isKirim ? '📦 Guruhli Kirim' : '📦 Guruhli Chiqim'} (${doc.items.length} xil)`;
+                    const prev = doc.items.slice(0, 2).map(tx => `• ${(tx.romix_inventory?.product_name || 'Mahsulot').slice(0, 20)}: ${tx.quantity} ${tx.romix_inventory?.unit || ''}`);
+                    if (doc.items.length > 2) prev.push(`+ yana ${doc.items.length - 2} ta...`);
+                    itemsPreview = `<div style="font-size:0.74rem; color:rgba(255,255,255,0.45); display:flex; flex-direction:column; gap:2px;">${prev.join('<br>')}</div>`;
+                }
+
+                const card = document.createElement('div');
+                card.className = 'buh-tx-card';
+                card.style.cssText = `background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-left:4px solid ${docColor}; border-radius:16px; padding:16px; cursor:pointer; transition:all 0.25s; display:flex; flex-direction:column; gap:10px; box-shadow:0 4px 15px rgba(0,0,0,0.15);`;
+                
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:0.72rem; color:rgba(255,255,255,0.4); font-weight:700;">#${doc.id.slice(0, 8).toUpperCase()}</span>
+                        <span style="font-size:0.72rem; color:rgba(255,255,255,0.4);">🕐 ${docTime}</span>
+                    </div>
+                    <div style="font-weight:800; color:#fff; font-size:0.95rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${titleText.replace(/"/g, '&quot;')}">${titleText}</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed rgba(255,255,255,0.06); padding-top:10px; margin-top:4px;">
+                        <div>
+                            <span style="font-size:0.7rem; color:rgba(255,255,255,0.45); display:block; text-transform:uppercase; margin-bottom:2px;">Miqdori</span>
+                            ${itemsPreview}
+                        </div>
+                        <button class="view-doc-card-btn" style="background:${docColor}22; border:none; color:${docColor}; padding:6px 12px; border-radius:10px; cursor:pointer; font-weight:700; font-size:0.78rem;">👁️ Ko'rish</button>
+                    </div>
+                    ${doc.note && isSingle ? `<div style="font-size:0.72rem; color:rgba(255,255,255,0.35); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; background:rgba(0,0,0,0.15); padding:4px 8px; border-radius:6px;">📝 ${doc.note.replace(/"/g, '&quot;')}</div>` : ''}
+                `;
+                
+                const openFn = () => showInvoice(doc);
+                card.onclick = openFn;
+                const btn = card.querySelector('.view-doc-card-btn');
+                btn.onclick = (e) => { e.stopPropagation(); openFn(); };
+
+                historyGrid.appendChild(card);
+            });
         });
     }
 
@@ -824,27 +956,67 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    function showInvoice(tx, directProduct = null) {
-        const prod = directProduct || tx.romix_inventory || { product_name: "Mahsulot", unit: "" };
+    function showInvoice(docOrTx, directProduct = null) {
+        let docObj;
+        if (docOrTx && docOrTx.items) {
+            docObj = docOrTx;
+        } else {
+            const tx = docOrTx;
+            tx.romix_inventory = directProduct || tx.romix_inventory;
+            docObj = {
+                id: tx.id,
+                created_at: tx.created_at,
+                type: tx.type,
+                items: [tx]
+            };
+        }
 
-        document.getElementById('invNumber').textContent = `No. ${tx.id ? tx.id.slice(0, 8).toUpperCase() : 'NEW'}`;
-        document.getElementById('invDate').textContent = new Date(tx.created_at || Date.now()).toLocaleDateString();
-        document.getElementById('invProdName').textContent = prod.product_name || "Mahsulot";
-        document.getElementById('invQty').textContent = tx.quantity;
-        document.getElementById('invUnit').textContent = prod.unit || "";
+        const isKirim = docObj.type === 'IN';
+        document.getElementById('invNumber').textContent = `No. ${docObj.id ? docObj.id.slice(0, 8).toUpperCase() : 'NEW'}`;
+        document.getElementById('invDate').textContent = new Date(docObj.created_at || Date.now()).toLocaleDateString();
 
-        // Show supplier info
+        const titleEl = document.querySelector('#printArea h1');
+        if (titleEl) {
+            titleEl.textContent = isKirim ? 'Kirim Hujjati' : 'Chiqim Hujjati';
+        }
+
+        const tbody = document.getElementById('invoiceTableBody');
+        if (tbody) {
+            tbody.innerHTML = '';
+            docObj.items.forEach(tx => {
+                const prod = tx.romix_inventory || { product_name: "Mahsulot", unit: "" };
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="padding:20px 15px; border-bottom:1px solid #eee;">
+                        <strong>${prod.product_name || "Mahsulot"}</strong><br>
+                        <small style="color:#888;">${tx.note || ""}</small>
+                    </td>
+                    <td style="padding:20px 15px; border-bottom:1px solid #eee; text-align:center; font-weight:700;">
+                        ${tx.quantity}
+                    </td>
+                    <td style="padding:20px 15px; border-bottom:1px solid #eee; text-align:center;">
+                        ${prod.unit || ""}
+                    </td>
+                    <td style="padding:20px 15px; border-bottom:1px solid #eee; text-align:right; font-weight:700; color:#007c52;">
+                        —
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        const firstTx = docObj.items[0] || {};
         if (document.getElementById('invSupplier')) {
-            document.getElementById('invSupplier').textContent = tx.supplier_name || "---";
-            document.getElementById('invPhone').textContent = tx.supplier_phone || "";
+            document.getElementById('invSupplier').textContent = firstTx.supplier_name || "---";
+            document.getElementById('invPhone').textContent = firstTx.supplier_phone || "";
         }
 
         if (document.getElementById('invSubInfo')) {
-            document.getElementById('invSubInfo').textContent = tx.note || "";
+            document.getElementById('invSubInfo').textContent = firstTx.note || "";
         }
 
         // QR
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=ROMIX-TXID-${tx.id || 'NEW'}`;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=ROMIX-TXID-${docObj.id || 'NEW'}`;
         document.getElementById('invQR').innerHTML = `<img src="${qrUrl}" style="width:130px;">`;
 
         mainApp.classList.add('hidden');
@@ -2465,8 +2637,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     window.renderOmborUmumiyFilter = renderOmborUmumiyFilter;
 
-    window.downloadDailyReportPdf = function(type) {
-        const dateVal = document.getElementById('histDateFrom').value || new Date().toISOString().slice(0, 10);
+    window.downloadDailyReportPdf = function(type, dayKey = null) {
+        const dateVal = dayKey || document.getElementById('histDateFrom').value || new Date().toISOString().slice(0, 10);
         const targetDate = new Date(dateVal);
         
         const filteredTx = _histCache.filter(tx => {
