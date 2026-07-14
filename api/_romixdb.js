@@ -472,8 +472,87 @@ export async function orderLifecycle(query) {
     };
 }
 
+// ── Anomaliyalar: statistik o'rtachadan sezilarli chetga chiqqan g'ayrioddiy naqshlar ──
+// (eslatmalar() qattiq chegaralar bo'yicha ishlaydi — bu esa nisbiy og'ishlarni topadi)
+export async function anomaliyalar() {
+    const [exp, orders, batches, brigadeMembers, brigades] = await Promise.all([
+        sbGet("romix_expenses", "select=date,category,amount&order=date.desc"),
+        sbGet("sales_orders", "select=customer_name,total_price,paid_amount"),
+        sbGet("romix_production_batches", "select=employee_id,quantity&quantity=gt.0"),
+        sbGet("romix_brigade_members", "select=employee_id,brigade_id"),
+        sbGet("romix_brigades", "select=id,name")
+    ]);
+
+    const natijalar = { harajat_sakrashi: [], mijoz_tolov_ogishi: [], brigada_sustligi: [] };
+
+    // A. Harajat toifasi sakrashi: shu oy vs oxirgi 3 oy o'rtachasi
+    const now = new Date();
+    const thisMonth = monthKey(now.toISOString());
+    const prevMonths = [];
+    for (let i = 1; i <= 3; i++) prevMonths.push(new Date(now.getFullYear(), now.getMonth() - i, 1).toISOString().slice(0, 7));
+
+    const byCategoryThis = {}, byCategoryPrev = {};
+    exp.forEach(e => {
+        const cat = e.category || "Boshqa";
+        const mk = monthKey(e.date);
+        if (mk === thisMonth) byCategoryThis[cat] = (byCategoryThis[cat] || 0) + (Number(e.amount) || 0);
+        else if (prevMonths.includes(mk)) byCategoryPrev[cat] = (byCategoryPrev[cat] || 0) + (Number(e.amount) || 0);
+    });
+    Object.keys(byCategoryThis).forEach(cat => {
+        const thisVal = byCategoryThis[cat];
+        const avgPrev = (byCategoryPrev[cat] || 0) / 3;
+        if (avgPrev > 0 && thisVal > avgPrev * 1.5 && thisVal > 200000) {
+            natijalar.harajat_sakrashi.push({ kategoriya: cat, shu_oy: fmt(thisVal), oldingi_ortacha: fmt(avgPrev), ozgarish_foizda: Math.round(((thisVal - avgPrev) / avgPrev) * 100) });
+        }
+    });
+
+    // B. Mijozlar to'lov intizomi og'ishi: kimning to'lanmagan ulushi o'rtachadan sezilarli yuqori
+    const byCustomer = {};
+    orders.forEach(o => {
+        const name = o.customer_name || "Noma'lum";
+        if (!byCustomer[name]) byCustomer[name] = { jami: 0, tolangan: 0, soni: 0 };
+        byCustomer[name].jami += Number(o.total_price) || 0;
+        byCustomer[name].tolangan += Number(o.paid_amount) || 0;
+        byCustomer[name].soni += 1;
+    });
+    const withMultiple = Object.entries(byCustomer).filter(([, v]) => v.soni >= 2 && v.jami > 0);
+    if (withMultiple.length >= 3) {
+        const ratios = withMultiple.map(([, v]) => Math.max(0, v.jami - v.tolangan) / v.jami);
+        const avgRatio = ratios.reduce((s, r) => s + r, 0) / ratios.length;
+        withMultiple.forEach(([name, v]) => {
+            const qoldiq = Math.max(0, v.jami - v.tolangan);
+            const ratio = qoldiq / v.jami;
+            if (avgRatio > 0 && ratio > avgRatio * 1.5 && qoldiq > 500000) {
+                natijalar.mijoz_tolov_ogishi.push({ mijoz: name, tolanmagan_ulush_foizda: Math.round(ratio * 100), ortacha_foizda: Math.round(avgRatio * 100), qoldiq: fmt(qoldiq) });
+            }
+        });
+    }
+
+    // C. Brigada samaradorligi og'ishi: ishlab chiqargani o'rtachadan sezilarli past
+    const empToBrigade = {};
+    brigadeMembers.forEach(m => { empToBrigade[m.employee_id] = m.brigade_id; });
+    const bMap = Object.fromEntries(brigades.map(b => [b.id, b.name]));
+    const brigadeTotals = {};
+    batches.forEach(b => {
+        const bid = empToBrigade[b.employee_id];
+        if (!bid) return;
+        brigadeTotals[bid] = (brigadeTotals[bid] || 0) + (Number(b.quantity) || 0);
+    });
+    const totals = Object.values(brigadeTotals);
+    if (totals.length >= 2) {
+        const avg = totals.reduce((s, v) => s + v, 0) / totals.length;
+        Object.entries(brigadeTotals).forEach(([bid, total]) => {
+            if (avg > 0 && total < avg * 0.5) {
+                natijalar.brigada_sustligi.push({ brigada: bMap[bid] || "Noma'lum", ishlab_chiqargani: total, ortacha: Math.round(avg) });
+            }
+        });
+    }
+
+    return natijalar;
+}
+
 export default {
     overview, ordersReport, warehouse, expensesReport, debtsReport, hrReport, addExpense, payDebt, payOrder,
     searchOrder, searchProduct, searchEmployee, productionReport, brigadesReport, materialRequestsReport, excelReport,
-    trendReport, eslatmalar, topMijozlar, customer360, employee360, orderLifecycle
+    trendReport, eslatmalar, topMijozlar, customer360, employee360, orderLifecycle, anomaliyalar
 };

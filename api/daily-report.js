@@ -105,14 +105,17 @@ export default async function handler(req, res) {
         // 7. Diqqatga molik narsalar bo'lsa — AI orqali qisqa proaktiv ogohlantirish tuzish
         let alertMsg = null;
         try {
-            const [alerts, trend] = await Promise.all([db.eslatmalar(), db.trendReport(2)]);
+            const [alerts, trend, anomalies] = await Promise.all([db.eslatmalar(), db.trendReport(2), db.anomaliyalar()]);
             const hasAlerts = (alerts.muddati_otgan_qarzlar || []).length
                 || (alerts.kechikkan_buyurtmalar || []).length
                 || (alerts.kam_qolgan_mahsulotlar || []).length;
+            const hasAnomalies = (anomalies.harajat_sakrashi || []).length
+                || (anomalies.mijoz_tolov_ogishi || []).length
+                || (anomalies.brigada_sustligi || []).length;
             const change = trend.shu_oy_savdo_ozgarishi_foizda;
             const badTrend = typeof change === "number" && change <= -15;
-            if ((hasAlerts || badTrend) && ai.isConfigured()) {
-                const prompt = `Quyida "AKFA Romix" korxonasining bugungi diqqatga molik ma'lumotlari (JSON) berilgan. Shu asosida egasiga QISQA (4-6 qatordan oshmasin), professional, harakatga chorlaydigan ogohlantirish xabari yoz. Telegram uchun HTML formatda (faqat <b>qalin</b>), "🔔 <b>Diqqat kerak</b>" bilan boshla. Faqat haqiqiy muammolarni ayt, bo'sh gap yozma.\n\nMA'LUMOT: ${JSON.stringify({ alerts, savdo_ozgarishi_foizda: change })}`;
+            if ((hasAlerts || hasAnomalies || badTrend) && ai.isConfigured()) {
+                const prompt = `Quyida "AKFA Romix" korxonasining bugungi diqqatga molik ma'lumotlari va nostandart naqshlari (JSON) berilgan. Shu asosida egasiga QISQA (4-6 qatordan oshmasin), professional, harakatga chorlaydigan ogohlantirish xabari yoz. Telegram uchun HTML formatda (faqat <b>qalin</b>), "🔔 <b>Diqqat kerak</b>" bilan boshla. Faqat haqiqiy muammolarni ayt, bo'sh gap yozma.\n\nMA'LUMOT: ${JSON.stringify({ alerts, anomalies, savdo_ozgarishi_foizda: change })}`;
                 alertMsg = await ai.chatText("Sen qisqa va aniq yozadigan biznes maslahatchisan.", prompt);
                 if (alertMsg) alertMsg = alertMsg.trim();
             }
