@@ -1720,6 +1720,37 @@
 
             <!-- Section: Logins (Settings) -->
             <section id="section-logins" class="admin-section romix-sub-section">
+                <style>
+                    .diag-section { margin-bottom: 16px; }
+                    .diag-section:last-child { margin-bottom: 0; }
+                    .diag-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+                    .diag-section-head h4 { margin: 0; font-size: 0.85rem; font-weight: 700; color: var(--adm-text); }
+                    .diag-badge { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.5px; padding: 3px 10px; border-radius: 20px; }
+                    .diag-badge-ok { background: rgba(0,255,136,0.1); color: #00c853; }
+                    .diag-badge-warn { background: rgba(250,187,24,0.12); color: #d68f00; }
+                    .diag-badge-err { background: rgba(255,77,79,0.12); color: #ff4d4f; }
+                    .diag-section-body { display: flex; flex-direction: column; gap: 6px; }
+                    .diag-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: 12px; background: rgba(127,127,127,0.05); }
+                    .diag-row-icon { flex-shrink: 0; font-size: 0.9rem; margin-top: 1px; }
+                    .diag-row-body { min-width: 0; }
+                    .diag-row-title { font-size: 0.78rem; font-weight: 700; color: var(--adm-text); word-break: break-word; }
+                    .diag-row-detail { font-size: 0.68rem; color: var(--adm-text-sec); margin-top: 2px; word-break: break-word; }
+                </style>
+                <div class="bento-card" style="margin-bottom:25px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+                        <div>
+                            <h2 style="font-size:1.1rem; font-weight:700; opacity:0.9; margin:0;">🩺 Tizim Diagnostikasi</h2>
+                            <p style="font-size:0.72rem; color:var(--adm-text-sec); margin-top:4px;">Ma'lumotlar bazasi, JS xatolari, konfiguratsiya va cache-buster holatini tekshiradi</p>
+                        </div>
+                        <button id="diag-run-btn" onclick="window.romixRunDiagnostics()" class="primary-btn"
+                            style="background:linear-gradient(135deg, #00ff88, #00c853); border:none; padding:10px 20px; border-radius:12px; color:#052e16; font-weight:700; cursor:pointer;">
+                            🔍 Diagnostikani ishga tushirish</button>
+                    </div>
+                    <div id="diag-results" style="padding-top:6px;">
+                        <p style="opacity:0.45; font-size:0.8rem; text-align:center; padding:20px 0;">Tekshiruvni boshlash uchun yuqoridagi tugmani bosing.</p>
+                    </div>
+                </div>
+
                 <div style="display: flex; justify-content: space-between; align-items:center; margin-bottom: 20px;">
                     <h2 style="font-size: 1.2rem; font-weight: 700; opacity: 0.9;">Xavfsizlik: Login va Parol</h2>
                     <button id="openAddUserModal" class="primary-btn"
@@ -1836,6 +1867,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <script type="module" src="../autoclapak/js/admin.js?v=6.7"></script>
     <script type="module" src="./tizim_foydalanuvchilari.js"></script>
+    <script type="module" src="./diagnostika.js"></script>
 
     <!-- ⚙️ AUTO CLAPAK: STANOK BATAFSIL MA'LUMOTLAR MODALI -->
     <div id="machineDetailsModal"
