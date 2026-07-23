@@ -2127,6 +2127,182 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+    // --- MAHSULOT HAQIDA TO'LIQ MA'LUMOT VA TARIX MODALI ---
+    window.openProductDetailModal = async function(prodId, cat) {
+        cat = cat || window._ojActiveCategory || 'profil';
+        const data = window._ojData && window._ojData[cat];
+        if (!data || !data.items) return;
+
+        const p = data.items.find(x => String(x.id) === String(prodId));
+        if (!p) return;
+
+        window._activeDetailProd = p;
+        window._activeDetailCat = cat;
+
+        const modal = document.getElementById('prodDetailModal');
+        const badge = document.getElementById('pdCategoryBadge');
+        const nameInput = document.getElementById('pdNameInput');
+        const brandEl = document.getElementById('pdBrand');
+        const seriesEl = document.getElementById('pdSeries');
+        const stockEl = document.getElementById('pdStock');
+        const idEl = document.getElementById('pdId');
+        const firstInEl = document.getElementById('pdFirstIn');
+        const lastInEl = document.getElementById('pdLastIn');
+        const lastOutEl = document.getElementById('pdLastOut');
+        const historyList = document.getElementById('pdHistoryList');
+
+        if (!modal) return;
+
+        const meta = p.metadata || {};
+        const prodName = p.product_name || p.name || "Noma'lum";
+        const brand = meta.brend || p.brand || p.category || '-';
+        const series = meta.seriya || p.series || p.size || '-';
+        const qty = Number(p.stock_quantity ?? p.qty) || 0;
+        const unit = p.unit || 'dona';
+
+        badge.textContent = `${cat.toUpperCase()} — MAHSULOT TAFSILOTLARI`;
+        nameInput.value = prodName;
+        brandEl.textContent = brand;
+        seriesEl.textContent = series;
+        stockEl.textContent = `${qty.toLocaleString('uz-UZ')} ${unit}`;
+        idEl.textContent = p.id ? `#${String(p.id).slice(0, 12).toUpperCase()}` : '—';
+
+        firstInEl.textContent = 'Yuklanmoqda...';
+        lastInEl.textContent = 'Yuklanmoqda...';
+        lastOutEl.textContent = 'Yuklanmoqda...';
+        historyList.innerHTML = '<div style="text-align:center; padding:20px; color:rgba(255,255,255,0.4); font-size:0.85rem;">Harakatlar tarixi yuklanmoqda...</div>';
+
+        modal.classList.remove('hidden');
+
+        try {
+            let query = supabase.from('romix_transactions').select('*').order('created_at', { ascending: false });
+            if (p.id) {
+                query = query.or(`inventory_id.eq.${p.id},material_name.ilike.%${prodName}%`);
+            } else {
+                query = query.ilike('material_name', `%${prodName}%`);
+            }
+
+            const { data: txs, error } = await query.limit(50);
+            if (error) throw error;
+
+            if (!txs || txs.length === 0) {
+                firstInEl.textContent = 'Mavjud emas';
+                lastInEl.textContent = 'Mavjud emas';
+                lastOutEl.textContent = 'Hali ishlatilmagan';
+                historyList.innerHTML = '<div style="text-align:center; padding:20px; color:rgba(255,255,255,0.3); font-size:0.85rem;">Ushbu mahsulot bo\'yicha birorta kirim/chiqim amali topilmadi.</div>';
+                return;
+            }
+
+            const inTxs = txs.filter(t => t.type === 'IN').sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            const outTxs = txs.filter(t => t.type === 'OUT').sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            if (inTxs.length > 0) {
+                const firstInDate = new Date(inTxs[0].created_at);
+                const lastInDate = new Date(inTxs[inTxs.length - 1].created_at);
+                firstInEl.textContent = firstInDate.toLocaleDateString('uz-UZ', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                lastInEl.textContent = lastInDate.toLocaleDateString('uz-UZ', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            } else {
+                firstInEl.textContent = 'Mavjud emas';
+                lastInEl.textContent = 'Mavjud emas';
+            }
+
+            if (outTxs.length > 0) {
+                const lastOutDate = new Date(outTxs[0].created_at);
+                lastOutEl.textContent = lastOutDate.toLocaleDateString('uz-UZ', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            } else {
+                lastOutEl.textContent = 'Hali ishlatilmagan';
+            }
+
+            let historyHtml = txs.map(t => {
+                const isIN = t.type === 'IN';
+                const dateStr = new Date(t.created_at).toLocaleDateString('uz-UZ', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                const typeLabel = isIN ? '📥 Kirim' : '📤 Chiqim';
+                const typeColor = isIN ? '#00ff88' : '#ff4d4f';
+                return `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.05); font-size:0.83rem;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-weight:800; color:${typeColor}; background:${typeColor}15; padding:2px 8px; border-radius:6px; border:1px solid ${typeColor}30;">${typeLabel}</span>
+                            <span style="color:#fff; font-weight:700;">${Number(t.quantity || 0).toLocaleString('uz-UZ')} ${unit}</span>
+                        </div>
+                        <div style="text-align:right;">
+                            <span style="color:rgba(255,255,255,0.5); font-size:0.75rem; display:block;">${dateStr}</span>
+                            <span style="color:rgba(255,255,255,0.3); font-size:0.7rem;">${t.performer_name || 'Tizim'}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            historyList.innerHTML = historyHtml;
+
+        } catch (err) {
+            console.warn('Product details history fetch error:', err);
+            firstInEl.textContent = '—';
+            lastInEl.textContent = '—';
+            lastOutEl.textContent = '—';
+            historyList.innerHTML = '<div style="text-align:center; padding:20px; color:#ff4d4f; font-size:0.85rem;">Tarixni yuklashda xatolik yuz berdi.</div>';
+        }
+    };
+
+    window.saveProductName = async function() {
+        const p = window._activeDetailProd;
+        const cat = window._activeDetailCat || 'profil';
+        const nameInput = document.getElementById('pdNameInput');
+        const saveBtn = document.getElementById('pdSaveNameBtn');
+
+        if (!p || !nameInput) return;
+
+        const newName = nameInput.value.trim();
+        if (!newName) {
+            alert("Mahsulot nomi bo'sh bo'lishi mumkin emas!");
+            return;
+        }
+
+        saveBtn.textContent = "⏳ Saqlanmoqda...";
+        saveBtn.disabled = true;
+
+        try {
+            let table = 'romix_inventory';
+            let nameCol = 'product_name';
+            if (cat === 'aksesuvar') { table = 'romix_accessories'; nameCol = 'name'; }
+            else if (cat === 'qoldiq') { table = 'romix_qoldiq_profillar'; nameCol = 'product_name'; }
+            else if (cat === 'oynak') { table = 'romix_oynak'; nameCol = 'product_name'; }
+
+            const updateObj = {};
+            updateObj[nameCol] = newName;
+
+            const { error } = await supabase.from(table).update(updateObj).eq('id', p.id);
+            if (error) throw error;
+
+            alert("Mahsulot nomi muvaffaqiyatli saqlandi!");
+            
+            p.product_name = newName;
+            p.name = newName;
+
+            document.getElementById('prodDetailModal').classList.add('hidden');
+            if (typeof loadOmborJami === 'function') loadOmborJami();
+
+        } catch (err) {
+            console.error('Mahsulot nomini saqlash xatosi:', err);
+            alert("Xatolik: Nomini saqlab bo'lmadi! " + (err.message || ''));
+        } finally {
+            saveBtn.textContent = "💾 Nomini Saqlash";
+            saveBtn.disabled = false;
+        }
+    };
+
+    // Global Event Delegation for Product Card / Table Row Click
+    document.addEventListener('click', (e) => {
+        const itemEl = e.target.closest('.oj-profile-card, tr[data-prod-id]');
+        if (!itemEl) return;
+        if (e.target.closest('.oj-edit-btn, .oj-delete-btn, .oj-delete-qoldiq-btn, .oj-delete-oynak-btn, button, input')) return;
+
+        const prodId = itemEl.dataset.prodId;
+        const cat = itemEl.dataset.cat || window._ojActiveCategory || 'profil';
+        if (prodId) {
+            window.openProductDetailModal(prodId, cat);
+        }
+    });
+
     let tsBrand = null;
     let tsSeries = null;
 
