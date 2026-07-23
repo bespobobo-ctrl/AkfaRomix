@@ -2127,6 +2127,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+    function safeReplaceString(source, target) {
+        if (!source || !target) return source;
+        try {
+            const escaped = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            return source.replace(new RegExp(escaped, 'gi'), '');
+        } catch (e) {
+            return source;
+        }
+    }
+
     // --- MAHSULOT HAQIDA TO'LIQ MA'LUMOT VA TARIX MODALI ---
     window.openProductDetailModal = async function(prodId, cat) {
         cat = cat || window._ojActiveCategory || 'profil';
@@ -2134,20 +2144,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         let p = null;
         let foundCat = cat;
         if (window._ojData) {
-            if (window._ojData[cat] && window._ojData[cat].items) {
-                p = window._ojData[cat].items.find(x => String(x.id) === String(prodId));
-            }
-            if (!p) {
-                for (const cKey of ['profil', 'aksesuvar', 'qoldiq', 'oynak']) {
-                    if (window._ojData[cKey] && window._ojData[cKey].items) {
-                        p = window._ojData[cKey].items.find(x => String(x.id) === String(prodId));
-                        if (p) { foundCat = cKey; break; }
-                    }
+            for (const cKey of ['profil', 'aksesuvar', 'qoldiq', 'oynak']) {
+                if (window._ojData[cKey] && window._ojData[cKey].items) {
+                    p = window._ojData[cKey].items.find(x => String(x.id) === String(prodId));
+                    if (p) { foundCat = cKey; break; }
                 }
             }
         }
 
-        if (!p && prodId) {
+        if (!p && prodId && typeof supabase !== 'undefined') {
             try {
                 let tbl = 'romix_inventory';
                 if (cat === 'aksesuvar') tbl = 'romix_accessories';
@@ -2161,16 +2166,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
+        const modal = document.getElementById('prodDetailModal');
+        if (!modal) {
+            console.error("prodDetailModal not found in DOM!");
+            return;
+        }
+
         if (!p) {
             console.warn("Product not found for ID:", prodId);
-            return;
+            p = { id: prodId, product_name: "Mahsulot #" + String(prodId).slice(0,8) };
         }
         cat = foundCat;
 
         window._activeDetailProd = p;
         window._activeDetailCat = cat;
 
-        const modal = document.getElementById('prodDetailModal');
         const badge = document.getElementById('pdCategoryBadge');
         const nameInput = document.getElementById('pdNameInput');
         const brandEl = document.getElementById('pdBrand');
@@ -2180,8 +2190,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const lastInEl = document.getElementById('pdLastIn');
         const lastOutEl = document.getElementById('pdLastOut');
         const historyList = document.getElementById('pdHistoryList');
-
-        if (!modal) return;
 
         const meta = p.metadata || {};
         const prodName = p.product_name || p.name || "Noma'lum";
@@ -2204,8 +2212,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (lastOutEl) lastOutEl.textContent = 'Yuklanmoqda...';
         if (historyList) historyList.innerHTML = '<div style="text-align:center; padding:20px; color:rgba(255,255,255,0.4); font-size:0.85rem;">Harakatlar tarixi yuklanmoqda...</div>';
 
-        modal.style.display = 'flex';
-        modal.classList.remove('hidden');
+        // FORCE MODAL DISPLAY FLEX
+        modal.style.setProperty('display', 'flex', 'important');
 
         try {
             let query = supabase.from('romix_transactions').select('*').order('created_at', { ascending: false });
@@ -2337,7 +2345,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (cat === 'qoldiq') { p.series = newSeries; p.length = newSize; }
             if (cat === 'oynak') { p.size = newSize; }
 
-            document.getElementById('prodDetailModal').classList.add('hidden');
+            const m = document.getElementById('prodDetailModal');
+            if (m) m.style.setProperty('display', 'none', 'important');
             if (typeof loadOmborJami === 'function') loadOmborJami();
 
         } catch (err) {
@@ -2357,7 +2366,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const prodId = itemEl.dataset.prodId;
         const cat = itemEl.dataset.cat || window._ojActiveCategory || 'profil';
-        if (prodId) {
+        if (prodId && typeof window.openProductDetailModal === 'function') {
             window.openProductDetailModal(prodId, cat);
         }
     });
@@ -2368,18 +2377,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (closeBtn) {
             closeBtn.onclick = () => {
                 const m = document.getElementById('prodDetailModal');
-                if (m) {
-                    m.style.display = 'none';
-                    m.classList.add('hidden');
-                }
+                if (m) m.style.setProperty('display', 'none', 'important');
             };
         }
         const m = document.getElementById('prodDetailModal');
         if (m) {
             m.onclick = (e) => {
                 if (e.target === m) {
-                    m.style.display = 'none';
-                    m.classList.add('hidden');
+                    m.style.setProperty('display', 'none', 'important');
                 }
             };
         }
@@ -2942,8 +2947,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     let displayName = p.product_name || "Noma'lum";
                     const b = meta.brend || '';
                     const s = meta.seriya || '';
-                    if (b) displayName = displayName.replace(new RegExp(b, 'gi'), '');
-                    if (s) displayName = displayName.replace(new RegExp(s, 'gi'), '');
+                    if (b) displayName = safeReplaceString(displayName, b);
+                    if (s) displayName = safeReplaceString(displayName, s);
                     displayName = displayName.replace(/·/g, '').replace(/\s+/g, ' ').trim();
                     if (!displayName) displayName = p.product_name;
 
