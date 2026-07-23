@@ -2217,9 +2217,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             let query = supabase.from('romix_transactions').select('*').order('created_at', { ascending: false });
-            if (p.id) {
-                query = query.or(`inventory_id.eq.${p.id},material_name.ilike.%${prodName}%`);
-            } else {
+            
+            // Check if prodId is valid UUID before querying inventory_id
+            const isUuid = typeof prodId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(prodId);
+            
+            if (isUuid) {
+                query = query.or(`inventory_id.eq.${prodId},material_name.ilike.%${prodName}%`);
+            } else if (prodName) {
                 query = query.ilike('material_name', `%${prodName}%`);
             }
 
@@ -2280,7 +2284,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (firstInEl) firstInEl.textContent = '—';
             if (lastInEl) lastInEl.textContent = '—';
             if (lastOutEl) lastOutEl.textContent = '—';
-            if (historyList) historyList.innerHTML = '<div style="text-align:center; padding:20px; color:#ff4d4f; font-size:0.85rem;">Tarixni yuklashda xatolik yuz berdi.</div>';
+            if (historyList) historyList.innerHTML = '<div style="text-align:center; padding:20px; color:rgba(255,255,255,0.4); font-size:0.85rem;">Harakatlar tarixi topilmadi.</div>';
         }
     };
 
@@ -2335,8 +2339,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 table = 'romix_inventory';
                 updateObj.product_name = newName;
                 const newMeta = { ...(p.metadata || {}) };
-                if (newSeries) newMeta.seriya = newSeries;
-                if (newSize) newMeta.uzunligi = newSize;
+                newMeta.seriya = newSeries;
+                newMeta.uzunligi = newSize;
                 updateObj.metadata = newMeta;
             }
 
@@ -2356,7 +2360,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
 
-            // Update local object memory & UI state
+            // Update local memory objects (p)
             p.product_name = newName;
             p.name = newName;
             if (!p.metadata) p.metadata = {};
@@ -2365,11 +2369,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (cat === 'qoldiq') { p.series = newSeries; p.length = newSize; }
             if (cat === 'oynak') { p.size = newSize; }
 
+            // Also update item inside window._ojData[cat].items array
+            if (window._ojData && window._ojData[cat] && window._ojData[cat].items) {
+                const itemIndex = window._ojData[cat].items.findIndex(it => String(it.id) === String(p.id));
+                if (itemIndex !== -1) {
+                    const targetItem = window._ojData[cat].items[itemIndex];
+                    targetItem.product_name = newName;
+                    targetItem.name = newName;
+                    if (!targetItem.metadata) targetItem.metadata = {};
+                    targetItem.metadata.seriya = newSeries;
+                    targetItem.metadata.uzunligi = newSize;
+                    if (cat === 'qoldiq') { targetItem.series = newSeries; targetItem.length = newSize; }
+                    if (cat === 'oynak') { targetItem.size = newSize; }
+                }
+            }
+
+            // Re-render main warehouse UI
+            if (typeof renderOmborJami === 'function') renderOmborJami();
+            if (typeof populateBrandOptions === 'function') populateBrandOptions();
+
             const m = document.getElementById('prodDetailModal');
             if (m) m.style.setProperty('display', 'none', 'important');
 
-            alert("Mahsulot ma'lumotlari muvaffaqiyatli saqlandi!");
-            if (typeof loadOmborJami === 'function') loadOmborJami();
+            alert("✅ Mahsulot ma'lumotlari (nomi, seriyasi, o'lchami) muvaffaqiyatli saqlandi!");
 
         } catch (err) {
             console.error('Saqlash xatosi:', err);
