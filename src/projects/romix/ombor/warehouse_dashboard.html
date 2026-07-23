@@ -44,6 +44,7 @@
                 ↩️</div>
             <div class="nav-icon active" data-tab="inventory" title="Ombor Qoldig'i">📦</div>
             <div class="nav-icon" data-tab="orders" title="Olingan Buyurtmalar">📋</div>
+            <div class="nav-icon" data-tab="requests" title="Murojaatlar va Bildirishnomalar">💬</div>
             <div class="nav-icon" data-tab="staff" title="Xodimlar">👥</div>
             <div class="nav-icon" data-tab="history" title="Amallar Tarixi">📑</div>
             <div class="nav-icon" id="logoutBtn">🚪</div>
@@ -58,6 +59,7 @@
                     </button>
                     <button class="nav-link-item tab-btn active" data-tab="inventory">Ombor Holati</button>
                     <button class="nav-link-item tab-btn" data-tab="orders">Olingan Buyurtmalar</button>
+                    <button class="nav-link-item tab-btn" data-tab="requests">Murojaatlar 💬</button>
                     <button class="nav-link-item tab-btn" data-tab="staff">Xodimlar (Romix)</button>
                     <button class="nav-link-item tab-btn" data-tab="history">Hujjatlar Tarixi</button>
                 </div>
@@ -341,6 +343,52 @@
                 </div>
                 <div id="omborOrdersGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; width: 100%;">
                     <!-- Buyurtmalar kartochkalari shu yerda ko'rinadi -->
+                </div>
+            </section>
+
+            <!-- SECTION: MUROJAATLAR (Requests & Notifications) -->
+            <section id="requests-view" class="warehouse-section hidden">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; flex-wrap: wrap; gap: 15px;">
+                    <div>
+                        <h1 style="font-size: 2.2rem; font-weight: 600;">Murojaatlar va Bildirishnomalar</h1>
+                        <p style="color: var(--adm-text-sec);">Sexlar, ustalar va ombor xodimlari o'rtasidagi so'rovlar, material yetishmovchiliklari va xabarnomalar</p>
+                    </div>
+                    <button id="openNewRequestModalBtn" onclick="document.getElementById('createRequestModal').style.setProperty('display', 'flex', 'important')" class="primary-btn" style="background:#00d2ff; color:#000; border:none; padding:12px 25px; border-radius:15px; font-weight:800; cursor:pointer; display:flex; align-items:center; gap:8px;">
+                        <span>💬</span> Yangi Murojaat Yuborish
+                    </button>
+                </div>
+
+                <!-- Stats summary row -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--adm-border); border-radius: 18px; padding: 18px;">
+                        <span style="font-size:0.75rem; color:var(--adm-text-sec); text-transform:uppercase; font-weight:700; display:block; margin-bottom:4px;">💬 Jami Murojaatlar</span>
+                        <span id="reqTotalCount" style="font-size:1.8rem; font-weight:900; color:#fff;">0</span>
+                    </div>
+                    <div style="background: rgba(255,77,79,0.05); border: 1px solid rgba(255,77,79,0.2); border-radius: 18px; padding: 18px;">
+                        <span style="font-size:0.75rem; color:#ff4d4f; text-transform:uppercase; font-weight:700; display:block; margin-bottom:4px;">🔴 Kutilmoqda</span>
+                        <span id="reqPendingCount" style="font-size:1.8rem; font-weight:900; color:#ff4d4f;">0</span>
+                    </div>
+                    <div style="background: rgba(245,158,11,0.05); border: 1px solid rgba(245,158,11,0.2); border-radius: 18px; padding: 18px;">
+                        <span style="font-size:0.75rem; color:#f59e0b; text-transform:uppercase; font-weight:700; display:block; margin-bottom:4px;">🟡 Jarayonda</span>
+                        <span id="reqProgressCount" style="font-size:1.8rem; font-weight:900; color:#f59e0b;">0</span>
+                    </div>
+                    <div style="background: rgba(0,255,136,0.05); border: 1px solid rgba(0,255,136,0.2); border-radius: 18px; padding: 18px;">
+                        <span style="font-size:0.75rem; color:#00ff88; text-transform:uppercase; font-weight:700; display:block; margin-bottom:4px;">🟢 Bajarildi</span>
+                        <span id="reqResolvedCount" style="font-size:1.8rem; font-weight:900; color:#00ff88;">0</span>
+                    </div>
+                </div>
+
+                <!-- Filter Tabs -->
+                <div style="display:flex; gap:10px; margin-bottom:20px; border-bottom:1px solid var(--adm-border); padding-bottom:12px; flex-wrap:wrap;">
+                    <div class="om-brand-chip active" data-req-filter="all" style="cursor:pointer; height:auto; padding:8px 16px;">🗂️ Barchasi</div>
+                    <div class="om-brand-chip" data-req-filter="pending" style="cursor:pointer; height:auto; padding:8px 16px;">🔴 Kutilmoqda</div>
+                    <div class="om-brand-chip" data-req-filter="in_progress" style="cursor:pointer; height:auto; padding:8px 16px;">🟡 Jarayonda</div>
+                    <div class="om-brand-chip" data-req-filter="resolved" style="cursor:pointer; height:auto; padding:8px 16px;">🟢 Bajarildi</div>
+                </div>
+
+                <!-- Requests Grid / Container -->
+                <div id="requestsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; width: 100%;">
+                    <!-- Dynamic request cards loaded via JS -->
                 </div>
             </section>
         </main>
@@ -784,6 +832,89 @@
         </div>
     </div>
 
+    <!-- Modal: Yangi Murojaat Yuborish -->
+    <div id="createRequestModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:2500; align-items:center; justify-content:center; padding:20px;">
+        <div class="user-form-modal" style="width: 540px; background:var(--adm-surface); border:1px solid rgba(255,255,255,0.1); border-radius:24px; padding:25px; box-shadow:0 20px 50px rgba(0,0,0,0.6); box-sizing:border-box;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid var(--adm-border); padding-bottom:15px;">
+                <h3 style="margin:0; font-size:1.3rem; color:#fff; display:flex; align-items:center; gap:10px;">💬 Yangi Murojaat Yuborish</h3>
+                <button id="closeCreateReqModalBtn" onclick="document.getElementById('createRequestModal').style.setProperty('display', 'none', 'important')" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; font-size:1.2rem; border-radius:12px; width:36px; height:36px; cursor:pointer; display:flex; align-items:center; justify-content:center;">✕</button>
+            </div>
+            
+            <div style="display:flex; flex-direction:column; gap:15px;">
+                <div>
+                    <label style="font-size:0.8rem; font-weight:700; color:var(--adm-text-sec); display:block; margin-bottom:6px;">📌 Murojaat Turi</label>
+                    <select id="reqTypeInput" class="form-input-v2" style="width:100%; margin:0;">
+                        <option value="⚡ Material Yetishmovchiligi">⚡ Material Yetishmovchiligi</option>
+                        <option value="📦 Yangi Material So'rovi">📦 Yangi Material So'rovi</option>
+                        <option value="🛠️ Texnik / Uskuna Murojaati">🛠️ Texnik / Uskuna Murojaati</option>
+                        <option value="ℹ️ Umumiy Xabarnoma">ℹ️ Umumiy Xabarnoma</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:700; color:var(--adm-text-sec); display:block; margin-bottom:6px;">🔥 Muhimlik Darajasi</label>
+                    <select id="reqPriorityInput" class="form-input-v2" style="width:100%; margin:0;">
+                        <option value="high">🔴 Yuqori (Shoshilinch)</option>
+                        <option value="medium" selected>🟡 O'rta</option>
+                        <option value="low">🔵 Oddiy</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:700; color:var(--adm-text-sec); display:block; margin-bottom:6px;">📝 Murojaat Sarlavhasi</label>
+                    <input type="text" id="reqTitleInput" class="form-input-v2" placeholder="Masalan: Sex #2 uchun 6000 seriya profil yetmayapti..." style="width:100%; margin:0; box-sizing:border-box;">
+                </div>
+                <div>
+                    <label style="font-size:0.8rem; font-weight:700; color:var(--adm-text-sec); display:block; margin-bottom:6px;">💬 Batafsil Izoh / Tafsilot</label>
+                    <textarea id="reqDescInput" class="form-input-v2" rows="4" placeholder="Murojaat sababi va tafsilotlarini yozing..." style="width:100%; margin:0; box-sizing:border-box; resize:vertical; font-family:inherit;"></textarea>
+                </div>
+                <button id="submitRequestBtn" onclick="window.saveNewRequest()" style="background:#00d2ff; color:#000; border:none; padding:14px; border-radius:14px; font-weight:800; font-size:1rem; cursor:pointer; margin-top:10px;">
+                    🚀 Murojaatni Yuborish
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Romix AI Assistant Floating Button -->
+    <div id="romixAiFloatBtn" onclick="window.toggleRomixAiDrawer()" style="position:fixed; bottom:25px; right:25px; background:linear-gradient(135deg, #00d2ff, #007c52); color:#fff; border-radius:30px; padding:12px 22px; font-weight:800; font-size:0.9rem; cursor:pointer; box-shadow:0 10px 30px rgba(0,210,255,0.4); display:flex; align-items:center; gap:10px; z-index:3000; transition:all 0.3s;" onmouseenter="this.style.transform='scale(1.05)';" onmouseleave="this.style.transform='scale(1)';">
+        <span style="font-size:1.3rem;">🤖</span>
+        <span>Romix AI Yordamchi</span>
+        <span style="background:#00ff88; border-radius:50%; width:10px; height:10px; display:inline-block; box-shadow:0 0 8px #00ff88;"></span>
+    </div>
+
+    <!-- Romix AI Chat Drawer Window -->
+    <div id="romixAiDrawer" style="display:none; position:fixed; bottom:85px; right:25px; width:390px; height:530px; background:var(--adm-surface); border:1px solid rgba(0,210,255,0.3); border-radius:24px; box-shadow:0 20px 60px rgba(0,0,0,0.8); backdrop-filter:blur(16px); z-index:3001; flex-direction:column; overflow:hidden; box-sizing:border-box;">
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg, rgba(0,210,255,0.2), rgba(0,124,82,0.2)); padding:15px 20px; border-bottom:1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:1.8rem; background:rgba(0,210,255,0.15); padding:6px; border-radius:12px; border:1px solid rgba(0,210,255,0.3);">🤖</span>
+                <div>
+                    <span style="font-weight:800; color:#fff; font-size:0.95rem; display:block;">Romix AI Ombor Asistenti</span>
+                    <span style="font-size:0.7rem; color:#00ff88; font-weight:700;">🟢 Faol (Online)</span>
+                </div>
+            </div>
+            <button onclick="window.toggleRomixAiDrawer()" style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;">✕</button>
+        </div>
+
+        <!-- Quick AI Suggestion Chips -->
+        <div style="padding:10px 15px; background:rgba(0,0,0,0.2); border-bottom:1px solid rgba(255,255,255,0.05); display:flex; gap:6px; overflow-x:auto; white-space:nowrap;">
+            <button onclick="window.sendAiQuickPrompt('Zaxirasi kam mahsulotlarni ko\'rsat')" style="background:rgba(255,77,79,0.1); border:1px solid rgba(255,77,79,0.3); color:#ff4d4f; padding:5px 12px; border-radius:10px; font-size:0.75rem; font-weight:700; cursor:pointer;">⚡ Kam zaxira</button>
+            <button onclick="window.sendAiQuickPrompt('Ombor umumiy holatini tahlil qil')" style="background:rgba(0,210,255,0.1); border:1px solid rgba(0,210,255,0.3); color:#00d2ff; padding:5px 12px; border-radius:10px; font-size:0.75rem; font-weight:700; cursor:pointer;">📊 Ombor tahlili</button>
+            <button onclick="window.sendAiQuickPrompt('Profil va pachka hisobi bo\'yicha yordam')" style="background:rgba(0,255,136,0.1); border:1px solid rgba(0,255,136,0.3); color:#00ff88; padding:5px 12px; border-radius:10px; font-size:0.75rem; font-weight:700; cursor:pointer;">💡 Hisoblash</button>
+        </div>
+
+        <!-- Message History Container -->
+        <div id="aiChatHistory" style="flex:1; padding:15px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; font-size:0.85rem;">
+            <div style="background:rgba(0,210,255,0.08); border:1px solid rgba(0,210,255,0.2); border-radius:14px; padding:12px; color:#fff; align-self:flex-start; max-width:88%; line-height:1.4;">
+                👋 Assalomu alaykum! Men <strong>Romix AI</strong> Ombor tahlilchisi va yordamchisiman. Ombordagi mahsulotlar, qoldiqlar, kam qolgan tovarlar hamda kirim-chiqimlar haqida menga savol berishingiz mumkin!
+            </div>
+        </div>
+
+        <!-- Chat Input Footer -->
+        <div style="padding:12px 15px; background:rgba(0,0,0,0.3); border-top:1px solid rgba(255,255,255,0.1); display:flex; gap:8px;">
+            <input type="text" id="aiInputText" placeholder="Savol yoki buyruq yozing..." style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); border-radius:12px; padding:8px 12px; color:#fff; font-size:0.85rem; outline:none;" onkeydown="if(event.key==='Enter') window.submitAiMessage()">
+            <button onclick="window.submitAiMessage()" style="background:#00d2ff; color:#000; border:none; padding:8px 14px; border-radius:12px; font-weight:800; font-size:0.85rem; cursor:pointer;">Yuborish 🚀</button>
+        </div>
+    </div>
+
     <script>
         // Live pachka → metr calculation
         function updateMetrCalc() {
@@ -812,7 +943,7 @@
         }
     </script>
 
-    <script type="module" src="/src/projects/romix/ombor/warehouse.js?v=2026.07.23_v14"></script>
+    <script type="module" src="/src/projects/romix/ombor/warehouse.js?v=2026.07.23_v15"></script>
 </body>
 
 </html>

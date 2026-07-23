@@ -81,6 +81,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (tabId === 'history') loadHistory();
         if (tabId === 'settings') loadSettings();
         if (tabId === 'orders') loadOrdersConfirmation();
+        if (tabId === 'requests') { if (typeof window.loadRequests === 'function') window.loadRequests(); }
     }
 
     navButtons.forEach(btn => {
@@ -3795,3 +3796,369 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     loadOmborUmumiy();
 });
+
+
+// ═══════════════════════════════════════════════════════════
+// 💬 OMBOR MUROJAATLARI (REQUESTS & NOTIFICATIONS SYSTEM)
+// ═══════════════════════════════════════════════════════════
+window._activeReqFilter = 'all';
+
+window.loadRequests = async function() {
+    const grid = document.getElementById('requestsGrid');
+    if (!grid) return;
+
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:30px; color:rgba(255,255,255,0.4);">Murojaatlar yuklanmoqda...</div>';
+
+    let requests = [];
+    try {
+        const { data, error } = await supabase.from('profile_requests').select('*').order('created_at', { ascending: false });
+        if (!error && data) {
+            requests = data.map(r => {
+                const reqObj = r.requested_data || {};
+                return {
+                    id: r.id,
+                    type: reqObj.type || '⚡ Material Yetishmovchiligi',
+                    priority: reqObj.priority || 'medium',
+                    title: reqObj.title || 'Murojaat #' + String(r.id).slice(0, 8),
+                    description: reqObj.description || 'Izoh mavjud emas',
+                    sender: reqObj.sender || 'Sex Usta / Omborchi',
+                    status: r.status || 'pending',
+                    created_at: r.created_at
+                };
+            });
+        }
+    } catch (e) {
+        console.warn("Supabase profile_requests fetch fallback:", e);
+    }
+
+    // Local Storage fallback merge
+    try {
+        const localReqs = JSON.parse(localStorage.getItem('romix_ombor_requests') || '[]');
+        if (localReqs.length) {
+            const existingIds = new Set(requests.map(r => String(r.id)));
+            localReqs.forEach(lr => {
+                if (!existingIds.has(String(lr.id))) {
+                    requests.push(lr);
+                }
+            });
+        }
+    } catch (e) {}
+
+    // Default initial seed data if totally empty
+    if (requests.length === 0) {
+        requests = [
+            {
+                id: 'req-sample-1',
+                type: '⚡ Material Yetishmovchiligi',
+                priority: 'high',
+                title: 'Sex #1: 6000 Penta oq profil yetishmayapti',
+                description: 'Ertangi 40 ta rom tayyorlash uchun kamida 24 dona profil zarur.',
+                sender: 'Xurshid Mullajonov (Brigadir)',
+                status: 'pending',
+                created_at: new Date(Date.now() - 3600000).toISOString()
+            },
+            {
+                id: 'req-sample-2',
+                type: '📦 Yangi Material So\'rovi',
+                priority: 'medium',
+                title: 'Aksessuarlar: Zamok va ilmoqlar zaxirasini to\'ldirish',
+                description: 'Omborda burchak birikmalari kam qoldi.',
+                sender: 'Axror Abdullaev (Omborchi)',
+                status: 'in_progress',
+                created_at: new Date(Date.now() - 86400000).toISOString()
+            }
+        ];
+        try { localStorage.setItem('romix_ombor_requests', JSON.stringify(requests)); } catch (e) {}
+    }
+
+    // Filter tabs setup
+    document.querySelectorAll('[data-req-filter]').forEach(chip => {
+        chip.onclick = () => {
+            document.querySelectorAll('[data-req-filter]').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            window._activeReqFilter = chip.dataset.reqFilter;
+            window.renderRequestsList(requests);
+        };
+    });
+
+    window._cachedRequests = requests;
+    window.renderRequestsList(requests);
+};
+
+window.renderRequestsList = function(requests) {
+    requests = requests || window._cachedRequests || [];
+    const grid = document.getElementById('requestsGrid');
+    if (!grid) return;
+
+    const activeFilter = window._activeReqFilter || 'all';
+    let filtered = requests;
+    if (activeFilter !== 'all') {
+        filtered = requests.filter(r => r.status === activeFilter);
+    }
+
+    // Stats update
+    const totalCount = requests.length;
+    const pendingCount = requests.filter(r => r.status === 'pending').length;
+    const progressCount = requests.filter(r => r.status === 'in_progress').length;
+    const resolvedCount = requests.filter(r => r.status === 'resolved').length;
+
+    if (document.getElementById('reqTotalCount')) document.getElementById('reqTotalCount').textContent = totalCount;
+    if (document.getElementById('reqPendingCount')) document.getElementById('reqPendingCount').textContent = pendingCount;
+    if (document.getElementById('reqProgressCount')) document.getElementById('reqProgressCount').textContent = progressCount;
+    if (document.getElementById('reqResolvedCount')) document.getElementById('reqResolvedCount').textContent = resolvedCount;
+
+    if (!filtered.length) {
+        grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:rgba(255,255,255,0.4); font-size:0.9rem;">Ushbu toifada birorta murojaat topilmadi.</div>';
+        return;
+    }
+
+    grid.innerHTML = filtered.map(r => {
+        const dateStr = new Date(r.created_at).toLocaleDateString('uz-UZ', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        let statusBadge = `<span style="background:rgba(255,77,79,0.15); color:#ff4d4f; border:1px solid rgba(255,77,79,0.3); padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.75rem;">🔴 Kutilmoqda</span>`;
+        if (r.status === 'in_progress') {
+            statusBadge = `<span style="background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3); padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.75rem;">🟡 Jarayonda</span>`;
+        } else if (r.status === 'resolved') {
+            statusBadge = `<span style="background:rgba(0,255,136,0.15); color:#00ff88; border:1px solid rgba(0,255,136,0.3); padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.75rem;">🟢 Bajarildi</span>`;
+        } else if (r.status === 'rejected') {
+            statusBadge = `<span style="background:rgba(142,142,147,0.15); color:#8e8e93; border:1px solid rgba(142,142,147,0.3); padding:4px 10px; border-radius:8px; font-weight:800; font-size:0.75rem;">❌ Rad etildi</span>`;
+        }
+
+        let priorityBadge = `<span style="color:#00d2ff;">🔵 Oddiy</span>`;
+        if (r.priority === 'high') priorityBadge = `<span style="color:#ff4d4f; font-weight:800;">🔴 Shoshilinch</span>`;
+        else if (r.priority === 'medium') priorityBadge = `<span style="color:#f59e0b; font-weight:800;">🟡 O'rta</span>`;
+
+        return `
+            <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:20px; display:flex; flex-direction:column; justify-content:space-between; gap:12px; transition:0.2s;" onmouseenter="this.style.borderColor='rgba(0,210,255,0.4)'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.08)'">
+                <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        ${statusBadge}
+                        ${priorityBadge}
+                    </div>
+                    <div style="font-size:0.75rem; color:#00d2ff; font-weight:800; margin-bottom:4px;">${r.type}</div>
+                    <h4 style="font-size:1.05rem; font-weight:800; color:#fff; margin:0 0 6px 0;">${r.title}</h4>
+                    <p style="font-size:0.83rem; color:rgba(255,255,255,0.65); margin:0 0 12px 0; line-height:1.4;">${r.description}</p>
+                </div>
+
+                <div style="border-top:1px solid rgba(255,255,255,0.06); padding-top:12px;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:rgba(255,255,255,0.45); margin-bottom:12px;">
+                        <span>👤 ${r.sender}</span>
+                        <span>🕒 ${dateStr}</span>
+                    </div>
+
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        ${r.status !== 'resolved' ? `<button onclick="window.updateRequestStatus('${r.id}', 'resolved')" style="flex:1; background:rgba(0,255,136,0.1); border:1px solid rgba(0,255,136,0.3); color:#00ff88; padding:7px; border-radius:10px; font-weight:800; font-size:0.75rem; cursor:pointer;">✅ Bajarildi</button>` : ''}
+                        ${r.status === 'pending' ? `<button onclick="window.updateRequestStatus('${r.id}', 'in_progress')" style="flex:1; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); color:#f59e0b; padding:7px; border-radius:10px; font-weight:800; font-size:0.75rem; cursor:pointer;">🟡 Jarayonga</button>` : ''}
+                        <button onclick="window.deleteRequestItem('${r.id}')" style="background:rgba(255,77,79,0.08); border:1px solid rgba(255,77,79,0.2); color:#ff4d4f; padding:7px 10px; border-radius:10px; font-weight:700; font-size:0.75rem; cursor:pointer;" title="O'chirish">🗑️</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+};
+
+window.saveNewRequest = async function() {
+    const type = document.getElementById('reqTypeInput')?.value;
+    const priority = document.getElementById('reqPriorityInput')?.value;
+    const title = document.getElementById('reqTitleInput')?.value.trim();
+    const desc = document.getElementById('reqDescInput')?.value.trim();
+
+    if (!title) {
+        alert("Murojaat sarlavhasini kiriting!");
+        return;
+    }
+
+    const user = authService.getCurrentUser() || {};
+    const senderName = user.full_name || user.username || 'Ombor Mudiri';
+
+    const newReq = {
+        id: 'req-' + Date.now(),
+        type,
+        priority,
+        title,
+        description: desc || 'Tafsilot yozilmagan',
+        sender: senderName,
+        status: 'pending',
+        created_at: new Date().toISOString()
+    };
+
+    // Try Supabase insert
+    try {
+        await supabase.from('profile_requests').insert({
+            employee_id: user.id || 'ombor-user',
+            requested_data: newReq,
+            status: 'pending'
+        });
+    } catch (e) {
+        console.warn("Supabase request insert fallback:", e);
+    }
+
+    // Local Storage backup
+    try {
+        const localReqs = JSON.parse(localStorage.getItem('romix_ombor_requests') || '[]');
+        localReqs.unshift(newReq);
+        localStorage.setItem('romix_ombor_requests', JSON.stringify(localReqs));
+    } catch (e) {}
+
+    const modal = document.getElementById('createRequestModal');
+    if (modal) modal.style.setProperty('display', 'none', 'important');
+
+    if (document.getElementById('reqTitleInput')) document.getElementById('reqTitleInput').value = '';
+    if (document.getElementById('reqDescInput')) document.getElementById('reqDescInput').value = '';
+
+    alert("✅ Murojaat muvaffaqiyatli yuborildi!");
+    window.loadRequests();
+};
+
+window.updateRequestStatus = async function(id, newStatus) {
+    try {
+        await supabase.from('profile_requests').update({ status: newStatus }).eq('id', id);
+    } catch (e) {}
+
+    try {
+        const localReqs = JSON.parse(localStorage.getItem('romix_ombor_requests') || '[]');
+        const found = localReqs.find(r => String(r.id) === String(id));
+        if (found) {
+            found.status = newStatus;
+            localStorage.setItem('romix_ombor_requests', JSON.stringify(localReqs));
+        }
+    } catch (e) {}
+
+    window.loadRequests();
+};
+
+window.deleteRequestItem = async function(id) {
+    if (!confirm("Ushbu murojaatni o'chirmoqchimisiz?")) return;
+
+    try {
+        await supabase.from('profile_requests').delete().eq('id', id);
+    } catch (e) {}
+
+    try {
+        let localReqs = JSON.parse(localStorage.getItem('romix_ombor_requests') || '[]');
+        localReqs = localReqs.filter(r => String(r.id) !== String(id));
+        localStorage.setItem('romix_ombor_requests', JSON.stringify(localReqs));
+    } catch (e) {}
+
+    window.loadRequests();
+};
+
+
+// ═══════════════════════════════════════════════════════════
+// 🤖 ROMIX AI ASSISTANT (WAREHOUSE AI ENGINE)
+// ═══════════════════════════════════════════════════════════
+window.toggleRomixAiDrawer = function() {
+    const drawer = document.getElementById('romixAiDrawer');
+    if (!drawer) return;
+    const isHidden = drawer.style.display === 'none' || !drawer.style.display;
+    drawer.style.display = isHidden ? 'flex' : 'none';
+    if (isHidden) {
+        const input = document.getElementById('aiInputText');
+        if (input) input.focus();
+    }
+};
+
+window.sendAiQuickPrompt = function(promptText) {
+    const input = document.getElementById('aiInputText');
+    if (input) input.value = promptText;
+    window.submitAiMessage();
+};
+
+window.submitAiMessage = function() {
+    const input = document.getElementById('aiInputText');
+    const history = document.getElementById('aiChatHistory');
+    if (!input || !history) return;
+
+    const text = input.value.trim();
+    if (!text) return;
+
+    // User message bubble
+    const userBubble = document.createElement('div');
+    userBubble.style.cssText = 'background:rgba(0,210,255,0.18); border:1px solid rgba(0,210,255,0.3); border-radius:14px; padding:10px 14px; color:#fff; align-self:flex-end; max-width:85%; font-weight:600; line-height:1.4;';
+    userBubble.textContent = text;
+    history.appendChild(userBubble);
+
+    input.value = '';
+
+    // Typing indicator
+    const typingBubble = document.createElement('div');
+    typingBubble.id = 'aiTypingBubble';
+    typingBubble.style.cssText = 'background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:14px; padding:10px 14px; color:rgba(255,255,255,0.6); align-self:flex-start; font-size:0.8rem; font-style:italic;';
+    typingBubble.textContent = "🤖 Romix AI o'ylamoqda...";
+    history.appendChild(typingBubble);
+    history.scrollTop = history.scrollHeight;
+
+    setTimeout(() => {
+        const typing = document.getElementById('aiTypingBubble');
+        if (typing) typing.remove();
+
+        const aiResponseText = window.askRomixAi(text);
+        const aiBubble = document.createElement('div');
+        aiBubble.style.cssText = 'background:rgba(0,210,255,0.08); border:1px solid rgba(0,210,255,0.25); border-radius:14px; padding:12px 14px; color:#fff; align-self:flex-start; max-width:88%; line-height:1.5; font-size:0.85rem;';
+        aiBubble.innerHTML = aiResponseText;
+        history.appendChild(aiBubble);
+        history.scrollTop = history.scrollHeight;
+    }, 600);
+};
+
+window.askRomixAi = function(query) {
+    const q = query.toLowerCase();
+    const data = window._ojData || {};
+
+    let profilCount = data.profil?.items?.length || 0;
+    let aksCount = data.aksesuvar?.items?.length || 0;
+    let qoldiqCount = data.qoldiq?.items?.length || 0;
+    let oynakCount = data.oynak?.items?.length || 0;
+
+    // Intent 1: Low Stock / Kam zaxira
+    if (q.includes('kam') || q.includes('zaxira') || q.includes('oz qolgan') || q.includes('tugab')) {
+        let lowItems = [];
+        if (data.profil?.items) {
+            data.profil.items.forEach(it => {
+                const st = Number(it.stock_quantity) || 0;
+                if (st < 100) lowItems.push(`📦 <strong>${it.product_name}</strong>: ${st} ${it.unit || 'metr'}`);
+            });
+        }
+        if (data.aksesuvar?.items) {
+            data.aksesuvar.items.forEach(it => {
+                const st = Number(it.qty) || 0;
+                if (st < 20) lowItems.push(`🔩 <strong>${it.name}</strong>: ${st} ${it.unit || 'dona'}`);
+            });
+        }
+
+        if (lowItems.length) {
+            return `⚡ <strong>Diqqat! Omborda kam qolgan mahsulotlar:</strong><br><br>` + 
+                   lowItems.slice(0, 6).join('<br>') + 
+                   `<br><br>💡 <em>Tavsiya: Ushbu mahsulotlar uchun zudlik bilan yangi kirim yoki xarid so'rovini yuboring.</em>`;
+        } else {
+            return `✅ <strong>Zaxiralar holati a'lo!</strong> Ombordagi barcha profillar va aksessuarlar yetarli miqdorda mavjud.`;
+        }
+    }
+
+    // Intent 2: General Analytics / Ombor tahlili
+    if (q.includes('tahlil') || q.includes('statistika') || q.includes('umumiy') || q.includes('holat')) {
+        const totalTypes = profilCount + aksCount + qoldiqCount + oynakCount;
+        return `📊 <strong>Romix Ombor Analitikasi:</strong><br><br>` +
+               `• 🗂️ Jami toifalar: <strong>${totalTypes} xil</strong> mahsulot<br>` +
+               `• 📦 Profillar: <strong>${profilCount} xil</strong> turda<br>` +
+               `• 🔩 Aksessuarlar: <strong>${aksCount} xil</strong> turda<br>` +
+               `• ✂️ Qoldiq profillar: <strong>${qoldiqCount} xil</strong> turda<br>` +
+               `• 🪟 Oynaklar: <strong>${oynakCount} xil</strong> o'lchamda<br><br>` +
+               `🚀 Ombor tizimi barqaror va barcha harakatlar nazorat ostida!`;
+    }
+
+    // Intent 3: Meter & Pachka calculation help
+    if (q.includes('pachka') || q.includes('metr') || q.includes('hisob') || q.includes('formula')) {
+        return `💡 <strong>Profil va Pachka Standart Qoidasi:</strong><br><br>` +
+               `• 1 Pachka Profil = <strong>48 Metr</strong> (standart 8 dona 6m profil)<br>` +
+               `• 1 Dona Profil = <strong>6 Metr</strong><br><br>` +
+               `📐 <em>Misol: 10 pachka profil kiritilsa, omborga <strong>480 metr</strong> zaxira qo'shiladi.</em>`;
+    }
+
+    // Default Intelligent Response
+    return `🤖 <strong>Romix AI Tahlili:</strong><br><br>` +
+           `Omborda hozirda <strong>${profilCount} xil profil</strong>, <strong>${aksCount} xil aksessuar</strong> va <strong>${qoldiqCount} ta qoldiq profil</strong> mavjud.<br><br>` +
+           `Menga quyidagilar bo'yicha savol berishingiz mumkin:<br>` +
+           `• <em>"Zaxirasi kam mahsulotlar"</em><br>` +
+           `• <em>"Ombor tahlili"</em><br>` +
+           `• <em>"Pachka va metr hisobi"</em>`;
+};
