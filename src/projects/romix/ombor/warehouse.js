@@ -2362,7 +2362,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.addEventListener('click', (e) => {
         const itemEl = e.target.closest('.oj-profile-card, tr[data-prod-id]');
         if (!itemEl) return;
-        if (e.target.closest('.oj-edit-btn, .oj-delete-btn, .oj-delete-qoldiq-btn, .oj-delete-oynak-btn, button, input')) return;
+        if (e.target.closest('.oj-delete-btn, .oj-delete-qoldiq-btn, .oj-delete-oynak-btn, input')) return;
 
         const prodId = itemEl.dataset.prodId;
         const cat = itemEl.dataset.cat || window._ojActiveCategory || 'profil';
@@ -3118,22 +3118,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (isAdmin) {
-            // Edit binding
+            // Edit button binding -> open Product Detail Modal
             document.querySelectorAll('.oj-edit-btn').forEach(btn => {
                 btn.onclick = (e) => {
                     e.stopPropagation();
                     const prodId = btn.dataset.id;
-                    const allItems = [
-                        ...(window._ojData.profil.items || []),
-                        ...(window._ojData.aksesuvar.items || [])
-                    ];
-                    const p = allItems.find(x => x.id === prodId);
-                    if (p) {
-                        window.editingProdId = p.id;
-                        document.getElementById('eName').value = p.product_name || p.name || '';
-                        document.getElementById('eQty').value = p.stock_quantity || p.qty || 0;
-                        if (document.getElementById('ePrice')) document.getElementById('ePrice').value = p.price || 0;
-                        document.getElementById('editProductModal').classList.remove('hidden');
+                    if (prodId && typeof window.openProductDetailModal === 'function') {
+                        window.openProductDetailModal(prodId, window._ojActiveCategory || 'profil');
                     }
                 };
             });
