@@ -2894,7 +2894,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (!displayName) displayName = p.product_name;
 
                     cardsHtml += `
-                        <div class="oj-profile-card" style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.06); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 12px; transition: all 0.3s; position: relative; overflow: hidden; box-sizing: border-box; cursor: pointer;" onclick="window.openProductDetailModal('${p.id}', 'profil')" onmouseenter="this.style.transform='translateY(-4px)'; this.style.borderColor='${partColor}'; this.style.boxShadow='0 8px 24px ${partColor}11';" onmouseleave="this.style.transform='translateY(0)'; this.style.borderColor='rgba(255,255,255,0.06)'; this.style.boxShadow='none';">
+                        <div class="oj-profile-card" data-prod-id="${p.id}" data-cat="profil" style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.06); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 12px; transition: all 0.3s; position: relative; overflow: hidden; box-sizing: border-box; cursor: pointer;" onclick="window.openProductDetailModal('${p.id}', 'profil')" onmouseenter="this.style.transform='translateY(-4px)'; this.style.borderColor='${partColor}'; this.style.boxShadow='0 8px 24px ${partColor}11';" onmouseleave="this.style.transform='translateY(0)'; this.style.borderColor='rgba(255,255,255,0.06)'; this.style.boxShadow='none';">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <span style="font-size: 0.68rem; font-weight: 800; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; background: ${partColor}18; color: ${partColor}; border: 1px solid ${partColor}33;">
                                     ${partLabel}
@@ -2949,7 +2949,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const meta = p.metadata || {};
                     const qty = Number(p.stock_quantity) || 0;
                     const qtyColor = qty < 10 ? '#ff4d4f' : '#00ff88';
-                    return `<tr style="cursor:pointer;" onclick="window.openProductDetailModal('${p.id}', 'profil')">
+                    return `<tr data-prod-id="${p.id}" data-cat="profil" style="cursor:pointer;" onclick="window.openProductDetailModal('${p.id}', 'profil')">
                         <td><strong>${p.product_name || "Noma'lum"}</strong></td>
                         <td><span style="font-size:0.7rem; font-weight:800; text-transform:uppercase; padding:3px 8px; border-radius:6px; background:rgba(0,210,255,0.1); color:#00d2ff; border:1px solid rgba(0,210,255,0.2);">${meta.brend || '-'}</span></td>
                         <td>${meta.seriya || '-'}</td>
@@ -2998,7 +2998,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else if (cat === 'aksesuvar') {
             const rows = items.length ? items.map(a => {
                 const qty = Number(a.qty) || 0;
-                return `<tr style="cursor:pointer;" onclick="window.openProductDetailModal('${a.id}', 'aksesuvar')">
+                return `<tr data-prod-id="${a.id}" data-cat="aksesuvar" style="cursor:pointer;" onclick="window.openProductDetailModal('${a.id}', 'aksesuvar')">
                     <td>${a.name || "Noma'lum"}</td>
                     <td>${a.category || '-'}</td>
                     <td style="text-align:right; font-weight:700; color:#00d2ff;">${qty.toLocaleString('uz-UZ')} ${a.unit || ''}</td>
@@ -3019,7 +3019,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const rows = items.length ? items.map(qi => {
                 const qty = Number(qi.stock_quantity) || 0;
                 const len = Number(qi.length) || 0;
-                return `<tr style="cursor:pointer;" onclick="window.openProductDetailModal('${qi.id}', 'qoldiq')">
+                return `<tr data-prod-id="${qi.id}" data-cat="qoldiq" style="cursor:pointer;" onclick="window.openProductDetailModal('${qi.id}', 'qoldiq')">
                     <td>${qi.product_name || "Noma'lum"}</td>
                     <td>${qi.brand || '-'}</td>
                     <td style="text-align:right;">${len.toLocaleString('uz-UZ')}</td>
@@ -3039,7 +3039,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else if (cat === 'oynak') {
             const rows = items.length ? items.map(o => {
                 const qty = Number(o.stock_quantity) || 0;
-                return `<tr style="cursor:pointer;" onclick="window.openProductDetailModal('${o.id}', 'oynak')">
+                return `<tr data-prod-id="${o.id}" data-cat="oynak" style="cursor:pointer;" onclick="window.openProductDetailModal('${o.id}', 'oynak')">
                     <td>${o.product_name || "Noma'lum"}</td>
                     <td>${o.brand || '-'}</td>
                     <td>${o.size || '-'}</td>
