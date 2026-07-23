@@ -3110,66 +3110,179 @@ document.addEventListener('DOMContentLoaded', async () => {
                 `;
             }
         } else if (cat === 'aksesuvar') {
-            const rows = items.length ? items.map(a => {
-                const qty = Number(a.qty) || 0;
-                return `<tr data-prod-id="${a.id}" data-cat="aksesuvar" style="cursor:pointer;" onclick="window.openProductDetailModal('${a.id}', 'aksesuvar')">
-                    <td>${a.name || "Noma'lum"}</td>
-                    <td>${a.category || '-'}</td>
-                    <td style="text-align:right; font-weight:700; color:#00d2ff;">${qty.toLocaleString('uz-UZ')} ${a.unit || ''}</td>
-                    ${isAdmin ? `
-                    <td>
-                        <div style="display:flex; gap:6px; justify-content:center;">
-                            <button class="oj-edit-btn" data-id="${a.id}" onclick="event.stopPropagation()" style="background:none; border:none; cursor:pointer;" title="Tahrirlash">✏️</button>
-                            <button class="oj-delete-btn" data-id="${a.id}" onclick="event.stopPropagation()" style="background:none; border:none; cursor:pointer; color:#ff4d4f;" title="O'chirish">🗑️</button>
+            const isTableView = window._ojViewMode === 'table';
+            if (isTableView) {
+                const rows = items.length ? items.map(a => {
+                    const qty = Number(a.qty) || 0;
+                    return `<tr data-prod-id="${a.id}" data-cat="aksesuvar" style="cursor:pointer;" onclick="window.openProductDetailModal('${a.id}', 'aksesuvar')">
+                        <td><strong>${a.name || "Noma'lum"}</strong></td>
+                        <td><span style="font-size:0.75rem; font-weight:800; text-transform:uppercase; padding:3px 8px; border-radius:6px; background:rgba(0,210,255,0.1); color:#00d2ff; border:1px solid rgba(0,210,255,0.2);">${a.category || '-'}</span></td>
+                        <td style="text-align:right; font-weight:900; color:#00ff88;">${qty.toLocaleString('uz-UZ')} ${a.unit || 'dona'}</td>
+                        ${isAdmin ? `
+                        <td>
+                            <div style="display:flex; gap:6px; justify-content:center;">
+                                <button class="oj-edit-btn" data-id="${a.id}" onclick="event.stopPropagation()" style="background:none; border:none; cursor:pointer;" title="Tahrirlash">✏️</button>
+                                <button class="oj-delete-btn" data-id="${a.id}" onclick="event.stopPropagation()" style="background:none; border:none; cursor:pointer; color:#ff4d4f;" title="O'chirish">🗑️</button>
+                            </div>
+                        </td>` : ''}
+                    </tr>`;
+                }).join('') : `<tr><td colspan="${isAdmin ? 4 : 3}" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Mahsulot topilmadi</td></tr>`;
+
+                tableWrap.style.background = 'rgba(0,0,0,0.2)';
+                tableWrap.style.border = '1px solid rgba(255,255,255,0.08)';
+                tableWrap.style.borderRadius = '16px';
+                tableWrap.style.overflowX = 'auto';
+
+                tableWrap.innerHTML = `<table class="v2-table" style="margin:0; width:100%;"><thead><tr>
+                    <th>Mahsulot Nomi</th><th>Kategoriya</th><th style="text-align:right;">Miqdor / Zaxira</th>
+                    ${isAdmin ? '<th style="text-align:center;">Harakat</th>' : ''}
+                </tr></thead><tbody>${rows}</tbody></table>`;
+            } else {
+                const cardsHtml = items.length ? items.map(a => {
+                    const qty = Number(a.qty) || 0;
+                    return `
+                        <div class="oj-profile-card" data-prod-id="${a.id}" data-cat="aksesuvar" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 20px; cursor: pointer; transition: all 0.25s ease; position: relative;" onmouseenter="this.style.borderColor='#00d2ff'; this.style.transform='translateY(-3px)';" onmouseleave="this.style.borderColor='rgba(255,255,255,0.08)'; this.style.transform='translateY(0)';">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+                                <span style="font-size:2rem; background:rgba(0,210,255,0.1); padding:8px 12px; border-radius:14px; border:1px solid rgba(0,210,255,0.2);">🔩</span>
+                                <span style="font-size:0.75rem; font-weight:800; text-transform:uppercase; padding:4px 10px; border-radius:8px; background:rgba(0,210,255,0.1); color:#00d2ff; border:1px solid rgba(0,210,255,0.2);">${a.category || 'Aksessuar'}</span>
+                            </div>
+                            <h4 style="font-size:1.1rem; font-weight:800; color:#fff; margin:0 0 12px 0;">${a.name || "Noma'lum Aksessuar"}</h4>
+                            <div style="display:flex; justify-content:space-between; align-items:flex-end; border-top:1px solid rgba(255,255,255,0.06); padding-top:12px; margin-top:12px;">
+                                <div>
+                                    <span style="font-size:0.7rem; color:rgba(255,255,255,0.5); text-transform:uppercase; font-weight:700; display:block;">📊 Miqdor</span>
+                                    <span style="font-size:1.15rem; font-weight:900; color:#00ff88;">${qty.toLocaleString('uz-UZ')} ${a.unit || 'dona'}</span>
+                                </div>
+                                ${isAdmin ? `
+                                <div style="display:flex; gap:6px;">
+                                    <button class="oj-edit-btn" data-id="${a.id}" onclick="event.stopPropagation()" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; width:34px; height:34px; cursor:pointer;" title="Tahrirlash">✏️</button>
+                                    <button class="oj-delete-btn" data-id="${a.id}" onclick="event.stopPropagation()" style="background:rgba(255,77,79,0.05); border:1px solid rgba(255,77,79,0.15); border-radius:10px; width:34px; height:34px; cursor:pointer; color:#ff4d4f;" title="O'chirish">🗑️</button>
+                                </div>` : ''}
+                            </div>
                         </div>
-                    </td>` : ''}
-                </tr>`;
-            }).join('') : `<tr><td colspan="${isAdmin ? 4 : 3}" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Mahsulot topilmadi</td></tr>`;
-            tableWrap.innerHTML = `<table class="v2-table"><thead><tr>
-                <th>Mahsulot</th><th>Kategoriya</th><th style="text-align:right;">Miqdor</th>
-                ${isAdmin ? '<th style="text-align:center;">Harakat</th>' : ''}
-            </tr></thead><tbody>${rows}</tbody></table>`;
+                    `;
+                }).join('') : `<div style="grid-column:1/-1; text-align:center; padding:40px; color:rgba(255,255,255,0.4);">Aksessuar topilmadi</div>`;
+
+                tableWrap.style.background = 'none';
+                tableWrap.style.border = 'none';
+                tableWrap.innerHTML = `<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:20px; width:100%;">${cardsHtml}</div>`;
+            }
+
         } else if (cat === 'qoldiq') {
-            const rows = items.length ? items.map(qi => {
-                const qty = Number(qi.stock_quantity) || 0;
-                const len = Number(qi.length) || 0;
-                return `<tr data-prod-id="${qi.id}" data-cat="qoldiq" style="cursor:pointer;" onclick="window.openProductDetailModal('${qi.id}', 'qoldiq')">
-                    <td>${qi.product_name || "Noma'lum"}</td>
-                    <td>${qi.brand || '-'}</td>
-                    <td style="text-align:right;">${len.toLocaleString('uz-UZ')}</td>
-                    <td style="text-align:right; font-weight:700; color:#00d2ff;">${qty.toLocaleString('uz-UZ')} dona</td>
-                    ${isAdmin ? `
-                    <td>
-                        <div style="display:flex; gap:6px; justify-content:center;">
-                            <button class="oj-delete-qoldiq-btn" data-id="${qi.id}" onclick="event.stopPropagation()" style="background:none; border:none; cursor:pointer; color:#ff4d4f;" title="O'chirish">🗑️</button>
+            const isTableView = window._ojViewMode === 'table';
+            if (isTableView) {
+                const rows = items.length ? items.map(qi => {
+                    const qty = Number(qi.stock_quantity) || 0;
+                    const len = Number(qi.length) || 0;
+                    return `<tr data-prod-id="${qi.id}" data-cat="qoldiq" style="cursor:pointer;" onclick="window.openProductDetailModal('${qi.id}', 'qoldiq')">
+                        <td><strong>${qi.product_name || "Noma'lum"}</strong></td>
+                        <td><span style="font-size:0.75rem; font-weight:800; text-transform:uppercase; padding:3px 8px; border-radius:6px; background:rgba(255,149,0,0.1); color:#ff9500; border:1px solid rgba(255,149,0,0.2);">${qi.brand || '-'}</span></td>
+                        <td>${qi.series || '-'}</td>
+                        <td style="text-align:right; font-weight:700; color:#00d2ff;">${len.toLocaleString('uz-UZ')} mm</td>
+                        <td style="text-align:right; font-weight:900; color:#00ff88;">${qty.toLocaleString('uz-UZ')} dona</td>
+                        ${isAdmin ? `
+                        <td>
+                            <div style="display:flex; gap:6px; justify-content:center;">
+                                <button class="oj-delete-qoldiq-btn" data-id="${qi.id}" onclick="event.stopPropagation()" style="background:none; border:none; cursor:pointer; color:#ff4d4f;" title="O'chirish">🗑️</button>
+                            </div>
+                        </td>` : ''}
+                    </tr>`;
+                }).join('') : `<tr><td colspan="${isAdmin ? 6 : 5}" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Qoldiq profil topilmadi</td></tr>`;
+
+                tableWrap.style.background = 'rgba(0,0,0,0.2)';
+                tableWrap.style.border = '1px solid rgba(255,255,255,0.08)';
+                tableWrap.style.borderRadius = '16px';
+                tableWrap.style.overflowX = 'auto';
+
+                tableWrap.innerHTML = `<table class="v2-table" style="margin:0; width:100%;"><thead><tr>
+                    <th>Mahsulot Nomi</th><th>Brend</th><th>Seriya</th><th style="text-align:right;">Uzunligi (mm)</th><th style="text-align:right;">Miqdor</th>
+                    ${isAdmin ? '<th style="text-align:center;">Harakat</th>' : ''}
+                </tr></thead><tbody>${rows}</tbody></table>`;
+            } else {
+                const cardsHtml = items.length ? items.map(qi => {
+                    const qty = Number(qi.stock_quantity) || 0;
+                    const len = Number(qi.length) || 0;
+                    return `
+                        <div class="oj-profile-card" data-prod-id="${qi.id}" data-cat="qoldiq" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 20px; cursor: pointer; transition: all 0.25s ease;" onmouseenter="this.style.borderColor='#ff9500'; this.style.transform='translateY(-3px)';" onmouseleave="this.style.borderColor='rgba(255,255,255,0.08)'; this.style.transform='translateY(0)';">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+                                <span style="font-size:2rem; background:rgba(255,149,0,0.1); padding:8px 12px; border-radius:14px; border:1px solid rgba(255,149,0,0.2);">✂️</span>
+                                <span style="font-size:0.75rem; font-weight:800; text-transform:uppercase; padding:4px 10px; border-radius:8px; background:rgba(255,149,0,0.1); color:#ff9500; border:1px solid rgba(255,149,0,0.2);">${qi.brand || 'Qoldiq'}</span>
+                            </div>
+                            <h4 style="font-size:1.1rem; font-weight:800; color:#fff; margin:0 0 8px 0;">${qi.product_name || "Noma'lum Qoldiq"}</h4>
+                            <div style="font-size:0.83rem; color:rgba(255,255,255,0.6); margin-bottom:12px;">📏 Uzunligi: <strong style="color:#00d2ff;">${len.toLocaleString('uz-UZ')} mm</strong> (${qi.series || ''})</div>
+                            <div style="display:flex; justify-content:space-between; align-items:flex-end; border-top:1px solid rgba(255,255,255,0.06); padding-top:12px;">
+                                <div>
+                                    <span style="font-size:0.7rem; color:rgba(255,255,255,0.5); text-transform:uppercase; font-weight:700; display:block;">📦 Qoldiq Soni</span>
+                                    <span style="font-size:1.15rem; font-weight:900; color:#00ff88;">${qty.toLocaleString('uz-UZ')} dona</span>
+                                </div>
+                                ${isAdmin ? `
+                                <button class="oj-delete-qoldiq-btn" data-id="${qi.id}" onclick="event.stopPropagation()" style="background:rgba(255,77,79,0.05); border:1px solid rgba(255,77,79,0.15); border-radius:10px; width:34px; height:34px; cursor:pointer; color:#ff4d4f;" title="O'chirish">🗑️</button>
+                                ` : ''}
+                            </div>
                         </div>
-                    </td>` : ''}
-                </tr>`;
-            }).join('') : `<tr><td colspan="${isAdmin ? 5 : 4}" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Mahsulot topilmadi</td></tr>`;
-            tableWrap.innerHTML = `<table class="v2-table"><thead><tr>
-                <th>Mahsulot</th><th>Brend</th><th style="text-align:right;">Uzunligi (mm)</th><th style="text-align:right;">Miqdor</th>
-                ${isAdmin ? '<th style="text-align:center;">Harakat</th>' : ''}
-            </tr></thead><tbody>${rows}</tbody></table>`;
+                    `;
+                }).join('') : `<div style="grid-column:1/-1; text-align:center; padding:40px; color:rgba(255,255,255,0.4);">Qoldiq profil topilmadi</div>`;
+
+                tableWrap.style.background = 'none';
+                tableWrap.style.border = 'none';
+                tableWrap.innerHTML = `<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:20px; width:100%;">${cardsHtml}</div>`;
+            }
+
         } else if (cat === 'oynak') {
-            const rows = items.length ? items.map(o => {
-                const qty = Number(o.stock_quantity) || 0;
-                return `<tr data-prod-id="${o.id}" data-cat="oynak" style="cursor:pointer;" onclick="window.openProductDetailModal('${o.id}', 'oynak')">
-                    <td>${o.product_name || "Noma'lum"}</td>
-                    <td>${o.brand || '-'}</td>
-                    <td>${o.size || '-'}</td>
-                    <td style="text-align:right; font-weight:700; color:#00d2ff;">${qty.toLocaleString('uz-UZ')} ${o.unit || 'dona'}</td>
-                    ${isAdmin ? `
-                    <td>
-                        <div style="display:flex; gap:6px; justify-content:center;">
-                            <button class="oj-delete-oynak-btn" data-id="${o.id}" onclick="event.stopPropagation()" style="background:none; border:none; cursor:pointer; color:#ff4d4f;" title="O'chirish">🗑️</button>
+            const isTableView = window._ojViewMode === 'table';
+            if (isTableView) {
+                const rows = items.length ? items.map(o => {
+                    const qty = Number(o.stock_quantity) || 0;
+                    return `<tr data-prod-id="${o.id}" data-cat="oynak" style="cursor:pointer;" onclick="window.openProductDetailModal('${o.id}', 'oynak')">
+                        <td><strong>${o.product_name || "Noma'lum"}</strong></td>
+                        <td><span style="font-size:0.75rem; font-weight:800; text-transform:uppercase; padding:3px 8px; border-radius:6px; background:rgba(175,82,222,0.1); color:#af52de; border:1px solid rgba(175,82,222,0.2);">${o.brand || '-'}</span></td>
+                        <td>${o.size || '-'}</td>
+                        <td style="text-align:right; font-weight:900; color:#00ff88;">${qty.toLocaleString('uz-UZ')} ${o.unit || 'dona'}</td>
+                        ${isAdmin ? `
+                        <td>
+                            <div style="display:flex; gap:6px; justify-content:center;">
+                                <button class="oj-delete-oynak-btn" data-id="${o.id}" onclick="event.stopPropagation()" style="background:none; border:none; cursor:pointer; color:#ff4d4f;" title="O'chirish">🗑️</button>
+                            </div>
+                        </td>` : ''}
+                    </tr>`;
+                }).join('') : `<tr><td colspan="${isAdmin ? 5 : 4}" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Oynak topilmadi</td></tr>`;
+
+                tableWrap.style.background = 'rgba(0,0,0,0.2)';
+                tableWrap.style.border = '1px solid rgba(255,255,255,0.08)';
+                tableWrap.style.borderRadius = '16px';
+                tableWrap.style.overflowX = 'auto';
+
+                tableWrap.innerHTML = `<table class="v2-table" style="margin:0; width:100%;"><thead><tr>
+                    <th>Mahsulot Nomi</th><th>Brend</th><th>O'lcham</th><th style="text-align:right;">Miqdor</th>
+                    ${isAdmin ? '<th style="text-align:center;">Harakat</th>' : ''}
+                </tr></thead><tbody>${rows}</tbody></table>`;
+            } else {
+                const cardsHtml = items.length ? items.map(o => {
+                    const qty = Number(o.stock_quantity) || 0;
+                    return `
+                        <div class="oj-profile-card" data-prod-id="${o.id}" data-cat="oynak" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 20px; cursor: pointer; transition: all 0.25s ease;" onmouseenter="this.style.borderColor='#af52de'; this.style.transform='translateY(-3px)';" onmouseleave="this.style.borderColor='rgba(255,255,255,0.08)'; this.style.transform='translateY(0)';">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+                                <span style="font-size:2rem; background:rgba(175,82,222,0.1); padding:8px 12px; border-radius:14px; border:1px solid rgba(175,82,222,0.2);">🪟</span>
+                                <span style="font-size:0.75rem; font-weight:800; text-transform:uppercase; padding:4px 10px; border-radius:8px; background:rgba(175,82,222,0.1); color:#af52de; border:1px solid rgba(175,82,222,0.2);">${o.brand || 'Oynak'}</span>
+                            </div>
+                            <h4 style="font-size:1.1rem; font-weight:800; color:#fff; margin:0 0 8px 0;">${o.product_name || "Noma'lum Oynak"}</h4>
+                            <div style="font-size:0.83rem; color:rgba(255,255,255,0.6); margin-bottom:12px;">📏 O'lchami: <strong style="color:#00d2ff;">${o.size || '-'}</strong></div>
+                            <div style="display:flex; justify-content:space-between; align-items:flex-end; border-top:1px solid rgba(255,255,255,0.06); padding-top:12px;">
+                                <div>
+                                    <span style="font-size:0.7rem; color:rgba(255,255,255,0.5); text-transform:uppercase; font-weight:700; display:block;">📦 Zaxira Miqdori</span>
+                                    <span style="font-size:1.15rem; font-weight:900; color:#00ff88;">${qty.toLocaleString('uz-UZ')} ${o.unit || 'dona'}</span>
+                                </div>
+                                ${isAdmin ? `
+                                <button class="oj-delete-oynak-btn" data-id="${o.id}" onclick="event.stopPropagation()" style="background:rgba(255,77,79,0.05); border:1px solid rgba(255,77,79,0.15); border-radius:10px; width:34px; height:34px; cursor:pointer; color:#ff4d4f;" title="O'chirish">🗑️</button>
+                                ` : ''}
+                            </div>
                         </div>
-                    </td>` : ''}
-                </tr>`;
-            }).join('') : `<tr><td colspan="${isAdmin ? 5 : 4}" style="text-align:center; padding:20px; color:var(--adm-text-sec);">Mahsulot topilmadi</td></tr>`;
-            tableWrap.innerHTML = `<table class="v2-table"><thead><tr>
-                <th>Mahsulot</th><th>Brend</th><th>O'lcham</th><th style="text-align:right;">Miqdor</th>
-                ${isAdmin ? '<th style="text-align:center;">Harakat</th>' : ''}
-            </tr></thead><tbody>${rows}</tbody></table>`;
+                    `;
+                }).join('') : `<div style="grid-column:1/-1; text-align:center; padding:40px; color:rgba(255,255,255,0.4);">Oynak topilmadi</div>`;
+
+                tableWrap.style.background = 'none';
+                tableWrap.style.border = 'none';
+                tableWrap.innerHTML = `<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:20px; width:100%;">${cardsHtml}</div>`;
+            }
         }
 
         if (isAdmin) {
