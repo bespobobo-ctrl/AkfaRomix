@@ -703,6 +703,73 @@
         </div>
     </div>
 
+    <!-- Modal: Mahsulot Haqida To'liq Ma'lumot va Tarix -->
+    <div id="prodDetailModal" class="hidden"
+        style="position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:2500; display:flex; align-items:center; justify-content:center; padding:20px;">
+        <div class="user-form-modal" style="width: 720px; max-height:92vh; overflow-y:auto; background:var(--adm-surface); border:1px solid rgba(255,255,255,0.1); border-radius:24px; padding:25px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); box-sizing: border-box;">
+            
+            <!-- Modal Header -->
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; border-bottom:1px solid var(--adm-border); padding-bottom:15px; gap: 15px;">
+                <div style="display:flex; align-items:center; gap:12px; flex:1;">
+                    <span style="font-size: 2.2rem; background:rgba(0,210,255,0.1); padding:10px; border-radius:16px; border:1px solid rgba(0,210,255,0.2);">📦</span>
+                    <div style="flex:1;">
+                        <span style="font-size:0.75rem; color:var(--adm-text-sec); font-weight:700; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:4px;" id="pdCategoryBadge">MAHSULOT MA'LUMOTLARI</span>
+                        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                            <input type="text" id="pdNameInput" class="form-input-v2" style="font-size:1.1rem; font-weight:800; color:#fff; margin:0; padding:8px 14px; background:rgba(0,0,0,0.3); border:1px solid rgba(0,210,255,0.3); border-radius:12px; flex:1; min-width:200px;" placeholder="Mahsulot nomi...">
+                            <button id="pdSaveNameBtn" class="btn-glass" style="background:#00d2ff; color:#000; font-weight:800; border:none; padding:8px 16px; border-radius:12px; font-size:0.85rem; cursor:pointer; white-space:nowrap; height:42px;">💾 Nomini Saqlash</button>
+                        </div>
+                    </div>
+                </div>
+                <button id="closeProdDetailModal" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; font-size:1.2rem; border-radius:12px; width:38px; height:38px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0;">✕</button>
+            </div>
+
+            <!-- Modal Content Grid -->
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:20px;">
+                <div style="background:rgba(255,255,255,0.02); border:1px solid var(--adm-border); border-radius:16px; padding:15px;">
+                    <span style="font-size:0.72rem; color:var(--adm-text-sec); text-transform:uppercase; font-weight:700; display:block; margin-bottom:4px;">🏢 Brend</span>
+                    <span id="pdBrand" style="font-size:1rem; font-weight:800; color:#fff;">—</span>
+                </div>
+                <div style="background:rgba(255,255,255,0.02); border:1px solid var(--adm-border); border-radius:16px; padding:15px;">
+                    <span style="font-size:0.72rem; color:var(--adm-text-sec); text-transform:uppercase; font-weight:700; display:block; margin-bottom:4px;">🏷️ Seriya / O'lcham</span>
+                    <span id="pdSeries" style="font-size:1rem; font-weight:800; color:#fff;">—</span>
+                </div>
+                <div style="background:rgba(255,255,255,0.02); border:1px solid var(--adm-border); border-radius:16px; padding:15px;">
+                    <span style="font-size:0.72rem; color:var(--adm-text-sec); text-transform:uppercase; font-weight:700; display:block; margin-bottom:4px;">📊 Joriy Qoldiq</span>
+                    <span id="pdStock" style="font-size:1.2rem; font-weight:900; color:#00ff88;">0 dona</span>
+                </div>
+                <div style="background:rgba(255,255,255,0.02); border:1px solid var(--adm-border); border-radius:16px; padding:15px;">
+                    <span style="font-size:0.72rem; color:var(--adm-text-sec); text-transform:uppercase; font-weight:700; display:block; margin-bottom:4px;">🔑 ID Kodi</span>
+                    <span id="pdId" style="font-size:0.85rem; font-family:monospace; color:#00d2ff;">—</span>
+                </div>
+            </div>
+
+            <!-- Arrival & Usage Dates Card Row -->
+            <div style="background:rgba(0,0,0,0.25); border:1px solid rgba(0,210,255,0.15); border-radius:18px; padding:18px; margin-bottom:20px; display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px;">
+                <div>
+                    <span style="font-size:0.7rem; color:rgba(255,255,255,0.5); text-transform:uppercase; font-weight:700; display:block; margin-bottom:4px;">📥 Birinchi Kelgan Sana</span>
+                    <span id="pdFirstIn" style="font-size:0.88rem; font-weight:800; color:#00ff88;">—</span>
+                </div>
+                <div>
+                    <span style="font-size:0.7rem; color:rgba(255,255,255,0.5); text-transform:uppercase; font-weight:700; display:block; margin-bottom:4px;">📥 Oxirgi Kelgan Sana</span>
+                    <span id="pdLastIn" style="font-size:0.88rem; font-weight:800; color:#00d2ff;">—</span>
+                </div>
+                <div>
+                    <span style="font-size:0.7rem; color:rgba(255,255,255,0.5); text-transform:uppercase; font-weight:700; display:block; margin-bottom:4px;">📤 Oxirgi Ishlatilgan Date</span>
+                    <span id="pdLastOut" style="font-size:0.88rem; font-weight:800; color:#ff4d4f;">—</span>
+                </div>
+            </div>
+
+            <!-- Transaction History Timeline -->
+            <div>
+                <h4 style="font-size:0.95rem; font-weight:800; color:#fff; margin:0 0 12px 0;">📑 Harakatlar Tarixi (Kirim/Chiqim)</h4>
+                <div id="pdHistoryList" style="max-height:220px; overflow-y:auto; border:1px solid var(--adm-border); border-radius:16px; padding:10px; background:rgba(0,0,0,0.15);">
+                    <div style="text-align:center; padding:20px; color:rgba(255,255,255,0.4); font-size:0.85rem;">Yuklanmoqda...</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
     <script>
         // Live pachka → metr calculation
         function updateMetrCalc() {

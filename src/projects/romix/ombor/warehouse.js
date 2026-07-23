@@ -2130,68 +2130,123 @@ document.addEventListener('DOMContentLoaded', async () => {
     let tsBrand = null;
     let tsSeries = null;
 
+    window._ojSelectBrand = function(brandVal) {
+        const cat = window._ojActiveCategory;
+        window._ojActiveBrand[cat] = brandVal;
+        window._ojActiveSeries[cat] = 'barchasi';
+        if (tsBrand) tsBrand.setValue(brandVal, true);
+        populateBrandChips();
+        updateSeriesOptions();
+        renderOmborJami();
+    };
+
+    function populateBrandChips() {
+        const chipsRow = document.getElementById('ojBrandChipsRow');
+        if (!chipsRow) return;
+
+        const cat = window._ojActiveCategory;
+        const data = window._ojData && window._ojData[cat];
+        if (!data || !data.items) {
+            chipsRow.innerHTML = '';
+            return;
+        }
+
+        const brandCounts = {};
+        let totalItemsCount = data.items.length;
+
+        data.items.forEach(it => {
+            let b = '';
+            if (cat === 'profil') b = it.metadata?.brend || it.brand;
+            else if (cat === 'aksesuvar') b = it.category;
+            else if (cat === 'qoldiq' || cat === 'oynak') b = it.brand;
+            
+            if (b) {
+                brandCounts[b] = (brandCounts[b] || 0) + 1;
+            } else {
+                brandCounts["Noma'lum"] = (brandCounts["Noma'lum"] || 0) + 1;
+            }
+        });
+
+        const activeBrand = window._ojActiveBrand[cat] || 'barchasi';
+        let chipsHtml = `
+            <div class="brand-chip-v3 ${activeBrand === 'barchasi' ? 'active' : ''}" onclick="window._ojSelectBrand('barchasi')">
+                <span>🗂️ Barchasi</span>
+                <span class="brand-badge-count">${totalItemsCount}</span>
+            </div>
+        `;
+
+        Object.keys(brandCounts).sort().forEach(b => {
+            const isActive = activeBrand === b;
+            let icon = '🏢';
+            const bLower = b.toLowerCase();
+            if (bLower.includes('plastik')) icon = '🧊';
+            else if (bLower.includes('alyuminiy')) icon = '⚡';
+            else if (bLower.includes('termo')) icon = '🔥';
+            else if (bLower.includes('retpen')) icon = '🛡️';
+            else if (bLower.includes('ekopen')) icon = '🌱';
+            else if (cat === 'aksesuvar') icon = '🔩';
+            else if (cat === 'oynak') icon = '🪟';
+
+            chipsHtml += `
+                <div class="brand-chip-v3 ${isActive ? 'active' : ''}" onclick="window._ojSelectBrand('${b.replace(/'/g, "\\'")}')">
+                    <span>${icon} ${b}</span>
+                    <span class="brand-badge-count">${brandCounts[b]}</span>
+                </div>
+            `;
+        });
+
+        chipsRow.innerHTML = chipsHtml;
+    }
+
     function populateBrandOptions() {
-        if (!tsBrand) return;
+        populateBrandChips();
         const cat = window._ojActiveCategory;
         const data = window._ojData && window._ojData[cat];
         if (!data) return;
 
-        tsBrand.clearOptions();
-        tsBrand.clear();
-
         const labelEl = document.getElementById('ojBrandFilterLabel');
-
-        let options = [{ value: 'barchasi', text: '🗂️ Barchasi' }];
         let uniqueBrands = new Set();
 
         if (cat === 'profil') {
             if (labelEl) labelEl.textContent = "🏢 Brendni Tanlang";
-            tsBrand.settings.placeholder = "Barcha brendlar...";
             data.items.forEach(p => {
                 const b = p.metadata?.brend || p.brand;
                 if (b) uniqueBrands.add(b);
             });
         } else if (cat === 'aksesuvar') {
             if (labelEl) labelEl.textContent = "🔩 Kategoriyani Tanlang";
-            tsBrand.settings.placeholder = "Barcha kategoriyalar...";
             data.items.forEach(a => {
                 if (a.category) uniqueBrands.add(a.category);
             });
         } else if (cat === 'qoldiq') {
             if (labelEl) labelEl.textContent = "🏢 Brendni Tanlang";
-            tsBrand.settings.placeholder = "Barcha brendlar...";
             data.items.forEach(qi => {
                 if (qi.brand) uniqueBrands.add(qi.brand);
             });
         } else if (cat === 'oynak') {
             if (labelEl) labelEl.textContent = "🏢 Brendni Tanlang";
-            tsBrand.settings.placeholder = "Barcha brendlar...";
             data.items.forEach(o => {
                 if (o.brand) uniqueBrands.add(o.brand);
             });
         }
 
-        tsBrand.input.setAttribute('placeholder', tsBrand.settings.placeholder);
-        if (tsBrand.controlInput) tsBrand.controlInput.setAttribute('placeholder', tsBrand.settings.placeholder);
-
-        uniqueBrands.forEach(b => {
-            options.push({ value: b, text: b });
-        });
-
-        tsBrand.addOption(options);
-        tsBrand.setValue(window._ojActiveBrand[cat] || 'barchasi', true);
+        if (tsBrand) {
+            tsBrand.clearOptions();
+            tsBrand.clear();
+            let options = [{ value: 'barchasi', text: '🗂️ Barchasi' }];
+            uniqueBrands.forEach(b => {
+                options.push({ value: b, text: b });
+            });
+            tsBrand.addOption(options);
+            tsBrand.setValue(window._ojActiveBrand[cat] || 'barchasi', true);
+        }
     }
 
     function updateSeriesOptions() {
-        if (!tsSeries) return;
-        
         const cat = window._ojActiveCategory;
         const brand = window._ojActiveBrand[cat] || 'barchasi';
         const data = window._ojData && window._ojData[cat];
         if (!data) return;
-
-        tsSeries.clearOptions();
-        tsSeries.clear();
 
         const container = document.getElementById('ojSeriesFilterContainer');
         const labelEl = document.getElementById('ojSeriesFilterLabel');
@@ -2201,7 +2256,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        if (container) container.style.display = 'block';
+        if (container) container.style.display = 'flex';
 
         let options = [{ value: 'barchasi', text: '🗂️ Barchasi' }];
         let uniqueVals = new Set();
@@ -2230,23 +2285,48 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         if (cat === 'oynak') {
-            if (labelEl) labelEl.textContent = "🪟 O'lchamni Tanlang";
-            tsSeries.settings.placeholder = "Barcha o'lchamlar...";
+            if (labelEl) labelEl.innerHTML = "🪟 O'lcham:";
         } else {
-            if (labelEl) labelEl.textContent = "🏷️ Seriyani Tanlang";
-            tsSeries.settings.placeholder = "Barcha seriyalar...";
+            if (labelEl) labelEl.innerHTML = "🏷️ Seriya:";
+        }
+
+        const chipsRow = document.getElementById('ojSeriesChipsRow');
+        if (chipsRow) {
+            const activeSeries = window._ojActiveSeries[cat] || 'barchasi';
+            let chipsHtml = `
+                <div class="brand-chip-v3 ${activeSeries === 'barchasi' ? 'active' : ''}" style="padding: 4px 12px; font-size: 0.74rem;" onclick="window._ojSelectSeries('barchasi')">
+                    Barchasi
+                </div>
+            `;
+            uniqueVals.forEach(v => {
+                const isActive = activeSeries === v;
+                chipsHtml += `
+                    <div class="brand-chip-v3 ${isActive ? 'active' : ''}" style="padding: 4px 12px; font-size: 0.74rem;" onclick="window._ojSelectSeries('${v.replace(/'/g, "\\'")}')">
+                        ${v}
+                    </div>
+                `;
+            });
+            chipsRow.innerHTML = chipsHtml;
         }
         
-        tsSeries.input.setAttribute('placeholder', tsSeries.settings.placeholder);
-        if (tsSeries.controlInput) tsSeries.controlInput.setAttribute('placeholder', tsSeries.settings.placeholder);
-
-        uniqueVals.forEach(v => {
-            options.push({ value: v, text: v });
-        });
-
-        tsSeries.addOption(options);
-        tsSeries.setValue(window._ojActiveSeries[cat] || 'barchasi', true);
+        if (tsSeries) {
+            tsSeries.clearOptions();
+            tsSeries.clear();
+            uniqueVals.forEach(v => {
+                options.push({ value: v, text: v });
+            });
+            tsSeries.addOption(options);
+            tsSeries.setValue(window._ojActiveSeries[cat] || 'barchasi', true);
+        }
     }
+
+    window._ojSelectSeries = function(seriesVal) {
+        const cat = window._ojActiveCategory;
+        window._ojActiveSeries[cat] = seriesVal;
+        if (tsSeries) tsSeries.setValue(seriesVal, true);
+        updateSeriesOptions();
+        renderOmborJami();
+    };
 
     async function loadOmborJami() {
         const tabsEl = document.getElementById('ojCategoryTabs');
@@ -2268,12 +2348,49 @@ document.addEventListener('DOMContentLoaded', async () => {
             oynak: { items: oynakItems, groups: omGroupOynakByBrand(oynakItems) }
         };
 
+        const stockFilterRow = document.getElementById('ojStockStatusFilter');
+        if (stockFilterRow) {
+            stockFilterRow.querySelectorAll('.status-chip').forEach(btn => {
+                btn.onclick = () => {
+                    stockFilterRow.querySelectorAll('.status-chip').forEach(c => {
+                        c.classList.remove('active');
+                        c.style.background = 'transparent';
+                        c.style.color = 'rgba(255, 255, 255, 0.6)';
+                    });
+                    btn.classList.add('active');
+                    btn.style.background = 'rgba(0, 210, 255, 0.2)';
+                    btn.style.color = '#00d2ff';
+                    window._ojStockStatus = btn.dataset.status;
+                    renderOmborJami();
+                };
+            });
+        }
+
+        const viewToggleGroup = document.getElementById('ojViewModeToggle');
+        if (viewToggleGroup) {
+            viewToggleGroup.querySelectorAll('.view-btn').forEach(btn => {
+                btn.onclick = () => {
+                    viewToggleGroup.querySelectorAll('.view-btn').forEach(b => {
+                        b.classList.remove('active');
+                        b.style.background = 'transparent';
+                        b.style.color = 'rgba(255, 255, 255, 0.6)';
+                    });
+                    btn.classList.add('active');
+                    btn.style.background = 'rgba(0, 210, 255, 0.2)';
+                    btn.style.color = '#00d2ff';
+                    window._ojViewMode = btn.dataset.view;
+                    renderOmborJami();
+                };
+            });
+        }
+
         if (window.TomSelect && !tsBrand) {
             tsBrand = new window.TomSelect('#ojBrandSelect', {
                 create: false,
                 sortField: { field: 'text', direction: 'asc' },
                 onChange: (val) => {
                     window._ojActiveBrand[window._ojActiveCategory] = val;
+                    populateBrandChips();
                     updateSeriesOptions();
                     renderOmborJami();
                 }
@@ -2285,6 +2402,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 sortField: { field: 'text', direction: 'asc' },
                 onChange: (val) => {
                     window._ojActiveSeries[window._ojActiveCategory] = val;
+                    updateSeriesOptions();
                     renderOmborJami();
                 }
             });
@@ -2330,6 +2448,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const activeBrand = window._ojActiveBrand[cat] || 'barchasi';
         const activeSeries = window._ojActiveSeries[cat] || 'barchasi';
+        const stockStatus = window._ojStockStatus || 'all';
 
         let items = data.items || [];
         if (activeBrand !== 'barchasi') {
@@ -2351,6 +2470,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else if (cat === 'oynak') {
                 items = items.filter(it => it.size === activeSeries);
             }
+        }
+        if (stockStatus === 'low') {
+            items = items.filter(it => (Number(it.stock_quantity ?? it.qty) || 0) < 5);
+        } else if (stockStatus === 'instock') {
+            items = items.filter(it => (Number(it.stock_quantity ?? it.qty) || 0) >= 5);
         }
 
         const q = window._ojSearchTerm;
@@ -2566,7 +2690,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (!displayName) displayName = p.product_name;
 
                     cardsHtml += `
-                        <div class="oj-profile-card" style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.06); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 12px; transition: all 0.3s; position: relative; overflow: hidden; box-sizing: border-box;" onmouseenter="this.style.transform='translateY(-4px)'; this.style.borderColor='${partColor}'; this.style.boxShadow='0 8px 24px ${partColor}11';" onmouseleave="this.style.transform='translateY(0)'; this.style.borderColor='rgba(255,255,255,0.06)'; this.style.boxShadow='none';">
+                        <div class="oj-profile-card" style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.06); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 12px; transition: all 0.3s; position: relative; overflow: hidden; box-sizing: border-box; cursor: pointer;" onclick="window.openProductDetailModal('${p.id}', 'profil')" onmouseenter="this.style.transform='translateY(-4px)'; this.style.borderColor='${partColor}'; this.style.boxShadow='0 8px 24px ${partColor}11';" onmouseleave="this.style.transform='translateY(0)'; this.style.borderColor='rgba(255,255,255,0.06)'; this.style.boxShadow='none';">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <span style="font-size: 0.68rem; font-weight: 800; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; background: ${partColor}18; color: ${partColor}; border: 1px solid ${partColor}33;">
                                     ${partLabel}
@@ -2606,8 +2730,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 
                                 ${isAdmin ? `
                                 <div style="display: flex; gap: 6px;">
-                                    <button class="oj-edit-btn" data-id="${p.id}" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; transition: 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.1)'" onmouseleave="this.style.background='rgba(255,255,255,0.03)'" title="Tahrirlash">✏️</button>
-                                    <button class="oj-delete-btn" data-id="${p.id}" style="background: rgba(255,77,79,0.05); border: 1px solid rgba(255,77,79,0.15); border-radius: 10px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; color: #ff4d4f; transition: 0.2s;" onmouseenter="this.style.background='rgba(255,77,79,0.15)'" onmouseleave="this.style.background='rgba(255,77,79,0.05)'" title="O'chirish">🗑️</button>
+                                    <button class="oj-edit-btn" data-id="${p.id}" onclick="event.stopPropagation()" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; transition: 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.1)'" onmouseleave="this.style.background='rgba(255,255,255,0.03)'" title="Tahrirlash">✏️</button>
+                                    <button class="oj-delete-btn" data-id="${p.id}" onclick="event.stopPropagation()" style="background: rgba(255,77,79,0.05); border: 1px solid rgba(255,77,79,0.15); border-radius: 10px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; color: #ff4d4f; transition: 0.2s;" onmouseenter="this.style.background='rgba(255,77,79,0.15)'" onmouseleave="this.style.background='rgba(255,77,79,0.05)'" title="O'chirish">🗑️</button>
                                 </div>` : ''}
                             </div>
                         </div>
@@ -2615,24 +2739,70 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             }
 
-            tableWrap.innerHTML = `
-                ${blueprintHtml}
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; width: 100%;">
-                    ${cardsHtml}
-                </div>
-            `;
+            const isTableView = window._ojViewMode === 'table';
+            if (isTableView) {
+                const tableRows = items.length ? items.map(p => {
+                    const meta = p.metadata || {};
+                    const qty = Number(p.stock_quantity) || 0;
+                    const qtyColor = qty < 10 ? '#ff4d4f' : '#00ff88';
+                    return `<tr style="cursor:pointer;" onclick="window.openProductDetailModal('${p.id}', 'profil')">
+                        <td><strong>${p.product_name || "Noma'lum"}</strong></td>
+                        <td><span style="font-size:0.7rem; font-weight:800; text-transform:uppercase; padding:3px 8px; border-radius:6px; background:rgba(0,210,255,0.1); color:#00d2ff; border:1px solid rgba(0,210,255,0.2);">${meta.brend || '-'}</span></td>
+                        <td>${meta.seriya || '-'}</td>
+                        <td>${meta.uzunligi ? meta.uzunligi + ' mm' : '-'}</td>
+                        <td style="text-align:right; font-weight:900; color:${qtyColor}">${qty.toLocaleString('uz-UZ')} ${p.unit || ''}</td>
+                        ${isAdmin ? `
+                        <td>
+                            <div style="display:flex; gap:6px; justify-content:center;">
+                                <button class="oj-edit-btn" data-id="${p.id}" onclick="event.stopPropagation()" style="background:none; border:none; cursor:pointer;" title="Tahrirlash">✏️</button>
+                                <button class="oj-delete-btn" data-id="${p.id}" onclick="event.stopPropagation()" style="background:none; border:none; cursor:pointer; color:#ff4d4f;" title="O'chirish">🗑️</button>
+                            </div>
+                        </td>` : ''}
+                    </tr>`;
+                }).join('') : `<tr><td colspan="${isAdmin ? 6 : 5}" style="text-align:center; padding:20px; color:rgba(255,255,255,0.4);">Mahsulot topilmadi</td></tr>`;
+
+                tableWrap.style.background = 'rgba(0,0,0,0.2)';
+                tableWrap.style.border = '1px solid rgba(255,255,255,0.08)';
+                tableWrap.style.borderRadius = '16px';
+                tableWrap.style.overflowX = 'auto';
+
+                tableWrap.innerHTML = `
+                    ${blueprintHtml}
+                    <table class="v2-table" style="margin: 0; width: 100%;">
+                        <thead>
+                            <tr>
+                                <th>Mahsulot</th><th>Brend</th><th>Seriya</th><th>Uzunligi</th><th style="text-align:right;">Zaxira Qoldiq</th>
+                                ${isAdmin ? '<th style="text-align:center;">Harakat</th>' : ''}
+                            </tr>
+                        </thead>
+                        <tbody>${tableRows}</tbody>
+                    </table>
+                `;
+            } else {
+                tableWrap.style.background = 'none';
+                tableWrap.style.border = 'none';
+                tableWrap.style.borderRadius = '0';
+                tableWrap.style.overflowX = 'visible';
+
+                tableWrap.innerHTML = `
+                    ${blueprintHtml}
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; width: 100%;">
+                        ${cardsHtml}
+                    </div>
+                `;
+            }
         } else if (cat === 'aksesuvar') {
             const rows = items.length ? items.map(a => {
                 const qty = Number(a.qty) || 0;
-                return `<tr>
+                return `<tr style="cursor:pointer;" onclick="window.openProductDetailModal('${a.id}', 'aksesuvar')">
                     <td>${a.name || "Noma'lum"}</td>
                     <td>${a.category || '-'}</td>
                     <td style="text-align:right; font-weight:700; color:#00d2ff;">${qty.toLocaleString('uz-UZ')} ${a.unit || ''}</td>
                     ${isAdmin ? `
                     <td>
                         <div style="display:flex; gap:6px; justify-content:center;">
-                            <button class="oj-edit-btn" data-id="${a.id}" style="background:none; border:none; cursor:pointer;" title="Tahrirlash">✏️</button>
-                            <button class="oj-delete-btn" data-id="${a.id}" style="background:none; border:none; cursor:pointer; color:#ff4d4f;" title="O'chirish">🗑️</button>
+                            <button class="oj-edit-btn" data-id="${a.id}" onclick="event.stopPropagation()" style="background:none; border:none; cursor:pointer;" title="Tahrirlash">✏️</button>
+                            <button class="oj-delete-btn" data-id="${a.id}" onclick="event.stopPropagation()" style="background:none; border:none; cursor:pointer; color:#ff4d4f;" title="O'chirish">🗑️</button>
                         </div>
                     </td>` : ''}
                 </tr>`;
@@ -2645,7 +2815,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const rows = items.length ? items.map(qi => {
                 const qty = Number(qi.stock_quantity) || 0;
                 const len = Number(qi.length) || 0;
-                return `<tr>
+                return `<tr style="cursor:pointer;" onclick="window.openProductDetailModal('${qi.id}', 'qoldiq')">
                     <td>${qi.product_name || "Noma'lum"}</td>
                     <td>${qi.brand || '-'}</td>
                     <td style="text-align:right;">${len.toLocaleString('uz-UZ')}</td>
@@ -2653,7 +2823,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     ${isAdmin ? `
                     <td>
                         <div style="display:flex; gap:6px; justify-content:center;">
-                            <button class="oj-delete-qoldiq-btn" data-id="${qi.id}" style="background:none; border:none; cursor:pointer; color:#ff4d4f;" title="O'chirish">🗑️</button>
+                            <button class="oj-delete-qoldiq-btn" data-id="${qi.id}" onclick="event.stopPropagation()" style="background:none; border:none; cursor:pointer; color:#ff4d4f;" title="O'chirish">🗑️</button>
                         </div>
                     </td>` : ''}
                 </tr>`;
@@ -2665,7 +2835,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else if (cat === 'oynak') {
             const rows = items.length ? items.map(o => {
                 const qty = Number(o.stock_quantity) || 0;
-                return `<tr>
+                return `<tr style="cursor:pointer;" onclick="window.openProductDetailModal('${o.id}', 'oynak')">
                     <td>${o.product_name || "Noma'lum"}</td>
                     <td>${o.brand || '-'}</td>
                     <td>${o.size || '-'}</td>
@@ -2673,7 +2843,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     ${isAdmin ? `
                     <td>
                         <div style="display:flex; gap:6px; justify-content:center;">
-                            <button class="oj-delete-oynak-btn" data-id="${o.id}" style="background:none; border:none; cursor:pointer; color:#ff4d4f;" title="O'chirish">🗑️</button>
+                            <button class="oj-delete-oynak-btn" data-id="${o.id}" onclick="event.stopPropagation()" style="background:none; border:none; cursor:pointer; color:#ff4d4f;" title="O'chirish">🗑️</button>
                         </div>
                     </td>` : ''}
                 </tr>`;
@@ -2687,7 +2857,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (isAdmin) {
             // Edit binding
             document.querySelectorAll('.oj-edit-btn').forEach(btn => {
-                btn.onclick = () => {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
                     const prodId = btn.dataset.id;
                     const allItems = [
                         ...(window._ojData.profil.items || []),
@@ -2706,7 +2877,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Delete inventory binding
             document.querySelectorAll('.oj-delete-btn').forEach(btn => {
-                btn.onclick = async () => {
+                btn.onclick = async (e) => {
+                    e.stopPropagation();
                     if (confirm("Ushbu mahsulotni o'chirmoqchimisiz?")) {
                         await supabase.from('romix_inventory').delete().eq('id', btn.dataset.id);
                         loadOmborJami();
@@ -2716,7 +2888,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Delete qoldiq binding
             document.querySelectorAll('.oj-delete-qoldiq-btn').forEach(btn => {
-                btn.onclick = async () => {
+                btn.onclick = async (e) => {
+                    e.stopPropagation();
                     if (confirm("Ushbu qoldiq profilni o'chirmoqchimisiz?")) {
                         await supabase.from('romix_qoldiq_profillar').delete().eq('id', btn.dataset.id);
                         loadOmborJami();
@@ -2726,7 +2899,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Delete oynak binding
             document.querySelectorAll('.oj-delete-oynak-btn').forEach(btn => {
-                btn.onclick = async () => {
+                btn.onclick = async (e) => {
+                    e.stopPropagation();
                     if (confirm("Ushbu oynakni o'chirmoqchimisiz?")) {
                         await supabase.from('romix_oynak').delete().eq('id', btn.dataset.id);
                         loadOmborJami();
@@ -2734,6 +2908,182 @@ document.addEventListener('DOMContentLoaded', async () => {
                 };
             });
         }
+    }
+
+    // --- MAHSULOT HAFIDA TO'LIQ MA'LUMOT VA TARIX MODALI ---
+    window.openProductDetailModal = async function(prodId, cat) {
+        cat = cat || window._ojActiveCategory || 'profil';
+        const data = window._ojData && window._ojData[cat];
+        if (!data || !data.items) return;
+
+        const p = data.items.find(x => String(x.id) === String(prodId));
+        if (!p) return;
+
+        window._activeDetailProd = p;
+        window._activeDetailCat = cat;
+
+        const modal = document.getElementById('prodDetailModal');
+        const badge = document.getElementById('pdCategoryBadge');
+        const nameInput = document.getElementById('pdNameInput');
+        const brandEl = document.getElementById('pdBrand');
+        const seriesEl = document.getElementById('pdSeries');
+        const stockEl = document.getElementById('pdStock');
+        const idEl = document.getElementById('pdId');
+        const firstInEl = document.getElementById('pdFirstIn');
+        const lastInEl = document.getElementById('pdLastIn');
+        const lastOutEl = document.getElementById('pdLastOut');
+        const historyList = document.getElementById('pdHistoryList');
+
+        if (!modal) return;
+
+        const meta = p.metadata || {};
+        const prodName = p.product_name || p.name || "Noma'lum";
+        const brand = meta.brend || p.brand || p.category || '-';
+        const series = meta.seriya || p.series || p.size || '-';
+        const qty = Number(p.stock_quantity ?? p.qty) || 0;
+        const unit = p.unit || 'dona';
+
+        badge.textContent = `${cat.toUpperCase()} — MAHSULOT TAFSILOTLARI`;
+        nameInput.value = prodName;
+        brandEl.textContent = brand;
+        seriesEl.textContent = series;
+        stockEl.textContent = `${qty.toLocaleString('uz-UZ')} ${unit}`;
+        idEl.textContent = p.id ? `#${String(p.id).slice(0, 12).toUpperCase()}` : '—';
+
+        firstInEl.textContent = 'Yuklanmoqda...';
+        lastInEl.textContent = 'Yuklanmoqda...';
+        lastOutEl.textContent = 'Yuklanmoqda...';
+        historyList.innerHTML = '<div style="text-align:center; padding:20px; color:rgba(255,255,255,0.4); font-size:0.85rem;">Harakatlar tarixi yuklanmoqda...</div>';
+
+        modal.classList.remove('hidden');
+
+        try {
+            let query = supabase.from('romix_transactions').select('*').order('created_at', { ascending: false });
+            if (p.id) {
+                query = query.or(`inventory_id.eq.${p.id},material_name.ilike.%${prodName}%`);
+            } else {
+                query = query.ilike('material_name', `%${prodName}%`);
+            }
+
+            const { data: txs, error } = await query.limit(50);
+            if (error) throw error;
+
+            if (!txs || txs.length === 0) {
+                firstInEl.textContent = 'Mavjud emas';
+                lastInEl.textContent = 'Mavjud emas';
+                lastOutEl.textContent = 'Hali ishlatilmagan';
+                historyList.innerHTML = '<div style="text-align:center; padding:20px; color:rgba(255,255,255,0.3); font-size:0.85rem;">Ushbu mahsulot bo\'yicha birorta kirim/chiqim amali topilmadi.</div>';
+                return;
+            }
+
+            const inTxs = txs.filter(t => t.type === 'IN').sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            const outTxs = txs.filter(t => t.type === 'OUT').sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            if (inTxs.length > 0) {
+                const firstInDate = new Date(inTxs[0].created_at);
+                const lastInDate = new Date(inTxs[inTxs.length - 1].created_at);
+                firstInEl.textContent = firstInDate.toLocaleDateString('uz-UZ', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                lastInEl.textContent = lastInDate.toLocaleDateString('uz-UZ', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            } else {
+                firstInEl.textContent = 'Mavjud emas';
+                lastInEl.textContent = 'Mavjud emas';
+            }
+
+            if (outTxs.length > 0) {
+                const lastOutDate = new Date(outTxs[0].created_at);
+                lastOutEl.textContent = lastOutDate.toLocaleDateString('uz-UZ', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            } else {
+                lastOutEl.textContent = 'Hali ishlatilmagan';
+            }
+
+            let historyHtml = txs.map(t => {
+                const isIN = t.type === 'IN';
+                const dateStr = new Date(t.created_at).toLocaleDateString('uz-UZ', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                const typeLabel = isIN ? '📥 Kirim' : '📤 Chiqim';
+                const typeColor = isIN ? '#00ff88' : '#ff4d4f';
+                return `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.05); font-size:0.83rem;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-weight:800; color:${typeColor}; background:${typeColor}15; padding:2px 8px; border-radius:6px; border:1px solid ${typeColor}30;">${typeLabel}</span>
+                            <span style="color:#fff; font-weight:700;">${Number(t.quantity || 0).toLocaleString('uz-UZ')} ${unit}</span>
+                        </div>
+                        <div style="text-align:right;">
+                            <span style="color:rgba(255,255,255,0.5); font-size:0.75rem; display:block;">${dateStr}</span>
+                            <span style="color:rgba(255,255,255,0.3); font-size:0.7rem;">${t.performer_name || 'Tizim'}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            historyList.innerHTML = historyHtml;
+
+        } catch (err) {
+            console.warn('Product details history fetch error:', err);
+            firstInEl.textContent = '—';
+            lastInEl.textContent = '—';
+            lastOutEl.textContent = '—';
+            historyList.innerHTML = '<div style="text-align:center; padding:20px; color:#ff4d4f; font-size:0.85rem;">Tarixni yuklashda xatolik yuz berdi.</div>';
+        }
+    };
+
+    window.saveProductName = async function() {
+        const p = window._activeDetailProd;
+        const cat = window._activeDetailCat || 'profil';
+        const nameInput = document.getElementById('pdNameInput');
+        const saveBtn = document.getElementById('pdSaveNameBtn');
+
+        if (!p || !nameInput) return;
+
+        const newName = nameInput.value.trim();
+        if (!newName) {
+            alert("Mahsulot nomi bo'sh bo'lishi mumkin emas!");
+            return;
+        }
+
+        saveBtn.textContent = "⏳ Saqlanmoqda...";
+        saveBtn.disabled = true;
+
+        try {
+            let table = 'romix_inventory';
+            let nameCol = 'product_name';
+            if (cat === 'aksesuvar') { table = 'romix_accessories'; nameCol = 'name'; }
+            else if (cat === 'qoldiq') { table = 'romix_qoldiq_profillar'; nameCol = 'product_name'; }
+            else if (cat === 'oynak') { table = 'romix_oynak'; nameCol = 'product_name'; }
+
+            const updateObj = {};
+            updateObj[nameCol] = newName;
+
+            const { error } = await supabase.from(table).update(updateObj).eq('id', p.id);
+            if (error) throw error;
+
+            alert("Mahsulot nomi muvaffaqiyatli saqlandi!");
+            
+            p.product_name = newName;
+            p.name = newName;
+
+            document.getElementById('prodDetailModal').classList.add('hidden');
+            if (typeof loadOmborJami === 'function') loadOmborJami();
+
+        } catch (err) {
+            console.error('Mahsulot nomini saqlash xatosi:', err);
+            alert("Xatolik: Nomini saqlab bo'lmadi! " + (err.message || ''));
+        } finally {
+            saveBtn.textContent = "💾 Nomini Saqlash";
+            saveBtn.disabled = false;
+        }
+    };
+
+    // Close and Save buttons binding for prodDetailModal
+    const closeDetailModalBtn = document.getElementById('closeProdDetailModal');
+    if (closeDetailModalBtn) {
+        closeDetailModalBtn.onclick = () => {
+            const m = document.getElementById('prodDetailModal');
+            if (m) m.classList.add('hidden');
+        };
+    }
+    const saveNameBtn = document.getElementById('pdSaveNameBtn');
+    if (saveNameBtn) {
+        saveNameBtn.onclick = window.saveProductName;
     }
 
 
