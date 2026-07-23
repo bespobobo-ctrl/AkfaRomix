@@ -2292,19 +2292,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         const sizeInput = document.getElementById('pdSizeInput');
         const saveBtn = document.getElementById('pdSaveNameBtn');
 
-        if (!p || !nameInput) return;
+        if (!p || !nameInput) {
+            alert("Mahsulot tanlanmagan!");
+            return;
+        }
 
         const newName = nameInput.value.trim();
         const newSeries = seriesInput ? seriesInput.value.trim() : '';
         const newSize = sizeInput ? sizeInput.value.trim() : '';
 
         if (!newName) {
-            alert("Mahsulot nomi bo'sh bo'lishi mumkin emas!");
+            alert("Mahsulot nomi bo\u2018sh bo\u2018lishi mumkin emas!");
             return;
         }
 
-        saveBtn.textContent = "⏳ Saqlanmoqda...";
-        saveBtn.disabled = true;
+        if (saveBtn) {
+            saveBtn.textContent = "\u23F3 Saqlanmoqda...";
+            saveBtn.disabled = true;
+        }
 
         try {
             let table = 'romix_inventory';
@@ -2335,8 +2340,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const { error } = await supabase.from(table).update(updateObj).eq('id', p.id);
             if (error) throw error;
 
-            alert("Mahsulot ma'lumotlari (nomi, seriya, o'lchami) muvaffaqiyatli saqlandi!");
-            
             p.product_name = newName;
             p.name = newName;
             if (!p.metadata) p.metadata = {};
@@ -2347,14 +2350,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const m = document.getElementById('prodDetailModal');
             if (m) m.style.setProperty('display', 'none', 'important');
+
+            alert("Muvaffaqiyatli saqlandi!");
             if (typeof loadOmborJami === 'function') loadOmborJami();
 
         } catch (err) {
-            console.error('Mahsulot ma\'lumotlarini saqlash xatosi:', err);
-            alert("Xatolik: Ma'lumotlarni saqlab bo'lmadi! " + (err.message || ''));
+            console.error('Saqlash xatosi:', err);
+            alert("Xatolik: " + (err.message || "Saqlab bo\u2018lmadi"));
         } finally {
-            saveBtn.textContent = "💾 Ma'lumotlarni Saqlash";
-            saveBtn.disabled = false;
+            if (saveBtn) {
+                saveBtn.textContent = "\uD83D\uDCBE Ma\u2018lumotlarni Saqlash";
+                saveBtn.disabled = false;
+            }
         }
     };
 
