@@ -2130,11 +2130,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- MAHSULOT HAQIDA TO'LIQ MA'LUMOT VA TARIX MODALI ---
     window.openProductDetailModal = async function(prodId, cat) {
         cat = cat || window._ojActiveCategory || 'profil';
-        const data = window._ojData && window._ojData[cat];
-        if (!data || !data.items) return;
-
-        const p = data.items.find(x => String(x.id) === String(prodId));
-        if (!p) return;
+        
+        let p = null;
+        let foundCat = cat;
+        if (window._ojData) {
+            if (window._ojData[cat] && window._ojData[cat].items) {
+                p = window._ojData[cat].items.find(x => String(x.id) === String(prodId));
+            }
+            if (!p) {
+                for (const cKey of ['profil', 'aksesuvar', 'qoldiq', 'oynak']) {
+                    if (window._ojData[cKey] && window._ojData[cKey].items) {
+                        p = window._ojData[cKey].items.find(x => String(x.id) === String(prodId));
+                        if (p) { foundCat = cKey; break; }
+                    }
+                }
+            }
+        }
+        if (!p) {
+            console.warn("Product not found in _ojData for ID:", prodId);
+            return;
+        }
+        cat = foundCat;
 
         window._activeDetailProd = p;
         window._activeDetailCat = cat;
@@ -2143,7 +2159,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const badge = document.getElementById('pdCategoryBadge');
         const nameInput = document.getElementById('pdNameInput');
         const brandEl = document.getElementById('pdBrand');
-        const seriesEl = document.getElementById('pdSeries');
         const stockEl = document.getElementById('pdStock');
         const idEl = document.getElementById('pdId');
         const firstInEl = document.getElementById('pdFirstIn');
@@ -2161,19 +2176,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         const qty = Number(p.stock_quantity ?? p.qty) || 0;
         const unit = p.unit || 'dona';
 
-        badge.textContent = `${cat.toUpperCase()} — MAHSULOT TAFSILOTLARI`;
-        nameInput.value = prodName;
+        if (badge) badge.textContent = `${cat.toUpperCase()} — MAHSULOT TAFSILOTLARI`;
+        if (nameInput) nameInput.value = prodName;
         if (document.getElementById('pdSeriesInput')) document.getElementById('pdSeriesInput').value = series;
         if (document.getElementById('pdSizeInput')) document.getElementById('pdSizeInput').value = sizeVal;
-        brandEl.textContent = brand;
-        stockEl.textContent = `${qty.toLocaleString('uz-UZ')} ${unit}`;
-        idEl.textContent = p.id ? `#${String(p.id).slice(0, 12).toUpperCase()}` : '—';
+        if (brandEl) brandEl.textContent = brand;
+        if (stockEl) stockEl.textContent = `${qty.toLocaleString('uz-UZ')} ${unit}`;
+        if (idEl) idEl.textContent = p.id ? `#${String(p.id).slice(0, 12).toUpperCase()}` : '—';
 
-        firstInEl.textContent = 'Yuklanmoqda...';
-        lastInEl.textContent = 'Yuklanmoqda...';
-        lastOutEl.textContent = 'Yuklanmoqda...';
-        historyList.innerHTML = '<div style="text-align:center; padding:20px; color:rgba(255,255,255,0.4); font-size:0.85rem;">Harakatlar tarixi yuklanmoqda...</div>';
+        if (firstInEl) firstInEl.textContent = 'Yuklanmoqda...';
+        if (lastInEl) lastInEl.textContent = 'Yuklanmoqda...';
+        if (lastOutEl) lastOutEl.textContent = 'Yuklanmoqda...';
+        if (historyList) historyList.innerHTML = '<div style="text-align:center; padding:20px; color:rgba(255,255,255,0.4); font-size:0.85rem;">Harakatlar tarixi yuklanmoqda...</div>';
 
+        modal.style.display = 'flex';
         modal.classList.remove('hidden');
 
         try {
@@ -2188,10 +2204,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (error) throw error;
 
             if (!txs || txs.length === 0) {
-                firstInEl.textContent = 'Mavjud emas';
-                lastInEl.textContent = 'Mavjud emas';
-                lastOutEl.textContent = 'Hali ishlatilmagan';
-                historyList.innerHTML = '<div style="text-align:center; padding:20px; color:rgba(255,255,255,0.3); font-size:0.85rem;">Ushbu mahsulot bo\'yicha birorta kirim/chiqim amali topilmadi.</div>';
+                if (firstInEl) firstInEl.textContent = 'Mavjud emas';
+                if (lastInEl) lastInEl.textContent = 'Mavjud emas';
+                if (lastOutEl) lastOutEl.textContent = 'Hali ishlatilmagan';
+                if (historyList) historyList.innerHTML = '<div style="text-align:center; padding:20px; color:rgba(255,255,255,0.3); font-size:0.85rem;">Ushbu mahsulot bo\'yicha birorta kirim/chiqim amali topilmadi.</div>';
                 return;
             }
 
@@ -2201,18 +2217,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (inTxs.length > 0) {
                 const firstInDate = new Date(inTxs[0].created_at);
                 const lastInDate = new Date(inTxs[inTxs.length - 1].created_at);
-                firstInEl.textContent = firstInDate.toLocaleDateString('uz-UZ', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-                lastInEl.textContent = lastInDate.toLocaleDateString('uz-UZ', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                if (firstInEl) firstInEl.textContent = firstInDate.toLocaleDateString('uz-UZ', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                if (lastInEl) lastInEl.textContent = lastInDate.toLocaleDateString('uz-UZ', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
             } else {
-                firstInEl.textContent = 'Mavjud emas';
-                lastInEl.textContent = 'Mavjud emas';
+                if (firstInEl) firstInEl.textContent = 'Mavjud emas';
+                if (lastInEl) lastInEl.textContent = 'Mavjud emas';
             }
 
             if (outTxs.length > 0) {
                 const lastOutDate = new Date(outTxs[0].created_at);
-                lastOutEl.textContent = lastOutDate.toLocaleDateString('uz-UZ', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                if (lastOutEl) lastOutEl.textContent = lastOutDate.toLocaleDateString('uz-UZ', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
             } else {
-                lastOutEl.textContent = 'Hali ishlatilmagan';
+                if (lastOutEl) lastOutEl.textContent = 'Hali ishlatilmagan';
             }
 
             let historyHtml = txs.map(t => {
@@ -2234,14 +2250,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 `;
             }).join('');
 
-            historyList.innerHTML = historyHtml;
+            if (historyList) historyList.innerHTML = historyHtml;
 
         } catch (err) {
             console.warn('Product details history fetch error:', err);
-            firstInEl.textContent = '—';
-            lastInEl.textContent = '—';
-            lastOutEl.textContent = '—';
-            historyList.innerHTML = '<div style="text-align:center; padding:20px; color:#ff4d4f; font-size:0.85rem;">Tarixni yuklashda xatolik yuz berdi.</div>';
+            if (firstInEl) firstInEl.textContent = '—';
+            if (lastInEl) lastInEl.textContent = '—';
+            if (lastOutEl) lastOutEl.textContent = '—';
+            if (historyList) historyList.innerHTML = '<div style="text-align:center; padding:20px; color:#ff4d4f; font-size:0.85rem;">Tarixni yuklashda xatolik yuz berdi.</div>';
         }
     };
 
@@ -2328,6 +2344,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         const cat = itemEl.dataset.cat || window._ojActiveCategory || 'profil';
         if (prodId) {
             window.openProductDetailModal(prodId, cat);
+        }
+    });
+
+    // Close button & Backdrop click for prodDetailModal
+    document.addEventListener('DOMContentLoaded', () => {
+        const closeBtn = document.getElementById('closeProdDetailModal');
+        if (closeBtn) {
+            closeBtn.onclick = () => {
+                const m = document.getElementById('prodDetailModal');
+                if (m) {
+                    m.style.display = 'none';
+                    m.classList.add('hidden');
+                }
+            };
+        }
+        const m = document.getElementById('prodDetailModal');
+        if (m) {
+            m.onclick = (e) => {
+                if (e.target === m) {
+                    m.style.display = 'none';
+                    m.classList.add('hidden');
+                }
+            };
         }
     });
 
