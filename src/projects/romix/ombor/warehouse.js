@@ -2371,7 +2371,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Close button & Backdrop click for prodDetailModal
+    // Close button, Backdrop click, and Save button for prodDetailModal
     document.addEventListener('DOMContentLoaded', () => {
         const closeBtn = document.getElementById('closeProdDetailModal');
         if (closeBtn) {
@@ -2379,6 +2379,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const m = document.getElementById('prodDetailModal');
                 if (m) m.style.setProperty('display', 'none', 'important');
             };
+        }
+        const saveBtn = document.getElementById('pdSaveNameBtn');
+        if (saveBtn) {
+            saveBtn.onclick = () => window.saveProductName();
         }
         const m = document.getElementById('prodDetailModal');
         if (m) {
