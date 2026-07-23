@@ -2146,8 +2146,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
         }
+
+        if (!p && prodId) {
+            try {
+                let tbl = 'romix_inventory';
+                if (cat === 'aksesuvar') tbl = 'romix_accessories';
+                else if (cat === 'qoldiq') tbl = 'romix_qoldiq_profillar';
+                else if (cat === 'oynak') tbl = 'romix_oynak';
+                
+                const { data } = await supabase.from(tbl).select('*').eq('id', prodId).maybeSingle();
+                if (data) p = data;
+            } catch (e) {
+                console.warn('Direct fetch fallback error:', e);
+            }
+        }
+
         if (!p) {
-            console.warn("Product not found in _ojData for ID:", prodId);
+            console.warn("Product not found for ID:", prodId);
             return;
         }
         cat = foundCat;
