@@ -2156,14 +2156,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         const meta = p.metadata || {};
         const prodName = p.product_name || p.name || "Noma'lum";
         const brand = meta.brend || p.brand || p.category || '-';
-        const series = meta.seriya || p.series || p.size || '-';
+        const series = meta.seriya || p.series || p.size || '';
+        const sizeVal = meta.uzunligi || p.length || p.size || '';
         const qty = Number(p.stock_quantity ?? p.qty) || 0;
         const unit = p.unit || 'dona';
 
         badge.textContent = `${cat.toUpperCase()} — MAHSULOT TAFSILOTLARI`;
         nameInput.value = prodName;
+        if (document.getElementById('pdSeriesInput')) document.getElementById('pdSeriesInput').value = series;
+        if (document.getElementById('pdSizeInput')) document.getElementById('pdSizeInput').value = sizeVal;
         brandEl.textContent = brand;
-        seriesEl.textContent = series;
         stockEl.textContent = `${qty.toLocaleString('uz-UZ')} ${unit}`;
         idEl.textContent = p.id ? `#${String(p.id).slice(0, 12).toUpperCase()}` : '—';
 
@@ -2247,11 +2249,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         const p = window._activeDetailProd;
         const cat = window._activeDetailCat || 'profil';
         const nameInput = document.getElementById('pdNameInput');
+        const seriesInput = document.getElementById('pdSeriesInput');
+        const sizeInput = document.getElementById('pdSizeInput');
         const saveBtn = document.getElementById('pdSaveNameBtn');
 
         if (!p || !nameInput) return;
 
         const newName = nameInput.value.trim();
+        const newSeries = seriesInput ? seriesInput.value.trim() : '';
+        const newSize = sizeInput ? sizeInput.value.trim() : '';
+
         if (!newName) {
             alert("Mahsulot nomi bo'sh bo'lishi mumkin emas!");
             return;
@@ -2262,30 +2269,51 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             let table = 'romix_inventory';
-            let nameCol = 'product_name';
-            if (cat === 'aksesuvar') { table = 'romix_accessories'; nameCol = 'name'; }
-            else if (cat === 'qoldiq') { table = 'romix_qoldiq_profillar'; nameCol = 'product_name'; }
-            else if (cat === 'oynak') { table = 'romix_oynak'; nameCol = 'product_name'; }
-
             const updateObj = {};
-            updateObj[nameCol] = newName;
+
+            if (cat === 'aksesuvar') {
+                table = 'romix_accessories';
+                updateObj.name = newName;
+                if (newSeries) updateObj.category = newSeries;
+            } else if (cat === 'qoldiq') {
+                table = 'romix_qoldiq_profillar';
+                updateObj.product_name = newName;
+                if (newSeries) updateObj.series = newSeries;
+                if (newSize) updateObj.length = newSize;
+            } else if (cat === 'oynak') {
+                table = 'romix_oynak';
+                updateObj.product_name = newName;
+                if (newSize) updateObj.size = newSize;
+            } else {
+                table = 'romix_inventory';
+                updateObj.product_name = newName;
+                const newMeta = { ...(p.metadata || {}) };
+                if (newSeries) newMeta.seriya = newSeries;
+                if (newSize) newMeta.uzunligi = newSize;
+                updateObj.metadata = newMeta;
+            }
 
             const { error } = await supabase.from(table).update(updateObj).eq('id', p.id);
             if (error) throw error;
 
-            alert("Mahsulot nomi muvaffaqiyatli saqlandi!");
+            alert("Mahsulot ma'lumotlari (nomi, seriya, o'lchami) muvaffaqiyatli saqlandi!");
             
             p.product_name = newName;
             p.name = newName;
+            if (!p.metadata) p.metadata = {};
+            p.metadata.seriya = newSeries;
+            p.metadata.uzunligi = newSize;
+            if (cat === 'qoldiq') { p.series = newSeries; p.length = newSize; }
+            if (cat === 'oynak') { p.size = newSize; }
 
             document.getElementById('prodDetailModal').classList.add('hidden');
             if (typeof loadOmborJami === 'function') loadOmborJami();
 
         } catch (err) {
-            console.error('Mahsulot nomini saqlash xatosi:', err);
-            alert("Xatolik: Nomini saqlab bo'lmadi! " + (err.message || ''));
+            console.error('Mahsulot ma\'lumotlarini saqlash xatosi:', err);
+            alert("Xatolik: Ma'lumotlarni saqlab bo'lmadi! " + (err.message || ''));
         } finally {
-            saveBtn.textContent = "💾 Nomini Saqlash";
+            saveBtn.textContent = "💾 Ma'lumotlarni Saqlash";
             saveBtn.disabled = false;
         }
     };
