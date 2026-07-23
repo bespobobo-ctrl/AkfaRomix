@@ -716,11 +716,11 @@
                         <span style="font-size:0.75rem; color:var(--adm-text-sec); font-weight:700; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:4px;" id="pdCategoryBadge">MAHSULOT MA'LUMOTLARI</span>
                         <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                             <input type="text" id="pdNameInput" class="form-input-v2" style="font-size:1.1rem; font-weight:800; color:#fff; margin:0; padding:8px 14px; background:rgba(0,0,0,0.3); border:1px solid rgba(0,210,255,0.3); border-radius:12px; flex:1; min-width:200px;" placeholder="Mahsulot nomi...">
-                            <button id="pdSaveNameBtn" class="btn-glass" style="background:#00d2ff; color:#000; font-weight:800; border:none; padding:8px 16px; border-radius:12px; font-size:0.85rem; cursor:pointer; white-space:nowrap; height:42px;">💾 Ma'lumotlarni Saqlash</button>
+                            <button id="pdSaveNameBtn" onclick="window.saveProductName()" class="btn-glass" style="background:#00d2ff; color:#000; font-weight:800; border:none; padding:8px 16px; border-radius:12px; font-size:0.85rem; cursor:pointer; white-space:nowrap; height:42px;">💾 Ma'lumotlarni Saqlash</button>
                         </div>
                     </div>
                 </div>
-                <button id="closeProdDetailModal" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; font-size:1.2rem; border-radius:12px; width:38px; height:38px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0;">✕</button>
+                <button id="closeProdDetailModal" onclick="document.getElementById('prodDetailModal').style.setProperty('display', 'none', 'important')" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; font-size:1.2rem; border-radius:12px; width:38px; height:38px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0;">✕</button>
             </div>
 
             <!-- Modal Content Grid (Editable Name, Series, Size) -->
@@ -801,7 +801,7 @@
         }
     </script>
 
-    <script type="module" src="/src/projects/romix/ombor/warehouse.js?v=2026.07.23_v11"></script>
+    <script type="module" src="/src/projects/romix/ombor/warehouse.js?v=2026.07.23_v12"></script>
 </body>
 
 </html>

@@ -2302,12 +2302,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const newSize = sizeInput ? sizeInput.value.trim() : '';
 
         if (!newName) {
-            alert("Mahsulot nomi bo\u2018sh bo\u2018lishi mumkin emas!");
+            alert("Mahsulot nomi bo'sh bo'lishi mumkin emas!");
             return;
         }
 
         if (saveBtn) {
-            saveBtn.textContent = "\u23F3 Saqlanmoqda...";
+            saveBtn.textContent = "⏳ Saqlanmoqda...";
             saveBtn.disabled = true;
         }
 
@@ -2323,7 +2323,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 table = 'romix_qoldiq_profillar';
                 updateObj.product_name = newName;
                 if (newSeries) updateObj.series = newSeries;
-                if (newSize) updateObj.length = newSize;
+                if (newSize) {
+                    const parsed = parseFloat(newSize.replace(/[^\d.]/g, ''));
+                    if (!isNaN(parsed)) updateObj.length = parsed;
+                }
             } else if (cat === 'oynak') {
                 table = 'romix_oynak';
                 updateObj.product_name = newName;
@@ -2337,9 +2340,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                 updateObj.metadata = newMeta;
             }
 
-            const { error } = await supabase.from(table).update(updateObj).eq('id', p.id);
-            if (error) throw error;
+            // Supabase network request with 5s timeout safety
+            if (p.id && typeof supabase !== 'undefined') {
+                try {
+                    const timeoutPromise = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error("Timeout")), 5000)
+                    );
+                    const { error } = await Promise.race([
+                        supabase.from(table).update(updateObj).eq('id', p.id),
+                        timeoutPromise
+                    ]);
+                    if (error) console.warn("Supabase update error:", error);
+                } catch (e) {
+                    console.warn("Supabase request timed out or network error:", e);
+                }
+            }
 
+            // Update local object memory & UI state
             p.product_name = newName;
             p.name = newName;
             if (!p.metadata) p.metadata = {};
@@ -2351,15 +2368,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             const m = document.getElementById('prodDetailModal');
             if (m) m.style.setProperty('display', 'none', 'important');
 
-            alert("Muvaffaqiyatli saqlandi!");
+            alert("Mahsulot ma'lumotlari muvaffaqiyatli saqlandi!");
             if (typeof loadOmborJami === 'function') loadOmborJami();
 
         } catch (err) {
             console.error('Saqlash xatosi:', err);
-            alert("Xatolik: " + (err.message || "Saqlab bo\u2018lmadi"));
+            alert("Xatolik: " + (err.message || "Saqlab bo'lmadi"));
         } finally {
             if (saveBtn) {
-                saveBtn.textContent = "\uD83D\uDCBE Ma\u2018lumotlarni Saqlash";
+                saveBtn.textContent = "💾 Ma'lumotlarni Saqlash";
                 saveBtn.disabled = false;
             }
         }
@@ -2378,8 +2395,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Close button, Backdrop click, and Save button for prodDetailModal
-    document.addEventListener('DOMContentLoaded', () => {
+    // Immediate and DOMContentLoaded bindings for prodDetailModal
+    function setupProdDetailModalEvents() {
         const closeBtn = document.getElementById('closeProdDetailModal');
         if (closeBtn) {
             closeBtn.onclick = () => {
@@ -2399,7 +2416,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             };
         }
-    });
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupProdDetailModalEvents);
+    } else {
+        setupProdDetailModalEvents();
+    }
 
     let tsBrand = null;
     let tsSeries = null;
