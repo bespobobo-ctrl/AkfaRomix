@@ -6,7 +6,22 @@ import { supabase } from '@/core/supabase.js';
         }[c]));
     }
 
+    // "buxgalter" roli uchun funksiya darajasidagi himoya (BUH-02) — UI'da bu bo'lim
+    // buxgalter uchun CSS bilan yashirilgan, lekin konsoldan to'g'ridan-to'g'ri
+    // chaqirilishi mumkin edi. Boshqa rollar (admin/hr/ombor/sotuv/ishlab_chiqarish)
+    // bu funksiyalarga hozirgi kabi kirishda davom etadi — faqat buxgalter bloklanadi.
+    function __denyIfBuxgalterForUsers(fnName) {
+        let role = null;
+        try { role = JSON.parse(localStorage.getItem('currentUser') || '{}').role || null; } catch (e) {}
+        if (role === 'buxgalter') {
+            console.warn(`Ruxsat yo'q: "buxgalter" roli "${fnName}" funksiyasini chaqira olmaydi.`);
+            return true;
+        }
+        return false;
+    }
+
     window.loadSystemUsers = async function() {
+        if (__denyIfBuxgalterForUsers('loadSystemUsers')) return;
         const tbody = document.getElementById('sysUsersTable');
         if (!tbody) return;
         
@@ -60,6 +75,7 @@ import { supabase } from '@/core/supabase.js';
     };
 
     window.deleteSystemUser = async function(id) {
+        if (__denyIfBuxgalterForUsers('deleteSystemUser')) return;
         if (!confirm("Haqiqatdan ham ushbu loginni o'chirmoqchimisiz?")) return;
         
         try {

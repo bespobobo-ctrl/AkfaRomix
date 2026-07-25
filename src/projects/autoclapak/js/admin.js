@@ -34,6 +34,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('section-buhgalter').classList.add('active');
     }
 
+    // "buxgalter" roli uchun funksiya darajasidagi himoya (BUH-02) — DOM yashirish
+    // brauzer konsolidan to'g'ridan-to'g'ri chaqiruvni to'xtatmaydi, shuning uchun
+    // boshqa bo'limlarning ma'lumot yuklovchi funksiyalari shu tekshiruv bilan boshlanadi.
+    function __denyIfBuxgalter(fnName) {
+        if (__curUserForGate.role === 'buxgalter') {
+            console.warn(`Ruxsat yo'q: "buxgalter" roli "${fnName}" funksiyasini chaqira olmaydi.`);
+            return true;
+        }
+        return false;
+    }
+
     // Switch to active Romix section if stored from sub-page redirection
     const activeRomixSec = localStorage.getItem('activeRomixSection');
     if (activeRomixSec && document.getElementById('section-dashboard')) {
@@ -6448,6 +6459,7 @@ ALTER TABLE employees ADD COLUMN IF NOT EXISTS advance_paid NUMERIC DEFAULT 0;`;
     };
 
     window.loadAutoSales = async () => {
+        if (__denyIfBuxgalter('loadAutoSales')) return;
         // Fetch latest today's production from Supabase to ensure data is synchronized in real-time
         await refreshAutoProduction();
 
@@ -6567,6 +6579,7 @@ ALTER TABLE employees ADD COLUMN IF NOT EXISTS advance_paid NUMERIC DEFAULT 0;`;
     // --- AUTO CLAPAK INVENTORY ---
     let cachedAutoInventory = [];
     async function loadAutoClapakInventory() {
+        if (__denyIfBuxgalter('loadAutoClapakInventory')) return;
         const tableBody = document.getElementById('autoMaterialTable');
         const hasIsoGrid = document.getElementById('isoWarehouseGrid');
         const has3DGrid = document.getElementById('autoWarehouse3DGrid'); // just in case
@@ -6831,6 +6844,7 @@ ALTER TABLE employees ADD COLUMN IF NOT EXISTS advance_paid NUMERIC DEFAULT 0;`;
     let autoProductionInterval = null;
 
     async function loadAutoProduction() {
+        if (__denyIfBuxgalter('loadAutoProduction')) return;
         // Fetch immediately
         await refreshAutoProduction();
 
@@ -9524,6 +9538,7 @@ ALTER TABLE employees ADD COLUMN IF NOT EXISTS advance_paid NUMERIC DEFAULT 0;`;
 
     // --- ROMIX HR DATA (ELITE COMMAND) ---
     async function loadRomixHRData() {
+        if (__denyIfBuxgalter('loadRomixHRData')) return;
         const { data: emps, error } = await supabase.from('employees').select('id, full_name, first_name, last_name, role, status, created_at, birth_year, avatar_url, department, joined_year, experience, phone').order('full_name', { ascending: true });
         if (error) {
             console.error("HR Load Error:", error);
