@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const user = JSON.parse(localStorage.getItem('currentUser'));
     if (!user || !['sotuv', 'admin', 'sotuvchi'].includes(user.role)) {
         window.location.href = '/';
+        return;
     }
     // "sotuvchi" — Sozlamalarda qo'shilgan yordamchi sotuv xodimi: faqat buyurtma olish oynasini ko'radi,
     // analitika/harakat grafigi/to'lovlar tarixi/sotuvchilar boshqaruviga kirmaydi.
@@ -585,7 +586,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 design: (['rom', 'rom_fortochka', 'eshik'].includes(type) && _designer) ? _designer.getModel() : null,
                 calcVal: calcVal,
                 subtotal: subtotal,
-                unit: matOpt.dataset.unit
+                unit: matOpt.dataset.unit,
+                sizeText: sizeText
             };
 
             orderItems.push(item);
@@ -1492,7 +1494,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const { error } = await supabase.from('sales_orders').delete().eq('id', id);
                         if (error) throw error;
                     } catch(err) {
-                        console.warn("Supabase delete order failed, applying to local storage:", err);
+                        console.warn("Supabase delete order failed:", err);
+                        alert("Xatolik: buyurtma bazadan o'chmadi — " + (err.message || "sabab noma'lum") + ". Qayta urinib ko'ring.");
+                        return;
                     }
                     const localRaw = localStorage.getItem('romix_orders_local');
                     if (localRaw) {

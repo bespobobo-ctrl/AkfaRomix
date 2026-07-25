@@ -582,9 +582,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (confirm('Ushbu xodimni o\'chirmoqchimisiz?')) {
                     const id = b.dataset.id;
                     try {
-                        await supabase.from('romix_staff').delete().eq('id', id);
+                        const { error } = await supabase.from('romix_staff').delete().eq('id', id);
+                        if (error) throw error;
                     } catch (err) {
                         console.warn("Delete staff from db failed:", err);
+                        alert("Xatolik: xodim bazadan o'chmadi — " + (err.message || "sabab noma'lum") + ". Qayta urinib ko'ring.");
+                        return;
                     }
                     let localStaff = JSON.parse(localStorage.getItem('romix_employees_local') || '[]');
                     localStaff = localStaff.filter(x => x.id !== id);
@@ -633,14 +636,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Attempt db save
         try {
-            await supabase.from('romix_staff').insert([{
+            const { error } = await supabase.from('romix_staff').insert([{
                 full_name: name,
                 role: role,
                 salary: salary,
                 photo_url: photoUrl
             }]);
+            if (error) throw error;
         } catch (dbError) {
-            console.warn("Database insert failed, saved locally", dbError);
+            console.warn("Database insert failed", dbError);
+            alert("Xatolik: xodim bazaga saqlanmadi — " + (dbError.message || "sabab noma'lum") + ". Qayta urinib ko'ring.");
+            return;
         }
 
         // Always save to local fallback for robust WMS offline use
@@ -669,29 +675,33 @@ document.addEventListener('DOMContentLoaded', async () => {
             const txTime = new Date(tx.created_at).getTime();
             let foundDoc = docs.find(doc => {
                 if (doc.type !== tx.type) return false;
-                const docTime = new Date(doc.created_at).getTime();
-                const timeDiff = Math.abs(docTime - txTime);
+                // Chegarani hujjatning BIRINCHI emas, OXIRGI a'zosi vaqtidan hisoblaymiz —
+                // shunda ketma-ket (har biri oldingisidan 3s ichida) kiritilgan uzun partiya
+                // umumiy oralig'i 3s'dan katta bo'lsa ham noto'g'ri bo'lib ketmaydi.
+                const timeDiff = Math.abs(doc._lastTime - txTime);
                 if (timeDiff > 3000) return false;
-                
+
                 const orderIdMatchTx = tx.note ? tx.note.match(/#([a-fA-F0-9-]{8,})/i) : null;
                 const orderIdMatchDoc = doc.note ? doc.note.match(/#([a-fA-F0-9-]{8,})/i) : null;
-                
+
                 if (orderIdMatchTx && orderIdMatchDoc) {
                     return orderIdMatchTx[1] === orderIdMatchDoc[1];
                 }
                 if (orderIdMatchTx || orderIdMatchDoc) return false;
                 return true;
             });
-            
+
             if (foundDoc) {
                 foundDoc.items.push(tx);
+                foundDoc._lastTime = txTime;
             } else {
                 docs.push({
                     id: tx.id,
                     created_at: tx.created_at,
                     type: tx.type,
                     note: tx.note || '',
-                    items: [tx]
+                    items: [tx],
+                    _lastTime: txTime
                 });
             }
         });
@@ -2351,18 +2361,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Supabase network request with 5s timeout safety
             if (p.id && typeof supabase !== 'undefined') {
-                try {
-                    const timeoutPromise = new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error("Timeout")), 5000)
-                    );
-                    const { error } = await Promise.race([
-                        supabase.from(table).update(updateObj).eq('id', p.id),
-                        timeoutPromise
-                    ]);
-                    if (error) console.warn("Supabase update error:", error);
-                } catch (e) {
-                    console.warn("Supabase request timed out or network error:", e);
-                }
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error("Timeout — saqlash 5 soniyada javob bermadi")), 5000)
+                );
+                const { error } = await Promise.race([
+                    supabase.from(table).update(updateObj).eq('id', p.id),
+                    timeoutPromise
+                ]);
+                if (error) throw error;
             }
 
             // Update local memory objects (p)

@@ -5419,7 +5419,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         attendance.forEach(a => { if (!attByEmp[a.employee_id]) attByEmp[a.employee_id] = []; attByEmp[a.employee_id].push(a); });
         const employeeMonthlyEarnings = employees.map(e => {
             const sal = parseFloat((e.salary_info || '').toString().replace(/[^0-9]/g, '')) || 0;
-            const hourlyRate = sal / 26 / 8;
+            const hourlyRate = sal / 26 / 9; // 9 soat = 10 soatlik ish kuni - 1 soat tushlik (hr.js bilan bir xil)
             const days = attByEmp[e.id] || [];
             let earned = 0, workedDays = 0;
             days.forEach(a => {
@@ -6941,6 +6941,13 @@ ALTER TABLE employees ADD COLUMN IF NOT EXISTS advance_paid NUMERIC DEFAULT 0;`;
                         
                         if (stagePart === 'sushilka') {
                             item.remainingTime = Math.max(0, 240 * 60 - elapsedSecs);
+                            // last_update kutilmaganda "yangilanib" qolsa (masalan boshqa jarayon
+                            // tomonidan), elapsedSecs nolga tushib qolgan hisoblangan vaqt oldingi
+                            // pollingdan kattaroq chiqib ketmasin — faqat kamayishga ruxsat beramiz.
+                            const preserved = oldSushilkaMap.get(item.id.toString());
+                            if (preserved !== undefined && preserved !== null) {
+                                item.remainingTime = Math.min(item.remainingTime, preserved);
+                            }
                         } else if (stagePart === 'cooling') {
                             if (elapsedSecs >= 60 * 60) {
                                 // auto transition in DB to halqa
@@ -9437,7 +9444,7 @@ ALTER TABLE employees ADD COLUMN IF NOT EXISTS advance_paid NUMERIC DEFAULT 0;`;
             if (emp && a.check_in) {
                 const sal = emp.salary_info ? parseFloat(emp.salary_info.toString().replace(/[^0-9]/g, '')) || 0 : 0;
                 const dailyRate = sal / 26;
-                const hourlyRate = dailyRate / 8;
+                const hourlyRate = dailyRate / 9; // hr.js'dagi jonli hisoblagich bilan bir xil (10 soat - 1 soat tushlik)
                 const perSecondRate = hourlyRate / 3600;
 
                 const checkInParts = a.check_in.split(':');
@@ -10959,12 +10966,15 @@ CREATE TABLE IF NOT EXISTS buh_sales (
         }
     };
 
+    // Yagona manba — USD/UZS zaxira (fallback) kursi. Real kurs o'zgarsa faqat shu yerni yangilang.
+    const DEFAULT_USD_RATE = 12800;
+
     function getUsdRate() {
-        return parseFloat(localStorage.getItem('buh_usd_rate')) || 12800;
+        return parseFloat(localStorage.getItem('buh_usd_rate')) || DEFAULT_USD_RATE;
     }
 
     window.saveBuhUsdRate = () => {
-        const rate = parseFloat(document.getElementById('buh-usd-rate')?.value) || 12800;
+        const rate = parseFloat(document.getElementById('buh-usd-rate')?.value) || DEFAULT_USD_RATE;
         localStorage.setItem('buh_usd_rate', rate.toString());
         if (typeof renderBuhOmbor === 'function') renderBuhOmbor();
         if (typeof renderBuhSales === 'function') renderBuhSales();
@@ -11928,7 +11938,7 @@ CREATE TABLE IF NOT EXISTS buh_sales (
         const markupVal = parseFloat(markupInput.value) || 0;
 
         const inventory = window.cachedInventory || [];
-        const usdRate = (typeof getUsdRate === 'function') ? getUsdRate() : 12800;
+        const usdRate = (typeof getUsdRate === 'function') ? getUsdRate() : DEFAULT_USD_RATE;
 
         const getPriceInUzs = (item, defaultPrice) => {
             if (!item || !item.price) return defaultPrice;

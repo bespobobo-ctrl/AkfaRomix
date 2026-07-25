@@ -79,15 +79,18 @@ import { supabase } from '@/core/supabase.js';
         if (!confirm("Haqiqatdan ham ushbu loginni o'chirmoqchimisiz?")) return;
         
         try {
-            await supabase.from('system_users').delete().eq('id', id);
+            const { error } = await supabase.from('system_users').delete().eq('id', id);
+            if (error) throw error;
         } catch (e) {
-            console.warn("Could not delete from Supabase, removing locally", e);
+            console.warn("Could not delete from Supabase", e);
+            alert("Xatolik: login bazadan o'chmadi — " + (e.message || "sabab noma'lum") + ". Qayta urinib ko'ring.");
+            return;
         }
-        
+
         let localUsers = JSON.parse(localStorage.getItem('system_users_local') || '[]');
         localUsers = localUsers.filter(u => u.id !== id);
         localStorage.setItem('system_users_local', JSON.stringify(localUsers));
-        
+
         alert("O'chirildi!");
         window.loadSystemUsers();
     };
