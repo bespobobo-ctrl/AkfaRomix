@@ -7,8 +7,8 @@
     { "id": "hr", "label": "HR", "agent": "hr-reviewer", "login": "hr / 123" },
     { "id": "ishlab_chiqarish", "label": "Ishlab chiqarish", "agent": "ishlabchiqarish-reviewer", "login": "123 / 123, AC1 / 123" }
   ],
-  "lastSweepAt": "2026-07-25T09:40:00Z",
-  "lastSweepCommit": "c09d1f4",
+  "lastSweepAt": "2026-07-25T10:20:00Z",
+  "lastSweepCommit": "e17c6df",
   "dashboardUrl": "https://claude.ai/code/artifact/df8383df-8768-4527-bd24-05509a0de63d",
   "issues": [
     {
@@ -139,10 +139,13 @@
       "foundBy": "sardor (retest #2 paytida topildi)",
       "foundAt": "2026-07-25T09:14:27Z",
       "severity": "medium",
-      "status": "open",
-      "fixedBy": null, "fixedAt": null,
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
       "retest": { "result": "pending", "by": null, "at": null, "note": "" },
-      "discussion": [],
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "Supabase delete xatosi endi tekshiriladi va alert bilan ko'rsatiladi, muvaffaqiyatsiz bo'lsa localStorage o'zgartirilmaydi." }
+      ],
       "resolution": null
     },
     {
@@ -212,10 +215,13 @@
       "foundBy": "ombor-reviewer",
       "foundAt": "2026-07-25T08:15:00Z",
       "severity": "medium",
-      "status": "open",
-      "fixedBy": null, "fixedAt": null,
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
       "retest": { "result": "pending", "by": null, "at": null, "note": "" },
-      "discussion": [],
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "saveStaffBtn va delete-staff-btn endi Supabase xatosini tekshiradi, xato bo'lsa alert ko'rsatib to'xtaydi, localStorage'ni muvaffaqiyatsiz holatda o'zgartirmaydi." }
+      ],
       "resolution": null
     },
     {
@@ -228,10 +234,13 @@
       "foundBy": "ombor-reviewer",
       "foundAt": "2026-07-25T08:15:00Z",
       "severity": "medium",
-      "status": "open",
-      "fixedBy": null, "fixedAt": null,
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
       "retest": { "result": "pending", "by": null, "at": null, "note": "" },
-      "discussion": [],
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "saveProductName endi Supabase xatosi/timeout bo'lganda throw qiladi — mavjud finally bloki tugmani baribir qayta yoqadi (freeze bo'lmaydi), lekin lokal holat va 'saqlandi' xabari endi faqat haqiqiy muvaffaqiyatda chiqadi." }
+      ],
       "resolution": null
     },
     {
@@ -244,11 +253,14 @@
       "foundBy": "ombor-reviewer",
       "foundAt": "2026-07-25T08:15:00Z",
       "severity": "low",
-      "status": "open",
-      "fixedBy": null, "fixedAt": null,
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
       "retest": { "result": "pending", "by": null, "at": null, "note": "" },
-      "discussion": [],
-      "resolution": null
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "Qisman tuzatildi: guruhlash endi hujjatning oxirgi a'zosi vaqtidan hisoblanadi, shuning uchun uzoq (>3s) cho'zilgan ketma-ket partiyalar endi noto'g'ri bo'linib ketmaydi. Order-id notasiz ikkita tasodifiy bir xil turdagi tranzaksiyaning noto'g'ri birlashishi ehtimoli (asl topilmaning ikkinchi qismi) qoldi — buni hal qilish uchun backend'da haqiqiy partiya/sessiya identifikatori kerak, ma'lumotlar sxemasida hozircha yo'q." }
+      ],
+      "resolution": "acceptable"
     },
     {
       "id": "BUH-03",
@@ -260,10 +272,13 @@
       "foundBy": "buhgalter-reviewer",
       "foundAt": "2026-07-25T08:15:00Z",
       "severity": "medium",
-      "status": "open",
-      "fixedBy": null, "fixedAt": null,
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
       "retest": { "result": "pending", "by": null, "at": null, "note": "" },
-      "discussion": [],
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "Uchala joy endi bitta DEFAULT_USD_RATE konstantasidan foydalanadi." }
+      ],
       "resolution": null
     },
     {
@@ -276,11 +291,14 @@
       "foundBy": "sotuv-reviewer",
       "foundAt": "2026-07-25T08:15:00Z",
       "severity": "medium",
-      "status": "open",
-      "fixedBy": null, "fixedAt": null,
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
       "retest": { "result": "pending", "by": null, "at": null, "note": "" },
-      "discussion": [],
-      "resolution": null
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "sizeText endi item obyektiga yoziladi, savat renderBasket() orqali to'g'ri o'lchamni ko'rsatadi." }
+      ],
+      "resolution": "optimal"
     },
     {
       "id": "SOT-03",
@@ -292,11 +310,14 @@
       "foundBy": "sotuv-reviewer",
       "foundAt": "2026-07-25T08:15:00Z",
       "severity": "medium",
-      "status": "open",
-      "fixedBy": null, "fixedAt": null,
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
       "retest": { "result": "pending", "by": null, "at": null, "note": "" },
-      "discussion": [],
-      "resolution": null
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "return qo'shildi." }
+      ],
+      "resolution": "optimal"
     },
     {
       "id": "HR-04",
@@ -308,11 +329,14 @@
       "foundBy": "hr-reviewer",
       "foundAt": "2026-07-25T08:15:00Z",
       "severity": "medium",
-      "status": "open",
-      "fixedBy": null, "fixedAt": null,
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
       "retest": { "result": "pending", "by": null, "at": null, "note": "" },
-      "discussion": [],
-      "resolution": null
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "Tekshiruv chuqurroq divergensiyani ko'rsatdi — jami 4 xil formula: hr.js'da 26kun/9soat (jonli hisoblagich + haqiqiy hisobot, ikkalasi izohli va bir xil), 26kun/10soat (aniq 'DEMO REPORT' deb belgilangan, real emas), admin.js'da 26kun/8soat (izohsiz, ikki joyda) va haqiqiy-ish-kunlari/10soat (admin.js showDayDetails — o'z 'default 10 soatlik smena (08:00-18:00)' izohiga ega, lekin workedHours'ni HAM status matnidan taxmin qiladi, real check-in/out emas). Kod izohlarida faqat hr.js'ning jonli hisoblagichi bilan admin.js dashboard hisoblagichi '100% bir xil bo'lishi kutiladi' deb aniq yozilgan edi — shu ikkitasini (admin.js'dagi ikkala 8soat joyini) hr.js'ning izohli 9soat standartiga tekshirib moslashtirdim. DEMO deb belgilangan va showDayDetails (mock workedHours, o'z 10soat-smena asoslashi bilan) tegilmadi — bularni ham moslashtirish qaysi ish kuni uzunligi (8, 9 yoki 10 soat) va qaysi kun-soni (26 yoki oydagi haqiqiy kunlar) 'to'g'ri' ekanini hal qiluvchi biznes qarorini talab qiladi. Foydalanuvchi 'barchasini tuzat' dedi, lekin bu aniq formulani tanlash emas — qaysi standart to'g'ri ekanini so'rash kerak." }
+      ],
+      "resolution": "acceptable"
     },
     {
       "id": "ISH-03",
@@ -324,10 +348,13 @@
       "foundBy": "ishlabchiqarish-reviewer",
       "foundAt": "2026-07-25T08:15:00Z",
       "severity": "medium",
-      "status": "open",
-      "fixedBy": null, "fixedAt": null,
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
       "retest": { "result": "pending", "by": null, "at": null, "note": "" },
-      "discussion": [],
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "oldSushilkaMap endi haqiqatan ishlatiladi: agar yangi hisoblangan remainingTime saqlangan qiymatdan katta chiqsa (last_update kutilmaganda yangilanib qolganda), pastroq (saqlangan) qiymat olinadi — vaqt hech qachon orqaga/yuqoriga sakramaydi." }
+      ],
       "resolution": null
     },
     {
@@ -340,11 +367,14 @@
       "foundBy": "ishlabchiqarish-reviewer",
       "foundAt": "2026-07-25T08:15:00Z",
       "severity": "medium",
-      "status": "open",
-      "fixedBy": null, "fixedAt": null,
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
       "retest": { "result": "pending", "by": null, "at": null, "note": "" },
-      "discussion": [],
-      "resolution": null
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "escapeHtml() qo'shildi va customer_name, worker_group, install_group, brigada nomi, xodim to'liq ismi barcha innerHTML joylariga qo'llandi." }
+      ],
+      "resolution": "optimal"
     },
     {
       "id": "SOT-04",
@@ -356,11 +386,14 @@
       "foundBy": "sotuv-reviewer (retest #2 paytida topildi)",
       "foundAt": "2026-07-25T09:14:27Z",
       "severity": "medium",
-      "status": "open",
-      "fixedBy": null, "fixedAt": null,
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
       "retest": { "result": "pending", "by": null, "at": null, "note": "" },
-      "discussion": [],
-      "resolution": null
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "catch blokida endi alert ko'rsatilib return qilinadi — muvaffaqiyatsiz o'chirish localStorage'ni o'zgartirmaydi." }
+      ],
+      "resolution": "optimal"
     },
     {
       "id": "ISH-05",
@@ -372,11 +405,14 @@
       "foundBy": "ishlabchiqarish-reviewer (retest #2 paytida topildi)",
       "foundAt": "2026-07-25T09:14:27Z",
       "severity": "medium",
-      "status": "open",
-      "fixedBy": null, "fixedAt": null,
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
       "retest": { "result": "pending", "by": null, "at": null, "note": "" },
-      "discussion": [],
-      "resolution": null
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "Xato tekshiruvi va disabled-guard qo'shildi." }
+      ],
+      "resolution": "optimal"
     }
   ]
 }
