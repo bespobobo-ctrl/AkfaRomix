@@ -344,6 +344,38 @@
       "retest": { "result": "pending", "by": null, "at": null, "note": "" },
       "discussion": [],
       "resolution": null
+    },
+    {
+      "id": "SOT-04",
+      "panel": "sotuv",
+      "title": "Buyurtmani o'chirishda xatolik yashiriladi",
+      "description": ".del-btn handler Supabase o'chirish xatosini faqat console.warn qiladi, keyin baribir localStorage'dan olib tashlab qayta yuklaydi — OMB-01/HR-03 bilan bir xil sinfdagi xato. Xato bo'lsa buyurtma UI'dan g'oyib bo'ladi-yu, bazada qolib, keyingi to'liq yuklashda qayta paydo bo'ladi.",
+      "file": "src/projects/romix/sotuv/sales.js",
+      "line": 1486,
+      "foundBy": "sotuv-reviewer (retest #2 paytida topildi)",
+      "foundAt": "2026-07-25T09:14:27Z",
+      "severity": "medium",
+      "status": "open",
+      "fixedBy": null, "fixedAt": null,
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [],
+      "resolution": null
+    },
+    {
+      "id": "ISH-05",
+      "panel": "ishlab_chiqarish",
+      "title": "Brigada a'zosini o'chirishda xatolik tekshiruvi va qo'sh-bosish himoyasi yo'q",
+      "description": ".rm-brigade-member handler Supabase delete xatosini tekshirmasdan har doim brigadalar to'rini qayta chizadi — OMB-01 bilan bir xil sinfdagi xato, boshqa faylda.",
+      "file": "src/projects/romix/ishlab_chiqarish/production.js",
+      "line": 699,
+      "foundBy": "ishlabchiqarish-reviewer (retest #2 paytida topildi)",
+      "foundAt": "2026-07-25T09:14:27Z",
+      "severity": "medium",
+      "status": "open",
+      "fixedBy": null, "fixedAt": null,
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [],
+      "resolution": null
     }
   ]
 }
