@@ -1854,18 +1854,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             paid_amount
         };
         // Avans summasi o'zgargan bo'lsagina qabul qilgan xodim/sana yangilanadi + to'lovlar tarixiga yangi yozuv qo'shiladi
+        // (kamaytirilganda ham — moliyaviy tuzatish sifatida, izsiz qoldirmaslik uchun)
         const prevPaid = window.editingOrderOriginalPaid || 0;
-        if (paid_amount !== prevPaid && paid_amount > 0) {
+        if (paid_amount !== prevPaid) {
             const receivedBy = user?.full_name || user?.username || 'Sotuv';
             const receivedAt = new Date().toISOString();
             const note = document.getElementById('ePaymentNote').value.trim();
             updatePayload.payment_date = receivedAt;
             updatePayload.advance_received_by = receivedBy;
             const delta = paid_amount - prevPaid;
-            if (delta > 0) {
-                const prevHistory = window.editingOrderPaymentHistory || [];
-                updatePayload.payment_history = [...prevHistory, { amount: delta, by: receivedBy, at: receivedAt, note }];
-            }
+            const prevHistory = window.editingOrderPaymentHistory || [];
+            const historyNote = delta < 0
+                ? `[Tuzatish: kamaytirildi] ${note || ''}`.trim()
+                : note;
+            updatePayload.payment_history = [...prevHistory, { amount: delta, by: receivedBy, at: receivedAt, note: historyNote }];
         }
 
         try {

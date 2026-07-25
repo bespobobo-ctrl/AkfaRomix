@@ -489,7 +489,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             b.onclick = async (e) => {
                 e.stopPropagation();
                 if (confirm('Ushbu mahsulotni o\'chirmoqchimisiz?')) {
-                    await supabase.from('romix_inventory').delete().eq('id', b.dataset.id);
+                    const { error } = await supabase.from('romix_inventory').delete().eq('id', b.dataset.id);
+                    if (error) {
+                        alert("Xatolik: mahsulot bazadan o'chmadi — " + (error.message || "sabab noma'lum") + ". (Ehtimol RLS ruxsati yoki boshqa jadvalda bog'liq yozuv bor.)");
+                        return;
+                    }
                     loadInventory();
                 }
             };

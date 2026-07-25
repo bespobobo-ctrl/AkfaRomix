@@ -575,6 +575,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // birinchi batchni (kesish bosqichida, to'liq miqdor bilan) yaratadi
         document.querySelectorAll('.accept-order-btn').forEach(btn => {
             btn.onclick = async () => {
+                if (btn.disabled) return;
                 const id = btn.dataset.id;
                 const defaultDate = btn.dataset.deadline || '';
                 let targetDate = prompt("Bu buyurtma qachon tayyor bo'lishini belgilang (chiqish sanasi, YYYY-MM-DD):", defaultDate);
@@ -588,6 +589,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         return;
                     }
                 }
+                btn.disabled = true;
                 try {
                     const { data: order } = await supabase.from('sales_orders').select('*').eq('id', id).maybeSingle();
                     const { error } = await supabase.from('sales_orders').update({
@@ -612,6 +614,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } catch (err) {
                     alert("Qabul qilishda xatolik: bazada 'production_target_date'/'production_accepted_at'/'romix_production_batches' mavjudligini tekshiring.");
                     console.warn("accept-order failed:", err);
+                    btn.disabled = false;
                     return;
                 }
                 loadProductionPipeline();

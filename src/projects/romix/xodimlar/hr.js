@@ -892,9 +892,23 @@ function handlePremya() {
         icon: "award",
         input: true,
         confirmText: "PREMYANI TASDIQLASH",
-        onConfirm: (val) => {
+        onConfirm: async (val) => {
             if (!val || isNaN(parseFloat(val)) || parseFloat(val) <= 0) {
                 alert("Iltimos, 0 dan katta to'g'ri summa kiriting!");
+                return;
+            }
+            const _now = new Date();
+            const todayStr = _now.getFullYear() + '-' + String(_now.getMonth() + 1).padStart(2, '0') + '-' + String(_now.getDate()).padStart(2, '0');
+            try {
+                const { error } = await supabase.from('attendance').insert({
+                    employee_id: currentEmp.id,
+                    date: todayStr,
+                    status: `Premya: ${parseFloat(val).toLocaleString()} UZS`
+                });
+                if (error) throw error;
+            } catch (err) {
+                console.error("Premya saqlashda xatolik:", err);
+                alert("Xatolik: premya bazaga saqlanmadi — " + (err.message || "sabab noma'lum") + ". Qayta urinib ko'ring.");
                 return;
             }
             logActivity('admin', 'Premya berildi', `${currentEmp.full_name}: ${val} UZS`);
@@ -1358,31 +1372,31 @@ function generateWordReport(rows, totalEarned, bonuses, fines, days) {
     link.click();
 }
 
-function handleDelete() {
-    if (confirm(`${currentEmp.full_name}ni o'chirishni tasdiqlaysizmi?`)) {
-        const name = currentEmp.full_name;
-        const empId = currentEmp.id;
+async function handleDelete() {
+    if (!confirm(`${currentEmp.full_name}ni o'chirishni tasdiqlaysizmi?`)) return;
 
-        // Try DB delete
-        try {
-            supabase.from('attendance').delete().eq('employee_id', empId).then(() => {
-                supabase.from('employees').delete().eq('id', empId).then(() => {
-                    console.log("Deleted from Supabase");
-                });
-            });
-        } catch (e) {
-            console.warn("Delete from db failed:", e);
-        }
+    const name = currentEmp.full_name;
+    const empId = currentEmp.id;
 
-        // Always delete from localStorage
-        let localEmployees = JSON.parse(localStorage.getItem('romix_employees_local') || '[]');
-        localEmployees = localEmployees.filter(x => x.id !== empId);
-        localStorage.setItem('romix_employees_local', JSON.stringify(localEmployees));
-
-        logActivity('admin', 'Xodim o\'chirildi', name);
-        closeDetailModal();
-        loadInitialData();
+    try {
+        const attRes = await supabase.from('attendance').delete().eq('employee_id', empId);
+        if (attRes.error) throw attRes.error;
+        const empRes = await supabase.from('employees').delete().eq('id', empId);
+        if (empRes.error) throw empRes.error;
+    } catch (e) {
+        console.error("Delete from db failed:", e);
+        alert("Xatolik: xodim bazadan o'chmadi — " + (e.message || "sabab noma'lum") + ". (Ehtimol RLS ruxsati yoki boshqa jadvalda bog'liq yozuv bor.) Qayta urinib ko'ring.");
+        return;
     }
+
+    // DB delete confirmed — now safe to mirror in localStorage
+    let localEmployees = JSON.parse(localStorage.getItem('romix_employees_local') || '[]');
+    localEmployees = localEmployees.filter(x => x.id !== empId);
+    localStorage.setItem('romix_employees_local', JSON.stringify(localEmployees));
+
+    logActivity('admin', 'Xodim o\'chirildi', name);
+    closeDetailModal();
+    loadInitialData();
 }
 
 function filterAndRender() {

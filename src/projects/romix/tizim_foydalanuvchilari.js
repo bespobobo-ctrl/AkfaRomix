@@ -1,5 +1,11 @@
 import { supabase } from '@/core/supabase.js';
 
+    function escapeHtml(str) {
+        return String(str == null ? '' : str).replace(/[&<>"']/g, (c) => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
+    }
+
     window.loadSystemUsers = async function() {
         const tbody = document.getElementById('sysUsersTable');
         if (!tbody) return;
@@ -36,9 +42,9 @@ import { supabase } from '@/core/supabase.js';
         users.forEach(u => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td style="padding:15px 24px; color:#fff; font-weight:600;">${u.full_name}</td>
-                <td><span style="background:rgba(0,210,255,0.1); color:#00d2ff; padding:4px 10px; border-radius:30px; font-size:0.75rem; font-weight:700;">${u.role.toUpperCase()}</span></td>
-                <td style="font-family:monospace; color:rgba(255,255,255,0.6); font-size:0.85rem;"><code>${u.username}</code> / <code>${u.password}</code></td>
+                <td style="padding:15px 24px; color:#fff; font-weight:600;">${escapeHtml(u.full_name)}</td>
+                <td><span style="background:rgba(0,210,255,0.1); color:#00d2ff; padding:4px 10px; border-radius:30px; font-size:0.75rem; font-weight:700;">${escapeHtml((u.role || '').toUpperCase())}</span></td>
+                <td style="font-family:monospace; color:rgba(255,255,255,0.6); font-size:0.85rem;"><code>${escapeHtml(u.username)}</code> / <code>${escapeHtml(u.password)}</code></td>
                 <td>
                     <div style="display:flex; align-items:center; gap:8px;">
                         <span style="width:8px; height:8px; border-radius:50%; background:#00ff88; box-shadow:0 0 8px #00ff88;"></span>

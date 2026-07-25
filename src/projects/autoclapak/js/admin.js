@@ -2817,7 +2817,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const net = parseFloat(document.getElementById('buhKNet').value) || 0;
         const desc = document.getElementById('buhKDesc').value;
 
-        if (!name || isNaN(qty)) { alert('Ma\'lumotlarni to\'ldiring!'); return; }
+        if (!name || isNaN(qty) || qty <= 0) { alert('Ma\'lumotlarni to\'ldiring! (Miqdor 0 dan katta bo\'lishi kerak)'); return; }
 
         const currencyNote = currency === 'USD' ? ` | Valyuta: $${priceRaw} (${price.toLocaleString()} UZS @ ${getUsdRate().toLocaleString()})` : '';
 
