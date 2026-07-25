@@ -390,27 +390,30 @@
 
   /* ---- Sardor meeting modal ---- */
   .modal-overlay {
-    position: fixed; inset: 0; background: rgba(8, 10, 14, 0.65);
-    backdrop-filter: blur(3px);
-    display: none; align-items: flex-start; justify-content: center;
-    padding: 40px 16px; z-index: 50; overflow-y: auto;
+    position: fixed; inset: 0; background: rgba(6, 8, 11, 0.78);
+    backdrop-filter: blur(4px);
+    display: none; align-items: center; justify-content: center;
+    padding: 18px; z-index: 50;
   }
   .modal-overlay.open { display: flex; }
   .modal {
-    background: var(--surface); border: 1px solid var(--line); border-radius: 18px;
-    max-width: 740px; width: 100%; box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.45), var(--shadow);
-    max-height: calc(100vh - 80px); display: flex; flex-direction: column;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 20px;
+    max-width: 1180px; width: 100%; box-shadow: 0 40px 90px -30px rgba(0, 0, 0, 0.6), var(--shadow);
+    height: calc(100vh - 36px); display: flex; flex-direction: column;
     overflow: hidden;
-    animation: modal-in 0.2s ease-out;
+    animation: world-in 0.32s cubic-bezier(.2, .8, .2, 1);
   }
-  @keyframes modal-in { from { opacity: 0; transform: translateY(8px) scale(0.985); } to { opacity: 1; transform: none; } }
+  @keyframes world-in {
+    from { opacity: 0; transform: translateY(16px) scale(0.97); }
+    to { opacity: 1; transform: none; }
+  }
   @media (prefers-reduced-motion: reduce) { .modal { animation: none; } }
 
   .modal-head {
-    display: flex; align-items: center; gap: 14px; padding: 20px 22px;
+    display: flex; align-items: center; gap: 14px; padding: 18px 22px;
     background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, var(--surface)), var(--surface) 70%);
     border-bottom: 1px solid var(--line);
-    position: relative;
+    position: relative; flex-shrink: 0;
   }
   .modal-head .sardor-avatar { width: 44px; height: 44px; font-size: 15px; flex-shrink: 0; animation: none; margin: 0; }
   .modal-head .mh-text { flex: 1; min-width: 0; }
@@ -423,7 +426,51 @@
   }
   .modal-close:hover { color: var(--ink); border-color: var(--accent); }
 
-  .modal-body { padding: 20px 22px; overflow-y: auto; background: var(--bg); }
+  /* ---- Room navigation inside Sardor's world ---- */
+  .room-tabs {
+    display: flex; gap: 6px; padding: 12px 22px; overflow-x: auto;
+    border-bottom: 1px solid var(--line); background: var(--surface); flex-shrink: 0;
+  }
+  .room-tab {
+    display: flex; align-items: center; gap: 7px; white-space: nowrap;
+    font: inherit; font-size: 12.5px; font-weight: 600; color: var(--muted);
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px;
+    padding: 7px 14px 7px 10px; cursor: pointer; transition: all 0.15s ease;
+  }
+  .room-tab:hover { color: var(--ink); border-color: var(--accent); }
+  .room-tab.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .room-tab .rt-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .room-tab .rt-badge {
+    font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace; font-size: 10px;
+    background: color-mix(in srgb, currentColor 18%, transparent); border-radius: 999px; padding: 1px 6px;
+  }
+
+  .modal-body { padding: 20px 22px; overflow-y: auto; background: var(--bg); flex: 1; min-height: 0; }
+  .room-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .room-heading .rh-avatar {
+    width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace; font-weight: 700; font-size: 12px; color: #fff;
+  }
+  .room-heading h4 { margin: 0; font-size: 14.5px; font-weight: 700; }
+  .room-heading .rh-sub { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+
+  /* ---- Activity feed (Faoliyat) ---- */
+  .activity-feed { display: flex; flex-direction: column; gap: 10px; }
+  .activity-row {
+    background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--good);
+    border-radius: 10px; padding: 12px 14px; display: flex; gap: 12px; align-items: flex-start;
+  }
+  .activity-row.pending-retest { border-left-color: var(--pending); }
+  .activity-row .ar-avatar {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace; font-weight: 700; font-size: 10.5px; color: #fff;
+  }
+  .activity-row .ar-main { flex: 1; min-width: 0; font-size: 12.5px; }
+  .activity-row .ar-title { font-weight: 600; color: var(--ink); }
+  .activity-row .ar-meta { color: var(--muted); font-size: 11.5px; margin-top: 3px; }
+  .activity-row .ar-meta b { color: var(--ink); font-weight: 600; }
+  .activity-row .ar-note { margin-top: 6px; font-size: 11.5px; color: var(--muted); font-style: italic; }
 
   .briefing-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
   .briefing-stats .bstat {
@@ -559,14 +606,17 @@
     <div class="modal-head">
       <div class="avatar sardor-avatar">S</div>
       <div class="mh-text">
-        <h3 id="meeting-modal-title">Sardor bilan majlis</h3>
-        <div class="mh-sub">Bugungi brifing — muammolarni ko'rib chiqing va vazifa biriktiring</div>
+        <h3 id="meeting-modal-title">Sardor dunyosi</h3>
+        <div class="mh-sub" id="meeting-modal-sub">Bugungi brifing — xonani tanlang</div>
       </div>
       <button class="modal-close" id="close-meeting-btn" aria-label="Yopish" type="button">&times;</button>
     </div>
+    <div class="room-tabs" id="room-tabs"></div>
     <div class="modal-body">
+      <div id="room-heading"></div>
       <div id="briefing-text"></div>
       <div id="task-list"></div>
+      <div id="activity-feed"></div>
     </div>
     <div class="modal-foot">
       <span class="hint">Bu yerda berilgan vazifalar shu brauzerda saqlanadi. Keyingi Sardor tekshiruvida hisobga olinishi uchun eksport qiling va Claude'ga yuboring.</span>
@@ -1201,6 +1251,71 @@
   // ---- Sardor meeting modal ----
   var modalEl = document.getElementById("meeting-modal");
 
+  var currentRoom = "overview";
+
+  function roomOpenCount(panelId) {
+    return issues.filter(function (i) { return i.panel === panelId && (i.status === "open" || i.status === "needs_revision"); }).length;
+  }
+
+  function renderRoomTabs() {
+    var tabsEl = document.getElementById("room-tabs");
+    var defs = [{ id: "overview", label: "Umumiy", dot: "var(--accent)" }]
+      .concat(panels.map(function (p) { return { id: p.id, label: p.label, dot: stripeColor[p.id] || "var(--muted)" }; }))
+      .concat([{ id: "activity", label: "Faoliyat", dot: "var(--good)" }]);
+    tabsEl.innerHTML = defs.map(function (d) {
+      var count = (d.id !== "overview" && d.id !== "activity") ? roomOpenCount(d.id) : null;
+      var badge = count ? '<span class="rt-badge">' + count + '</span>' : '';
+      return '<button class="room-tab' + (currentRoom === d.id ? ' active' : '') + '" data-room="' + d.id + '" type="button">' +
+        '<span class="rt-dot" style="background:' + d.dot + '"></span>' + esc(d.label) + badge +
+        '</button>';
+    }).join("");
+    Array.prototype.forEach.call(tabsEl.querySelectorAll(".room-tab"), function (btn) {
+      btn.addEventListener("click", function () {
+        currentRoom = btn.getAttribute("data-room");
+        renderRoomTabs();
+        renderRoomContent();
+      });
+    });
+  }
+
+  function renderRoomContent() {
+    var headingEl = document.getElementById("room-heading");
+    var briefingEl = document.getElementById("briefing-text");
+    var taskListEl = document.getElementById("task-list");
+    var activityEl = document.getElementById("activity-feed");
+    var subEl = document.getElementById("meeting-modal-sub");
+
+    if (currentRoom === "overview") {
+      headingEl.innerHTML = '';
+      subEl.textContent = "Umumiy brifing — barcha panellar bo'yicha holat";
+      briefingEl.style.display = "";
+      taskListEl.style.display = "";
+      activityEl.style.display = "none";
+      renderBriefing();
+      renderTaskList(null);
+    } else if (currentRoom === "activity") {
+      headingEl.innerHTML =
+        '<div class="room-heading"><div class="rh-avatar" style="background:var(--good)">✓</div>' +
+        '<div><h4>Faoliyat — bajarilgan ishlar</h4><div class="rh-sub">Barcha panellarda dasturchilar (yoki avtomatik tuzatish) tomonidan yopilgan/tuzatilgan masalalar</div></div></div>';
+      subEl.textContent = "Faoliyat xonasi";
+      briefingEl.style.display = "none";
+      taskListEl.style.display = "none";
+      activityEl.style.display = "";
+      renderActivityFeed(null);
+    } else {
+      var p = panels.find(function (x) { return x.id === currentRoom; }) || { label: currentRoom };
+      headingEl.innerHTML =
+        '<div class="room-heading"><div class="rh-avatar" style="background:' + (stripeColor[currentRoom] || "var(--muted)") + '">' + (PANEL_INITIALS[currentRoom] || "??") + '</div>' +
+        '<div><h4>' + esc(p.label) + ' xonasi</h4><div class="rh-sub">' + esc(p.login || '') + ' — ochiq masalalar va bajarilgan ishlar</div></div></div>';
+      subEl.textContent = p.label + " xonasi";
+      briefingEl.style.display = "none";
+      taskListEl.style.display = "";
+      activityEl.style.display = "";
+      renderTaskList(currentRoom);
+      renderActivityFeed(currentRoom);
+    }
+  }
+
   function renderBriefing() {
     var open = issues.filter(function (i) { return i.status === "open" || i.status === "needs_revision"; });
     var byS = { critical: 0, high: 0, medium: 0, low: 0 };
@@ -1221,9 +1336,13 @@
       (top.length ? '<ul class="briefing-top">' + topHtml + '</ul>' : '');
   }
 
-  function renderTaskList() {
+  function renderTaskList(panelFilter) {
     var order = { critical: 0, high: 1, medium: 2, low: 3 };
-    var open = issues.filter(function (i) { return i.status === "open" || i.status === "needs_revision"; });
+    var open = issues.filter(function (i) {
+      if (i.status !== "open" && i.status !== "needs_revision") return false;
+      if (panelFilter && i.panel !== panelFilter) return false;
+      return true;
+    });
     open = open.slice().sort(function (a, b) { return (order[a.severity] || 9) - (order[b.severity] || 9); });
     var listEl = document.getElementById("task-list");
     if (open.length === 0) {
@@ -1263,14 +1382,47 @@
         var note = row.querySelector(".tr-note").value.trim();
         assignedTasks.push({ issueId: issueId, assignee: assignee, note: note, assignedAt: new Date().toISOString() });
         saveTasks(assignedTasks);
-        renderTaskList();
+        renderTaskList(panelFilter);
       });
     });
   }
 
+  function renderActivityFeed(panelFilter) {
+    var done = issues.filter(function (i) {
+      if (i.status !== "verified" && i.status !== "fixed") return false;
+      if (panelFilter && i.panel !== panelFilter) return false;
+      return true;
+    });
+    done = done.slice().sort(function (a, b) {
+      return new Date(b.fixedAt || b.foundAt) - new Date(a.fixedAt || a.foundAt);
+    });
+    var feedEl = document.getElementById("activity-feed");
+    if (done.length === 0) {
+      feedEl.innerHTML = '<div class="empty-state"><div class="big">Hali bajarilgan ish yo\'q</div><div class="small">Tuzatilgan/tasdiqlangan masalalar shu yerda ko\'rinadi.</div></div>';
+      return;
+    }
+    feedEl.innerHTML = done.map(function (i) {
+      var avatarBg = stripeColor[i.panel] || "var(--muted)";
+      var initials = PANEL_INITIALS[i.panel] || "??";
+      var pending = i.status === "fixed";
+      var statusLabel = i.status === "verified" ? "✅ Tasdiqlangan" : "🛠 Tuzatildi — retest kutilmoqda";
+      var lastMsg = (i.discussion && i.discussion.length) ? i.discussion[i.discussion.length - 1].message : "";
+      return '<div class="activity-row' + (pending ? ' pending-retest' : '') + '">' +
+        '<div class="ar-avatar" style="background:' + avatarBg + '">' + initials + '</div>' +
+        '<div class="ar-main">' +
+        '<span class="ar-title">' + esc(i.id) + ' — ' + esc(i.title) + '</span>' +
+        '<div class="ar-meta">' + statusLabel + ' · Tuzatdi: <b>' + esc(i.fixedBy || "noma'lum") + '</b>' +
+        (i.fixedAt ? ' · ' + esc(new Date(i.fixedAt).toLocaleDateString("uz-UZ")) : '') +
+        (i.resolution ? ' · Yechim: <b>' + esc(i.resolution === "optimal" ? "optimal" : "qoniqarli") + '</b>' : '') + '</div>' +
+        (lastMsg ? '<div class="ar-note">' + esc(lastMsg) + '</div>' : '') +
+        '</div></div>';
+    }).join("");
+  }
+
   function openMeeting() {
-    renderBriefing();
-    renderTaskList();
+    currentRoom = "overview";
+    renderRoomTabs();
+    renderRoomContent();
     modalEl.classList.add("open");
   }
   function closeMeeting() {
