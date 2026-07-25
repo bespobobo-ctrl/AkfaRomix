@@ -7,8 +7,8 @@
     { "id": "hr", "label": "HR", "agent": "hr-reviewer", "login": "hr / 123" },
     { "id": "ishlab_chiqarish", "label": "Ishlab chiqarish", "agent": "ishlabchiqarish-reviewer", "login": "123 / 123, AC1 / 123" }
   ],
-  "lastSweepAt": "2026-07-25T08:20:00Z",
-  "lastSweepCommit": "241b002",
+  "lastSweepAt": "2026-07-25T09:14:27Z",
+  "lastSweepCommit": "0de4dbf",
   "dashboardUrl": "https://claude.ai/code/artifact/df8383df-8768-4527-bd24-05509a0de63d",
   "issues": [
     {
@@ -21,14 +21,15 @@
       "foundBy": "hr-reviewer",
       "foundAt": "2026-07-25T08:15:00Z",
       "severity": "critical",
-      "status": "fixed",
+      "status": "verified",
       "fixedBy": "Claude (manual sweep)",
       "fixedAt": "2026-07-25T08:40:00Z",
-      "retest": { "result": "pending", "by": null, "at": null, "note": "Keyingi sweep'da qayta tekshiriladi" },
+      "retest": { "result": "pass", "by": "sardor", "at": "2026-07-25T09:14:27Z", "note": "attendance'ga to'g'ri yozilyapti, xato holatida alert bor" },
       "discussion": [
-        { "from": "sardor", "at": "2026-07-25T08:40:00Z", "message": "attendance jadvaliga 'Premya: X UZS' statusi bilan yozuv qo'shildi, xuddi admin.js'dagi mos naqsh kabi. Xatolik bo'lsa foydalanuvchiga aniq alert ko'rsatiladi." }
+        { "from": "sardor", "at": "2026-07-25T08:40:00Z", "message": "attendance jadvaliga 'Premya: X UZS' statusi bilan yozuv qo'shildi, xuddi admin.js'dagi mos naqsh kabi. Xatolik bo'lsa foydalanuvchiga aniq alert ko'rsatiladi." },
+        { "from": "sardor", "at": "2026-07-25T09:14:27Z", "message": "Retest #2: pass. Kod hali ham to'g'ri holatda, boshqa o'zgarish yo'q." }
       ],
-      "resolution": null
+      "resolution": "optimal"
     },
     {
       "id": "ISH-01",
@@ -40,14 +41,15 @@
       "foundBy": "ishlabchiqarish-reviewer",
       "foundAt": "2026-07-25T08:15:00Z",
       "severity": "critical",
-      "status": "fixed",
+      "status": "verified",
       "fixedBy": "Claude (manual sweep)",
       "fixedAt": "2026-07-25T08:40:00Z",
-      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "retest": { "result": "pass", "by": "sardor", "at": "2026-07-25T09:14:27Z", "note": "3 faylning hammasida fallback olib tashlangan holicha qoldi" },
       "discussion": [
-        { "from": "sardor", "at": "2026-07-25T08:40:00Z", "message": "Zaxira qiymatlar olib tashlandi; env o'zgaruvchi yo'q bo'lsa endi aniq xato bilan to'xtaydi (fallback yo'q qoidasi)." }
+        { "from": "sardor", "at": "2026-07-25T08:40:00Z", "message": "Zaxira qiymatlar olib tashlandi; env o'zgaruvchi yo'q bo'lsa endi aniq xato bilan to'xtaydi (fallback yo'q qoidasi)." },
+        { "from": "sardor", "at": "2026-07-25T09:14:27Z", "message": "Retest #2: pass." }
       ],
-      "resolution": null
+      "resolution": "optimal"
     },
     {
       "id": "HR-02",
@@ -59,12 +61,14 @@
       "foundBy": "hr-reviewer",
       "foundAt": "2026-07-25T08:15:00Z",
       "severity": "high",
-      "status": "fixed",
+      "status": "verified",
       "fixedBy": "Claude (manual sweep)",
       "fixedAt": "2026-07-25T08:40:00Z",
-      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
-      "discussion": [],
-      "resolution": null
+      "retest": { "result": "pass", "by": "sardor", "at": "2026-07-25T09:14:27Z", "note": "Kod qayta o'qildi, tuzatish hali ham to'g'ri joyida" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T09:14:27Z", "message": "Retest #2: pass." }
+      ],
+      "resolution": "optimal"
     },
     {
       "id": "HR-03",
@@ -76,12 +80,14 @@
       "foundBy": "hr-reviewer",
       "foundAt": "2026-07-25T08:15:00Z",
       "severity": "high",
-      "status": "fixed",
+      "status": "verified",
       "fixedBy": "Claude (manual sweep)",
       "fixedAt": "2026-07-25T08:40:00Z",
-      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
-      "discussion": [],
-      "resolution": null
+      "retest": { "result": "pass", "by": "sardor", "at": "2026-07-25T09:14:27Z", "note": "Kod qayta o'qildi, tuzatish hali ham to'g'ri joyida" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T09:14:27Z", "message": "Retest #2: pass." }
+      ],
+      "resolution": "optimal"
     },
     {
       "id": "BUH-01",
@@ -93,12 +99,14 @@
       "foundBy": "buhgalter-reviewer",
       "foundAt": "2026-07-25T08:15:00Z",
       "severity": "high",
-      "status": "fixed",
+      "status": "verified",
       "fixedBy": "Claude (manual sweep)",
       "fixedAt": "2026-07-25T08:40:00Z",
-      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
-      "discussion": [],
-      "resolution": null
+      "retest": { "result": "pass", "by": "sardor", "at": "2026-07-25T09:14:27Z", "note": "Kod qayta o'qildi, tuzatish hali ham to'g'ri joyida" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T09:14:27Z", "message": "Retest #2: pass." }
+      ],
+      "resolution": "optimal"
     },
     {
       "id": "BUH-02",
@@ -121,6 +129,22 @@
       "resolution": null
     },
     {
+      "id": "HR-05",
+      "panel": "hr",
+      "title": "deleteSystemUser Supabase xatosini yutib yuboradi",
+      "description": "window.deleteSystemUser() try/catch bilan Supabase delete xatosini faqat console.warn qiladi, keyin baribir localStorage'dan olib tashlab \"O'chirildi!\" deb alert beradi — HR-03 bilan bir xil sinfdagi xato, lekin tizim login boshqaruvi (Login Management) ekranida.",
+      "file": "src/projects/romix/tizim_foydalanuvchilari.js",
+      "line": 62,
+      "foundBy": "sardor (retest #2 paytida topildi)",
+      "foundAt": "2026-07-25T09:14:27Z",
+      "severity": "medium",
+      "status": "open",
+      "fixedBy": null, "fixedAt": null,
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [],
+      "resolution": null
+    },
+    {
       "id": "SOT-01",
       "panel": "sotuv",
       "title": "To'langan summani kamaytirish audit izsiz qolardi",
@@ -130,12 +154,14 @@
       "foundBy": "sotuv-reviewer",
       "foundAt": "2026-07-25T08:15:00Z",
       "severity": "high",
-      "status": "fixed",
+      "status": "verified",
       "fixedBy": "Claude (manual sweep)",
       "fixedAt": "2026-07-25T08:40:00Z",
-      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
-      "discussion": [],
-      "resolution": null
+      "retest": { "result": "pass", "by": "sardor", "at": "2026-07-25T09:14:27Z", "note": "Kod qayta o'qildi, tuzatish hali ham to'g'ri joyida" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T09:14:27Z", "message": "Retest #2: pass." }
+      ],
+      "resolution": "optimal"
     },
     {
       "id": "OMB-01",
@@ -147,12 +173,14 @@
       "foundBy": "ombor-reviewer",
       "foundAt": "2026-07-25T08:15:00Z",
       "severity": "high",
-      "status": "fixed",
+      "status": "verified",
       "fixedBy": "Claude (manual sweep)",
       "fixedAt": "2026-07-25T08:40:00Z",
-      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
-      "discussion": [],
-      "resolution": null
+      "retest": { "result": "pass", "by": "sardor", "at": "2026-07-25T09:14:27Z", "note": "Kod qayta o'qildi, tuzatish hali ham to'g'ri joyida" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T09:14:27Z", "message": "Retest #2: pass." }
+      ],
+      "resolution": "optimal"
     },
     {
       "id": "ISH-02",
@@ -164,12 +192,14 @@
       "foundBy": "ishlabchiqarish-reviewer",
       "foundAt": "2026-07-25T08:15:00Z",
       "severity": "high",
-      "status": "fixed",
+      "status": "verified",
       "fixedBy": "Claude (manual sweep)",
       "fixedAt": "2026-07-25T08:40:00Z",
-      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
-      "discussion": [],
-      "resolution": null
+      "retest": { "result": "pass", "by": "sardor", "at": "2026-07-25T09:14:27Z", "note": "Kod qayta o'qildi, tuzatish hali ham to'g'ri joyida" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T09:14:27Z", "message": "Retest #2: pass." }
+      ],
+      "resolution": "optimal"
     },
     {
       "id": "OMB-02",
