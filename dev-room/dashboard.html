@@ -250,59 +250,116 @@
     padding: 20px;
     box-shadow: var(--shadow);
     margin-bottom: 28px;
+    overflow: hidden;
   }
-  .office-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 6px; }
+  .office-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; flex-wrap: wrap; gap: 6px; }
   .office-head h2 { margin: 0; font-size: 15px; font-weight: 650; }
   .office-head .hint { font-size: 12px; color: var(--muted); }
-  .office-floor { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+
+  /* ---- 3D scene ---- */
+  .scene-wrap {
+    perspective: 1600px;
+    padding: 26px 10px 44px;
+    margin: 0 -4px;
+  }
+  .scene {
+    position: relative;
+    transform-style: preserve-3d;
+    transform: rotateX(var(--scene-rx, 46deg)) rotateY(var(--scene-ry, 0deg));
+    transition: transform 0.5s cubic-bezier(.2, .8, .2, 1);
+    max-width: 760px;
+    margin: 0 auto;
+  }
+  .floor-plate {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 128%; height: 150%;
+    transform: translate3d(-50%, -50%, -22px);
+    border-radius: 24px;
+    background:
+      repeating-linear-gradient(0deg, color-mix(in srgb, var(--line) 60%, transparent) 0 1px, transparent 1px 34px),
+      repeating-linear-gradient(90deg, color-mix(in srgb, var(--line) 60%, transparent) 0 1px, transparent 1px 34px),
+      var(--bg);
+    border: 1px solid var(--line);
+    box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.08);
+  }
+  .office-floor {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    transform-style: preserve-3d;
+  }
   .room {
+    transform-style: preserve-3d;
+    transform: translateZ(8px);
+    transition: transform 0.2s ease;
+    cursor: pointer;
+  }
+  .room:hover, .room:focus-visible { transform: translateZ(30px); }
+  .room:focus-visible .room-content { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .room-content {
+    transform: rotateY(calc(-1 * var(--scene-ry, 0deg))) rotateX(calc(-1 * var(--scene-rx, 46deg)));
     background: var(--surface-2);
     border: 1px solid var(--line);
     border-radius: 12px;
-    padding: 14px 10px;
+    padding: 14px 8px;
     text-align: center;
-    cursor: pointer;
-    transition: transform 0.15s ease, border-color 0.15s ease;
     position: relative;
+    box-shadow: 0 22px 18px -18px rgba(0, 0, 0, 0.4);
   }
-  .room:hover { transform: translateY(-2px); border-color: var(--accent); }
-  .room:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .avatar {
-    width: 40px; height: 40px; border-radius: 50%;
+    width: 38px; height: 38px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace;
     font-weight: 700; font-size: 13px; color: #fff;
     margin: 0 auto 8px; position: relative;
   }
-  .room .room-label { font-size: 11.5px; font-weight: 600; color: var(--ink); }
-  .room .room-sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .room .room-label { font-size: 11px; font-weight: 600; color: var(--ink); }
+  .room .room-sub { font-size: 9.5px; color: var(--muted); margin-top: 2px; }
+  .room .task-flag {
+    margin-top: 6px; display: inline-flex; align-items: center; gap: 3px;
+    font-size: 9px; font-weight: 650; color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+    border-radius: 999px; padding: 2px 7px;
+  }
   .room .badge {
-    position: absolute; top: 8px; right: 10px;
+    position: absolute; top: -6px; right: -4px;
     min-width: 18px; height: 18px; border-radius: 999px;
     font-size: 10px; font-weight: 700; font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace;
     display: flex; align-items: center; justify-content: center; padding: 0 4px;
+    border: 2px solid var(--surface);
   }
   .room .badge.b-critical { background: var(--critical-bg); color: var(--critical); }
   .room .badge.b-high { background: var(--warn-bg); color: var(--warn); }
   .room .badge.b-ok { background: var(--good-bg); color: var(--good); }
 
   .meeting-room {
-    margin-top: 10px;
-    background: linear-gradient(135deg, var(--surface-2), var(--surface));
-    border: 1px solid var(--accent);
-    border-radius: 12px;
-    padding: 16px;
-    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    grid-column: 1 / -1;
+    margin-top: 4px;
+    transform-style: preserve-3d;
+    transform: translateZ(22px);
+    transition: transform 0.2s ease;
     cursor: pointer;
-    flex-wrap: wrap;
   }
-  .meeting-room:hover { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
-  .meeting-room:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .meeting-room:hover, .meeting-room:focus-visible { transform: translateZ(44px); }
+  .meeting-room .room-content {
+    transform: rotateY(calc(-1 * var(--scene-ry, 0deg))) rotateX(calc(-1 * var(--scene-rx, 46deg)));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 14%, var(--surface)), var(--surface));
+    border: 1px solid var(--accent);
+    border-radius: 14px;
+    padding: 16px 20px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    flex-wrap: wrap;
+    text-align: left;
+    box-shadow: 0 30px 24px -20px rgba(0, 0, 0, 0.45), 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+  .meeting-room:focus-visible .room-content { outline: 2px solid var(--accent); outline-offset: 2px; }
   .meeting-left { display: flex; align-items: center; gap: 14px; }
   .gathered { display: flex; }
-  .gathered .avatar { width: 32px; height: 32px; font-size: 11px; margin: 0 -8px 0 0; border: 2px solid var(--surface); }
+  .gathered .avatar { width: 30px; height: 30px; font-size: 10.5px; margin: 0 -8px 0 0; border: 2px solid var(--surface); }
   .sardor-avatar {
-    width: 46px; height: 46px; font-size: 15px; background: var(--accent); color: var(--accent-ink);
+    width: 44px; height: 44px; font-size: 15px; background: var(--accent); color: var(--accent-ink);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
     animation: pulse-ring 2.4s ease-in-out infinite;
   }
@@ -312,18 +369,24 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .sardor-avatar { animation: none; }
+    .scene { transition: none; }
   }
   .meeting-text .t1 { font-size: 13.5px; font-weight: 650; }
   .meeting-text .t2 { font-size: 12px; color: var(--muted); margin-top: 2px; }
   .meeting-cta {
     font-size: 12.5px; font-weight: 650; color: var(--accent-ink);
     background: var(--accent); border: none; border-radius: 999px; padding: 9px 18px; cursor: pointer;
+    flex-shrink: 0;
   }
 
   @media (max-width: 780px) {
     .office-floor { grid-template-columns: repeat(3, 1fr); }
   }
   @media (max-width: 480px) {
+    .scene-wrap { perspective: none; }
+    .scene { transform: none !important; }
+    .room-content, .meeting-room .room-content { transform: none !important; }
+    .floor-plate { display: none; }
     .office-floor { grid-template-columns: repeat(2, 1fr); }
   }
 
@@ -456,18 +519,25 @@
   <div class="office">
     <div class="office-head">
       <h2>Ofis — jonli holat</h2>
-      <span class="hint">Xonaga bosing — o'sha panel muammolarini ko'rasiz</span>
+      <span class="hint">Xonaga bosing — o'sha panel muammolarini ko'rasiz. Sichqonchani harakatlantiring — xona aylanadi.</span>
     </div>
-    <div class="office-floor" id="office-floor"></div>
-    <div class="meeting-room" id="meeting-room" tabindex="0" role="button" aria-haspopup="dialog">
-      <div class="meeting-left">
-        <div class="gathered" id="gathered-avatars"></div>
-        <div class="meeting-text">
-          <div class="t1">Majlislar zali</div>
-          <div class="t2" id="meeting-sub">Barcha dasturchilar to'plandi — Sardor hisobot berishga tayyor</div>
+    <div class="scene-wrap" id="scene-wrap">
+      <div class="scene" id="office-scene">
+        <div class="floor-plate"></div>
+        <div class="office-floor" id="office-floor"></div>
+        <div class="meeting-room" id="meeting-room" tabindex="0" role="button" aria-haspopup="dialog">
+          <div class="room-content">
+            <div class="meeting-left">
+              <div class="gathered" id="gathered-avatars"></div>
+              <div class="meeting-text">
+                <div class="t1">Majlislar zali</div>
+                <div class="t2" id="meeting-sub">Barcha dasturchilar to'plandi — Sardor hisobot berishga tayyor</div>
+              </div>
+            </div>
+            <button class="meeting-cta" id="open-meeting-btn" type="button">Majlisni boshlash</button>
+          </div>
         </div>
       </div>
-      <button class="meeting-cta" id="open-meeting-btn" type="button">Majlisni boshlash</button>
     </div>
   </div>
 
@@ -846,12 +916,19 @@
       var worst = worstSeverityForPanel(p.id);
       var badgeCls = worst === "critical" ? "b-critical" : (worst === "high" ? "b-high" : "b-ok");
       var badgeHtml = openCount > 0 ? '<div class="badge ' + badgeCls + '">' + openCount + '</div>' : '';
+      var panelTaskCount = assignedTasks.filter(function (t) {
+        var iss = issues.find(function (x) { return x.id === t.issueId; });
+        return t.assignee === p.id && iss && (iss.status === "open" || iss.status === "needs_revision");
+      }).length;
+      var taskFlagHtml = panelTaskCount > 0 ? '<div class="task-flag">🛠 ' + panelTaskCount + ' vazifada</div>' : '';
       return '<div class="room" data-panel="' + p.id + '" tabindex="0" role="button" aria-label="' + esc(p.label) + '">' +
+        '<div class="room-content">' +
         badgeHtml +
         '<div class="avatar" style="background:' + (stripeColor[p.id] || "var(--muted)") + '">' + (PANEL_INITIALS[p.id] || "??") + '</div>' +
         '<div class="room-label">' + esc(p.label) + '</div>' +
         '<div class="room-sub">' + (openCount > 0 ? openCount + " ochiq" : "toza") + '</div>' +
-        '</div>';
+        taskFlagHtml +
+        '</div></div>';
     }).join("");
 
     Array.prototype.forEach.call(floor.querySelectorAll(".room"), function (el) {
@@ -974,6 +1051,27 @@
       URL.revokeObjectURL(url);
     }
   });
+
+  // ---- 3D scene parallax (mouse-driven tilt) ----
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var sceneWrapEl = document.getElementById("scene-wrap");
+  var sceneEl = document.getElementById("office-scene");
+  if (sceneWrapEl && sceneEl && !reduceMotion) {
+    var baseRx = 46;
+    sceneWrapEl.addEventListener("mousemove", function (e) {
+      var rect = sceneWrapEl.getBoundingClientRect();
+      var nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;   // -1..1
+      var ny = ((e.clientY - rect.top) / rect.height) * 2 - 1;   // -1..1
+      var ry = Math.max(-10, Math.min(10, nx * 10));
+      var rx = Math.max(36, Math.min(56, baseRx - ny * 8));
+      sceneEl.style.setProperty("--scene-ry", ry.toFixed(2) + "deg");
+      sceneEl.style.setProperty("--scene-rx", rx.toFixed(2) + "deg");
+    });
+    sceneWrapEl.addEventListener("mouseleave", function () {
+      sceneEl.style.setProperty("--scene-ry", "0deg");
+      sceneEl.style.setProperty("--scene-rx", baseRx + "deg");
+    });
+  }
 
   renderOffice();
   renderFilters();
