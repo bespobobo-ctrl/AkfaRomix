@@ -7,8 +7,8 @@
     { "id": "hr", "label": "HR", "agent": "hr-reviewer", "login": "hr / 123" },
     { "id": "ishlab_chiqarish", "label": "Ishlab chiqarish", "agent": "ishlabchiqarish-reviewer", "login": "123 / 123, AC1 / 123" }
   ],
-  "lastSweepAt": "2026-07-25T09:14:27Z",
-  "lastSweepCommit": "0de4dbf",
+  "lastSweepAt": "2026-07-25T09:40:00Z",
+  "lastSweepCommit": "c09d1f4",
   "dashboardUrl": "https://claude.ai/code/artifact/df8383df-8768-4527-bd24-05509a0de63d",
   "issues": [
     {
@@ -118,15 +118,16 @@
       "foundBy": "buhgalter-reviewer",
       "foundAt": "2026-07-25T08:15:00Z",
       "severity": "high",
-      "priorityNote": "Kod bilan tuzatilmadi: CLAUDE.md bu RLS/rol arxitekturasini 'ataylab qoldirilgan, avval foydalanuvchi bilan kelishmasdan o'zgartirmang' deb belgilagan. Haqiqiy tuzatish backend/RLS siyosatini qayta qurishni talab qiladi — mahsulot egasi bilan kelishish kerak.",
-      "status": "open",
-      "fixedBy": null,
-      "fixedAt": null,
-      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "priorityNote": "Mahsulot egasi (foydalanuvchi) 2026-07-25'da tuzatishga aniq ruxsat berdi — client-side funksiya darajasidagi himoya qo'shildi.",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T09:40:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "Keyingi sweep'da qayta tekshiriladi" },
       "discussion": [
-        { "from": "sardor", "at": "2026-07-25T08:40:00Z", "message": "Bu arxitektura darajasidagi qaror (RLS + funksiya darajasida rol tekshiruvi qo'shish kerak). CLAUDE.md aniq ogohlantirgani uchun o'zboshimchalik bilan o'zgartirmadim — mahsulot egasi qaror qabul qilishi kerak." }
+        { "from": "sardor", "at": "2026-07-25T08:40:00Z", "message": "Bu arxitektura darajasidagi qaror (RLS + funksiya darajasida rol tekshiruvi qo'shish kerak). CLAUDE.md aniq ogohlantirgani uchun o'zboshimchalik bilan o'zgartirmadim — mahsulot egasi qaror qabul qilishi kerak." },
+        { "from": "sardor", "at": "2026-07-25T09:40:00Z", "message": "Foydalanuvchi ruxsat berdi. admin.js'da loadRomixHRData/loadAutoSales/loadAutoClapakInventory/loadAutoProduction va tizim_foydalanuvchilari.js'da loadSystemUsers/deleteSystemUser endi buxgalter rolini tekshirib, rad etadi. MUHIM CHEKLOV: bu faqat client'ni mustahkamlaydi — RLS jadvallarda hamon USING(true), Supabase anon key bundle'da ochiq, shuning uchun Supabase REST API'ga to'g'ridan-to'g'ri so'rov shu JS'ni butunlay chetlab o'tishi mumkin. To'liq yechim uchun haqiqiy auth + RLS siyosati kerak (kattaroq, alohida loyiha)." }
       ],
-      "resolution": null
+      "resolution": "acceptable"
     },
     {
       "id": "HR-05",
