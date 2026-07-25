@@ -1,0 +1,431 @@
+<title>Dasturchilar xonasi — AKFA Romix</title>
+<style>
+  :root {
+    --bg: #eef1f3;
+    --surface: #ffffff;
+    --surface-2: #f5f7f8;
+    --line: #dbe1e5;
+    --ink: #171b1f;
+    --muted: #5c6870;
+    --accent: #3563c9;
+    --accent-ink: #ffffff;
+    --good: #1f9d68;
+    --good-bg: #e2f6ec;
+    --warn: #a86a08;
+    --warn-bg: #fbf0d9;
+    --critical: #c22b34;
+    --critical-bg: #fbe4e5;
+    --pending: #6b4fc9;
+    --pending-bg: #ece6fb;
+    --info: #2f6fb3;
+    --info-bg: #e4eefb;
+    --shadow: 0 1px 2px rgba(20, 24, 28, 0.06), 0 8px 20px -12px rgba(20, 24, 28, 0.18);
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12161a;
+      --surface: #1a2025;
+      --surface-2: #20272d;
+      --line: #2a3138;
+      --ink: #eef2f5;
+      --muted: #8b98a3;
+      --accent: #6f9bf2;
+      --accent-ink: #0d1420;
+      --good: #3ecf8e;
+      --good-bg: #123326;
+      --warn: #eab54a;
+      --warn-bg: #382a10;
+      --critical: #f0656d;
+      --critical-bg: #3a1418;
+      --pending: #a793f0;
+      --pending-bg: #251b3d;
+      --info: #7aa8ec;
+      --info-bg: #16233a;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 30px -14px rgba(0, 0, 0, 0.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12161a; --surface: #1a2025; --surface-2: #20272d; --line: #2a3138;
+    --ink: #eef2f5; --muted: #8b98a3; --accent: #6f9bf2; --accent-ink: #0d1420;
+    --good: #3ecf8e; --good-bg: #123326; --warn: #eab54a; --warn-bg: #382a10;
+    --critical: #f0656d; --critical-bg: #3a1418; --pending: #a793f0; --pending-bg: #251b3d;
+    --info: #7aa8ec; --info-bg: #16233a;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 30px -14px rgba(0, 0, 0, 0.6);
+  }
+  :root[data-theme="light"] {
+    --bg: #eef1f3; --surface: #ffffff; --surface-2: #f5f7f8; --line: #dbe1e5;
+    --ink: #171b1f; --muted: #5c6870; --accent: #3563c9; --accent-ink: #ffffff;
+    --good: #1f9d68; --good-bg: #e2f6ec; --warn: #a86a08; --warn-bg: #fbf0d9;
+    --critical: #c22b34; --critical-bg: #fbe4e5; --pending: #6b4fc9; --pending-bg: #ece6fb;
+    --info: #2f6fb3; --info-bg: #e4eefb;
+    --shadow: 0 1px 2px rgba(20, 24, 28, 0.06), 0 8px 20px -12px rgba(20, 24, 28, 0.18);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", "Inter", ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .mono {
+    font-family: "Cascadia Code", "JetBrains Mono", "SF Mono", ui-monospace, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  a { color: var(--accent); }
+
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 24px 64px;
+  }
+
+  /* ---- Top bar ---- */
+  .topbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 24px;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-mark {
+    width: 38px; height: 38px; border-radius: 9px;
+    background: var(--accent); color: var(--accent-ink);
+    display: flex; align-items: center; justify-content: center;
+    font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace;
+    font-weight: 700; font-size: 14px; letter-spacing: -0.02em;
+    flex-shrink: 0;
+  }
+  .brand h1 { font-size: 18px; margin: 0; font-weight: 650; letter-spacing: -0.01em; }
+  .brand .sub { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); }
+
+  .sweep-status { text-align: right; font-size: 12.5px; color: var(--muted); }
+  .sweep-status .label { text-transform: uppercase; letter-spacing: 0.06em; font-size: 10.5px; font-weight: 650; }
+  .sweep-status .value { font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace; color: var(--ink); font-size: 13px; margin-top: 2px; }
+
+  /* ---- Summary strip ---- */
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .summary .stat {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+  }
+  .summary .stat .n { font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace; font-size: 24px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+  .summary .stat .l { font-size: 11.5px; color: var(--muted); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .summary .stat.crit .n { color: var(--critical); }
+  .summary .stat.open .n { color: var(--warn); }
+  .summary .stat.pending .n { color: var(--pending); }
+  .summary .stat.verified .n { color: var(--good); }
+
+  h2.section-title {
+    font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--muted); font-weight: 650; margin: 0 0 12px;
+  }
+
+  /* ---- Panel cards ---- */
+  .panels {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .panel-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+  .panel-card .stripe {
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .panel-card h3 { margin: 6px 0 2px; font-size: 14.5px; font-weight: 650; }
+  .panel-card .login { font-size: 11px; color: var(--muted); font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace; margin-bottom: 12px; }
+  .panel-card .counts { display: flex; gap: 14px; }
+  .panel-card .counts .c { font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace; }
+  .panel-card .counts .c b { font-size: 17px; display: block; font-variant-numeric: tabular-nums; }
+  .panel-card .counts .c span { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .panel-card.empty .counts { color: var(--muted); }
+  .panel-card .empty-note { font-size: 12px; color: var(--muted); font-style: italic; }
+
+  /* ---- Filters ---- */
+  .filters {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;
+  }
+  .filters button {
+    font: inherit; font-size: 12.5px; color: var(--muted);
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 999px; padding: 6px 13px; cursor: pointer;
+  }
+  .filters button:hover { color: var(--ink); border-color: var(--accent); }
+  .filters button.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+  /* ---- Issue list ---- */
+  .issues { display: flex; flex-direction: column; gap: 10px; }
+  .issue {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+  }
+  .issue.sev-critical { border-left-color: var(--critical); }
+  .issue.sev-high { border-left-color: var(--warn); }
+  .issue.sev-medium { border-left-color: var(--info); }
+  .issue.sev-low { border-left-color: var(--line); }
+
+  .issue-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .issue-id { font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace; font-size: 11.5px; color: var(--muted); }
+  .issue-title { font-size: 14.5px; font-weight: 600; margin: 4px 0 4px; }
+  .issue-loc { font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace; font-size: 11.5px; color: var(--muted); }
+  .issue-desc { font-size: 13px; color: var(--ink); opacity: 0.85; margin: 8px 0; max-width: 68ch; line-height: 1.5; }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 650; letter-spacing: 0.02em;
+    padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .pill.sev-critical { color: var(--critical); background: var(--critical-bg); }
+  .pill.sev-high { color: var(--warn); background: var(--warn-bg); }
+  .pill.sev-medium { color: var(--info); background: var(--info-bg); }
+  .pill.sev-low { color: var(--muted); background: var(--surface-2); }
+
+  .pill.st-open { color: var(--warn); background: var(--warn-bg); }
+  .pill.st-in_progress { color: var(--info); background: var(--info-bg); }
+  .pill.st-fixed { color: var(--pending); background: var(--pending-bg); }
+  .pill.st-verified { color: var(--good); background: var(--good-bg); }
+  .pill.st-needs_revision { color: var(--critical); background: var(--critical-bg); }
+
+  .issue-meta { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--muted); }
+  .issue-meta .m b { color: var(--ink); font-weight: 600; }
+
+  .discussion { margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .discussion .msg { font-size: 12.5px; line-height: 1.5; }
+  .discussion .msg .from { font-weight: 650; margin-right: 6px; }
+  .discussion .msg .from.sardor { color: var(--accent); }
+
+  /* ---- Empty state ---- */
+  .empty-state {
+    background: var(--surface);
+    border: 1px dashed var(--line);
+    border-radius: var(--radius);
+    padding: 40px 24px;
+    text-align: center;
+    color: var(--muted);
+  }
+  .empty-state .big { font-size: 15px; color: var(--ink); font-weight: 600; margin-bottom: 6px; }
+  .empty-state .small { font-size: 13px; max-width: 48ch; margin: 0 auto; line-height: 1.6; }
+
+  footer.note {
+    margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
+    font-size: 11.5px; color: var(--muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  }
+
+  @media (max-width: 720px) {
+    .summary { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+
+<div class="page">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">AR</div>
+      <div>
+        <h1>Dasturchilar xonasi</h1>
+        <p class="sub">AKFA Romix — Sardor nazorati ostidagi panel monitoringi</p>
+      </div>
+    </div>
+    <div class="sweep-status">
+      <div class="label">So'nggi sweep</div>
+      <div class="value" id="last-sweep">—</div>
+    </div>
+  </div>
+
+  <div class="summary" id="summary"></div>
+
+  <h2 class="section-title">Panellar</h2>
+  <div class="panels" id="panels"></div>
+
+  <h2 class="section-title">Muammolar</h2>
+  <div class="filters" id="filters"></div>
+  <div class="issues" id="issues"></div>
+
+  <footer class="note">
+    <span>Manba: <span class="mono">dev-room/tracker.json</span> — Sardor har sweep'da qayta quradi</span>
+    <span id="footer-count" class="mono"></span>
+  </footer>
+</div>
+
+<script type="application/json" id="tracker-data">
+{
+  "project": "AKFA Romix",
+  "panels": [
+    { "id": "ombor", "label": "Ombor", "agent": "ombor-reviewer", "login": "ombor / 123" },
+    { "id": "buhgalter", "label": "Buhgalter", "agent": "buhgalter-reviewer", "login": "buxgalter / 123" },
+    { "id": "sotuv", "label": "Sotuv", "agent": "sotuv-reviewer", "login": "sotuv / 123" },
+    { "id": "hr", "label": "HR", "agent": "hr-reviewer", "login": "hr / 123" },
+    { "id": "ishlab_chiqarish", "label": "Ishlab chiqarish", "agent": "ishlabchiqarish-reviewer", "login": "123 / 123, AC1 / 123" }
+  ],
+  "lastSweepAt": null,
+  "lastSweepCommit": null,
+  "dashboardUrl": "https://claude.ai/code/artifact/df8383df-8768-4527-bd24-05509a0de63d",
+  "issues": []
+}
+</script>
+
+<script>
+(function () {
+  var data = JSON.parse(document.getElementById("tracker-data").textContent);
+  var panels = data.panels || [];
+  var issues = data.issues || [];
+
+  var SEV_LABEL = { critical: "Kritik", high: "Yuqori", medium: "O'rta", low: "Past" };
+  var ST_LABEL = {
+    open: "Yangi", in_progress: "Jarayonda", fixed: "Retest kutilmoqda",
+    verified: "Tasdiqlangan", needs_revision: "Qayta ishlash kerak"
+  };
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return "hali yo'q";
+    try {
+      var d = new Date(iso);
+      return d.toLocaleString("uz-UZ", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+    } catch (e) { return iso; }
+  }
+
+  document.getElementById("last-sweep").textContent = data.lastSweepAt ? fmtDate(data.lastSweepAt) : "Hali ishga tushmagan";
+
+  // ---- Summary ----
+  var counts = { open: 0, in_progress: 0, fixed: 0, verified: 0, needs_revision: 0, critical: 0 };
+  issues.forEach(function (i) {
+    counts[i.status] = (counts[i.status] || 0) + 1;
+    if (i.severity === "critical" && i.status !== "verified") counts.critical++;
+  });
+
+  var summaryEl = document.getElementById("summary");
+  var summaryItems = [
+    { cls: "crit", n: counts.critical, l: "Kritik ochiq" },
+    { cls: "open", n: counts.open, l: "Yangi topilgan" },
+    { cls: "pending", n: (counts.fixed || 0) + (counts.needs_revision || 0), l: "Retest / qayta ishlash" },
+    { cls: "verified", n: counts.verified, l: "Tasdiqlangan" },
+    { cls: "", n: issues.length, l: "Jami muammo" }
+  ];
+  summaryEl.innerHTML = summaryItems.map(function (s) {
+    return '<div class="stat ' + s.cls + '"><div class="n mono">' + s.n + '</div><div class="l">' + esc(s.l) + '</div></div>';
+  }).join("");
+
+  // ---- Panel cards ----
+  var panelsEl = document.getElementById("panels");
+  var stripeColor = { ombor: "var(--info)", buhgalter: "var(--pending)", sotuv: "var(--good)", hr: "var(--warn)", ishlab_chiqarish: "var(--accent)" };
+  panelsEl.innerHTML = panels.map(function (p) {
+    var pIssues = issues.filter(function (i) { return i.panel === p.id; });
+    var open = pIssues.filter(function (i) { return i.status === "open" || i.status === "needs_revision"; }).length;
+    var progress = pIssues.filter(function (i) { return i.status === "in_progress" || i.status === "fixed"; }).length;
+    var verified = pIssues.filter(function (i) { return i.status === "verified"; }).length;
+    var emptyCls = pIssues.length === 0 ? " empty" : "";
+    var body = pIssues.length === 0
+      ? '<div class="empty-note">Muammo topilmagan / hali skanerlanmagan</div>'
+      : '<div class="counts">' +
+          '<div class="c"><b style="color:var(--warn)">' + open + '</b><span>Ochiq</span></div>' +
+          '<div class="c"><b style="color:var(--pending)">' + progress + '</b><span>Jarayonda</span></div>' +
+          '<div class="c"><b style="color:var(--good)">' + verified + '</b><span>Tasdiqlangan</span></div>' +
+        '</div>';
+    return '<div class="panel-card' + emptyCls + '">' +
+      '<div class="stripe" style="background:' + (stripeColor[p.id] || "var(--line)") + '"></div>' +
+      '<h3>' + esc(p.label) + '</h3>' +
+      '<div class="login">' + esc(p.login) + '</div>' +
+      body +
+      '</div>';
+  }).join("");
+
+  // ---- Issues ----
+  var issuesEl = document.getElementById("issues");
+  var filtersEl = document.getElementById("filters");
+  var footerCount = document.getElementById("footer-count");
+  var activeFilter = "all";
+
+  var filterDefs = [{ id: "all", label: "Barchasi" }].concat(panels.map(function (p) { return { id: p.id, label: p.label }; }));
+
+  function renderFilters() {
+    filtersEl.innerHTML = filterDefs.map(function (f) {
+      return '<button data-f="' + f.id + '" class="' + (f.id === activeFilter ? "active" : "") + '">' + esc(f.label) + '</button>';
+    }).join("");
+    Array.prototype.forEach.call(filtersEl.querySelectorAll("button"), function (btn) {
+      btn.addEventListener("click", function () {
+        activeFilter = btn.getAttribute("data-f");
+        renderFilters();
+        renderIssues();
+      });
+    });
+  }
+
+  function renderIssues() {
+    var list = issues.filter(function (i) { return activeFilter === "all" || i.panel === activeFilter; });
+    var order = { critical: 0, high: 1, medium: 2, low: 3 };
+    list = list.slice().sort(function (a, b) { return (order[a.severity] || 9) - (order[b.severity] || 9); });
+
+    if (list.length === 0) {
+      issuesEl.innerHTML = '<div class="empty-state">' +
+        '<div class="big">Hozircha muammo qayd etilmagan</div>' +
+        '<div class="small">Sardor birinchi sweep\'ni bajargach, har bir paneldan topilgan xatolar shu yerda muhimlik darajasi bilan chiqadi.</div>' +
+        '</div>';
+      footerCount.textContent = "0 / " + issues.length;
+      return;
+    }
+
+    issuesEl.innerHTML = list.map(function (i) {
+      var disc = (i.discussion || []).map(function (m) {
+        return '<div class="msg"><span class="from' + (m.from === "sardor" ? " sardor" : "") + '">' + esc(m.from) + ':</span>' + esc(m.message) + '</div>';
+      }).join("");
+      return '<div class="issue sev-' + esc(i.severity || "low") + '">' +
+        '<div class="issue-top">' +
+          '<div>' +
+            '<span class="issue-id">' + esc(i.id) + '</span>' +
+            '<div class="issue-title">' + esc(i.title) + '</div>' +
+            '<div class="issue-loc">' + esc(i.file || "") + (i.line ? ":" + i.line : "") + '</div>' +
+          '</div>' +
+          '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">' +
+            '<span class="pill sev-' + esc(i.severity || "low") + '">' + esc(SEV_LABEL[i.severity] || i.severity) + '</span>' +
+            '<span class="pill st-' + esc(i.status || "open") + '">' + esc(ST_LABEL[i.status] || i.status) + '</span>' +
+          '</div>' +
+        '</div>' +
+        (i.description ? '<div class="issue-desc">' + esc(i.description) + '</div>' : '') +
+        '<div class="issue-meta">' +
+          '<span class="m">Topdi: <b>' + esc(i.foundBy || "—") + '</b></span>' +
+          (i.fixedBy ? '<span class="m">Tuzatdi: <b>' + esc(i.fixedBy) + '</b></span>' : '') +
+          (i.retest && i.retest.result && i.retest.result !== "pending" ? '<span class="m">Retest: <b>' + esc(i.retest.result === "pass" ? "o’tdi" : "o’tmadi") + '</b></span>' : '') +
+          (i.resolution ? '<span class="m">Yechim: <b>' + esc(i.resolution === "optimal" ? "optimal" : "qoniqarli") + '</b></span>' : '') +
+        '</div>' +
+        (disc ? '<div class="discussion">' + disc + '</div>' : '') +
+      '</div>';
+    }).join("");
+    footerCount.textContent = list.length + " / " + issues.length;
+  }
+
+  renderFilters();
+  renderIssues();
+})();
+</script>

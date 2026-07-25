@@ -1,0 +1,14 @@
+{
+  "project": "AKFA Romix",
+  "panels": [
+    { "id": "ombor", "label": "Ombor", "agent": "ombor-reviewer", "login": "ombor / 123" },
+    { "id": "buhgalter", "label": "Buhgalter", "agent": "buhgalter-reviewer", "login": "buxgalter / 123" },
+    { "id": "sotuv", "label": "Sotuv", "agent": "sotuv-reviewer", "login": "sotuv / 123" },
+    { "id": "hr", "label": "HR", "agent": "hr-reviewer", "login": "hr / 123" },
+    { "id": "ishlab_chiqarish", "label": "Ishlab chiqarish", "agent": "ishlabchiqarish-reviewer", "login": "123 / 123, AC1 / 123" }
+  ],
+  "lastSweepAt": null,
+  "lastSweepCommit": null,
+  "dashboardUrl": "https://claude.ai/code/artifact/df8383df-8768-4527-bd24-05509a0de63d",
+  "issues": []
+}
