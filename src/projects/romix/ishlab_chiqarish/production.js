@@ -1,5 +1,6 @@
 import { supabase, checkAuth, logout } from '@/core/supabase.js';
 import { generateCuttingPdf } from '../sotuv/cuttingPdf.js';
+import { initMurojaatlarWidget, initRomixAiWidget } from '../shared/murojaatlarAi.js';
 
 function escapeHtml(str) {
     return String(str == null ? '' : str).replace(/[&<>"']/g, (c) => ({
@@ -16,6 +17,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     document.getElementById('logoutBtn')?.addEventListener('click', logout);
+
+    initMurojaatlarWidget({ department: 'ishlab_chiqarish', departmentLabel: 'Ishlab Chiqarish' });
+    initRomixAiWidget({
+        title: 'Romix AI Ishlab Chiqarish Yordamchisi',
+        welcome: `👋 Assalomu alaykum! Men <strong>Romix AI</strong> Ishlab Chiqarish tahlilchisiman. Zakazlar jarayoni va brigadalar bo'yicha savol berishingiz mumkin!`,
+        quickPrompts: [
+            { label: '📋 Jarayondagi zakazlar', prompt: "Jarayonda nechta zakaz bor?" },
+            { label: '🏭 Bosqichlar', prompt: "Ishlab chiqarish bosqichlari holati qanday?" }
+        ],
+        askFn: askProductionAi
+    });
 
     // Tab switching
     document.querySelectorAll('.tab-btn, .nav-icon[data-tab]').forEach(btn => {
@@ -1025,3 +1037,40 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }, 30000);
 });
+
+// ═══════════════════════════════════════════════════════════
+// 🤖 ROMIX AI — ISHLAB CHIQARISH YORDAMCHISI
+// ═══════════════════════════════════════════════════════════
+async function askProductionAi(query) {
+    const q = query.toLowerCase();
+
+    let pipelineOrders = [];
+    let batches = [];
+    try {
+        const { data: po } = await supabase.from('sales_orders').select('*').in('status', ['Kutilmoqda', 'Jarayonda']);
+        pipelineOrders = po || [];
+        const { data: b } = await supabase.from('romix_production_batches').select('*').gt('quantity', 0).in('stage', ['kesish', 'payvandlash', 'yigish_qadoqlash']);
+        batches = b || [];
+    } catch (e) {
+        return "⚠️ Ma'lumotlarni yuklab bo'lmadi, internet aloqasini tekshiring.";
+    }
+
+    if (q.includes('jarayon') || q.includes('zakaz') || q.includes('buyurtma')) {
+        return `📋 <strong>Jarayondagi zakazlar:</strong><br><br>` +
+               `• 🗂️ Jami: <strong>${pipelineOrders.length} ta</strong> zakaz ishlab chiqarish jarayonida`;
+    }
+
+    if (q.includes('bosqich') || q.includes('stage') || q.includes('holat')) {
+        const byStage = {};
+        batches.forEach(b => { byStage[b.stage] = (byStage[b.stage] || 0) + (Number(b.quantity) || 0); });
+        const labels = { kesish: '✂️ Kesish', payvandlash: '🔥 Payvandlash', yigish_qadoqlash: '📦 Yig\'ish/Qadoqlash' };
+        const lines = Object.entries(byStage).map(([k, v]) => `• ${labels[k] || k}: <strong>${v} dona</strong>`).join('<br>');
+        return `🏭 <strong>Bosqichlar bo'yicha holat:</strong><br><br>${lines || 'Hozircha ishlanayotgan partiya yo\'q.'}`;
+    }
+
+    return `🤖 <strong>Romix AI Ishlab Chiqarish Tahlili:</strong><br><br>` +
+           `Hozirda <strong>${pipelineOrders.length} ta</strong> zakaz jarayonda.<br><br>` +
+           `Menga quyidagilar bo'yicha savol berishingiz mumkin:<br>` +
+           `• <em>"Jarayonda nechta zakaz bor?"</em><br>` +
+           `• <em>"Bosqichlar holati"</em>`;
+}

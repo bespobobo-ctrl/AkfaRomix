@@ -3821,24 +3821,25 @@ window.loadRequests = async function() {
 
     let requests = [];
     try {
-        const { data, error } = await supabase.from('profile_requests').select('*').order('created_at', { ascending: false });
+        // Barcha bo'limlar (Ombor/Sotuv/HR/Ishlab Chiqarish/Buhgalter) uchun umumiy
+        // `romix_murojaatlar` jadvali — avval `profile_requests`dan foydalanilardi, lekin
+        // u HR'ning xodim-profil so'rovlari uchun band bo'lgani sabab HR "So'rovlar"
+        // bo'limini buzib qo'yardi (qarang: database/2026-07-27_romix_murojaatlar.sql).
+        const { data, error } = await supabase.from('romix_murojaatlar').select('*').order('created_at', { ascending: false });
         if (!error && data) {
-            requests = data.map(r => {
-                const reqObj = r.requested_data || {};
-                return {
-                    id: r.id,
-                    type: reqObj.type || '⚡ Material Yetishmovchiligi',
-                    priority: reqObj.priority || 'medium',
-                    title: reqObj.title || 'Murojaat #' + String(r.id).slice(0, 8),
-                    description: reqObj.description || 'Izoh mavjud emas',
-                    sender: reqObj.sender || 'Sex Usta / Omborchi',
-                    status: r.status || 'pending',
-                    created_at: r.created_at
-                };
-            });
+            requests = data.map(r => ({
+                id: r.id,
+                type: r.type || '⚡ Material Yetishmovchiligi',
+                priority: r.priority || 'medium',
+                title: r.title || 'Murojaat #' + String(r.id).slice(0, 8),
+                description: r.description || 'Izoh mavjud emas',
+                sender: r.sender || 'Sex Usta / Omborchi',
+                status: r.status || 'pending',
+                created_at: r.created_at
+            }));
         }
     } catch (e) {
-        console.warn("Supabase profile_requests fetch fallback:", e);
+        console.warn("Supabase romix_murojaatlar fetch fallback:", e);
     }
 
     // Local Storage fallback merge
@@ -3993,9 +3994,15 @@ window.saveNewRequest = async function() {
 
     // Try Supabase insert
     try {
-        await supabase.from('profile_requests').insert({
-            employee_id: user.id || 'ombor-user',
-            requested_data: newReq,
+        await supabase.from('romix_murojaatlar').insert({
+            id: newReq.id,
+            department: 'ombor',
+            sender: senderName,
+            sender_user_id: user.id || null,
+            type,
+            priority,
+            title,
+            description: newReq.description,
             status: 'pending'
         });
     } catch (e) {
@@ -4021,7 +4028,7 @@ window.saveNewRequest = async function() {
 
 window.updateRequestStatus = async function(id, newStatus) {
     try {
-        await supabase.from('profile_requests').update({ status: newStatus }).eq('id', id);
+        await supabase.from('romix_murojaatlar').update({ status: newStatus }).eq('id', id);
     } catch (e) {}
 
     try {
@@ -4040,7 +4047,7 @@ window.deleteRequestItem = async function(id) {
     if (!confirm("Ushbu murojaatni o'chirmoqchimisiz?")) return;
 
     try {
-        await supabase.from('profile_requests').delete().eq('id', id);
+        await supabase.from('romix_murojaatlar').delete().eq('id', id);
     } catch (e) {}
 
     try {

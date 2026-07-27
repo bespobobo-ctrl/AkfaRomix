@@ -4,6 +4,7 @@ import { authService } from '@/services/auth/authService.js';
 import { LayoutService } from '@/components/LayoutService.js';
 import { ROLES, ATTENDANCE_STATUS } from '@/constants';
 import { attachSalaries, updateEmployeeSalary } from '@/core/employeesSecure.js';
+import { initMurojaatlarWidget, initRomixAiWidget } from '../shared/murojaatlarAi.js';
 
 const EMPLOYEE_COLUMNS_NO_SALARY = 'id, full_name, first_name, last_name, role, status, created_at, birth_year, avatar_url, department, joined_year, experience, phone';
 
@@ -77,6 +78,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         </button>
     `;
     LayoutService.init('HR', hrActions);
+
+    // 💬🤖 Murojaatlar + Romix AI Yordamchi — bu HR'ning mavjud "So'rovlar" (xodim profil
+    // tasdiqlash) bo'limidan mustaqil floating widget, nomlar to'qnashmasligi uchun.
+    initMurojaatlarWidget({ department: 'hr', departmentLabel: 'HR Bo\'limi' });
+    initRomixAiWidget({
+        title: 'Romix AI HR Yordamchisi',
+        welcome: `👋 Assalomu alaykum! Men <strong>Romix AI</strong> HR tahlilchisiman. Xodimlar, davomat va ishdagi holat bo'yicha savol berishingiz mumkin!`,
+        quickPrompts: [
+            { label: '👥 Bugun ishda', prompt: "Bugun nechta xodim ishda?" },
+            { label: '📋 Xodimlar soni', prompt: "Jami nechta xodim bor?" },
+            { label: '⏰ Kech qolganlar', prompt: "Bugun kim kech qoldi?" }
+        ],
+        askFn: askHrAi
+    });
 
     /*
     // Animations
@@ -2775,3 +2790,39 @@ window.clearAllKitchenData = function () {
         }
     });
 };
+
+// ═══════════════════════════════════════════════════════════
+// 🤖 ROMIX AI — HR YORDAMCHISI
+// ═══════════════════════════════════════════════════════════
+async function askHrAi(query) {
+    const q = query.toLowerCase();
+    const total = employeesData.length;
+    const presentIds = new Set(todayAtt.filter(a => (a.status === ATTENDANCE_STATUS.PRESENT || (a.check_in && !a.check_out))).map(a => a.employee_id));
+    const lateIds = new Set(todayAtt.filter(a => a.status === ATTENDANCE_STATUS.LATE).map(a => a.employee_id));
+
+    if (q.includes('ishda') || q.includes('kelgan') || q.includes('davomat')) {
+        return `👥 <strong>Bugungi davomat:</strong><br><br>` +
+               `• ✅ Ishda: <strong>${presentIds.size} kishi</strong><br>` +
+               `• 🗂️ Jami xodimlar: <strong>${total} kishi</strong>`;
+    }
+
+    if (q.includes('kech')) {
+        const lateNames = employeesData.filter(e => lateIds.has(e.id)).map(e => e.full_name);
+        if (!lateNames.length) return `✅ <strong>Bugun hech kim kech qolmagan!</strong>`;
+        return `⏰ <strong>Bugun kech qolganlar:</strong><br><br>` + lateNames.map(n => `• ${n}`).join('<br>');
+    }
+
+    if (q.includes('soni') || q.includes('nechta') || q.includes('jami')) {
+        const byDept = {};
+        employeesData.forEach(e => { const d = e.department || e.dept || 'Boshqa'; byDept[d] = (byDept[d] || 0) + 1; });
+        const lines = Object.entries(byDept).map(([k, v]) => `• ${k}: <strong>${v} kishi</strong>`).join('<br>');
+        return `📋 <strong>Xodimlar bo'limlar bo'yicha:</strong><br><br>${lines}<br><br>🗂️ Jami: <strong>${total} kishi</strong>`;
+    }
+
+    return `🤖 <strong>Romix AI HR Tahlili:</strong><br><br>` +
+           `Jami <strong>${total} xodim</strong>, shundan bugun <strong>${presentIds.size} kishi</strong> ishda.<br><br>` +
+           `Menga quyidagilar bo'yicha savol berishingiz mumkin:<br>` +
+           `• <em>"Bugun nechta xodim ishda?"</em><br>` +
+           `• <em>"Bugun kim kech qoldi?"</em><br>` +
+           `• <em>"Jami xodimlar soni"</em>`;
+}

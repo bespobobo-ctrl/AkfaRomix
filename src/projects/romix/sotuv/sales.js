@@ -2,6 +2,7 @@ import { supabase } from '@/core/supabase.js';
 import { createViewer } from './window3d.js';
 import { generateCuttingPdf } from './cuttingPdf.js';
 import { createDesigner } from './designer2d.js';
+import { initMurojaatlarWidget, initRomixAiWidget } from '../shared/murojaatlarAi.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const user = JSON.parse(localStorage.getItem('currentUser'));
@@ -14,6 +15,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const isLimitedAgent = user.role === 'sotuvchi';
 
     document.getElementById('userName').textContent = user.full_name || "Sotuv Menejeri";
+
+    initMurojaatlarWidget({ department: 'sotuv', departmentLabel: 'Sotuv Bo\'limi' });
+    initRomixAiWidget({
+        title: 'Romix AI Sotuv Yordamchisi',
+        welcome: `👋 Assalomu alaykum! Men <strong>Romix AI</strong> Sotuv tahlilchisiman. Buyurtmalar, tushum va to'lovlar bo'yicha savol berishingiz mumkin!`,
+        quickPrompts: [
+            { label: '📊 Bugungi savdo', prompt: "Bugungi savdo qancha?" },
+            { label: '💳 Qarzdorlik', prompt: "To'lanmagan qarzdorlik qancha?" },
+            { label: '🛒 Buyurtmalar holati', prompt: "Buyurtmalar holati qanday?" }
+        ],
+        askFn: askSotuvAi
+    });
 
     // Modals
     const orderModal = document.getElementById('orderModal');
@@ -2104,3 +2117,51 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Yordamchi sotuvchi kirishi bilan darhol buyurtma olish oynasi ochiladi (yagona ko'radigan oynasi)
     if (isLimitedAgent) document.getElementById('openOrderModal').click();
 });
+
+// ═══════════════════════════════════════════════════════════
+// 🤖 ROMIX AI — SOTUV YORDAMCHISI
+// ═══════════════════════════════════════════════════════════
+async function askSotuvAi(query) {
+    const q = query.toLowerCase();
+    let orders = [];
+    try {
+        const { data } = await supabase.from('sales_orders').select('*').order('created_at', { ascending: false });
+        orders = data || [];
+    } catch (e) {
+        return "⚠️ Ma'lumotlarni yuklab bo'lmadi, internet aloqasini tekshiring.";
+    }
+
+    const todayStr = new Date().toDateString();
+    const todayOrders = orders.filter(o => new Date(o.created_at).toDateString() === todayStr);
+    const todayTotal = todayOrders.reduce((s, o) => s + (Number(o.total_price) || 0), 0);
+
+    if (q.includes('bugun') || q.includes('savdo') || q.includes('tushum')) {
+        return `📊 <strong>Bugungi savdo:</strong><br><br>` +
+               `• 🛒 Buyurtmalar soni: <strong>${todayOrders.length} ta</strong><br>` +
+               `• 💰 Umumiy summa: <strong>${todayTotal.toLocaleString()} so'm</strong>`;
+    }
+
+    if (q.includes('qarz') || q.includes('to\'lov') || q.includes('tolov')) {
+        const totalAll = orders.reduce((s, o) => s + (Number(o.total_price) || 0), 0);
+        const totalPaid = orders.reduce((s, o) => s + (Number(o.paid_amount) || 0), 0);
+        const debt = totalAll - totalPaid;
+        return `💳 <strong>To'lovlar holati:</strong><br><br>` +
+               `• 💰 Jami buyurtmalar summasi: <strong>${totalAll.toLocaleString()} so'm</strong><br>` +
+               `• ✅ To'langan: <strong>${totalPaid.toLocaleString()} so'm</strong><br>` +
+               `• 🔴 Qoldiq (qarzdorlik): <strong>${debt.toLocaleString()} so'm</strong>`;
+    }
+
+    if (q.includes('holat') || q.includes('buyurtma') || q.includes('status')) {
+        const byStatus = {};
+        orders.forEach(o => { byStatus[o.status || 'Noma\'lum'] = (byStatus[o.status || 'Noma\'lum'] || 0) + 1; });
+        const lines = Object.entries(byStatus).map(([k, v]) => `• ${k}: <strong>${v} ta</strong>`).join('<br>');
+        return `🛒 <strong>Buyurtmalar holati bo'yicha taqsimot:</strong><br><br>${lines || 'Hozircha buyurtmalar mavjud emas.'}`;
+    }
+
+    return `🤖 <strong>Romix AI Sotuv Tahlili:</strong><br><br>` +
+           `Jami <strong>${orders.length} ta</strong> buyurtma mavjud.<br><br>` +
+           `Menga quyidagilar bo'yicha savol berishingiz mumkin:<br>` +
+           `• <em>"Bugungi savdo"</em><br>` +
+           `• <em>"To'lanmagan qarzdorlik"</em><br>` +
+           `• <em>"Buyurtmalar holati"</em>`;
+}

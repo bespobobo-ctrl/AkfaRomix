@@ -5,6 +5,7 @@ import { ROLES } from '@/constants';
 import { attachSalaries, updateEmployeeSalary } from '@/core/employeesSecure.js';
 import malibuCalpak from '../../../assets/images/malibu_calpak.png';
 import gentraCalpak from '../../../assets/images/gentra_calpak.png';
+import { initMurojaatlarWidget, initRomixAiWidget } from '../../romix/shared/murojaatlarAi.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('AKFA Rahbar Paneli v2 Logic Loaded');
@@ -32,6 +33,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         const buhLink = document.querySelector('.nav-link-item[data-tab="buhgalter"]');
         if (buhLink) buhLink.classList.add('active');
         document.getElementById('section-buhgalter').classList.add('active');
+
+        // 💬🤖 Murojaatlar + Romix AI Yordamchi — Ombor panelidagidek, buxgalter uchun ham.
+        // Bu chaqiruv faqat shu gate (role === 'buxgalter' + section-buhgalter mavjud,
+        // ya'ni faqat romix_dashboard.html) ichida, "ROMIX BUHGALTER MODULE" bloki
+        // (447-4798 qatorlar)ga tegmasdan qo'shildi.
+        initMurojaatlarWidget({ department: 'buxgalter', departmentLabel: 'Buhgalteriya' });
+        initRomixAiWidget({
+            title: 'Romix AI Buhgalter Yordamchisi',
+            welcome: `👋 Assalomu alaykum! Men <strong>Romix AI</strong> Buhgalteriya tahlilchisiman. To'lovlar va moliyaviy holat bo'yicha savol berishingiz mumkin!`,
+            quickPrompts: [
+                { label: '💰 Jami tushum', prompt: "Jami tushum qancha?" },
+                { label: '💳 Qarzdorlik', prompt: "To'lanmagan qarzdorlik qancha?" }
+            ],
+            askFn: askBuhgalterAi
+        });
     }
 
     // "buxgalter" roli uchun funksiya darajasidagi himoya (BUH-02) — DOM yashirish
@@ -12428,7 +12444,7 @@ CREATE TABLE IF NOT EXISTS buh_sales (
                 'romix_accessories', 'romix_accessories_history', 'romix_bot_state', 'romix_brigade_members',
                 'romix_brigade_ratings', 'romix_brigades', 'romix_debts', 'romix_expenses',
                 'romix_installation_materials', 'romix_inventory', 'romix_oynak', 'romix_payment_log',
-                'romix_production_batches', 'romix_production_log', 'romix_qoldiq_profillar', 'romix_staff',
+                'romix_murojaatlar', 'romix_production_batches', 'romix_production_log', 'romix_qoldiq_profillar', 'romix_staff',
                 'romix_transactions', 'romix_utility_readings', 'sales_orders', 'showroom_products', 'system_users'
             ];
 
@@ -12471,3 +12487,42 @@ CREATE TABLE IF NOT EXISTS buh_sales (
             window.location.reload();
         };
     }, 1000);
+
+// ═══════════════════════════════════════════════════════════
+// 🤖 ROMIX AI — BUHGALTER YORDAMCHISI
+// (Ombor/Sotuv/HR/Ishlab-chiqarish bilan bir xil murojaatlarAi.js
+// widget'i uchun; faqat "buxgalter" roli DOMContentLoaded gate'ida chaqiriladi.)
+// ═══════════════════════════════════════════════════════════
+async function askBuhgalterAi(query) {
+    const q = query.toLowerCase();
+    let orders = [];
+    try {
+        const { data } = await supabase.from('sales_orders').select('*');
+        orders = data || [];
+    } catch (e) {
+        return "⚠️ Ma'lumotlarni yuklab bo'lmadi, internet aloqasini tekshiring.";
+    }
+
+    const totalAll = orders.reduce((s, o) => s + (Number(o.total_price) || 0), 0);
+    const totalPaid = orders.reduce((s, o) => s + (Number(o.paid_amount) || 0), 0);
+    const debt = totalAll - totalPaid;
+
+    if (q.includes('tushum') || q.includes('jami')) {
+        return `💰 <strong>Jami tushum:</strong><br><br>` +
+               `• 🗂️ Buyurtmalar soni: <strong>${orders.length} ta</strong><br>` +
+               `• 💰 Umumiy summa: <strong>${totalAll.toLocaleString()} so'm</strong>`;
+    }
+
+    if (q.includes('qarz') || q.includes('to\'lov') || q.includes('tolov')) {
+        return `💳 <strong>To'lovlar holati:</strong><br><br>` +
+               `• 💰 Jami: <strong>${totalAll.toLocaleString()} so'm</strong><br>` +
+               `• ✅ To'langan: <strong>${totalPaid.toLocaleString()} so'm</strong><br>` +
+               `• 🔴 Qoldiq (qarzdorlik): <strong>${debt.toLocaleString()} so'm</strong>`;
+    }
+
+    return `🤖 <strong>Romix AI Buhgalteriya Tahlili:</strong><br><br>` +
+           `Jami <strong>${orders.length} ta</strong> buyurtma, umumiy summa <strong>${totalAll.toLocaleString()} so'm</strong>.<br><br>` +
+           `Menga quyidagilar bo'yicha savol berishingiz mumkin:<br>` +
+           `• <em>"Jami tushum qancha?"</em><br>` +
+           `• <em>"To'lanmagan qarzdorlik qancha?"</em>`;
+}
