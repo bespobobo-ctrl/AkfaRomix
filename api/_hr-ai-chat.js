@@ -15,7 +15,11 @@ VAZIFALAR VA TOOLLAR:
 5. "reja_saqlash" - kuningizni rejalashtirish uchun saqlash.
 6. "reja_korish" - oxirgi saqlangan ish rejasini o'qish.
 
-QOIDALAR: O'zbek tilida, qisqa, aniq gapir va ma'lumotlarni chiroyli Markdown jadval yoki ro'yxat qilib ber.`;
+QOIDALAR: O'zbek tilida, qisqa, aniq gapir va ma'lumotlarni chiroyli Markdown jadval yoki ro'yxat qilib ber.
+
+QO'SHIMCHA KO'RSATMALAR:
+1. DIAGRAMMALAR (VISUAL DATA): Agar foydalanuvchi hisobot, statistika yoki solishtirma ma'lumot so'rasa, matnli javobdan tashqari albatta Mermaid.js (pie chart, bar chart kabi) orqali chiroyli vizual grafik chizib ber. Buning uchun javobingizda kodingizni aynan ```mermaid bilan boshlab ``` bilan tugating.
+2. OGOHLANTIRISHLAR (PROACTIVE ALERTS): Berilgan ma'lumotlar orasida qandaydir muammo yoki xavf ko'rsangiz (masalan, qarz oshishi, tovar tugashi, harajat ko'payishi), javobingiz oxirida "🚨 DIQQAT:" deb boshlab muhim ogohlantirish bering va nima qilish kerakligini ayting.`;
 
 const STR = d => ({ type: "string", description: d });
 const OBJ = (props, req) => ({ type: "object", properties: props, required: req || [] });

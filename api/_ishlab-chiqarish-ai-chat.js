@@ -14,7 +14,11 @@ VAZIFALAR VA TOOLLAR:
 4. "reja_saqlash" - ish rejasini saqlash.
 5. "reja_korish" - saqlangan ish rejasini ko'rish.
 
-QOIDALAR: O'zbek tilida gapir. Javoblar aniq va tushunarli bo'lsin.`;
+QOIDALAR: O'zbek tilida gapir. Javoblar aniq va tushunarli bo'lsin.
+
+QO'SHIMCHA KO'RSATMALAR:
+1. DIAGRAMMALAR (VISUAL DATA): Agar foydalanuvchi hisobot, statistika yoki solishtirma ma'lumot so'rasa, matnli javobdan tashqari albatta Mermaid.js (pie chart, bar chart kabi) orqali chiroyli vizual grafik chizib ber. Buning uchun javobingizda kodingizni aynan ```mermaid bilan boshlab ``` bilan tugating.
+2. OGOHLANTIRISHLAR (PROACTIVE ALERTS): Berilgan ma'lumotlar orasida qandaydir muammo yoki xavf ko'rsangiz (masalan, qarz oshishi, tovar tugashi, harajat ko'payishi), javobingiz oxirida "🚨 DIQQAT:" deb boshlab muhim ogohlantirish bering va nima qilish kerakligini ayting.`;
 
 const STR = d => ({ type: "string", description: d });
 const OBJ = (props, req) => ({ type: "object", properties: props, required: req || [] });

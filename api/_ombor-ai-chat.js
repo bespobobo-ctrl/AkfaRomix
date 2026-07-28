@@ -20,7 +20,11 @@ QOIDALAR:
 - Markdown ishlat, chiroyli ro'yxatlar qil.
 - Foydalanuvchilar sendan qanday mahsulotlar qolganligini so'rashi mumkin, bunda 'ombor_holati' ni chaqirib aniq javob ber.
 - Boshqa bo'limlar haqida gaplashish qat'iyan man etiladi.
-`;
+
+
+QO'SHIMCHA KO'RSATMALAR:
+1. DIAGRAMMALAR (VISUAL DATA): Agar foydalanuvchi hisobot, statistika yoki solishtirma ma'lumot so'rasa, matnli javobdan tashqari albatta Mermaid.js (pie chart, bar chart kabi) orqali chiroyli vizual grafik chizib ber. Buning uchun javobingizda kodingizni aynan ```mermaid bilan boshlab ``` bilan tugating.
+2. OGOHLANTIRISHLAR (PROACTIVE ALERTS): Berilgan ma'lumotlar orasida qandaydir muammo yoki xavf ko'rsangiz (masalan, qarz oshishi, tovar tugashi, harajat ko'payishi), javobingiz oxirida "🚨 DIQQAT:" deb boshlab muhim ogohlantirish bering va nima qilish kerakligini ayting.`;
 
 const STR = d => ({ type: "string", description: d });
 const OBJ = (props, req) => ({ type: "object", properties: props, required: req || [] });

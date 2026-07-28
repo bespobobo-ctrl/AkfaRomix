@@ -38,6 +38,12 @@
         } catch(e) {}
     </script>
     <link rel="stylesheet" href="./romix_dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.mermaid) mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+        });
+    </script>
 </head>
 
 <body class="admin-v2-body">
@@ -3802,6 +3808,22 @@
                     let txt = data.text;
                     txt = txt.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
                     txt = txt.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                    
+                    if (txt.includes('```mermaid')) {
+                        const parts = txt.split('```mermaid');
+                        txt = parts[0];
+                        for (let i = 1; i < parts.length; i++) {
+                            const endIdx = parts[i].indexOf('```');
+                            if (endIdx !== -1) {
+                                const mermaidCode = parts[i].substring(0, endIdx).trim();
+                                const rest = parts[i].substring(endIdx + 3);
+                                txt += `<div class="mermaid">${mermaidCode}</div>` + rest;
+                            } else {
+                                txt += parts[i];
+                            }
+                        }
+                    }
+                    
                     txt = txt.replace(/\n/g, '<br>');
                     responseHtml = txt;
                 } else if (data.error) {
@@ -3818,6 +3840,13 @@
             aiBubble.style.cssText = 'background:rgba(0,210,255,0.08); border:1px solid rgba(0,210,255,0.25); border-radius:14px; padding:12px 14px; color:#fff; align-self:flex-start; max-width:88%; line-height:1.5; font-size:0.85rem;';
             aiBubble.innerHTML = responseHtml;
             history.appendChild(aiBubble);
+            
+            if (window.mermaid) {
+                try {
+                    mermaid.run({ nodes: aiBubble.querySelectorAll('.mermaid') });
+                } catch(e) { console.error('Mermaid render error', e); }
+            }
+            
             history.scrollTop = history.scrollHeight;
         };
     </script>
