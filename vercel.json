@@ -7,6 +7,12 @@
     { "path": "/api/daily-report", "schedule": "0 15 * * *" }
   ],
   "rewrites": [
+    { "source": "/api/hr-ai-chat", "destination": "/api/unified-chat?dept=hr" },
+    { "source": "/api/sotuv-ai-chat", "destination": "/api/unified-chat?dept=sotuv" },
+    { "source": "/api/ishlab-chiqarish-ai-chat", "destination": "/api/unified-chat?dept=ishlab" },
+    { "source": "/api/buxgalter-ai-chat", "destination": "/api/unified-chat?dept=buxgalter" },
+    { "source": "/api/ombor-ai-chat", "destination": "/api/unified-chat?dept=ombor" },
+    { "source": "/api/romix-ai-chat", "destination": "/api/unified-chat?dept=romix" },
     { "source": "/akfa_hr_mini.html", "destination": "/src/projects/romix/xodimlar/akfa_hr_mini.html" },
     { "source": "/akfa_hr_mini", "destination": "/src/projects/romix/xodimlar/akfa_hr_mini.html" },
     { "source": "/src/projects/romix/pages/(.*)", "destination": "/src/projects/romix/$1" },
