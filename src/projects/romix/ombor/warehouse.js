@@ -4063,7 +4063,7 @@ window.sendAiQuickPrompt = function(promptText) {
     window.submitAiMessage();
 };
 
-window.submitAiMessage = function() {
+window.submitAiMessage = async function() {
     const input = document.getElementById('aiInputText');
     const history = document.getElementById('aiChatHistory');
     if (!input || !history) return;
@@ -4087,78 +4087,44 @@ window.submitAiMessage = function() {
     history.appendChild(typingBubble);
     history.scrollTop = history.scrollHeight;
 
-    setTimeout(() => {
-        const typing = document.getElementById('aiTypingBubble');
-        if (typing) typing.remove();
+    let responseHtml = "⚠️ Xatolik yuz berdi.";
+    try {
+        const res = await fetch('/api/ombor-ai-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'chat', text, chatId: 'ombor_user' })
+        });
+        const data = await res.json();
+        if (data.ok && data.text) {
+            // Simple markdown parser
+            let txt = data.text;
+            txt = txt.replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>');
+            txt = txt.replace(/\\*(.*?)\\*/g, '<em>$1</em>');
+            txt = txt.replace(/\\n/g, '<br>');
+            responseHtml = txt;
+        } else if (data.error) {
+            responseHtml = "⚠️ Xato: " + data.error;
+        }
+    } catch (e) {
+        responseHtml = "⚠️ Tarmoq xatosi yoki serverga ulanib bo'lmadi.";
+    }
 
-        const aiResponseText = window.askRomixAi(text);
-        const aiBubble = document.createElement('div');
-        aiBubble.style.cssText = 'background:rgba(0,210,255,0.08); border:1px solid rgba(0,210,255,0.25); border-radius:14px; padding:12px 14px; color:#fff; align-self:flex-start; max-width:88%; line-height:1.5; font-size:0.85rem;';
-        aiBubble.innerHTML = aiResponseText;
-        history.appendChild(aiBubble);
-        history.scrollTop = history.scrollHeight;
-    }, 600);
+    const typing = document.getElementById('aiTypingBubble');
+    if (typing) typing.remove();
+
+    const aiBubble = document.createElement('div');
+    aiBubble.style.cssText = 'background:rgba(0,210,255,0.08); border:1px solid rgba(0,210,255,0.25); border-radius:14px; padding:12px 14px; color:#fff; align-self:flex-start; max-width:88%; line-height:1.5; font-size:0.85rem;';
+    aiBubble.innerHTML = responseHtml;
+    history.appendChild(aiBubble);
+    history.scrollTop = history.scrollHeight;
+    
+    // Auto-refresh requests grid just in case a new request was added
+    if (window.loadRequests) {
+        window.loadRequests();
+    }
 };
 
 window.askRomixAi = function(query) {
-    const q = query.toLowerCase();
-    const data = window._ojData || {};
-
-    let profilCount = data.profil?.items?.length || 0;
-    let aksCount = data.aksesuvar?.items?.length || 0;
-    let qoldiqCount = data.qoldiq?.items?.length || 0;
-    let oynakCount = data.oynak?.items?.length || 0;
-
-    // Intent 1: Low Stock / Kam zaxira
-    if (q.includes('kam') || q.includes('zaxira') || q.includes('oz qolgan') || q.includes('tugab')) {
-        let lowItems = [];
-        if (data.profil?.items) {
-            data.profil.items.forEach(it => {
-                const st = Number(it.stock_quantity) || 0;
-                if (st < 100) lowItems.push(`📦 <strong>${it.product_name}</strong>: ${st} ${it.unit || 'metr'}`);
-            });
-        }
-        if (data.aksesuvar?.items) {
-            data.aksesuvar.items.forEach(it => {
-                const st = Number(it.qty) || 0;
-                if (st < 20) lowItems.push(`🔩 <strong>${it.name}</strong>: ${st} ${it.unit || 'dona'}`);
-            });
-        }
-
-        if (lowItems.length) {
-            return `⚡ <strong>Diqqat! Omborda kam qolgan mahsulotlar:</strong><br><br>` + 
-                   lowItems.slice(0, 6).join('<br>') + 
-                   `<br><br>💡 <em>Tavsiya: Ushbu mahsulotlar uchun zudlik bilan yangi kirim yoki xarid so'rovini yuboring.</em>`;
-        } else {
-            return `✅ <strong>Zaxiralar holati a'lo!</strong> Ombordagi barcha profillar va aksessuarlar yetarli miqdorda mavjud.`;
-        }
-    }
-
-    // Intent 2: General Analytics / Ombor tahlili
-    if (q.includes('tahlil') || q.includes('statistika') || q.includes('umumiy') || q.includes('holat')) {
-        const totalTypes = profilCount + aksCount + qoldiqCount + oynakCount;
-        return `📊 <strong>Romix Ombor Analitikasi:</strong><br><br>` +
-               `• 🗂️ Jami toifalar: <strong>${totalTypes} xil</strong> mahsulot<br>` +
-               `• 📦 Profillar: <strong>${profilCount} xil</strong> turda<br>` +
-               `• 🔩 Aksessuarlar: <strong>${aksCount} xil</strong> turda<br>` +
-               `• ✂️ Qoldiq profillar: <strong>${qoldiqCount} xil</strong> turda<br>` +
-               `• 🪟 Oynaklar: <strong>${oynakCount} xil</strong> o'lchamda<br><br>` +
-               `🚀 Ombor tizimi barqaror va barcha harakatlar nazorat ostida!`;
-    }
-
-    // Intent 3: Meter & Pachka calculation help
-    if (q.includes('pachka') || q.includes('metr') || q.includes('hisob') || q.includes('formula')) {
-        return `💡 <strong>Profil va Pachka Standart Qoidasi:</strong><br><br>` +
-               `• 1 Pachka Profil = <strong>48 Metr</strong> (standart 8 dona 6m profil)<br>` +
-               `• 1 Dona Profil = <strong>6 Metr</strong><br><br>` +
-               `📐 <em>Misol: 10 pachka profil kiritilsa, omborga <strong>480 metr</strong> zaxira qo'shiladi.</em>`;
-    }
-
-    // Default Intelligent Response
-    return `🤖 <strong>Romix AI Tahlili:</strong><br><br>` +
-           `Omborda hozirda <strong>${profilCount} xil profil</strong>, <strong>${aksCount} xil aksessuar</strong> va <strong>${qoldiqCount} ta qoldiq profil</strong> mavjud.<br><br>` +
-           `Menga quyidagilar bo'yicha savol berishingiz mumkin:<br>` +
-           `• <em>"Zaxirasi kam mahsulotlar"</em><br>` +
-           `• <em>"Ombor tahlili"</em><br>` +
-           `• <em>"Pachka va metr hisobi"</em>`;
+    // Deprecated: Now we use submitAiMessage directly via API
+    return "Tizim yangilandi. Iltimos qayta urinib ko'ring.";
 };

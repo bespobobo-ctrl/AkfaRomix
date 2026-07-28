@@ -601,8 +601,46 @@ export async function omborHarakati(turi) {
     };
 }
 
+// ── Mahsulot tarixi (faqat Ombor AI uchun) ──
+export async function mahsulotTarixi(query) {
+    const q = encodeURIComponent(query);
+    const inv = await sbGet("romix_inventory", `product_name=ilike.*${q}*&limit=1`);
+    if (!inv.length) return { xato: `"${query}" nomli profil topilmadi` };
+    const p = inv[0];
+    
+    const tx = await sbGet("romix_transactions", `product_id=eq.${p.id}&order=created_at.desc&limit=30`);
+    const tarix = tx.map(t => ({
+        sana: (t.created_at || "").slice(0, 16).replace("T", " "),
+        amal: t.type === "IN" ? "Kirim" : "Chiqim",
+        miqdor: t.quantity,
+        izoh: t.note || ""
+    }));
+    return { mahsulot: p.product_name, qoldiq: p.stock_quantity, tarix };
+}
+
+// ── Murojaat yaratish (faqat Ombor AI uchun) ──
+export async function insertMurojaat(data) {
+    const rec = {
+        employee_id: "ombor-ai",
+        requested_data: {
+            id: 'req-' + Date.now(),
+            type: data.turi || "AI Murojaat",
+            priority: data.muhimligi || "medium",
+            title: data.sarlavha || "Noma'lum murojaat",
+            description: data.izoh || "",
+            sender: "Ombor AI",
+            status: "pending",
+            created_at: new Date().toISOString()
+        },
+        status: "pending"
+    };
+    await sbInsert("profile_requests", rec);
+    return { ok: true, sarlavha: data.sarlavha };
+}
+
 export default {
     overview, ordersReport, warehouse, expensesReport, debtsReport, hrReport, addExpense, payDebt, payOrder,
     searchOrder, searchProduct, searchEmployee, productionReport, brigadesReport, materialRequestsReport, excelReport,
-    trendReport, eslatmalar, topMijozlar, customer360, employee360, orderLifecycle, anomaliyalar, omborHarakati
+    trendReport, eslatmalar, topMijozlar, customer360, employee360, orderLifecycle, anomaliyalar, omborHarakati,
+    mahsulotTarixi, insertMurojaat
 };
