@@ -1,6 +1,6 @@
 import { supabase } from '@/core/supabase.js';
 import { createViewer } from './window3d.js';
-import { generateCuttingPdf } from './cuttingPdf.js';
+import { generateCuttingPdf, derivePieces } from './cuttingPdf.js';
 import { createDesigner } from './designer2d.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -558,9 +558,31 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 const vDiv = parseInt(document.getElementById('itemVDiv')?.value) || 0;
                 const hDiv = parseInt(document.getElementById('itemHDiv')?.value) || 0;
-                const perimeter = 2 * (h + w);
-                const impostLen = (vDiv * h) + (hDiv * w);
-                const perUnitMeters = (perimeter + impostLen) * 1.10; // 10% zaxira
+                const stv = parseInt(document.getElementById('itemStvorka')?.value) || 0;
+                
+                // PDF kesim funksiyasidan foydalanib barcha profillar (Rama, Stvorka, Impost, Shtapik) uzunligini aniq hisoblash
+                const tempItem = {
+                    type: type,
+                    materialName: matOpt.dataset.name,
+                    width: w,
+                    height: h,
+                    quantity: qty,
+                    vDiv: vDiv,
+                    hDiv: hDiv,
+                    stvorka: stv,
+                    design: _designer ? _designer.getModel() : null
+                };
+                
+                const exactGroups = derivePieces([tempItem]);
+                let totalExactMeters = 0;
+                for (let matKey in exactGroups) {
+                    exactGroups[matKey].forEach(p => {
+                        totalExactMeters += (p.len * p.qty) / 1000;
+                    });
+                }
+                
+                // 10% zapas chiqit (offcut) va arra zazori uchun
+                const perUnitMeters = (totalExactMeters / qty) * 1.10;
                 
                 calcVal = perUnitMeters * qty; // total linear meters
                 subtotal = (calcVal * itemPrice) + (PRODUCTION_COST * qty); // material cost + base assembly fee
