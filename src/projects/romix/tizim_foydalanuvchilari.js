@@ -1,6 +1,27 @@
 import { supabase } from '@/core/supabase.js';
 
+    function escapeHtml(str) {
+        return String(str == null ? '' : str).replace(/[&<>"']/g, (c) => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
+    }
+
+    // "buxgalter" roli uchun funksiya darajasidagi himoya (BUH-02) — UI'da bu bo'lim
+    // buxgalter uchun CSS bilan yashirilgan, lekin konsoldan to'g'ridan-to'g'ri
+    // chaqirilishi mumkin edi. Boshqa rollar (admin/hr/ombor/sotuv/ishlab_chiqarish)
+    // bu funksiyalarga hozirgi kabi kirishda davom etadi — faqat buxgalter bloklanadi.
+    function __denyIfBuxgalterForUsers(fnName) {
+        let role = null;
+        try { role = JSON.parse(localStorage.getItem('currentUser') || '{}').role || null; } catch (e) {}
+        if (role === 'buxgalter') {
+            console.warn(`Ruxsat yo'q: "buxgalter" roli "${fnName}" funksiyasini chaqira olmaydi.`);
+            return true;
+        }
+        return false;
+    }
+
     window.loadSystemUsers = async function() {
+        if (__denyIfBuxgalterForUsers('loadSystemUsers')) return;
         const tbody = document.getElementById('sysUsersTable');
         if (!tbody) return;
         
@@ -36,9 +57,9 @@ import { supabase } from '@/core/supabase.js';
         users.forEach(u => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td style="padding:15px 24px; color:#fff; font-weight:600;">${u.full_name}</td>
-                <td><span style="background:rgba(0,210,255,0.1); color:#00d2ff; padding:4px 10px; border-radius:30px; font-size:0.75rem; font-weight:700;">${u.role.toUpperCase()}</span></td>
-                <td style="font-family:monospace; color:rgba(255,255,255,0.6); font-size:0.85rem;"><code>${u.username}</code> / <code>${u.password}</code></td>
+                <td style="padding:15px 24px; color:#fff; font-weight:600;">${escapeHtml(u.full_name)}</td>
+                <td><span style="background:rgba(0,210,255,0.1); color:#00d2ff; padding:4px 10px; border-radius:30px; font-size:0.75rem; font-weight:700;">${escapeHtml((u.role || '').toUpperCase())}</span></td>
+                <td style="font-family:monospace; color:rgba(255,255,255,0.6); font-size:0.85rem;"><code>${escapeHtml(u.username)}</code> / <code>${escapeHtml(u.password)}</code></td>
                 <td>
                     <div style="display:flex; align-items:center; gap:8px;">
                         <span style="width:8px; height:8px; border-radius:50%; background:#00ff88; box-shadow:0 0 8px #00ff88;"></span>
@@ -54,18 +75,22 @@ import { supabase } from '@/core/supabase.js';
     };
 
     window.deleteSystemUser = async function(id) {
+        if (__denyIfBuxgalterForUsers('deleteSystemUser')) return;
         if (!confirm("Haqiqatdan ham ushbu loginni o'chirmoqchimisiz?")) return;
         
         try {
-            await supabase.from('system_users').delete().eq('id', id);
+            const { error } = await supabase.from('system_users').delete().eq('id', id);
+            if (error) throw error;
         } catch (e) {
-            console.warn("Could not delete from Supabase, removing locally", e);
+            console.warn("Could not delete from Supabase", e);
+            alert("Xatolik: login bazadan o'chmadi — " + (e.message || "sabab noma'lum") + ". Qayta urinib ko'ring.");
+            return;
         }
-        
+
         let localUsers = JSON.parse(localStorage.getItem('system_users_local') || '[]');
         localUsers = localUsers.filter(u => u.id !== id);
         localStorage.setItem('system_users_local', JSON.stringify(localUsers));
-        
+
         alert("O'chirildi!");
         window.loadSystemUsers();
     };

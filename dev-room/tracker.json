@@ -1,0 +1,418 @@
+{
+  "project": "AKFA Romix",
+  "panels": [
+    { "id": "ombor", "label": "Ombor", "agent": "ombor-reviewer", "login": "ombor / 123" },
+    { "id": "buhgalter", "label": "Buhgalter", "agent": "buhgalter-reviewer", "login": "buxgalter / 123" },
+    { "id": "sotuv", "label": "Sotuv", "agent": "sotuv-reviewer", "login": "sotuv / 123" },
+    { "id": "hr", "label": "HR", "agent": "hr-reviewer", "login": "hr / 123" },
+    { "id": "ishlab_chiqarish", "label": "Ishlab chiqarish", "agent": "ishlabchiqarish-reviewer", "login": "123 / 123, AC1 / 123" }
+  ],
+  "lastSweepAt": "2026-07-25T10:20:00Z",
+  "lastSweepCommit": "e17c6df",
+  "dashboardUrl": "https://claude.ai/code/artifact/df8383df-8768-4527-bd24-05509a0de63d",
+  "issues": [
+    {
+      "id": "HR-01",
+      "panel": "hr",
+      "title": "Premya (bonus) hech qayerga saqlanmasdi",
+      "description": "handlePremya() faqat muvaffaqiyat xabari ko'rsatib, hech qanday yozuvni bazaga saqlamas edi — mukofot pul miqdori jimgina yo'qolar edi.",
+      "file": "src/projects/romix/xodimlar/hr.js",
+      "line": 887,
+      "foundBy": "hr-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "critical",
+      "status": "verified",
+      "fixedBy": "Claude (manual sweep)",
+      "fixedAt": "2026-07-25T08:40:00Z",
+      "retest": { "result": "pass", "by": "sardor", "at": "2026-07-25T09:14:27Z", "note": "attendance'ga to'g'ri yozilyapti, xato holatida alert bor" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T08:40:00Z", "message": "attendance jadvaliga 'Premya: X UZS' statusi bilan yozuv qo'shildi, xuddi admin.js'dagi mos naqsh kabi. Xatolik bo'lsa foydalanuvchiga aniq alert ko'rsatiladi." },
+        { "from": "sardor", "at": "2026-07-25T09:14:27Z", "message": "Retest #2: pass. Kod hali ham to'g'ri holatda, boshqa o'zgarish yo'q." }
+      ],
+      "resolution": "optimal"
+    },
+    {
+      "id": "ISH-01",
+      "panel": "ishlab_chiqarish",
+      "title": "3 ta sex mini-ilovasida Supabase kaliti kodga qattiq yozilgan",
+      "description": "stanok-app, kraska-app, qadoqlash-app har biri env o'zgaruvchi bo'lmasa haqiqiy Supabase URL va anon-key'ga zaxira sifatida o'tar edi — CLAUDE.md'da aynan shu naqsh taqiqlangan.",
+      "file": "src/projects/autoclapak/mini-app/{stanok,kraska,qadoqlash}-app/app.js",
+      "line": 1,
+      "foundBy": "ishlabchiqarish-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "critical",
+      "status": "verified",
+      "fixedBy": "Claude (manual sweep)",
+      "fixedAt": "2026-07-25T08:40:00Z",
+      "retest": { "result": "pass", "by": "sardor", "at": "2026-07-25T09:14:27Z", "note": "3 faylning hammasida fallback olib tashlangan holicha qoldi" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T08:40:00Z", "message": "Zaxira qiymatlar olib tashlandi; env o'zgaruvchi yo'q bo'lsa endi aniq xato bilan to'xtaydi (fallback yo'q qoidasi)." },
+        { "from": "sardor", "at": "2026-07-25T09:14:27Z", "message": "Retest #2: pass." }
+      ],
+      "resolution": "optimal"
+    },
+    {
+      "id": "HR-02",
+      "panel": "hr",
+      "title": "Tizim foydalanuvchilari jadvalida stored XSS",
+      "description": "loadSystemUsers() full_name/role/username/password'ni escape qilmasdan innerHTML'ga qo'yar edi — HTML/skript kiritilgan ism admin/hr brauzerida ishga tushishi mumkin edi.",
+      "file": "src/projects/romix/tizim_foydalanuvchilari.js",
+      "line": 38,
+      "foundBy": "hr-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "high",
+      "status": "verified",
+      "fixedBy": "Claude (manual sweep)",
+      "fixedAt": "2026-07-25T08:40:00Z",
+      "retest": { "result": "pass", "by": "sardor", "at": "2026-07-25T09:14:27Z", "note": "Kod qayta o'qildi, tuzatish hali ham to'g'ri joyida" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T09:14:27Z", "message": "Retest #2: pass." }
+      ],
+      "resolution": "optimal"
+    },
+    {
+      "id": "HR-03",
+      "panel": "hr",
+      "title": "Xodimni o'chirish bazada xato bo'lsa ham UI'da \"muvaffaqiyatli\" ko'rinardi",
+      "description": "handleDelete() Supabase delete xatosini tekshirmay har doim localStorage'dan olib tashlar edi — xodim UI'dan g'oyib bo'lib, keyingi yuklashda qayta paydo bo'lishi mumkin edi.",
+      "file": "src/projects/romix/xodimlar/hr.js",
+      "line": 1375,
+      "foundBy": "hr-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "high",
+      "status": "verified",
+      "fixedBy": "Claude (manual sweep)",
+      "fixedAt": "2026-07-25T08:40:00Z",
+      "retest": { "result": "pass", "by": "sardor", "at": "2026-07-25T09:14:27Z", "note": "Kod qayta o'qildi, tuzatish hali ham to'g'ri joyida" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T09:14:27Z", "message": "Retest #2: pass." }
+      ],
+      "resolution": "optimal"
+    },
+    {
+      "id": "BUH-01",
+      "panel": "buhgalter",
+      "title": "saveBuhKirim manfiy/nol miqdorni qabul qilardi",
+      "description": "qty <= 0 tekshiruvi yo'q edi — manfiy son bilan \"kirim\" kiritilsa ombor jimgina kamayardi.",
+      "file": "src/projects/autoclapak/js/admin.js",
+      "line": 2820,
+      "foundBy": "buhgalter-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "high",
+      "status": "verified",
+      "fixedBy": "Claude (manual sweep)",
+      "fixedAt": "2026-07-25T08:40:00Z",
+      "retest": { "result": "pass", "by": "sardor", "at": "2026-07-25T09:14:27Z", "note": "Kod qayta o'qildi, tuzatish hali ham to'g'ri joyida" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T09:14:27Z", "message": "Retest #2: pass." }
+      ],
+      "resolution": "optimal"
+    },
+    {
+      "id": "BUH-02",
+      "panel": "buhgalter",
+      "title": "Buxgalter roli faqat vizual (client-side) yashirilgan, real avtorizatsiya yo'q",
+      "description": "Rol-gate faqat DOM'ni yashiradi; window.loadRomixHRData/loadSystemUsers/loadAutoSales kabi funksiyalar rol tekshiruvisiz — buxgalter brauzer konsolidan boshqa bo'limlar ma'lumotiga to'liq kirishi mumkin.",
+      "file": "src/projects/autoclapak/js/admin.js",
+      "line": 19,
+      "foundBy": "buhgalter-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "high",
+      "priorityNote": "Mahsulot egasi (foydalanuvchi) 2026-07-25'da tuzatishga aniq ruxsat berdi — client-side funksiya darajasidagi himoya qo'shildi.",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T09:40:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "Keyingi sweep'da qayta tekshiriladi" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T08:40:00Z", "message": "Bu arxitektura darajasidagi qaror (RLS + funksiya darajasida rol tekshiruvi qo'shish kerak). CLAUDE.md aniq ogohlantirgani uchun o'zboshimchalik bilan o'zgartirmadim — mahsulot egasi qaror qabul qilishi kerak." },
+        { "from": "sardor", "at": "2026-07-25T09:40:00Z", "message": "Foydalanuvchi ruxsat berdi. admin.js'da loadRomixHRData/loadAutoSales/loadAutoClapakInventory/loadAutoProduction va tizim_foydalanuvchilari.js'da loadSystemUsers/deleteSystemUser endi buxgalter rolini tekshirib, rad etadi. MUHIM CHEKLOV: bu faqat client'ni mustahkamlaydi — RLS jadvallarda hamon USING(true), Supabase anon key bundle'da ochiq, shuning uchun Supabase REST API'ga to'g'ridan-to'g'ri so'rov shu JS'ni butunlay chetlab o'tishi mumkin. To'liq yechim uchun haqiqiy auth + RLS siyosati kerak (kattaroq, alohida loyiha)." }
+      ],
+      "resolution": "acceptable"
+    },
+    {
+      "id": "HR-05",
+      "panel": "hr",
+      "title": "deleteSystemUser Supabase xatosini yutib yuboradi",
+      "description": "window.deleteSystemUser() try/catch bilan Supabase delete xatosini faqat console.warn qiladi, keyin baribir localStorage'dan olib tashlab \"O'chirildi!\" deb alert beradi — HR-03 bilan bir xil sinfdagi xato, lekin tizim login boshqaruvi (Login Management) ekranida.",
+      "file": "src/projects/romix/tizim_foydalanuvchilari.js",
+      "line": 62,
+      "foundBy": "sardor (retest #2 paytida topildi)",
+      "foundAt": "2026-07-25T09:14:27Z",
+      "severity": "medium",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "Supabase delete xatosi endi tekshiriladi va alert bilan ko'rsatiladi, muvaffaqiyatsiz bo'lsa localStorage o'zgartirilmaydi." }
+      ],
+      "resolution": null
+    },
+    {
+      "id": "SOT-01",
+      "panel": "sotuv",
+      "title": "To'langan summani kamaytirish audit izsiz qolardi",
+      "description": "saveEditOrderBtn faqat paid_amount oshganda tarix yozuvi qo'shar edi; kamaytirilganda yozuv yo'q edi — moliyaviy tuzatish izsiz qolardi.",
+      "file": "src/projects/romix/sotuv/sales.js",
+      "line": 1856,
+      "foundBy": "sotuv-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "high",
+      "status": "verified",
+      "fixedBy": "Claude (manual sweep)",
+      "fixedAt": "2026-07-25T08:40:00Z",
+      "retest": { "result": "pass", "by": "sardor", "at": "2026-07-25T09:14:27Z", "note": "Kod qayta o'qildi, tuzatish hali ham to'g'ri joyida" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T09:14:27Z", "message": "Retest #2: pass." }
+      ],
+      "resolution": "optimal"
+    },
+    {
+      "id": "OMB-01",
+      "panel": "ombor",
+      "title": "Mahsulotni o'chirishda xatolik ko'rsatilmasdi",
+      "description": "delete-btn handler Supabase delete xatosini tekshirmasdan har doim ro'yxatni qayta yuklar edi.",
+      "file": "src/projects/romix/ombor/warehouse.js",
+      "line": 488,
+      "foundBy": "ombor-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "high",
+      "status": "verified",
+      "fixedBy": "Claude (manual sweep)",
+      "fixedAt": "2026-07-25T08:40:00Z",
+      "retest": { "result": "pass", "by": "sardor", "at": "2026-07-25T09:14:27Z", "note": "Kod qayta o'qildi, tuzatish hali ham to'g'ri joyida" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T09:14:27Z", "message": "Retest #2: pass." }
+      ],
+      "resolution": "optimal"
+    },
+    {
+      "id": "ISH-02",
+      "panel": "ishlab_chiqarish",
+      "title": "\"Qabul qilish\" tugmasida ikki marta bosishdan himoya yo'q edi",
+      "description": "accept-order-btn boshqa saqlash tugmalaridan farqli o'laroq disable/enable naqshiga ega emas edi — tez ikki marta bosilsa buyurtma ikki marta yozilishi mumkin edi.",
+      "file": "src/projects/romix/ishlab_chiqarish/production.js",
+      "line": 576,
+      "foundBy": "ishlabchiqarish-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "high",
+      "status": "verified",
+      "fixedBy": "Claude (manual sweep)",
+      "fixedAt": "2026-07-25T08:40:00Z",
+      "retest": { "result": "pass", "by": "sardor", "at": "2026-07-25T09:14:27Z", "note": "Kod qayta o'qildi, tuzatish hali ham to'g'ri joyida" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T09:14:27Z", "message": "Retest #2: pass." }
+      ],
+      "resolution": "optimal"
+    },
+    {
+      "id": "OMB-02",
+      "panel": "ombor",
+      "title": "Xodim qo'shish/o'chirishda Supabase xatosi yutib yuboriladi",
+      "description": "saveStaffBtn va xodim o'chirish DB xatosini faqat console.warn qiladi, localStorage baribir o'zgaradi — keyingi to'liq yuklashda desync yuzaga kelishi mumkin.",
+      "file": "src/projects/romix/ombor/warehouse.js",
+      "line": 576,
+      "foundBy": "ombor-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "medium",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "saveStaffBtn va delete-staff-btn endi Supabase xatosini tekshiradi, xato bo'lsa alert ko'rsatib to'xtaydi, localStorage'ni muvaffaqiyatsiz holatda o'zgartirmaydi." }
+      ],
+      "resolution": null
+    },
+    {
+      "id": "OMB-03",
+      "panel": "ombor",
+      "title": "Ommaviy tahrirlash xato/timeout bo'lsa ham UI'da saqlangandek ko'rinadi",
+      "description": "5s-timeout guardli update faqat console.warn qiladi, keyin baribir keshdagi elementni o'zgartirib qayta chizadi.",
+      "file": "src/projects/romix/ombor/warehouse.js",
+      "line": 2348,
+      "foundBy": "ombor-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "medium",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "saveProductName endi Supabase xatosi/timeout bo'lganda throw qiladi — mavjud finally bloki tugmani baribir qayta yoqadi (freeze bo'lmaydi), lekin lokal holat va 'saqlandi' xabari endi faqat haqiqiy muvaffaqiyatda chiqadi." }
+      ],
+      "resolution": null
+    },
+    {
+      "id": "OMB-04",
+      "panel": "ombor",
+      "title": "Hujjat-guruhlash evristikasi tarix yozuvlarini noto'g'ri birlashtirishi mumkin",
+      "description": "Faqat 3s ichidagi bir xil turdagi tranzaksiyalar bitta hujjatga birlashtiriladi — bog'liq bo'lmagan yozuvlar aralashib ko'rinishi mumkin. Kosmetik, zaxira ma'lumotiga ta'sir qilmaydi.",
+      "file": "src/projects/romix/ombor/warehouse.js",
+      "line": 660,
+      "foundBy": "ombor-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "low",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "Qisman tuzatildi: guruhlash endi hujjatning oxirgi a'zosi vaqtidan hisoblanadi, shuning uchun uzoq (>3s) cho'zilgan ketma-ket partiyalar endi noto'g'ri bo'linib ketmaydi. Order-id notasiz ikkita tasodifiy bir xil turdagi tranzaksiyaning noto'g'ri birlashishi ehtimoli (asl topilmaning ikkinchi qismi) qoldi — buni hal qilish uchun backend'da haqiqiy partiya/sessiya identifikatori kerak, ma'lumotlar sxemasida hozircha yo'q." }
+      ],
+      "resolution": "acceptable"
+    },
+    {
+      "id": "BUH-03",
+      "panel": "buhgalter",
+      "title": "USD kursi 3 joyda qattiq kodlangan (12800)",
+      "description": "getUsdRate(), saveBuhUsdRate va bitta inline joy mustaqil ravishda bir xil zaxira qiymatni takrorlaydi — yagona manba yo'q.",
+      "file": "src/projects/autoclapak/js/admin.js",
+      "line": 10947,
+      "foundBy": "buhgalter-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "medium",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "Uchala joy endi bitta DEFAULT_USD_RATE konstantasidan foydalanadi." }
+      ],
+      "resolution": null
+    },
+    {
+      "id": "SOT-02",
+      "panel": "sotuv",
+      "title": "Hisoblangan o'lcham matni savatda ishlatilmaydi",
+      "description": "addItemBtn sizeText'ni hisoblaydi-yu, item obyektiga yozmaydi — savat ko'rinishi mm o'rniga xom metr qiymatini ko'rsatadi.",
+      "file": "src/projects/romix/sotuv/sales.js",
+      "line": 550,
+      "foundBy": "sotuv-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "medium",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "sizeText endi item obyektiga yoziladi, savat renderBasket() orqali to'g'ri o'lchamni ko'rsatadi." }
+      ],
+      "resolution": "optimal"
+    },
+    {
+      "id": "SOT-03",
+      "panel": "sotuv",
+      "title": "Ruxsatsiz rol redirect'idan keyin return yo'q",
+      "description": "window.location.href = '/' dan keyin return yo'q — sahifa bir lahza davom etib ishlaydi, null user holatida keyingi qatorda xato beradi.",
+      "file": "src/projects/romix/sotuv/sales.js",
+      "line": 8,
+      "foundBy": "sotuv-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "medium",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "return qo'shildi." }
+      ],
+      "resolution": "optimal"
+    },
+    {
+      "id": "HR-04",
+      "panel": "hr",
+      "title": "Soatlik ish haqi formulasi HR panel va admin dashboard'da farq qiladi",
+      "description": "hr.js oy = 26 kun / kun = 9 soat deb hisoblaydi; admin.js oydagi haqiqiy ish kunlari / 10 soat deb hisoblaydi — bir xil xodim uchun ikki xil natija.",
+      "file": "src/projects/romix/xodimlar/hr.js (634) vs src/projects/autoclapak/js/admin.js (10415)",
+      "line": 634,
+      "foundBy": "hr-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "medium",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "Tekshiruv chuqurroq divergensiyani ko'rsatdi — jami 4 xil formula: hr.js'da 26kun/9soat (jonli hisoblagich + haqiqiy hisobot, ikkalasi izohli va bir xil), 26kun/10soat (aniq 'DEMO REPORT' deb belgilangan, real emas), admin.js'da 26kun/8soat (izohsiz, ikki joyda) va haqiqiy-ish-kunlari/10soat (admin.js showDayDetails — o'z 'default 10 soatlik smena (08:00-18:00)' izohiga ega, lekin workedHours'ni HAM status matnidan taxmin qiladi, real check-in/out emas). Kod izohlarida faqat hr.js'ning jonli hisoblagichi bilan admin.js dashboard hisoblagichi '100% bir xil bo'lishi kutiladi' deb aniq yozilgan edi — shu ikkitasini (admin.js'dagi ikkala 8soat joyini) hr.js'ning izohli 9soat standartiga tekshirib moslashtirdim. DEMO deb belgilangan va showDayDetails (mock workedHours, o'z 10soat-smena asoslashi bilan) tegilmadi — bularni ham moslashtirish qaysi ish kuni uzunligi (8, 9 yoki 10 soat) va qaysi kun-soni (26 yoki oydagi haqiqiy kunlar) 'to'g'ri' ekanini hal qiluvchi biznes qarorini talab qiladi. Foydalanuvchi 'barchasini tuzat' dedi, lekin bu aniq formulani tanlash emas — qaysi standart to'g'ri ekanini so'rash kerak." }
+      ],
+      "resolution": "acceptable"
+    },
+    {
+      "id": "ISH-03",
+      "panel": "ishlab_chiqarish",
+      "title": "Quritish vaqtini \"saqlab qolish\" mantig'i o'lik kod",
+      "description": "refreshAutoProduction izoh bo'yicha qolgan vaqtni saqlashi kerak, lekin qurilgan map hech qayerda o'qilmaydi — vaqt har doim qaytadan hisoblanadi.",
+      "file": "src/projects/autoclapak/js/admin.js",
+      "line": 6866,
+      "foundBy": "ishlabchiqarish-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "medium",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "oldSushilkaMap endi haqiqatan ishlatiladi: agar yangi hisoblangan remainingTime saqlangan qiymatdan katta chiqsa (last_update kutilmaganda yangilanib qolganda), pastroq (saqlangan) qiymat olinadi — vaqt hech qachon orqaga/yuqoriga sakramaydi." }
+      ],
+      "resolution": null
+    },
+    {
+      "id": "ISH-04",
+      "panel": "ishlab_chiqarish",
+      "title": "production.js'da escape qilinmagan innerHTML (XSS)",
+      "description": "customer_name, worker_group, brigada nomi va install_group to'g'ridan-to'g'ri innerHTML'ga qo'yiladi — yuqori oqimda kiritilgan HTML/skript ishlab chiqarish paneli dashboard'ida ishga tushishi mumkin.",
+      "file": "src/projects/romix/ishlab_chiqarish/production.js",
+      "line": 456,
+      "foundBy": "ishlabchiqarish-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "medium",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "escapeHtml() qo'shildi va customer_name, worker_group, install_group, brigada nomi, xodim to'liq ismi barcha innerHTML joylariga qo'llandi." }
+      ],
+      "resolution": "optimal"
+    },
+    {
+      "id": "SOT-04",
+      "panel": "sotuv",
+      "title": "Buyurtmani o'chirishda xatolik yashiriladi",
+      "description": ".del-btn handler Supabase o'chirish xatosini faqat console.warn qiladi, keyin baribir localStorage'dan olib tashlab qayta yuklaydi — OMB-01/HR-03 bilan bir xil sinfdagi xato. Xato bo'lsa buyurtma UI'dan g'oyib bo'ladi-yu, bazada qolib, keyingi to'liq yuklashda qayta paydo bo'ladi.",
+      "file": "src/projects/romix/sotuv/sales.js",
+      "line": 1486,
+      "foundBy": "sotuv-reviewer (retest #2 paytida topildi)",
+      "foundAt": "2026-07-25T09:14:27Z",
+      "severity": "medium",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "catch blokida endi alert ko'rsatilib return qilinadi — muvaffaqiyatsiz o'chirish localStorage'ni o'zgartirmaydi." }
+      ],
+      "resolution": "optimal"
+    },
+    {
+      "id": "ISH-05",
+      "panel": "ishlab_chiqarish",
+      "title": "Brigada a'zosini o'chirishda xatolik tekshiruvi va qo'sh-bosish himoyasi yo'q",
+      "description": ".rm-brigade-member handler Supabase delete xatosini tekshirmasdan har doim brigadalar to'rini qayta chizadi — OMB-01 bilan bir xil sinfdagi xato, boshqa faylda.",
+      "file": "src/projects/romix/ishlab_chiqarish/production.js",
+      "line": 699,
+      "foundBy": "ishlabchiqarish-reviewer (retest #2 paytida topildi)",
+      "foundAt": "2026-07-25T09:14:27Z",
+      "severity": "medium",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "Xato tekshiruvi va disabled-guard qo'shildi." }
+      ],
+      "resolution": "optimal"
+    }
+  ]
+}

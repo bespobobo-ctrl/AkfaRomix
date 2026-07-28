@@ -1,6 +1,12 @@
 import { supabase, checkAuth, logout } from '@/core/supabase.js';
 import { generateCuttingPdf } from '../sotuv/cuttingPdf.js';
 
+function escapeHtml(str) {
+    return String(str == null ? '' : str).replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     checkAuth(['admin', 'ishlab_chiqarish']);
 
@@ -453,9 +459,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         function card(o, actionHtml) {
             return `<div style="background:var(--adm-surface); border:1px solid var(--adm-border); border-radius:14px; padding:12px; display:flex; flex-direction:column; gap:8px; box-shadow:var(--adm-shadow);">
-                <div style="font-weight:700; color:var(--adm-text); font-size:0.82rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${o.customer_name || 'Noma\'lum'}</div>
-                <div style="font-size:0.72rem; color:var(--adm-text-sec);">${o.prod_type || ''}</div>
-                <div style="font-size:0.7rem; color:var(--adm-text-sec);">Guruh: <strong style="color:#00d2ff;">${o.worker_group || '—'}</strong></div>
+                <div style="font-weight:700; color:var(--adm-text); font-size:0.82rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(o.customer_name) || 'Noma\'lum'}</div>
+                <div style="font-size:0.72rem; color:var(--adm-text-sec);">${escapeHtml(o.prod_type)}</div>
+                <div style="font-size:0.7rem; color:var(--adm-text-sec);">Guruh: <strong style="color:#00d2ff;">${escapeHtml(o.worker_group) || '—'}</strong></div>
                 ${deadlineBadge(o)}
                 ${actionHtml}
             </div>`;
@@ -500,7 +506,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const totalQty = Number(o.quantity) || 1;
             const pdfBtnHtml = b.stage === 'kesish' ? `<button class="batch-pdf-btn" data-order-id="${b.order_id}" title="Kesim PDF" style="background:rgba(245,158,11,0.15); border:1px solid #f59e0b; color:#f59e0b; border-radius:8px; padding:0 10px; cursor:pointer;" onmouseenter="this.style.background='rgba(245,158,11,0.25)'" onmouseleave="this.style.background='rgba(245,158,11,0.15)'">✂️ PDF</button>` : '';
             return `<div style="background:var(--adm-surface); border:1px solid var(--adm-border); border-radius:14px; padding:12px; display:flex; flex-direction:column; gap:8px; box-shadow:var(--adm-shadow);">
-                <div style="font-weight:700; color:var(--adm-text); font-size:0.82rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${o.customer_name || 'Noma\'lum'}</div>
+                <div style="font-weight:700; color:var(--adm-text); font-size:0.82rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(o.customer_name) || 'Noma\'lum'}</div>
                 <div style="font-size:0.78rem; color:var(--adm-text-sec);">Miqdor: <strong style="color:var(--adm-text);">${b.quantity} / ${totalQty}</strong></div>
                 <select class="batch-emp-select" data-batch-id="${b.id}" style="width:100%; padding:6px; border-radius:8px; background:rgba(255,255,255,0.03); border:1px solid var(--adm-border); color:var(--adm-text); font-size:0.75rem;">
                     <option value="">Ishchi tanlanmagan</option>
@@ -575,6 +581,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // birinchi batchni (kesish bosqichida, to'liq miqdor bilan) yaratadi
         document.querySelectorAll('.accept-order-btn').forEach(btn => {
             btn.onclick = async () => {
+                if (btn.disabled) return;
                 const id = btn.dataset.id;
                 const defaultDate = btn.dataset.deadline || '';
                 let targetDate = prompt("Bu buyurtma qachon tayyor bo'lishini belgilang (chiqish sanasi, YYYY-MM-DD):", defaultDate);
@@ -588,6 +595,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         return;
                     }
                 }
+                btn.disabled = true;
                 try {
                     const { data: order } = await supabase.from('sales_orders').select('*').eq('id', id).maybeSingle();
                     const { error } = await supabase.from('sales_orders').update({
@@ -612,6 +620,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } catch (err) {
                     alert("Qabul qilishda xatolik: bazada 'production_target_date'/'production_accepted_at'/'romix_production_batches' mavjudligini tekshiring.");
                     console.warn("accept-order failed:", err);
+                    btn.disabled = false;
                     return;
                 }
                 loadProductionPipeline();
@@ -666,14 +675,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             const members = membersByBrigade[b.id] || [];
             const membersHtml = members.length
                 ? members.map(m => `<div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); padding:6px 10px; border-radius:8px; font-size:0.78rem; margin-bottom:4px;">
-                    <span>${m.employees ? m.employees.full_name : "Noma'lum"}</span>
+                    <span>${m.employees ? escapeHtml(m.employees.full_name) : "Noma'lum"}</span>
                     <button class="rm-brigade-member" data-id="${m.id}" style="background:none; border:none; color:#ef4444; cursor:pointer;">✕</button>
                 </div>`).join('')
                 : '<div style="font-size:0.75rem; color:var(--adm-text-sec);">A\'zo yo\'q</div>';
             return `<div style="background:var(--adm-surface); border:1px solid var(--adm-border); border-top:3px solid #8b5cf6; border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:8px; box-shadow:var(--adm-shadow);">
-                <div style="font-weight:700; color:var(--adm-text); font-size:0.92rem;">${b.name}</div>
+                <div style="font-weight:700; color:var(--adm-text); font-size:0.92rem;">${escapeHtml(b.name)}</div>
                 <div style="border-top:1px dashed var(--adm-border); padding-top:8px;">${membersHtml}</div>
-                <button class="add-brigade-member-btn" data-id="${b.id}" data-name="${b.name}" style="background:rgba(139,92,246,0.1); color:#8b5cf6; border:none; padding:8px; border-radius:8px; font-weight:600; font-size:0.74rem; cursor:pointer;">+ A'zo Qo'shish</button>
+                <button class="add-brigade-member-btn" data-id="${b.id}" data-name="${escapeHtml(b.name)}" style="background:rgba(139,92,246,0.1); color:#8b5cf6; border:none; padding:8px; border-radius:8px; font-weight:600; font-size:0.74rem; cursor:pointer;">+ A'zo Qo'shish</button>
             </div>`;
         }).join('');
 
@@ -695,8 +704,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         document.querySelectorAll('.rm-brigade-member').forEach(btn => {
             btn.onclick = async () => {
+                if (btn.disabled) return;
                 if (!confirm("A'zoni brigadadan chiqarasizmi?")) return;
-                await supabase.from('romix_brigade_members').delete().eq('id', btn.dataset.id);
+                btn.disabled = true;
+                const { error } = await supabase.from('romix_brigade_members').delete().eq('id', btn.dataset.id);
+                if (error) {
+                    alert("Xatolik: a'zo brigadadan chiqarilmadi — " + (error.message || "sabab noma'lum") + ". Qayta urinib ko'ring.");
+                    btn.disabled = false;
+                    return;
+                }
                 renderBrigadesGrid();
             };
         });
@@ -741,9 +757,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (err) { console.warn("brigades fetch for rating failed:", err); }
 
         grid.innerHTML = pending.map(o => `<div style="background:var(--adm-surface); border:1px solid var(--adm-border); border-top:3px solid #ffaa00; border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:6px; box-shadow:var(--adm-shadow);">
-            <div style="font-weight:700; color:var(--adm-text); font-size:0.9rem;">${o.customer_name || "Noma'lum"}</div>
-            <div style="font-size:0.75rem; color:var(--adm-text-sec);">Brigada: <strong style="color:#00d2ff;">${o.install_group || '—'}</strong></div>
-            <button class="rate-brigade-btn" data-order-id="${o.id}" data-group="${(o.install_group || '').replace(/"/g, '')}" style="background:#ffaa00; color:#000; border:none; padding:8px; border-radius:8px; font-weight:700; font-size:0.74rem; cursor:pointer; margin-top:6px;">⭐ Baholash</button>
+            <div style="font-weight:700; color:var(--adm-text); font-size:0.9rem;">${escapeHtml(o.customer_name) || "Noma'lum"}</div>
+            <div style="font-size:0.75rem; color:var(--adm-text-sec);">Brigada: <strong style="color:#00d2ff;">${escapeHtml(o.install_group) || '—'}</strong></div>
+            <button class="rate-brigade-btn" data-order-id="${o.id}" data-group="${escapeHtml(o.install_group)}" style="background:#ffaa00; color:#000; border:none; padding:8px; border-radius:8px; font-weight:700; font-size:0.74rem; cursor:pointer; margin-top:6px;">⭐ Baholash</button>
         </div>`).join('');
 
         document.querySelectorAll('.rate-brigade-btn').forEach(btn => {

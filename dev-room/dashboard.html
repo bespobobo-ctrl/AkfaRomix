@@ -1,0 +1,1482 @@
+<title>Dasturchilar xonasi — AKFA Romix</title>
+<style>
+  :root {
+    --bg: #eef1f3;
+    --surface: #ffffff;
+    --surface-2: #f5f7f8;
+    --line: #dbe1e5;
+    --ink: #171b1f;
+    --muted: #5c6870;
+    --accent: #3563c9;
+    --accent-ink: #ffffff;
+    --good: #1f9d68;
+    --good-bg: #e2f6ec;
+    --warn: #a86a08;
+    --warn-bg: #fbf0d9;
+    --critical: #c22b34;
+    --critical-bg: #fbe4e5;
+    --pending: #6b4fc9;
+    --pending-bg: #ece6fb;
+    --info: #2f6fb3;
+    --info-bg: #e4eefb;
+    --shadow: 0 1px 2px rgba(20, 24, 28, 0.06), 0 8px 20px -12px rgba(20, 24, 28, 0.18);
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12161a;
+      --surface: #1a2025;
+      --surface-2: #20272d;
+      --line: #2a3138;
+      --ink: #eef2f5;
+      --muted: #8b98a3;
+      --accent: #6f9bf2;
+      --accent-ink: #0d1420;
+      --good: #3ecf8e;
+      --good-bg: #123326;
+      --warn: #eab54a;
+      --warn-bg: #382a10;
+      --critical: #f0656d;
+      --critical-bg: #3a1418;
+      --pending: #a793f0;
+      --pending-bg: #251b3d;
+      --info: #7aa8ec;
+      --info-bg: #16233a;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 30px -14px rgba(0, 0, 0, 0.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12161a; --surface: #1a2025; --surface-2: #20272d; --line: #2a3138;
+    --ink: #eef2f5; --muted: #8b98a3; --accent: #6f9bf2; --accent-ink: #0d1420;
+    --good: #3ecf8e; --good-bg: #123326; --warn: #eab54a; --warn-bg: #382a10;
+    --critical: #f0656d; --critical-bg: #3a1418; --pending: #a793f0; --pending-bg: #251b3d;
+    --info: #7aa8ec; --info-bg: #16233a;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 30px -14px rgba(0, 0, 0, 0.6);
+  }
+  :root[data-theme="light"] {
+    --bg: #eef1f3; --surface: #ffffff; --surface-2: #f5f7f8; --line: #dbe1e5;
+    --ink: #171b1f; --muted: #5c6870; --accent: #3563c9; --accent-ink: #ffffff;
+    --good: #1f9d68; --good-bg: #e2f6ec; --warn: #a86a08; --warn-bg: #fbf0d9;
+    --critical: #c22b34; --critical-bg: #fbe4e5; --pending: #6b4fc9; --pending-bg: #ece6fb;
+    --info: #2f6fb3; --info-bg: #e4eefb;
+    --shadow: 0 1px 2px rgba(20, 24, 28, 0.06), 0 8px 20px -12px rgba(20, 24, 28, 0.18);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", "Inter", ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .mono {
+    font-family: "Cascadia Code", "JetBrains Mono", "SF Mono", ui-monospace, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  a { color: var(--accent); }
+
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 24px 64px;
+  }
+
+  /* ---- Top bar ---- */
+  .topbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 24px;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-mark {
+    width: 38px; height: 38px; border-radius: 9px;
+    background: var(--accent); color: var(--accent-ink);
+    display: flex; align-items: center; justify-content: center;
+    font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace;
+    font-weight: 700; font-size: 14px; letter-spacing: -0.02em;
+    flex-shrink: 0;
+  }
+  .brand h1 { font-size: 18px; margin: 0; font-weight: 650; letter-spacing: -0.01em; }
+  .brand .sub { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); }
+
+  .sweep-status { text-align: right; font-size: 12.5px; color: var(--muted); }
+  .sweep-status .label { text-transform: uppercase; letter-spacing: 0.06em; font-size: 10.5px; font-weight: 650; }
+  .sweep-status .value { font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace; color: var(--ink); font-size: 13px; margin-top: 2px; }
+
+  /* ---- Summary strip ---- */
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .summary .stat {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+  }
+  .summary .stat .n { font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace; font-size: 24px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+  .summary .stat .l { font-size: 11.5px; color: var(--muted); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .summary .stat.crit .n { color: var(--critical); }
+  .summary .stat.open .n { color: var(--warn); }
+  .summary .stat.pending .n { color: var(--pending); }
+  .summary .stat.verified .n { color: var(--good); }
+
+  h2.section-title {
+    font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--muted); font-weight: 650; margin: 0 0 12px;
+  }
+
+  /* ---- Panel cards ---- */
+  .panels {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .panel-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+  .panel-card .stripe {
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .panel-card h3 { margin: 6px 0 2px; font-size: 14.5px; font-weight: 650; }
+  .panel-card .login { font-size: 11px; color: var(--muted); font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace; margin-bottom: 12px; }
+  .panel-card .counts { display: flex; gap: 14px; }
+  .panel-card .counts .c { font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace; }
+  .panel-card .counts .c b { font-size: 17px; display: block; font-variant-numeric: tabular-nums; }
+  .panel-card .counts .c span { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .panel-card.empty .counts { color: var(--muted); }
+  .panel-card .empty-note { font-size: 12px; color: var(--muted); font-style: italic; }
+
+  /* ---- Filters ---- */
+  .filters {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;
+  }
+  .filters button {
+    font: inherit; font-size: 12.5px; color: var(--muted);
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 999px; padding: 6px 13px; cursor: pointer;
+  }
+  .filters button:hover { color: var(--ink); border-color: var(--accent); }
+  .filters button.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+  /* ---- Issue list ---- */
+  .issues { display: flex; flex-direction: column; gap: 10px; }
+  .issue {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+  }
+  .issue.sev-critical { border-left-color: var(--critical); }
+  .issue.sev-high { border-left-color: var(--warn); }
+  .issue.sev-medium { border-left-color: var(--info); }
+  .issue.sev-low { border-left-color: var(--line); }
+
+  .issue-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .issue-id { font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace; font-size: 11.5px; color: var(--muted); }
+  .issue-title { font-size: 14.5px; font-weight: 600; margin: 4px 0 4px; }
+  .issue-loc { font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace; font-size: 11.5px; color: var(--muted); }
+  .issue-desc { font-size: 13px; color: var(--ink); opacity: 0.85; margin: 8px 0; max-width: 68ch; line-height: 1.5; }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 650; letter-spacing: 0.02em;
+    padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .pill.sev-critical { color: var(--critical); background: var(--critical-bg); }
+  .pill.sev-high { color: var(--warn); background: var(--warn-bg); }
+  .pill.sev-medium { color: var(--info); background: var(--info-bg); }
+  .pill.sev-low { color: var(--muted); background: var(--surface-2); }
+
+  .pill.st-open { color: var(--warn); background: var(--warn-bg); }
+  .pill.st-in_progress { color: var(--info); background: var(--info-bg); }
+  .pill.st-fixed { color: var(--pending); background: var(--pending-bg); }
+  .pill.st-verified { color: var(--good); background: var(--good-bg); }
+  .pill.st-needs_revision { color: var(--critical); background: var(--critical-bg); }
+
+  .issue-meta { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--muted); }
+  .issue-meta .m b { color: var(--ink); font-weight: 600; }
+
+  .discussion { margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .discussion .msg { font-size: 12.5px; line-height: 1.5; }
+  .discussion .msg .from { font-weight: 650; margin-right: 6px; }
+  .discussion .msg .from.sardor { color: var(--accent); }
+
+  /* ---- Empty state ---- */
+  .empty-state {
+    background: var(--surface);
+    border: 1px dashed var(--line);
+    border-radius: var(--radius);
+    padding: 40px 24px;
+    text-align: center;
+    color: var(--muted);
+  }
+  .empty-state .big { font-size: 15px; color: var(--ink); font-weight: 600; margin-bottom: 6px; }
+  .empty-state .small { font-size: 13px; max-width: 48ch; margin: 0 auto; line-height: 1.6; }
+
+  footer.note {
+    margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
+    font-size: 11.5px; color: var(--muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  }
+
+  @media (max-width: 720px) {
+    .summary { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ---- Digital twin office ---- */
+  .office {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    margin-bottom: 28px;
+  }
+  .office-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; flex-wrap: wrap; gap: 6px; }
+  .office-head h2 { margin: 0; font-size: 15px; font-weight: 650; }
+  .office-head .hint { font-size: 12px; color: var(--muted); }
+
+  /* ---- 3D scene ---- */
+  .scene-wrap {
+    perspective: 1600px;
+    padding: 26px 10px 44px;
+    margin: 0 -4px;
+  }
+  .scene {
+    position: relative;
+    transform-style: preserve-3d;
+    transform: rotateX(var(--scene-rx, 46deg)) rotateY(var(--scene-ry, 0deg));
+    transition: transform 0.5s cubic-bezier(.2, .8, .2, 1);
+    max-width: 760px;
+    margin: 0 auto;
+  }
+  .floor-plate {
+    position: absolute;
+    left: -18px; right: -18px; top: -18px; bottom: -18px;
+    transform: translateZ(-22px);
+    border-radius: 20px;
+    background:
+      repeating-linear-gradient(0deg, color-mix(in srgb, var(--line) 60%, transparent) 0 1px, transparent 1px 34px),
+      repeating-linear-gradient(90deg, color-mix(in srgb, var(--line) 60%, transparent) 0 1px, transparent 1px 34px),
+      var(--bg);
+    border: 1px solid var(--line);
+    box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.08);
+  }
+  .office-floor {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    transform-style: preserve-3d;
+  }
+  .room {
+    transform-style: preserve-3d;
+    transform: translateZ(8px);
+    transition: transform 0.2s ease;
+    cursor: pointer;
+  }
+  .room:hover, .room:focus-visible { transform: translateZ(30px); }
+  .room:focus-visible .room-content { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .room-content {
+    transform: rotateY(calc(-1 * var(--scene-ry, 0deg))) rotateX(calc(-1 * var(--scene-rx, 46deg)));
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 8px;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 22px 18px -18px rgba(0, 0, 0, 0.4);
+  }
+  .avatar {
+    width: 38px; height: 38px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace;
+    font-weight: 700; font-size: 13px; color: #fff;
+    margin: 0 auto 8px; position: relative;
+  }
+  .room .room-label { font-size: 11px; font-weight: 600; color: var(--ink); }
+  .room .room-sub { font-size: 9.5px; color: var(--muted); margin-top: 2px; }
+  .room .task-flag {
+    margin-top: 6px; display: inline-flex; align-items: center; gap: 3px;
+    font-size: 9px; font-weight: 650; color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+    border-radius: 999px; padding: 2px 7px;
+  }
+  .room .badge {
+    position: absolute; top: -6px; right: -4px;
+    min-width: 18px; height: 18px; border-radius: 999px;
+    font-size: 10px; font-weight: 700; font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace;
+    display: flex; align-items: center; justify-content: center; padding: 0 4px;
+    border: 2px solid var(--surface);
+  }
+  .room .badge.b-critical { background: var(--critical-bg); color: var(--critical); }
+  .room .badge.b-high { background: var(--warn-bg); color: var(--warn); }
+  .room .badge.b-ok { background: var(--good-bg); color: var(--good); }
+
+  .meeting-room {
+    grid-column: 1 / -1;
+    margin-top: 4px;
+    transform-style: preserve-3d;
+    transform: translateZ(22px);
+    transition: transform 0.2s ease;
+    cursor: pointer;
+  }
+  .meeting-room:hover, .meeting-room:focus-visible { transform: translateZ(44px); }
+  .meeting-room .room-content {
+    transform: rotateY(calc(-1 * var(--scene-ry, 0deg))) rotateX(calc(-1 * var(--scene-rx, 46deg)));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 14%, var(--surface)), var(--surface));
+    border: 1px solid var(--accent);
+    border-radius: 14px;
+    padding: 16px 20px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    flex-wrap: wrap;
+    text-align: left;
+    box-shadow: 0 30px 24px -20px rgba(0, 0, 0, 0.45), 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+  .meeting-room:focus-visible .room-content { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .meeting-left { display: flex; align-items: center; gap: 14px; }
+  .gathered { display: flex; }
+  .gathered .avatar { width: 30px; height: 30px; font-size: 10.5px; margin: 0 -8px 0 0; border: 2px solid var(--surface); }
+  .sardor-avatar {
+    width: 44px; height: 44px; font-size: 15px; background: var(--accent); color: var(--accent-ink);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+    animation: pulse-ring 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse-ring {
+    0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+    50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 10%, transparent); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sardor-avatar { animation: none; }
+    .scene { transition: none; }
+  }
+  .meeting-text .t1 { font-size: 13.5px; font-weight: 650; }
+  .meeting-text .t2 { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .meeting-cta {
+    font-size: 12.5px; font-weight: 650; color: var(--accent-ink);
+    background: var(--accent); border: none; border-radius: 999px; padding: 9px 18px; cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 780px) {
+    .office-floor { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 480px) {
+    .scene-wrap { perspective: none; }
+    .scene { transform: none !important; }
+    .room-content, .meeting-room .room-content { transform: none !important; }
+    .floor-plate { display: none; }
+    .office-floor { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ---- Sardor meeting modal ---- */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(6, 8, 11, 0.78);
+    backdrop-filter: blur(4px);
+    display: none; align-items: center; justify-content: center;
+    padding: 18px; z-index: 50;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 20px;
+    max-width: 1180px; width: 100%; box-shadow: 0 40px 90px -30px rgba(0, 0, 0, 0.6), var(--shadow);
+    height: calc(100vh - 36px); display: flex; flex-direction: column;
+    overflow: hidden;
+    animation: world-in 0.32s cubic-bezier(.2, .8, .2, 1);
+  }
+  @keyframes world-in {
+    from { opacity: 0; transform: translateY(16px) scale(0.97); }
+    to { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { .modal { animation: none; } }
+
+  .modal-head {
+    display: flex; align-items: center; gap: 14px; padding: 18px 22px;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, var(--surface)), var(--surface) 70%);
+    border-bottom: 1px solid var(--line);
+    position: relative; flex-shrink: 0;
+  }
+  .modal-head .sardor-avatar { width: 44px; height: 44px; font-size: 15px; flex-shrink: 0; animation: none; margin: 0; }
+  .modal-head .mh-text { flex: 1; min-width: 0; }
+  .modal-head h3 { margin: 0; font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+  .modal-head .mh-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .modal-close {
+    background: var(--surface-2); border: 1px solid var(--line); color: var(--muted);
+    width: 30px; height: 30px; border-radius: 50%; font-size: 17px; cursor: pointer;
+    line-height: 1; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .modal-close:hover { color: var(--ink); border-color: var(--accent); }
+
+  /* ---- Room navigation inside Sardor's world ---- */
+  .room-tabs {
+    display: flex; gap: 6px; padding: 12px 22px; overflow-x: auto;
+    border-bottom: 1px solid var(--line); background: var(--surface); flex-shrink: 0;
+  }
+  .room-tab {
+    display: flex; align-items: center; gap: 7px; white-space: nowrap;
+    font: inherit; font-size: 12.5px; font-weight: 600; color: var(--muted);
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px;
+    padding: 7px 14px 7px 10px; cursor: pointer; transition: all 0.15s ease;
+  }
+  .room-tab:hover { color: var(--ink); border-color: var(--accent); }
+  .room-tab.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .room-tab .rt-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .room-tab .rt-badge {
+    font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace; font-size: 10px;
+    background: color-mix(in srgb, currentColor 18%, transparent); border-radius: 999px; padding: 1px 6px;
+  }
+
+  .modal-body { padding: 20px 22px; overflow-y: auto; background: var(--bg); flex: 1; min-height: 0; }
+  .room-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .room-heading .rh-avatar {
+    width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace; font-weight: 700; font-size: 12px; color: #fff;
+  }
+  .room-heading h4 { margin: 0; font-size: 14.5px; font-weight: 700; }
+  .room-heading .rh-sub { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+
+  /* ---- Activity feed (Faoliyat) ---- */
+  .activity-feed { display: flex; flex-direction: column; gap: 10px; }
+  .activity-row {
+    background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--good);
+    border-radius: 10px; padding: 12px 14px; display: flex; gap: 12px; align-items: flex-start;
+  }
+  .activity-row.pending-retest { border-left-color: var(--pending); }
+  .activity-row .ar-avatar {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace; font-weight: 700; font-size: 10.5px; color: #fff;
+  }
+  .activity-row .ar-main { flex: 1; min-width: 0; font-size: 12.5px; }
+  .activity-row .ar-title { font-weight: 600; color: var(--ink); }
+  .activity-row .ar-meta { color: var(--muted); font-size: 11.5px; margin-top: 3px; }
+  .activity-row .ar-meta b { color: var(--ink); font-weight: 600; }
+  .activity-row .ar-note { margin-top: 6px; font-size: 11.5px; color: var(--muted); font-style: italic; }
+
+  .briefing-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+  .briefing-stats .bstat {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px 8px; text-align: center;
+  }
+  .briefing-stats .bstat .bn { font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace; font-size: 19px; font-weight: 700; line-height: 1; }
+  .briefing-stats .bstat .bl { font-size: 10px; color: var(--muted); margin-top: 5px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .briefing-stats .bstat.s-critical .bn { color: var(--critical); }
+  .briefing-stats .bstat.s-high .bn { color: var(--warn); }
+  .briefing-stats .bstat.s-medium .bn { color: var(--info); }
+  .briefing-stats .bstat.s-low .bn { color: var(--muted); }
+
+  .briefing-top { font-size: 12.5px; color: var(--muted); margin: 0 0 20px; padding: 0; list-style: none; }
+  .briefing-top li { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+  .briefing-top .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .briefing-top .dot.sev-critical { background: var(--critical); }
+  .briefing-top .dot.sev-high { background: var(--warn); }
+  .briefing-top b.mono { color: var(--ink); font-weight: 600; }
+
+  .task-row {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px; margin-bottom: 10px; display: flex; gap: 12px; align-items: flex-start;
+  }
+  .task-row .tr-avatar {
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace;
+    font-weight: 700; font-size: 11px; color: #fff;
+  }
+  .task-row .tr-main { flex: 1; min-width: 0; }
+  .task-row .tr-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .task-row .tr-title { font-size: 13px; font-weight: 600; }
+  .task-row .tr-id { font-family: "Cascadia Code", "JetBrains Mono", ui-monospace, monospace; font-size: 10.5px; color: var(--muted); margin-right: 6px; }
+  .task-row .tr-controls { display: flex; gap: 8px; margin-top: 11px; flex-wrap: wrap; }
+  .select-wrap { position: relative; }
+  .select-wrap::after {
+    content: "⌄"; position: absolute; right: 9px; top: 50%; transform: translateY(-55%);
+    font-size: 12px; color: var(--muted); pointer-events: none;
+  }
+  .task-row select {
+    font: inherit; font-size: 12.5px; padding: 7px 26px 7px 10px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--surface-2); color: var(--ink);
+    appearance: none; -webkit-appearance: none; cursor: pointer;
+  }
+  .task-row select:hover { border-color: var(--accent); }
+  .task-row input[type="text"] {
+    font: inherit; font-size: 12.5px; padding: 7px 10px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--surface-2); color: var(--ink);
+    flex: 1; min-width: 140px;
+  }
+  .task-row input[type="text"]:focus, .task-row select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .task-row .assign-btn {
+    font-size: 12px; font-weight: 650; padding: 7px 16px; border-radius: 8px; border: none;
+    background: var(--accent); color: var(--accent-ink); cursor: pointer;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .task-row .assign-btn:hover { filter: brightness(1.08); }
+  .task-row.assigned { background: var(--good-bg); border-color: var(--good); align-items: center; }
+  .task-row.assigned .tr-avatar { box-shadow: 0 0 0 2px var(--good-bg), 0 0 0 3px var(--good); }
+  .task-row .assigned-note { font-size: 12px; color: var(--good); margin-top: 6px; font-weight: 500; }
+  .task-row .assigned-note .check { display: inline-block; margin-right: 4px; }
+
+  .modal-foot {
+    padding: 14px 22px; border-top: 1px solid var(--line); background: var(--surface);
+    display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .modal-foot .export-btn {
+    font-size: 12.5px; font-weight: 650; padding: 9px 18px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer;
+  }
+  .modal-foot .export-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .modal-foot .hint { font-size: 11px; color: var(--muted); max-width: 38ch; line-height: 1.5; }
+</style>
+
+<div class="page">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">AR</div>
+      <div>
+        <h1>Dasturchilar xonasi</h1>
+        <p class="sub">AKFA Romix — Sardor nazorati ostidagi panel monitoringi</p>
+      </div>
+    </div>
+    <div class="sweep-status">
+      <div class="label">So'nggi sweep</div>
+      <div class="value" id="last-sweep">—</div>
+    </div>
+  </div>
+
+  <div class="office">
+    <div class="office-head">
+      <h2>Ofis — jonli holat</h2>
+      <span class="hint">Xonaga bosing — o'sha panel muammolarini ko'rasiz. Sichqonchani harakatlantiring — xona aylanadi.</span>
+    </div>
+    <div class="scene-wrap" id="scene-wrap">
+      <div class="scene" id="office-scene">
+        <div class="floor-plate"></div>
+        <div class="office-floor" id="office-floor"></div>
+        <div class="meeting-room" id="meeting-room" tabindex="0" role="button" aria-haspopup="dialog">
+          <div class="room-content">
+            <div class="meeting-left">
+              <div class="gathered" id="gathered-avatars"></div>
+              <div class="meeting-text">
+                <div class="t1">Majlislar zali</div>
+                <div class="t2" id="meeting-sub">Barcha dasturchilar to'plandi — Sardor hisobot berishga tayyor</div>
+              </div>
+            </div>
+            <button class="meeting-cta" id="open-meeting-btn" type="button">Majlisni boshlash</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="summary" id="summary"></div>
+
+  <h2 class="section-title">Panellar</h2>
+  <div class="panels" id="panels"></div>
+
+  <h2 class="section-title">Muammolar</h2>
+  <div class="filters" id="filters"></div>
+  <div class="issues" id="issues"></div>
+
+  <footer class="note">
+    <span>Manba: <span class="mono">dev-room/tracker.json</span> — Sardor har sweep'da qayta quradi</span>
+    <span id="footer-count" class="mono"></span>
+  </footer>
+</div>
+
+<div class="modal-overlay" id="meeting-modal" role="dialog" aria-modal="true" aria-labelledby="meeting-modal-title">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="avatar sardor-avatar">S</div>
+      <div class="mh-text">
+        <h3 id="meeting-modal-title">Sardor dunyosi</h3>
+        <div class="mh-sub" id="meeting-modal-sub">Bugungi brifing — xonani tanlang</div>
+      </div>
+      <button class="modal-close" id="close-meeting-btn" aria-label="Yopish" type="button">&times;</button>
+    </div>
+    <div class="room-tabs" id="room-tabs"></div>
+    <div class="modal-body">
+      <div id="room-heading"></div>
+      <div id="briefing-text"></div>
+      <div id="task-list"></div>
+      <div id="activity-feed"></div>
+    </div>
+    <div class="modal-foot">
+      <span class="hint">Bu yerda berilgan vazifalar shu brauzerda saqlanadi. Keyingi Sardor tekshiruvida hisobga olinishi uchun eksport qiling va Claude'ga yuboring.</span>
+      <button class="export-btn" id="export-tasks-btn" type="button">Vazifalarni eksport qilish</button>
+    </div>
+  </div>
+</div>
+
+<script type="application/json" id="tracker-data">
+{
+  "project": "AKFA Romix",
+  "panels": [
+    { "id": "ombor", "label": "Ombor", "agent": "ombor-reviewer", "login": "ombor / 123" },
+    { "id": "buhgalter", "label": "Buhgalter", "agent": "buhgalter-reviewer", "login": "buxgalter / 123" },
+    { "id": "sotuv", "label": "Sotuv", "agent": "sotuv-reviewer", "login": "sotuv / 123" },
+    { "id": "hr", "label": "HR", "agent": "hr-reviewer", "login": "hr / 123" },
+    { "id": "ishlab_chiqarish", "label": "Ishlab chiqarish", "agent": "ishlabchiqarish-reviewer", "login": "123 / 123, AC1 / 123" }
+  ],
+  "lastSweepAt": "2026-07-25T10:20:00Z",
+  "lastSweepCommit": "e17c6df",
+  "dashboardUrl": "https://claude.ai/code/artifact/df8383df-8768-4527-bd24-05509a0de63d",
+  "issues": [
+    {
+      "id": "HR-01",
+      "panel": "hr",
+      "title": "Premya (bonus) hech qayerga saqlanmasdi",
+      "description": "handlePremya() faqat muvaffaqiyat xabari ko'rsatib, hech qanday yozuvni bazaga saqlamas edi — mukofot pul miqdori jimgina yo'qolar edi.",
+      "file": "src/projects/romix/xodimlar/hr.js",
+      "line": 887,
+      "foundBy": "hr-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "critical",
+      "status": "verified",
+      "fixedBy": "Claude (manual sweep)",
+      "fixedAt": "2026-07-25T08:40:00Z",
+      "retest": { "result": "pass", "by": "sardor", "at": "2026-07-25T09:14:27Z", "note": "attendance'ga to'g'ri yozilyapti, xato holatida alert bor" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T08:40:00Z", "message": "attendance jadvaliga 'Premya: X UZS' statusi bilan yozuv qo'shildi, xuddi admin.js'dagi mos naqsh kabi. Xatolik bo'lsa foydalanuvchiga aniq alert ko'rsatiladi." },
+        { "from": "sardor", "at": "2026-07-25T09:14:27Z", "message": "Retest #2: pass. Kod hali ham to'g'ri holatda, boshqa o'zgarish yo'q." }
+      ],
+      "resolution": "optimal"
+    },
+    {
+      "id": "ISH-01",
+      "panel": "ishlab_chiqarish",
+      "title": "3 ta sex mini-ilovasida Supabase kaliti kodga qattiq yozilgan",
+      "description": "stanok-app, kraska-app, qadoqlash-app har biri env o'zgaruvchi bo'lmasa haqiqiy Supabase URL va anon-key'ga zaxira sifatida o'tar edi — CLAUDE.md'da aynan shu naqsh taqiqlangan.",
+      "file": "src/projects/autoclapak/mini-app/{stanok,kraska,qadoqlash}-app/app.js",
+      "line": 1,
+      "foundBy": "ishlabchiqarish-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "critical",
+      "status": "verified",
+      "fixedBy": "Claude (manual sweep)",
+      "fixedAt": "2026-07-25T08:40:00Z",
+      "retest": { "result": "pass", "by": "sardor", "at": "2026-07-25T09:14:27Z", "note": "3 faylning hammasida fallback olib tashlangan holicha qoldi" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T08:40:00Z", "message": "Zaxira qiymatlar olib tashlandi; env o'zgaruvchi yo'q bo'lsa endi aniq xato bilan to'xtaydi (fallback yo'q qoidasi)." },
+        { "from": "sardor", "at": "2026-07-25T09:14:27Z", "message": "Retest #2: pass." }
+      ],
+      "resolution": "optimal"
+    },
+    {
+      "id": "HR-02",
+      "panel": "hr",
+      "title": "Tizim foydalanuvchilari jadvalida stored XSS",
+      "description": "loadSystemUsers() full_name/role/username/password'ni escape qilmasdan innerHTML'ga qo'yar edi — HTML/skript kiritilgan ism admin/hr brauzerida ishga tushishi mumkin edi.",
+      "file": "src/projects/romix/tizim_foydalanuvchilari.js",
+      "line": 38,
+      "foundBy": "hr-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "high",
+      "status": "verified",
+      "fixedBy": "Claude (manual sweep)",
+      "fixedAt": "2026-07-25T08:40:00Z",
+      "retest": { "result": "pass", "by": "sardor", "at": "2026-07-25T09:14:27Z", "note": "Kod qayta o'qildi, tuzatish hali ham to'g'ri joyida" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T09:14:27Z", "message": "Retest #2: pass." }
+      ],
+      "resolution": "optimal"
+    },
+    {
+      "id": "HR-03",
+      "panel": "hr",
+      "title": "Xodimni o'chirish bazada xato bo'lsa ham UI'da \"muvaffaqiyatli\" ko'rinardi",
+      "description": "handleDelete() Supabase delete xatosini tekshirmay har doim localStorage'dan olib tashlar edi — xodim UI'dan g'oyib bo'lib, keyingi yuklashda qayta paydo bo'lishi mumkin edi.",
+      "file": "src/projects/romix/xodimlar/hr.js",
+      "line": 1375,
+      "foundBy": "hr-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "high",
+      "status": "verified",
+      "fixedBy": "Claude (manual sweep)",
+      "fixedAt": "2026-07-25T08:40:00Z",
+      "retest": { "result": "pass", "by": "sardor", "at": "2026-07-25T09:14:27Z", "note": "Kod qayta o'qildi, tuzatish hali ham to'g'ri joyida" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T09:14:27Z", "message": "Retest #2: pass." }
+      ],
+      "resolution": "optimal"
+    },
+    {
+      "id": "BUH-01",
+      "panel": "buhgalter",
+      "title": "saveBuhKirim manfiy/nol miqdorni qabul qilardi",
+      "description": "qty <= 0 tekshiruvi yo'q edi — manfiy son bilan \"kirim\" kiritilsa ombor jimgina kamayardi.",
+      "file": "src/projects/autoclapak/js/admin.js",
+      "line": 2820,
+      "foundBy": "buhgalter-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "high",
+      "status": "verified",
+      "fixedBy": "Claude (manual sweep)",
+      "fixedAt": "2026-07-25T08:40:00Z",
+      "retest": { "result": "pass", "by": "sardor", "at": "2026-07-25T09:14:27Z", "note": "Kod qayta o'qildi, tuzatish hali ham to'g'ri joyida" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T09:14:27Z", "message": "Retest #2: pass." }
+      ],
+      "resolution": "optimal"
+    },
+    {
+      "id": "BUH-02",
+      "panel": "buhgalter",
+      "title": "Buxgalter roli faqat vizual (client-side) yashirilgan, real avtorizatsiya yo'q",
+      "description": "Rol-gate faqat DOM'ni yashiradi; window.loadRomixHRData/loadSystemUsers/loadAutoSales kabi funksiyalar rol tekshiruvisiz — buxgalter brauzer konsolidan boshqa bo'limlar ma'lumotiga to'liq kirishi mumkin.",
+      "file": "src/projects/autoclapak/js/admin.js",
+      "line": 19,
+      "foundBy": "buhgalter-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "high",
+      "priorityNote": "Mahsulot egasi (foydalanuvchi) 2026-07-25'da tuzatishga aniq ruxsat berdi — client-side funksiya darajasidagi himoya qo'shildi.",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T09:40:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "Keyingi sweep'da qayta tekshiriladi" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T08:40:00Z", "message": "Bu arxitektura darajasidagi qaror (RLS + funksiya darajasida rol tekshiruvi qo'shish kerak). CLAUDE.md aniq ogohlantirgani uchun o'zboshimchalik bilan o'zgartirmadim — mahsulot egasi qaror qabul qilishi kerak." },
+        { "from": "sardor", "at": "2026-07-25T09:40:00Z", "message": "Foydalanuvchi ruxsat berdi. admin.js'da loadRomixHRData/loadAutoSales/loadAutoClapakInventory/loadAutoProduction va tizim_foydalanuvchilari.js'da loadSystemUsers/deleteSystemUser endi buxgalter rolini tekshirib, rad etadi. MUHIM CHEKLOV: bu faqat client'ni mustahkamlaydi — RLS jadvallarda hamon USING(true), Supabase anon key bundle'da ochiq, shuning uchun Supabase REST API'ga to'g'ridan-to'g'ri so'rov shu JS'ni butunlay chetlab o'tishi mumkin. To'liq yechim uchun haqiqiy auth + RLS siyosati kerak (kattaroq, alohida loyiha)." }
+      ],
+      "resolution": "acceptable"
+    },
+    {
+      "id": "HR-05",
+      "panel": "hr",
+      "title": "deleteSystemUser Supabase xatosini yutib yuboradi",
+      "description": "window.deleteSystemUser() try/catch bilan Supabase delete xatosini faqat console.warn qiladi, keyin baribir localStorage'dan olib tashlab \"O'chirildi!\" deb alert beradi — HR-03 bilan bir xil sinfdagi xato, lekin tizim login boshqaruvi (Login Management) ekranida.",
+      "file": "src/projects/romix/tizim_foydalanuvchilari.js",
+      "line": 62,
+      "foundBy": "sardor (retest #2 paytida topildi)",
+      "foundAt": "2026-07-25T09:14:27Z",
+      "severity": "medium",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "Supabase delete xatosi endi tekshiriladi va alert bilan ko'rsatiladi, muvaffaqiyatsiz bo'lsa localStorage o'zgartirilmaydi." }
+      ],
+      "resolution": null
+    },
+    {
+      "id": "SOT-01",
+      "panel": "sotuv",
+      "title": "To'langan summani kamaytirish audit izsiz qolardi",
+      "description": "saveEditOrderBtn faqat paid_amount oshganda tarix yozuvi qo'shar edi; kamaytirilganda yozuv yo'q edi — moliyaviy tuzatish izsiz qolardi.",
+      "file": "src/projects/romix/sotuv/sales.js",
+      "line": 1856,
+      "foundBy": "sotuv-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "high",
+      "status": "verified",
+      "fixedBy": "Claude (manual sweep)",
+      "fixedAt": "2026-07-25T08:40:00Z",
+      "retest": { "result": "pass", "by": "sardor", "at": "2026-07-25T09:14:27Z", "note": "Kod qayta o'qildi, tuzatish hali ham to'g'ri joyida" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T09:14:27Z", "message": "Retest #2: pass." }
+      ],
+      "resolution": "optimal"
+    },
+    {
+      "id": "OMB-01",
+      "panel": "ombor",
+      "title": "Mahsulotni o'chirishda xatolik ko'rsatilmasdi",
+      "description": "delete-btn handler Supabase delete xatosini tekshirmasdan har doim ro'yxatni qayta yuklar edi.",
+      "file": "src/projects/romix/ombor/warehouse.js",
+      "line": 488,
+      "foundBy": "ombor-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "high",
+      "status": "verified",
+      "fixedBy": "Claude (manual sweep)",
+      "fixedAt": "2026-07-25T08:40:00Z",
+      "retest": { "result": "pass", "by": "sardor", "at": "2026-07-25T09:14:27Z", "note": "Kod qayta o'qildi, tuzatish hali ham to'g'ri joyida" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T09:14:27Z", "message": "Retest #2: pass." }
+      ],
+      "resolution": "optimal"
+    },
+    {
+      "id": "ISH-02",
+      "panel": "ishlab_chiqarish",
+      "title": "\"Qabul qilish\" tugmasida ikki marta bosishdan himoya yo'q edi",
+      "description": "accept-order-btn boshqa saqlash tugmalaridan farqli o'laroq disable/enable naqshiga ega emas edi — tez ikki marta bosilsa buyurtma ikki marta yozilishi mumkin edi.",
+      "file": "src/projects/romix/ishlab_chiqarish/production.js",
+      "line": 576,
+      "foundBy": "ishlabchiqarish-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "high",
+      "status": "verified",
+      "fixedBy": "Claude (manual sweep)",
+      "fixedAt": "2026-07-25T08:40:00Z",
+      "retest": { "result": "pass", "by": "sardor", "at": "2026-07-25T09:14:27Z", "note": "Kod qayta o'qildi, tuzatish hali ham to'g'ri joyida" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T09:14:27Z", "message": "Retest #2: pass." }
+      ],
+      "resolution": "optimal"
+    },
+    {
+      "id": "OMB-02",
+      "panel": "ombor",
+      "title": "Xodim qo'shish/o'chirishda Supabase xatosi yutib yuboriladi",
+      "description": "saveStaffBtn va xodim o'chirish DB xatosini faqat console.warn qiladi, localStorage baribir o'zgaradi — keyingi to'liq yuklashda desync yuzaga kelishi mumkin.",
+      "file": "src/projects/romix/ombor/warehouse.js",
+      "line": 576,
+      "foundBy": "ombor-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "medium",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "saveStaffBtn va delete-staff-btn endi Supabase xatosini tekshiradi, xato bo'lsa alert ko'rsatib to'xtaydi, localStorage'ni muvaffaqiyatsiz holatda o'zgartirmaydi." }
+      ],
+      "resolution": null
+    },
+    {
+      "id": "OMB-03",
+      "panel": "ombor",
+      "title": "Ommaviy tahrirlash xato/timeout bo'lsa ham UI'da saqlangandek ko'rinadi",
+      "description": "5s-timeout guardli update faqat console.warn qiladi, keyin baribir keshdagi elementni o'zgartirib qayta chizadi.",
+      "file": "src/projects/romix/ombor/warehouse.js",
+      "line": 2348,
+      "foundBy": "ombor-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "medium",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "saveProductName endi Supabase xatosi/timeout bo'lganda throw qiladi — mavjud finally bloki tugmani baribir qayta yoqadi (freeze bo'lmaydi), lekin lokal holat va 'saqlandi' xabari endi faqat haqiqiy muvaffaqiyatda chiqadi." }
+      ],
+      "resolution": null
+    },
+    {
+      "id": "OMB-04",
+      "panel": "ombor",
+      "title": "Hujjat-guruhlash evristikasi tarix yozuvlarini noto'g'ri birlashtirishi mumkin",
+      "description": "Faqat 3s ichidagi bir xil turdagi tranzaksiyalar bitta hujjatga birlashtiriladi — bog'liq bo'lmagan yozuvlar aralashib ko'rinishi mumkin. Kosmetik, zaxira ma'lumotiga ta'sir qilmaydi.",
+      "file": "src/projects/romix/ombor/warehouse.js",
+      "line": 660,
+      "foundBy": "ombor-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "low",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "Qisman tuzatildi: guruhlash endi hujjatning oxirgi a'zosi vaqtidan hisoblanadi, shuning uchun uzoq (>3s) cho'zilgan ketma-ket partiyalar endi noto'g'ri bo'linib ketmaydi. Order-id notasiz ikkita tasodifiy bir xil turdagi tranzaksiyaning noto'g'ri birlashishi ehtimoli (asl topilmaning ikkinchi qismi) qoldi — buni hal qilish uchun backend'da haqiqiy partiya/sessiya identifikatori kerak, ma'lumotlar sxemasida hozircha yo'q." }
+      ],
+      "resolution": "acceptable"
+    },
+    {
+      "id": "BUH-03",
+      "panel": "buhgalter",
+      "title": "USD kursi 3 joyda qattiq kodlangan (12800)",
+      "description": "getUsdRate(), saveBuhUsdRate va bitta inline joy mustaqil ravishda bir xil zaxira qiymatni takrorlaydi — yagona manba yo'q.",
+      "file": "src/projects/autoclapak/js/admin.js",
+      "line": 10947,
+      "foundBy": "buhgalter-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "medium",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "Uchala joy endi bitta DEFAULT_USD_RATE konstantasidan foydalanadi." }
+      ],
+      "resolution": null
+    },
+    {
+      "id": "SOT-02",
+      "panel": "sotuv",
+      "title": "Hisoblangan o'lcham matni savatda ishlatilmaydi",
+      "description": "addItemBtn sizeText'ni hisoblaydi-yu, item obyektiga yozmaydi — savat ko'rinishi mm o'rniga xom metr qiymatini ko'rsatadi.",
+      "file": "src/projects/romix/sotuv/sales.js",
+      "line": 550,
+      "foundBy": "sotuv-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "medium",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "sizeText endi item obyektiga yoziladi, savat renderBasket() orqali to'g'ri o'lchamni ko'rsatadi." }
+      ],
+      "resolution": "optimal"
+    },
+    {
+      "id": "SOT-03",
+      "panel": "sotuv",
+      "title": "Ruxsatsiz rol redirect'idan keyin return yo'q",
+      "description": "window.location.href = '/' dan keyin return yo'q — sahifa bir lahza davom etib ishlaydi, null user holatida keyingi qatorda xato beradi.",
+      "file": "src/projects/romix/sotuv/sales.js",
+      "line": 8,
+      "foundBy": "sotuv-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "medium",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "return qo'shildi." }
+      ],
+      "resolution": "optimal"
+    },
+    {
+      "id": "HR-04",
+      "panel": "hr",
+      "title": "Soatlik ish haqi formulasi HR panel va admin dashboard'da farq qiladi",
+      "description": "hr.js oy = 26 kun / kun = 9 soat deb hisoblaydi; admin.js oydagi haqiqiy ish kunlari / 10 soat deb hisoblaydi — bir xil xodim uchun ikki xil natija.",
+      "file": "src/projects/romix/xodimlar/hr.js (634) vs src/projects/autoclapak/js/admin.js (10415)",
+      "line": 634,
+      "foundBy": "hr-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "medium",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "Tekshiruv chuqurroq divergensiyani ko'rsatdi — jami 4 xil formula: hr.js'da 26kun/9soat (jonli hisoblagich + haqiqiy hisobot, ikkalasi izohli va bir xil), 26kun/10soat (aniq 'DEMO REPORT' deb belgilangan, real emas), admin.js'da 26kun/8soat (izohsiz, ikki joyda) va haqiqiy-ish-kunlari/10soat (admin.js showDayDetails — o'z 'default 10 soatlik smena (08:00-18:00)' izohiga ega, lekin workedHours'ni HAM status matnidan taxmin qiladi, real check-in/out emas). Kod izohlarida faqat hr.js'ning jonli hisoblagichi bilan admin.js dashboard hisoblagichi '100% bir xil bo'lishi kutiladi' deb aniq yozilgan edi — shu ikkitasini (admin.js'dagi ikkala 8soat joyini) hr.js'ning izohli 9soat standartiga tekshirib moslashtirdim. DEMO deb belgilangan va showDayDetails (mock workedHours, o'z 10soat-smena asoslashi bilan) tegilmadi — bularni ham moslashtirish qaysi ish kuni uzunligi (8, 9 yoki 10 soat) va qaysi kun-soni (26 yoki oydagi haqiqiy kunlar) 'to'g'ri' ekanini hal qiluvchi biznes qarorini talab qiladi. Foydalanuvchi 'barchasini tuzat' dedi, lekin bu aniq formulani tanlash emas — qaysi standart to'g'ri ekanini so'rash kerak." }
+      ],
+      "resolution": "acceptable"
+    },
+    {
+      "id": "ISH-03",
+      "panel": "ishlab_chiqarish",
+      "title": "Quritish vaqtini \"saqlab qolish\" mantig'i o'lik kod",
+      "description": "refreshAutoProduction izoh bo'yicha qolgan vaqtni saqlashi kerak, lekin qurilgan map hech qayerda o'qilmaydi — vaqt har doim qaytadan hisoblanadi.",
+      "file": "src/projects/autoclapak/js/admin.js",
+      "line": 6866,
+      "foundBy": "ishlabchiqarish-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "medium",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "oldSushilkaMap endi haqiqatan ishlatiladi: agar yangi hisoblangan remainingTime saqlangan qiymatdan katta chiqsa (last_update kutilmaganda yangilanib qolganda), pastroq (saqlangan) qiymat olinadi — vaqt hech qachon orqaga/yuqoriga sakramaydi." }
+      ],
+      "resolution": null
+    },
+    {
+      "id": "ISH-04",
+      "panel": "ishlab_chiqarish",
+      "title": "production.js'da escape qilinmagan innerHTML (XSS)",
+      "description": "customer_name, worker_group, brigada nomi va install_group to'g'ridan-to'g'ri innerHTML'ga qo'yiladi — yuqori oqimda kiritilgan HTML/skript ishlab chiqarish paneli dashboard'ida ishga tushishi mumkin.",
+      "file": "src/projects/romix/ishlab_chiqarish/production.js",
+      "line": 456,
+      "foundBy": "ishlabchiqarish-reviewer",
+      "foundAt": "2026-07-25T08:15:00Z",
+      "severity": "medium",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "escapeHtml() qo'shildi va customer_name, worker_group, install_group, brigada nomi, xodim to'liq ismi barcha innerHTML joylariga qo'llandi." }
+      ],
+      "resolution": "optimal"
+    },
+    {
+      "id": "SOT-04",
+      "panel": "sotuv",
+      "title": "Buyurtmani o'chirishda xatolik yashiriladi",
+      "description": ".del-btn handler Supabase o'chirish xatosini faqat console.warn qiladi, keyin baribir localStorage'dan olib tashlab qayta yuklaydi — OMB-01/HR-03 bilan bir xil sinfdagi xato. Xato bo'lsa buyurtma UI'dan g'oyib bo'ladi-yu, bazada qolib, keyingi to'liq yuklashda qayta paydo bo'ladi.",
+      "file": "src/projects/romix/sotuv/sales.js",
+      "line": 1486,
+      "foundBy": "sotuv-reviewer (retest #2 paytida topildi)",
+      "foundAt": "2026-07-25T09:14:27Z",
+      "severity": "medium",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "catch blokida endi alert ko'rsatilib return qilinadi — muvaffaqiyatsiz o'chirish localStorage'ni o'zgartirmaydi." }
+      ],
+      "resolution": "optimal"
+    },
+    {
+      "id": "ISH-05",
+      "panel": "ishlab_chiqarish",
+      "title": "Brigada a'zosini o'chirishda xatolik tekshiruvi va qo'sh-bosish himoyasi yo'q",
+      "description": ".rm-brigade-member handler Supabase delete xatosini tekshirmasdan har doim brigadalar to'rini qayta chizadi — OMB-01 bilan bir xil sinfdagi xato, boshqa faylda.",
+      "file": "src/projects/romix/ishlab_chiqarish/production.js",
+      "line": 699,
+      "foundBy": "ishlabchiqarish-reviewer (retest #2 paytida topildi)",
+      "foundAt": "2026-07-25T09:14:27Z",
+      "severity": "medium",
+      "status": "fixed",
+      "fixedBy": "Claude (foydalanuvchi ruxsati bilan)",
+      "fixedAt": "2026-07-25T10:20:00Z",
+      "retest": { "result": "pending", "by": null, "at": null, "note": "" },
+      "discussion": [
+        { "from": "sardor", "at": "2026-07-25T10:20:00Z", "message": "Xato tekshiruvi va disabled-guard qo'shildi." }
+      ],
+      "resolution": "optimal"
+    }
+  ]
+}
+</script>
+
+<script>
+(function () {
+  var data = JSON.parse(document.getElementById("tracker-data").textContent);
+  var panels = data.panels || [];
+  var issues = data.issues || [];
+
+  var SEV_LABEL = { critical: "Kritik", high: "Yuqori", medium: "O'rta", low: "Past" };
+  var ST_LABEL = {
+    open: "Yangi", in_progress: "Jarayonda", fixed: "Retest kutilmoqda",
+    verified: "Tasdiqlangan", needs_revision: "Qayta ishlash kerak"
+  };
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return "hali yo'q";
+    try {
+      var d = new Date(iso);
+      return d.toLocaleString("uz-UZ", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+    } catch (e) { return iso; }
+  }
+
+  document.getElementById("last-sweep").textContent = data.lastSweepAt ? fmtDate(data.lastSweepAt) : "Hali ishga tushmagan";
+
+  // ---- Summary ----
+  var counts = { open: 0, in_progress: 0, fixed: 0, verified: 0, needs_revision: 0, critical: 0 };
+  issues.forEach(function (i) {
+    counts[i.status] = (counts[i.status] || 0) + 1;
+    if (i.severity === "critical" && i.status !== "verified") counts.critical++;
+  });
+
+  var summaryEl = document.getElementById("summary");
+  var summaryItems = [
+    { cls: "crit", n: counts.critical, l: "Kritik ochiq" },
+    { cls: "open", n: counts.open, l: "Yangi topilgan" },
+    { cls: "pending", n: (counts.fixed || 0) + (counts.needs_revision || 0), l: "Retest / qayta ishlash" },
+    { cls: "verified", n: counts.verified, l: "Tasdiqlangan" },
+    { cls: "", n: issues.length, l: "Jami muammo" }
+  ];
+  summaryEl.innerHTML = summaryItems.map(function (s) {
+    return '<div class="stat ' + s.cls + '"><div class="n mono">' + s.n + '</div><div class="l">' + esc(s.l) + '</div></div>';
+  }).join("");
+
+  // ---- Panel cards ----
+  var panelsEl = document.getElementById("panels");
+  var stripeColor = { ombor: "var(--info)", buhgalter: "var(--pending)", sotuv: "var(--good)", hr: "var(--warn)", ishlab_chiqarish: "var(--accent)" };
+  panelsEl.innerHTML = panels.map(function (p) {
+    var pIssues = issues.filter(function (i) { return i.panel === p.id; });
+    var open = pIssues.filter(function (i) { return i.status === "open" || i.status === "needs_revision"; }).length;
+    var progress = pIssues.filter(function (i) { return i.status === "in_progress" || i.status === "fixed"; }).length;
+    var verified = pIssues.filter(function (i) { return i.status === "verified"; }).length;
+    var emptyCls = pIssues.length === 0 ? " empty" : "";
+    var body = pIssues.length === 0
+      ? '<div class="empty-note">Muammo topilmagan / hali skanerlanmagan</div>'
+      : '<div class="counts">' +
+          '<div class="c"><b style="color:var(--warn)">' + open + '</b><span>Ochiq</span></div>' +
+          '<div class="c"><b style="color:var(--pending)">' + progress + '</b><span>Jarayonda</span></div>' +
+          '<div class="c"><b style="color:var(--good)">' + verified + '</b><span>Tasdiqlangan</span></div>' +
+        '</div>';
+    return '<div class="panel-card' + emptyCls + '">' +
+      '<div class="stripe" style="background:' + (stripeColor[p.id] || "var(--line)") + '"></div>' +
+      '<h3>' + esc(p.label) + '</h3>' +
+      '<div class="login">' + esc(p.login) + '</div>' +
+      body +
+      '</div>';
+  }).join("");
+
+  // ---- Issues ----
+  var issuesEl = document.getElementById("issues");
+  var filtersEl = document.getElementById("filters");
+  var footerCount = document.getElementById("footer-count");
+  var activeFilter = "all";
+
+  var filterDefs = [{ id: "all", label: "Barchasi" }].concat(panels.map(function (p) { return { id: p.id, label: p.label }; }));
+
+  function renderFilters() {
+    filtersEl.innerHTML = filterDefs.map(function (f) {
+      return '<button data-f="' + f.id + '" class="' + (f.id === activeFilter ? "active" : "") + '">' + esc(f.label) + '</button>';
+    }).join("");
+    Array.prototype.forEach.call(filtersEl.querySelectorAll("button"), function (btn) {
+      btn.addEventListener("click", function () {
+        activeFilter = btn.getAttribute("data-f");
+        renderFilters();
+        renderIssues();
+      });
+    });
+  }
+
+  function renderIssues() {
+    var list = issues.filter(function (i) { return activeFilter === "all" || i.panel === activeFilter; });
+    var order = { critical: 0, high: 1, medium: 2, low: 3 };
+    list = list.slice().sort(function (a, b) { return (order[a.severity] || 9) - (order[b.severity] || 9); });
+
+    if (list.length === 0) {
+      issuesEl.innerHTML = '<div class="empty-state">' +
+        '<div class="big">Hozircha muammo qayd etilmagan</div>' +
+        '<div class="small">Sardor birinchi sweep\'ni bajargach, har bir paneldan topilgan xatolar shu yerda muhimlik darajasi bilan chiqadi.</div>' +
+        '</div>';
+      footerCount.textContent = "0 / " + issues.length;
+      return;
+    }
+
+    issuesEl.innerHTML = list.map(function (i) {
+      var disc = (i.discussion || []).map(function (m) {
+        return '<div class="msg"><span class="from' + (m.from === "sardor" ? " sardor" : "") + '">' + esc(m.from) + ':</span>' + esc(m.message) + '</div>';
+      }).join("");
+      return '<div class="issue sev-' + esc(i.severity || "low") + '">' +
+        '<div class="issue-top">' +
+          '<div>' +
+            '<span class="issue-id">' + esc(i.id) + '</span>' +
+            '<div class="issue-title">' + esc(i.title) + '</div>' +
+            '<div class="issue-loc">' + esc(i.file || "") + (i.line ? ":" + i.line : "") + '</div>' +
+          '</div>' +
+          '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">' +
+            '<span class="pill sev-' + esc(i.severity || "low") + '">' + esc(SEV_LABEL[i.severity] || i.severity) + '</span>' +
+            '<span class="pill st-' + esc(i.status || "open") + '">' + esc(ST_LABEL[i.status] || i.status) + '</span>' +
+          '</div>' +
+        '</div>' +
+        (i.description ? '<div class="issue-desc">' + esc(i.description) + '</div>' : '') +
+        '<div class="issue-meta">' +
+          '<span class="m">Topdi: <b>' + esc(i.foundBy || "—") + '</b></span>' +
+          (i.fixedBy ? '<span class="m">Tuzatdi: <b>' + esc(i.fixedBy) + '</b></span>' : '') +
+          (i.retest && i.retest.result && i.retest.result !== "pending" ? '<span class="m">Retest: <b>' + esc(i.retest.result === "pass" ? "o’tdi" : "o’tmadi") + '</b></span>' : '') +
+          (i.resolution ? '<span class="m">Yechim: <b>' + esc(i.resolution === "optimal" ? "optimal" : "qoniqarli") + '</b></span>' : '') +
+        '</div>' +
+        (disc ? '<div class="discussion">' + disc + '</div>' : '') +
+      '</div>';
+    }).join("");
+    footerCount.textContent = list.length + " / " + issues.length;
+  }
+
+  // ---- Office / digital twin ----
+  var PANEL_INITIALS = { ombor: "OM", buhgalter: "BX", sotuv: "ST", hr: "HR", ishlab_chiqarish: "IC" };
+  var TASKS_KEY = "akfaRomixDevRoomTasks_v1";
+
+  function loadTasks() {
+    try { return JSON.parse(localStorage.getItem(TASKS_KEY) || "[]"); } catch (e) { return []; }
+  }
+  function saveTasks(tasks) {
+    try { localStorage.setItem(TASKS_KEY, JSON.stringify(tasks)); } catch (e) {}
+  }
+  var assignedTasks = loadTasks();
+
+  function worstSeverityForPanel(panelId) {
+    var order = { critical: 0, high: 1, medium: 2, low: 3 };
+    var open = issues.filter(function (i) { return i.panel === panelId && (i.status === "open" || i.status === "needs_revision"); });
+    if (open.length === 0) return null;
+    open = open.slice().sort(function (a, b) { return (order[a.severity] || 9) - (order[b.severity] || 9); });
+    return open[0].severity;
+  }
+
+  function focusPanel(panelId) {
+    activeFilter = panelId;
+    renderFilters();
+    renderIssues();
+    var issuesEl2 = document.getElementById("issues");
+    if (issuesEl2) issuesEl2.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function renderOffice() {
+    var floor = document.getElementById("office-floor");
+    floor.innerHTML = panels.map(function (p) {
+      var openCount = issues.filter(function (i) { return i.panel === p.id && (i.status === "open" || i.status === "needs_revision"); }).length;
+      var worst = worstSeverityForPanel(p.id);
+      var badgeCls = worst === "critical" ? "b-critical" : (worst === "high" ? "b-high" : "b-ok");
+      var badgeHtml = openCount > 0 ? '<div class="badge ' + badgeCls + '">' + openCount + '</div>' : '';
+      var panelTaskCount = assignedTasks.filter(function (t) {
+        var iss = issues.find(function (x) { return x.id === t.issueId; });
+        return t.assignee === p.id && iss && (iss.status === "open" || iss.status === "needs_revision");
+      }).length;
+      var taskFlagHtml = panelTaskCount > 0 ? '<div class="task-flag">🛠 ' + panelTaskCount + ' vazifada</div>' : '';
+      return '<div class="room" data-panel="' + p.id + '" tabindex="0" role="button" aria-label="' + esc(p.label) + '">' +
+        '<div class="room-content">' +
+        badgeHtml +
+        '<div class="avatar" style="background:' + (stripeColor[p.id] || "var(--muted)") + '">' + (PANEL_INITIALS[p.id] || "??") + '</div>' +
+        '<div class="room-label">' + esc(p.label) + '</div>' +
+        '<div class="room-sub">' + (openCount > 0 ? openCount + " ochiq" : "toza") + '</div>' +
+        taskFlagHtml +
+        '</div></div>';
+    }).join("");
+
+    Array.prototype.forEach.call(floor.querySelectorAll(".room"), function (el) {
+      el.addEventListener("click", function () { focusPanel(el.getAttribute("data-panel")); });
+      el.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); focusPanel(el.getAttribute("data-panel")); } });
+    });
+
+    var gatheredEl = document.getElementById("gathered-avatars");
+    gatheredEl.innerHTML = panels.map(function (p) {
+      return '<div class="avatar" style="background:' + (stripeColor[p.id] || "var(--muted)") + '" title="' + esc(p.label) + '">' + (PANEL_INITIALS[p.id] || "??") + '</div>';
+    }).join("") + '<div class="avatar sardor-avatar" title="Sardor">S</div>';
+
+    var openTotal = issues.filter(function (i) { return i.status === "open" || i.status === "needs_revision"; }).length;
+    var subEl = document.getElementById("meeting-sub");
+    subEl.textContent = openTotal > 0
+      ? "Barcha dasturchilar to'plandi — Sardor " + openTotal + " ta masala bo'yicha hisobot berishga tayyor"
+      : "Barcha dasturchilar to'plandi — hozircha ochiq masala yo'q";
+  }
+
+  // ---- Sardor meeting modal ----
+  var modalEl = document.getElementById("meeting-modal");
+
+  var currentRoom = "overview";
+
+  function roomOpenCount(panelId) {
+    return issues.filter(function (i) { return i.panel === panelId && (i.status === "open" || i.status === "needs_revision"); }).length;
+  }
+
+  function renderRoomTabs() {
+    var tabsEl = document.getElementById("room-tabs");
+    var defs = [{ id: "overview", label: "Umumiy", dot: "var(--accent)" }]
+      .concat(panels.map(function (p) { return { id: p.id, label: p.label, dot: stripeColor[p.id] || "var(--muted)" }; }))
+      .concat([{ id: "activity", label: "Faoliyat", dot: "var(--good)" }]);
+    tabsEl.innerHTML = defs.map(function (d) {
+      var count = (d.id !== "overview" && d.id !== "activity") ? roomOpenCount(d.id) : null;
+      var badge = count ? '<span class="rt-badge">' + count + '</span>' : '';
+      return '<button class="room-tab' + (currentRoom === d.id ? ' active' : '') + '" data-room="' + d.id + '" type="button">' +
+        '<span class="rt-dot" style="background:' + d.dot + '"></span>' + esc(d.label) + badge +
+        '</button>';
+    }).join("");
+    Array.prototype.forEach.call(tabsEl.querySelectorAll(".room-tab"), function (btn) {
+      btn.addEventListener("click", function () {
+        currentRoom = btn.getAttribute("data-room");
+        renderRoomTabs();
+        renderRoomContent();
+      });
+    });
+  }
+
+  function renderRoomContent() {
+    var headingEl = document.getElementById("room-heading");
+    var briefingEl = document.getElementById("briefing-text");
+    var taskListEl = document.getElementById("task-list");
+    var activityEl = document.getElementById("activity-feed");
+    var subEl = document.getElementById("meeting-modal-sub");
+
+    if (currentRoom === "overview") {
+      headingEl.innerHTML = '';
+      subEl.textContent = "Umumiy brifing — barcha panellar bo'yicha holat";
+      briefingEl.style.display = "";
+      taskListEl.style.display = "";
+      activityEl.style.display = "none";
+      renderBriefing();
+      renderTaskList(null);
+    } else if (currentRoom === "activity") {
+      headingEl.innerHTML =
+        '<div class="room-heading"><div class="rh-avatar" style="background:var(--good)">✓</div>' +
+        '<div><h4>Faoliyat — bajarilgan ishlar</h4><div class="rh-sub">Barcha panellarda dasturchilar (yoki avtomatik tuzatish) tomonidan yopilgan/tuzatilgan masalalar</div></div></div>';
+      subEl.textContent = "Faoliyat xonasi";
+      briefingEl.style.display = "none";
+      taskListEl.style.display = "none";
+      activityEl.style.display = "";
+      renderActivityFeed(null);
+    } else {
+      var p = panels.find(function (x) { return x.id === currentRoom; }) || { label: currentRoom };
+      headingEl.innerHTML =
+        '<div class="room-heading"><div class="rh-avatar" style="background:' + (stripeColor[currentRoom] || "var(--muted)") + '">' + (PANEL_INITIALS[currentRoom] || "??") + '</div>' +
+        '<div><h4>' + esc(p.label) + ' xonasi</h4><div class="rh-sub">' + esc(p.login || '') + ' — ochiq masalalar va bajarilgan ishlar</div></div></div>';
+      subEl.textContent = p.label + " xonasi";
+      briefingEl.style.display = "none";
+      taskListEl.style.display = "";
+      activityEl.style.display = "";
+      renderTaskList(currentRoom);
+      renderActivityFeed(currentRoom);
+    }
+  }
+
+  function renderBriefing() {
+    var open = issues.filter(function (i) { return i.status === "open" || i.status === "needs_revision"; });
+    var byS = { critical: 0, high: 0, medium: 0, low: 0 };
+    open.forEach(function (i) { byS[i.severity] = (byS[i.severity] || 0) + 1; });
+    var order = { critical: 0, high: 1, medium: 2, low: 3 };
+    var top = open.slice().sort(function (a, b) { return (order[a.severity] || 9) - (order[b.severity] || 9); }).slice(0, 3);
+    var statsHtml = [
+      { k: "critical", l: "Kritik" }, { k: "high", l: "Yuqori" }, { k: "medium", l: "O'rta" }, { k: "low", l: "Past" }
+    ].map(function (s) {
+      return '<div class="bstat s-' + s.k + '"><div class="bn mono">' + (byS[s.k] || 0) + '</div><div class="bl">' + s.l + '</div></div>';
+    }).join("");
+    var topHtml = top.map(function (i) {
+      var dotCls = i.severity === "critical" ? "sev-critical" : (i.severity === "high" ? "sev-high" : "");
+      return '<li><span class="dot ' + dotCls + '"></span><b class="mono">' + esc(i.id) + '</b> — ' + esc(i.title) + '</li>';
+    }).join("");
+    document.getElementById("briefing-text").innerHTML =
+      '<div class="briefing-stats">' + statsHtml + '</div>' +
+      (top.length ? '<ul class="briefing-top">' + topHtml + '</ul>' : '');
+  }
+
+  function renderTaskList(panelFilter) {
+    var order = { critical: 0, high: 1, medium: 2, low: 3 };
+    var open = issues.filter(function (i) {
+      if (i.status !== "open" && i.status !== "needs_revision") return false;
+      if (panelFilter && i.panel !== panelFilter) return false;
+      return true;
+    });
+    open = open.slice().sort(function (a, b) { return (order[a.severity] || 9) - (order[b.severity] || 9); });
+    var listEl = document.getElementById("task-list");
+    if (open.length === 0) {
+      listEl.innerHTML = '<div class="empty-state"><div class="big">Ochiq masala yo\'q</div><div class="small">Hammasi nazoratda.</div></div>';
+      return;
+    }
+    listEl.innerHTML = open.map(function (i) {
+      var avatarBg = stripeColor[i.panel] || "var(--muted)";
+      var initials = PANEL_INITIALS[i.panel] || "??";
+      var existing = assignedTasks.find(function (t) { return t.issueId === i.id; });
+      var optionsHtml = panels.map(function (p) { return '<option value="' + p.id + '"' + (i.panel === p.id ? ' selected' : '') + '>' + esc(p.label) + '</option>'; }).join("");
+      if (existing) {
+        var assigneeLabel = (panels.find(function (p) { return p.id === existing.assignee; }) || {}).label || existing.assignee;
+        return '<div class="task-row assigned" data-issue="' + esc(i.id) + '">' +
+          '<div class="tr-avatar" style="background:' + (stripeColor[existing.assignee] || avatarBg) + '">' + (PANEL_INITIALS[existing.assignee] || initials) + '</div>' +
+          '<div class="tr-main">' +
+          '<div class="tr-top"><span class="tr-id">' + esc(i.id) + '</span><span class="tr-title">' + esc(i.title) + '</span><span class="pill sev-' + esc(i.severity) + '">' + esc(i.severity) + '</span></div>' +
+          '<div class="assigned-note"><span class="check">✅</span>Vazifa berildi: <b>' + esc(assigneeLabel) + '</b>' + (existing.note ? ' — "' + esc(existing.note) + '"' : '') + '</div>' +
+          '</div></div>';
+      }
+      return '<div class="task-row" data-issue="' + esc(i.id) + '">' +
+        '<div class="tr-avatar" style="background:' + avatarBg + '">' + initials + '</div>' +
+        '<div class="tr-main">' +
+        '<div class="tr-top"><span class="tr-id">' + esc(i.id) + '</span><span class="tr-title">' + esc(i.title) + '</span><span class="pill sev-' + esc(i.severity) + '">' + esc(i.severity) + '</span></div>' +
+        '<div class="tr-controls">' +
+        '<div class="select-wrap"><select class="tr-assignee">' + optionsHtml + '</select></div>' +
+        '<input type="text" class="tr-note" placeholder="Ko\'rsatma (ixtiyoriy)" />' +
+        '<button class="assign-btn" type="button">Vazifa berish</button>' +
+        '</div></div></div>';
+    }).join("");
+
+    Array.prototype.forEach.call(listEl.querySelectorAll(".task-row:not(.assigned)"), function (row) {
+      var btn = row.querySelector(".assign-btn");
+      btn.addEventListener("click", function () {
+        var issueId = row.getAttribute("data-issue");
+        var assignee = row.querySelector(".tr-assignee").value;
+        var note = row.querySelector(".tr-note").value.trim();
+        assignedTasks.push({ issueId: issueId, assignee: assignee, note: note, assignedAt: new Date().toISOString() });
+        saveTasks(assignedTasks);
+        renderTaskList(panelFilter);
+      });
+    });
+  }
+
+  function renderActivityFeed(panelFilter) {
+    var done = issues.filter(function (i) {
+      if (i.status !== "verified" && i.status !== "fixed") return false;
+      if (panelFilter && i.panel !== panelFilter) return false;
+      return true;
+    });
+    done = done.slice().sort(function (a, b) {
+      return new Date(b.fixedAt || b.foundAt) - new Date(a.fixedAt || a.foundAt);
+    });
+    var feedEl = document.getElementById("activity-feed");
+    if (done.length === 0) {
+      feedEl.innerHTML = '<div class="empty-state"><div class="big">Hali bajarilgan ish yo\'q</div><div class="small">Tuzatilgan/tasdiqlangan masalalar shu yerda ko\'rinadi.</div></div>';
+      return;
+    }
+    feedEl.innerHTML = done.map(function (i) {
+      var avatarBg = stripeColor[i.panel] || "var(--muted)";
+      var initials = PANEL_INITIALS[i.panel] || "??";
+      var pending = i.status === "fixed";
+      var statusLabel = i.status === "verified" ? "✅ Tasdiqlangan" : "🛠 Tuzatildi — retest kutilmoqda";
+      var lastMsg = (i.discussion && i.discussion.length) ? i.discussion[i.discussion.length - 1].message : "";
+      return '<div class="activity-row' + (pending ? ' pending-retest' : '') + '">' +
+        '<div class="ar-avatar" style="background:' + avatarBg + '">' + initials + '</div>' +
+        '<div class="ar-main">' +
+        '<span class="ar-title">' + esc(i.id) + ' — ' + esc(i.title) + '</span>' +
+        '<div class="ar-meta">' + statusLabel + ' · Tuzatdi: <b>' + esc(i.fixedBy || "noma'lum") + '</b>' +
+        (i.fixedAt ? ' · ' + esc(new Date(i.fixedAt).toLocaleDateString("uz-UZ")) : '') +
+        (i.resolution ? ' · Yechim: <b>' + esc(i.resolution === "optimal" ? "optimal" : "qoniqarli") + '</b>' : '') + '</div>' +
+        (lastMsg ? '<div class="ar-note">' + esc(lastMsg) + '</div>' : '') +
+        '</div></div>';
+    }).join("");
+  }
+
+  function openMeeting() {
+    currentRoom = "overview";
+    renderRoomTabs();
+    renderRoomContent();
+    modalEl.classList.add("open");
+  }
+  function closeMeeting() {
+    modalEl.classList.remove("open");
+  }
+
+  document.getElementById("open-meeting-btn").addEventListener("click", openMeeting);
+  document.getElementById("meeting-room").addEventListener("click", function (e) {
+    if (e.target.id === "open-meeting-btn") return;
+    openMeeting();
+  });
+  document.getElementById("meeting-room").addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openMeeting(); }
+  });
+  document.getElementById("close-meeting-btn").addEventListener("click", closeMeeting);
+  modalEl.addEventListener("click", function (e) { if (e.target === modalEl) closeMeeting(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && modalEl.classList.contains("open")) closeMeeting(); });
+
+  document.getElementById("export-tasks-btn").addEventListener("click", function () {
+    var payload = JSON.stringify({ exportedAt: new Date().toISOString(), tasks: assignedTasks }, null, 2);
+    if (window.claude && window.claude.downloads) {
+      window.claude.downloads.save({ filename: "akfa-romix-vazifalar.json", data: payload }).catch(function () {});
+    } else {
+      var blob = new Blob([payload], { type: "application/json" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url; a.download = "akfa-romix-vazifalar.json"; a.click();
+      URL.revokeObjectURL(url);
+    }
+  });
+
+  // ---- 3D scene parallax (mouse-driven tilt) ----
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var sceneWrapEl = document.getElementById("scene-wrap");
+  var sceneEl = document.getElementById("office-scene");
+  if (sceneWrapEl && sceneEl && !reduceMotion) {
+    var baseRx = 46;
+    sceneWrapEl.addEventListener("mousemove", function (e) {
+      var rect = sceneWrapEl.getBoundingClientRect();
+      var nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;   // -1..1
+      var ny = ((e.clientY - rect.top) / rect.height) * 2 - 1;   // -1..1
+      var ry = Math.max(-10, Math.min(10, nx * 10));
+      var rx = Math.max(36, Math.min(56, baseRx - ny * 8));
+      sceneEl.style.setProperty("--scene-ry", ry.toFixed(2) + "deg");
+      sceneEl.style.setProperty("--scene-rx", rx.toFixed(2) + "deg");
+    });
+    sceneWrapEl.addEventListener("mouseleave", function () {
+      sceneEl.style.setProperty("--scene-ry", "0deg");
+      sceneEl.style.setProperty("--scene-rx", baseRx + "deg");
+    });
+  }
+
+  renderOffice();
+  renderFilters();
+  renderIssues();
+})();
+</script>

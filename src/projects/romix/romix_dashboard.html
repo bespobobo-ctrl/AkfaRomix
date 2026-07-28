@@ -61,10 +61,26 @@
             <div class="nav-icon" data-section="rassrochka" title="AKFA Romix Rassrochka">💳</div>
             <div class="nav-icon" data-section="oynak" title="AKFA Romix Oynek">💎</div>
             <div class="nav-icon" data-section="autoclapak" title="AKFA Avto Clapak">🚗</div>
+            <div class="nav-icon" id="devroom-nav-icon" title="Dasturchilar xonasi" style="display:none;">🛠️</div>
 
             <div class="nav-icon" style="margin-top: auto;">⚙️</div>
             <div class="nav-icon" id="sidebarLogout">🚪</div>
         </aside>
+        <script>
+            // "Dasturchilar xonasi" ikonkasi faqat admin uchun ko'rinadi.
+            (function () {
+                try {
+                    var u = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                    var icon = document.getElementById('devroom-nav-icon');
+                    if (icon && u.role === 'admin') {
+                        icon.style.display = '';
+                        icon.addEventListener('click', function () {
+                            window.location.href = './dasturchilar_xonasi.html';
+                        });
+                    }
+                } catch (e) {}
+            })();
+        </script>
 
         <!-- Main Content -->
         <main class="admin-main">
@@ -1865,7 +1881,7 @@
     <!-- Premium Buhgalter: trend grafiklari -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
-    <script type="module" src="../autoclapak/js/admin.js?v=6.8"></script>
+    <script type="module" src="../autoclapak/js/admin.js?v=7.1"></script>
     <script type="module" src="./tizim_foydalanuvchilari.js"></script>
     <script type="module" src="./diagnostika.js"></script>
 
