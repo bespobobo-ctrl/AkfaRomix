@@ -140,6 +140,30 @@ export async function handleUpdate(update) {
         } catch (e) { await send(chatId, "⚠️ Ovoz xatosi: " + esc(e.message || e)); return; }
     }
 
+    if (msg.reply_to_message && msg.reply_to_message.text && msg.reply_to_message.text.includes("BO'LIM:")) {
+        if (!text) {
+            await send(chatId, "⚠️ Iltimos, javobni matn ko'rinishida yuboring.");
+            return;
+        }
+        
+        const match = msg.reply_to_message.text.match(/BO'LIM:\s*([^\n]+)/);
+        const dept = match ? match[1].trim() : "Noma'lum";
+        
+        const history = (await stGet("boss_chat", [])) || [];
+        history.push({
+            id: Date.now(),
+            from: 'Rahbar',
+            to: dept,
+            text: text,
+            time: new Date().toISOString()
+        });
+        if (history.length > 200) history.shift();
+        await stSet("boss_chat", history);
+        
+        await send(chatId, `✅ <b>${esc(dept)}</b> bo'limiga javobingiz yuborildi!`);
+        return;
+    }
+
     if (text) return handleText(chatId, text);
 }
 

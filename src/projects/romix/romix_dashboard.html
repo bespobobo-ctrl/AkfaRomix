@@ -3674,15 +3674,34 @@
             </div>
             <button onclick="window.toggleRomixAiDrawer()" style="background:rgba(255,255,255,0.1); border:none; width:32px; height:32px; border-radius:50%; color:#fff; cursor:pointer; font-size:1.1rem; display:flex; align-items:center; justify-content:center;">✕</button>
         </div>
-        <div id="aiActionButtons" style="display:flex; gap:8px; overflow-x:auto; padding:10px 15px; border-bottom:1px solid rgba(255,255,255,0.05); flex-shrink:0; white-space:nowrap; -webkit-overflow-scrolling:touch;"></div>
-        <div id="aiChatHistory" style="flex:1; padding:15px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; font-size:0.85rem;">
-            <div id="aiWelcomeBubble" style="background:rgba(0,210,255,0.08); border:1px solid rgba(0,210,255,0.25); border-radius:14px; padding:12px 14px; color:#fff; align-self:flex-start; max-width:88%; line-height:1.5;">
-                👋 Assalomu alaykum! Men Romix AI yordamchisiman.
+        <div id="aiTabsContainer" style="display:flex; border-bottom:1px solid rgba(255,255,255,0.05); background:rgba(0,0,0,0.2);">
+            <button id="tabAiBtn" onclick="window.switchAiTab('ai')" style="flex:1; background:rgba(0,210,255,0.1); color:#00d2ff; border:none; border-bottom:2px solid #00d2ff; padding:12px; cursor:pointer; font-weight:bold; font-size:0.85rem; transition:all 0.3s;">🤖 AI Yordamchi</button>
+            <button id="tabBossBtn" onclick="window.switchAiTab('boss')" style="flex:1; background:transparent; color:rgba(255,255,255,0.5); border:none; border-bottom:2px solid transparent; padding:12px; cursor:pointer; font-weight:bold; font-size:0.85rem; transition:all 0.3s;">👨‍💼 Rahbar Chat</button>
+        </div>
+
+        <div id="aiMainSection" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
+            <div id="aiActionButtons" style="display:flex; gap:8px; overflow-x:auto; padding:10px 15px; border-bottom:1px solid rgba(255,255,255,0.05); flex-shrink:0; white-space:nowrap; -webkit-overflow-scrolling:touch;"></div>
+            <div id="aiChatHistory" style="flex:1; padding:15px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; font-size:0.85rem;">
+                <div id="aiWelcomeBubble" style="background:rgba(0,210,255,0.08); border:1px solid rgba(0,210,255,0.25); border-radius:14px; padding:12px 14px; color:#fff; align-self:flex-start; max-width:88%; line-height:1.5;">
+                    👋 Assalomu alaykum! Men Romix AI yordamchisiman.
+                </div>
+            </div>
+            <div style="padding:15px; border-top:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); display:flex; gap:10px;">
+                <input type="text" id="aiInputText" placeholder="Savol yoki buyruq yozing..." style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); border-radius:12px; padding:8px 12px; color:#fff; font-size:0.85rem; outline:none;" onkeydown="if(event.key==='Enter') window.submitAiMessage()">
+                <button onclick="window.submitAiMessage()" style="background:#00d2ff; color:#000; border:none; padding:8px 14px; border-radius:12px; font-weight:800; font-size:0.85rem; cursor:pointer;">🚀</button>
             </div>
         </div>
-        <div style="padding:15px; border-top:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); display:flex; gap:10px;">
-            <input type="text" id="aiInputText" placeholder="Savol yoki buyruq yozing..." style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); border-radius:12px; padding:8px 12px; color:#fff; font-size:0.85rem; outline:none;" onkeydown="if(event.key==='Enter') window.submitAiMessage()">
-            <button onclick="window.submitAiMessage()" style="background:#00d2ff; color:#000; border:none; padding:8px 14px; border-radius:12px; font-weight:800; font-size:0.85rem; cursor:pointer;">🚀</button>
+
+        <div id="bossMainSection" style="display:none; flex-direction:column; flex:1; overflow:hidden; background:rgba(15,15,15,0.95);">
+            <div id="bossChatHistory" style="flex:1; padding:15px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; font-size:0.85rem;">
+                <div style="background:rgba(255,255,255,0.05); border-radius:14px; padding:12px; color:rgba(255,255,255,0.6); text-align:center; font-size:0.8rem;">
+                    Rahbariyat bilan to'g'ridan-to'g'ri aloqa. Xabaringiz rahbarning Telegram botiga yuboriladi.
+                </div>
+            </div>
+            <div style="padding:15px; border-top:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); display:flex; gap:10px;">
+                <input type="text" id="bossInputText" placeholder="Rahbarga xabar yozing..." style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); border-radius:12px; padding:8px 12px; color:#fff; font-size:0.85rem; outline:none;" onkeydown="if(event.key==='Enter') window.submitBossMessage()">
+                <button onclick="window.submitBossMessage()" style="background:#28a745; color:#fff; border:none; padding:8px 14px; border-radius:12px; font-weight:800; font-size:0.85rem; cursor:pointer;">📨</button>
+            </div>
         </div>
     </div>
 
@@ -3756,6 +3775,47 @@
                 window.romixAiState.chatId = 'ombor_user';
             }
         }
+
+        window.bossChatInterval = null;
+        window.switchAiTab = function(tab) {
+            const aiSec = document.getElementById('aiMainSection');
+            const bossSec = document.getElementById('bossMainSection');
+            const tabAi = document.getElementById('tabAiBtn');
+            const tabBoss = document.getElementById('tabBossBtn');
+            
+            if (tab === 'ai') {
+                aiSec.style.display = 'flex';
+                bossSec.style.display = 'none';
+                tabAi.style.background = 'rgba(0,210,255,0.1)';
+                tabAi.style.color = '#00d2ff';
+                tabAi.style.borderBottom = '2px solid #00d2ff';
+                tabBoss.style.background = 'transparent';
+                tabBoss.style.color = 'rgba(255,255,255,0.5)';
+                tabBoss.style.borderBottom = '2px solid transparent';
+            } else {
+                aiSec.style.display = 'none';
+                bossSec.style.display = 'flex';
+                tabBoss.style.background = 'rgba(40,167,69,0.1)';
+                tabBoss.style.color = '#28a745';
+                tabBoss.style.borderBottom = '2px solid #28a745';
+                tabAi.style.background = 'transparent';
+                tabAi.style.color = 'rgba(255,255,255,0.5)';
+                tabAi.style.borderBottom = '2px solid transparent';
+                window.loadBossHistory();
+            }
+        };
+
+        window.toggleRomixAiDrawer = function() {
+            const drawer = document.getElementById('aiChatDrawer');
+            const isOpening = drawer.style.right === '-400px';
+            drawer.style.right = isOpening ? '0px' : '-400px';
+            
+            if (isOpening) {
+                window.bossChatInterval = setInterval(window.loadBossHistory, 3000);
+            } else {
+                if (window.bossChatInterval) clearInterval(window.bossChatInterval);
+            }
+        };
 
         document.querySelectorAll('.nav-link-item').forEach(link => {
             link.addEventListener('click', (e) => {
@@ -3865,6 +3925,81 @@
             }
             
             history.scrollTop = history.scrollHeight;
+        };
+
+        window._bossFirstLoad = true;
+        window.loadBossHistory = async function() {
+            if (document.getElementById('bossMainSection').style.display === 'none') return;
+            try {
+                const res = await fetch('/api/boss-chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'history' })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    window.renderBossHistory(data.data);
+                }
+            } catch(e) {}
+        };
+
+        window.renderBossHistory = function(history) {
+            const histDiv = document.getElementById('bossChatHistory');
+            const dept = window.romixAiState.activeTab;
+            
+            const filtered = history.filter(h => h.from === dept || h.to === dept || !h.to);
+            
+            let html = `<div style="background:rgba(255,255,255,0.05); border-radius:14px; padding:12px; color:rgba(255,255,255,0.6); text-align:center; font-size:0.8rem; margin-bottom:10px;">
+                            Rahbariyat bilan to'g'ridan-to'g'ri aloqa. Xabaringiz rahbarning Telegram botiga yuboriladi.
+                        </div>`;
+                        
+            for (const msg of filtered) {
+                const isMe = msg.from === dept;
+                if (isMe) {
+                    html += `<div style="background:rgba(40,167,69,0.15); border:1px solid rgba(40,167,69,0.3); border-radius:14px; padding:10px 14px; color:#fff; align-self:flex-end; max-width:85%; font-weight:600; line-height:1.4;">
+                        <div style="font-size:0.7rem; color:#28a745; margin-bottom:4px;">Siz</div>
+                        ${msg.text}
+                    </div>`;
+                } else {
+                    html += `<div style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:14px; padding:10px 14px; color:#fff; align-self:flex-start; max-width:85%; line-height:1.4;">
+                        <div style="font-size:0.7rem; color:#00d2ff; margin-bottom:4px;">👨‍💼 Rahbar</div>
+                        ${msg.text}
+                    </div>`;
+                }
+            }
+            
+            const isNearBottom = histDiv.scrollHeight - histDiv.scrollTop <= histDiv.clientHeight + 50;
+            histDiv.innerHTML = html;
+            
+            if (isNearBottom || window._bossFirstLoad) {
+                histDiv.scrollTop = histDiv.scrollHeight;
+                window._bossFirstLoad = false;
+            }
+        };
+
+        window.submitBossMessage = async function() {
+            const input = document.getElementById('bossInputText');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            input.value = '';
+            const dept = window.romixAiState.activeTab;
+            
+            const histDiv = document.getElementById('bossChatHistory');
+            histDiv.innerHTML += `<div style="background:rgba(40,167,69,0.15); border:1px solid rgba(40,167,69,0.3); border-radius:14px; padding:10px 14px; color:#fff; align-self:flex-end; max-width:85%; font-weight:600; line-height:1.4; opacity:0.7;">
+                <div style="font-size:0.7rem; color:#28a745; margin-bottom:4px;">Siz</div>
+                ${text}
+            </div>`;
+            histDiv.scrollTop = histDiv.scrollHeight;
+            
+            try {
+                await fetch('/api/boss-chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'send', dept, text })
+                });
+                window.loadBossHistory();
+            } catch(e) {}
         };
     </script>
 </body>
