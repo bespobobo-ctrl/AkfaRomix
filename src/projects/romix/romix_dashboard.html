@@ -3674,6 +3674,7 @@
             </div>
             <button onclick="window.toggleRomixAiDrawer()" style="background:rgba(255,255,255,0.1); border:none; width:32px; height:32px; border-radius:50%; color:#fff; cursor:pointer; font-size:1.1rem; display:flex; align-items:center; justify-content:center;">✕</button>
         </div>
+        <div id="aiActionButtons" style="display:flex; gap:8px; overflow-x:auto; padding:10px 15px; border-bottom:1px solid rgba(255,255,255,0.05); flex-shrink:0; white-space:nowrap; -webkit-overflow-scrolling:touch;"></div>
         <div id="aiChatHistory" style="flex:1; padding:15px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; font-size:0.85rem;">
             <div id="aiWelcomeBubble" style="background:rgba(0,210,255,0.08); border:1px solid rgba(0,210,255,0.25); border-radius:14px; padding:12px 14px; color:#fff; align-self:flex-start; max-width:88%; line-height:1.5;">
                 👋 Assalomu alaykum! Men Romix AI yordamchisiman.
@@ -3695,21 +3696,25 @@
             activeTab: 'dashboard'
         };
 
-        function updateAiForTab(tabName) {
+        window.updateAiForTab = function(tabName) {
             window.romixAiState.activeTab = tabName;
             const btn = document.getElementById('aiFloatingBtn');
             const label = document.getElementById('aiBtnLabel');
             const title = document.getElementById('aiDrawerTitle');
             const welcome = document.getElementById('aiWelcomeBubble');
+            const actions = document.getElementById('aiActionButtons');
             
             if (!btn) return;
             
-            if (tabName === 'dashboard' || tabName === 'logins') {
+            // Faqat tegishli sahifalarda ko'rsatish
+            if (['xodimlar','sotuv','ishlab_chiqarish','tayyor_mahsulot','buhgalter','buxgalter','ombor'].includes(tabName)) {
+                btn.style.display = 'flex';
+            } else {
                 btn.style.display = 'none';
                 return;
-            } else {
-                btn.style.display = 'flex';
             }
+
+            const btnStyle = "background:rgba(0,210,255,0.1); border:1px solid rgba(0,210,255,0.3); color:#00d2ff; padding:5px 12px; border-radius:10px; font-size:0.75rem; font-weight:700; cursor:pointer;";
 
             if (tabName === 'xodimlar') {
                 label.textContent = 'HR AI';
@@ -3717,6 +3722,7 @@
                 welcome.innerHTML = '👋 Assalomu alaykum! Men <strong>Romix HR AI</strong> yordamchisiman. Xodimlar va davomat bo\'yicha menga savol berishingiz mumkin!';
                 window.romixAiState.endpoint = '/api/unified-chat?dept=hr';
                 window.romixAiState.chatId = 'hr_user';
+                if(actions) actions.innerHTML = `<button onclick="window.sendAiQuickPrompt('Oylik fonni hisobla')" style="${btnStyle}">💰 Oylik fond</button> <button onclick="window.sendAiQuickPrompt('Davomat hisobotini ko\\'rsat')" style="${btnStyle}">📅 Davomat</button> <button onclick="window.sendAiQuickPrompt('Hamma xodimlar holatini tahlil qil')" style="${btnStyle}">📊 Tahlil</button>`;
             } 
             else if (tabName === 'sotuv') {
                 label.textContent = 'Sotuv AI';
@@ -3724,6 +3730,7 @@
                 welcome.innerHTML = '👋 Assalomu alaykum! Men <strong>Romix Sotuv AI</strong> yordamchisiman. Buyurtmalar va savdo bo\'yicha menga savol berishingiz mumkin!';
                 window.romixAiState.endpoint = '/api/unified-chat?dept=sotuv';
                 window.romixAiState.chatId = 'sotuv_user';
+                if(actions) actions.innerHTML = `<button onclick="window.sendAiQuickPrompt('Oxirgi buyurtmalar qanday?')" style="${btnStyle}">🛍 Oxirgi buyurtmalar</button> <button onclick="window.sendAiQuickPrompt('Qarzdor mijozlar kimlar?')" style="${btnStyle}">⚠️ Qarzdorlar</button> <button onclick="window.sendAiQuickPrompt('Top mijozlarni ko\\'rsat')" style="${btnStyle}">🏆 Top mijozlar</button>`;
             }
             else if (tabName === 'ishlab_chiqarish' || tabName === 'tayyor_mahsulot') {
                 label.textContent = 'Zavod AI';
@@ -3731,6 +3738,7 @@
                 welcome.innerHTML = '👋 Assalomu alaykum! Men <strong>Romix Zavod AI</strong> yordamchisiman. Ishlab chiqarish bo\'yicha menga savol berishingiz mumkin!';
                 window.romixAiState.endpoint = '/api/unified-chat?dept=ishlab';
                 window.romixAiState.chatId = 'zavod_user';
+                if(actions) actions.innerHTML = `<button onclick="window.sendAiQuickPrompt('Ishlab chiqarish holati qanday?')" style="${btnStyle}">⚙️ Holat</button> <button onclick="window.sendAiQuickPrompt('Brigadalar ro\\'yxatini ber')" style="${btnStyle}">👥 Brigadalar</button> <button onclick="window.sendAiQuickPrompt('Tayyor mahsulotlar qancha?')" style="${btnStyle}">📦 Tayyor mahsulot</button>`;
             }
             else if (tabName === 'buhgalter' || tabName === 'buxgalter') {
                 label.textContent = 'Buxgalter AI';
@@ -3738,6 +3746,7 @@
                 welcome.innerHTML = '👋 Assalomu alaykum! Men <strong>Romix Buxgalteriya AI</strong> yordamchisiman. Moliya va xarajatlar bo\'yicha yordam beraman!';
                 window.romixAiState.endpoint = '/api/unified-chat?dept=buxgalter';
                 window.romixAiState.chatId = 'buxgalter_user';
+                if(actions) actions.innerHTML = `<button onclick="window.sendAiQuickPrompt('Moliya holatini tahlil qilib grafik chiz')" style="${btnStyle}">📊 Moliya tahlili</button> <button onclick="window.sendAiQuickPrompt('Xarajatlar qanday?')" style="${btnStyle}">💸 Xarajatlar</button> <button onclick="window.sendAiQuickPrompt('Anomaliyalar bormi?')" style="${btnStyle}">🚨 Anomaliyalar</button>`;
             }
             else if (tabName === 'ombor') {
                 label.textContent = 'Ombor AI';
@@ -3771,6 +3780,14 @@
             const drawer = document.getElementById('aiChatDrawer');
             if (!drawer) return;
             drawer.style.right = (drawer.style.right === '0px') ? '-400px' : '0px';
+        };
+
+        window.sendAiQuickPrompt = function(txt) {
+            const input = document.getElementById('aiInputText');
+            if(input) {
+                input.value = txt;
+                window.submitAiMessage();
+            }
         };
 
         window.submitAiMessage = async function() {
