@@ -3681,7 +3681,7 @@
 
     <!-- Scripts -->
     <script>
-        const u = JSON.parse(localStorage.getItem('currentUser') || 'null');
+        const aiUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
         
         window.romixAiState = {
             endpoint: '/api/hr-ai-chat',
@@ -3750,9 +3750,9 @@
         });
 
         setTimeout(() => {
-            if (u && u.role === 'buxgalter') {
+            if (aiUser && aiUser.role === 'buxgalter') {
                 updateAiForTab('buhgalter');
-            } else if (u && u.role === 'admin') {
+            } else if (aiUser && aiUser.role === 'admin') {
                 const activeTab = document.querySelector('.nav-link-item.active');
                 if (activeTab) updateAiForTab(activeTab.getAttribute('data-tab'));
                 else updateAiForTab('dashboard');
