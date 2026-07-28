@@ -1878,100 +1878,6 @@
 
 <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 
-    <!-- ============ Buxgalteriya AI Assistant (Faqat Buxgalter uchun) ============ -->
-    <div id="aiFloatingBtn" onclick="window.toggleRomixAiDrawer()" style="display:none; position:fixed; bottom:30px; right:30px; width:65px; height:65px; background:linear-gradient(135deg, #00d2ff, #3a7bd5); border-radius:50%; box-shadow:0 10px 30px rgba(0,210,255,0.4); align-items:center; justify-content:center; font-size:2rem; cursor:pointer; z-index:9000; transition:all 0.3s ease;" onmouseover="this.style.transform='scale(1.1) rotate(10deg)'" onmouseout="this.style.transform='scale(1) rotate(0deg)'" title="Romix AI Yordamchi">
-        🤖
-        <span style="position:absolute; top:-10px; right:-10px; background:#ff4d4f; color:#fff; font-size:0.7rem; font-weight:800; padding:4px 8px; border-radius:20px; border:2px solid #111;">Buxgalter AI</span>
-    </div>
-    <div id="aiChatDrawer" style="position:fixed; top:0; right:-400px; width:380px; height:100vh; background:rgba(15,15,15,0.95); backdrop-filter:blur(20px); border-left:1px solid rgba(255,255,255,0.1); z-index:9999; transition:right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display:flex; flex-direction:column; box-shadow:-10px 0 40px rgba(0,0,0,0.5);">
-        <div style="padding:20px; border-bottom:1px solid rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:space-between; background:rgba(0,210,255,0.05);">
-            <div style="display:flex; align-items:center; gap:12px;">
-                <div style="width:40px; height:40px; background:linear-gradient(135deg, #00d2ff, #3a7bd5); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.2rem; box-shadow:0 0 15px rgba(0,210,255,0.3);">🤖</div>
-                <div>
-                    <span style="font-weight:800; color:#fff; font-size:0.95rem; display:block;">Buxgalteriya AI</span>
-                    <span style="font-size:0.75rem; color:#00ff88; font-weight:600; display:flex; align-items:center; gap:4px;"><span style="display:inline-block; width:6px; height:6px; background:#00ff88; border-radius:50%; box-shadow:0 0 8px #00ff88;"></span>Online</span>
-                </div>
-            </div>
-            <button onclick="window.toggleRomixAiDrawer()" style="background:rgba(255,255,255,0.1); border:none; width:32px; height:32px; border-radius:50%; color:#fff; cursor:pointer; font-size:1.1rem; display:flex; align-items:center; justify-content:center;">✕</button>
-        </div>
-        <div id="aiChatHistory" style="flex:1; padding:15px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; font-size:0.85rem;">
-            <div style="background:rgba(0,210,255,0.08); border:1px solid rgba(0,210,255,0.25); border-radius:14px; padding:12px 14px; color:#fff; align-self:flex-start; max-width:88%; line-height:1.5;">
-                👋 Assalomu alaykum! Men <strong>Romix Buxgalteriya AI</strong> yordamchisiman. Moliya va xarajatlar bo'yicha yordam beraman!
-            </div>
-        </div>
-        <div style="padding:15px; border-top:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); display:flex; gap:10px;">
-            <input type="text" id="aiInputText" placeholder="Savol yoki buyruq yozing..." style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); border-radius:12px; padding:8px 12px; color:#fff; font-size:0.85rem; outline:none;" onkeydown="if(event.key==='Enter') window.submitAiMessage('/api/buxgalter-ai-chat', 'buxgalter_user')">
-            <button onclick="window.submitAiMessage('/api/buxgalter-ai-chat', 'buxgalter_user')" style="background:#00d2ff; color:#000; border:none; padding:8px 14px; border-radius:12px; font-weight:800; font-size:0.85rem; cursor:pointer;">🚀</button>
-        </div>
-    </div>
-
-    <!-- Scripts -->
-    <script>
-        const u = JSON.parse(localStorage.getItem('currentUser') || 'null');
-        if (u && u.role === 'buxgalter') {
-            const btn = document.getElementById('aiFloatingBtn');
-            if (btn) btn.style.display = 'flex';
-        }
-
-        // 🤖 ROMIX AI ASSISTANT ENGINE
-        window.toggleRomixAiDrawer = function() {
-            const drawer = document.getElementById('aiChatDrawer');
-            if (!drawer) return;
-            drawer.style.right = (drawer.style.right === '0px') ? '-400px' : '0px';
-        };
-
-        window.submitAiMessage = async function(endpoint, chatId) {
-            const input = document.getElementById('aiInputText');
-            const history = document.getElementById('aiChatHistory');
-            if (!input || !history) return;
-
-            const text = input.value.trim();
-            if (!text) return;
-
-            const userBubble = document.createElement('div');
-            userBubble.style.cssText = 'background:rgba(0,210,255,0.18); border:1px solid rgba(0,210,255,0.3); border-radius:14px; padding:10px 14px; color:#fff; align-self:flex-end; max-width:85%; font-weight:600; line-height:1.4;';
-            userBubble.textContent = text;
-            history.appendChild(userBubble);
-            input.value = '';
-
-            const typingBubble = document.createElement('div');
-            typingBubble.id = 'aiTypingBubble';
-            typingBubble.style.cssText = 'background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:14px; padding:10px 14px; color:rgba(255,255,255,0.6); align-self:flex-start; font-size:0.8rem; font-style:italic;';
-            typingBubble.textContent = "🤖 Romix AI o'ylamoqda...";
-            history.appendChild(typingBubble);
-            history.scrollTop = history.scrollHeight;
-
-            let responseHtml = "⚠️ Xatolik yuz berdi.";
-            try {
-                const res = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'chat', text, chatId })
-                });
-                const data = await res.json();
-                if (data.ok && data.text) {
-                    let txt = data.text;
-                    txt = txt.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                    txt = txt.replace(/\*(.*?)\*/g, '<em>$1</em>');
-                    txt = txt.replace(/\n/g, '<br>');
-                    responseHtml = txt;
-                } else if (data.error) {
-                    responseHtml = "⚠️ Xato: " + data.error;
-                }
-            } catch (e) {
-                responseHtml = "⚠️ Tarmoq xatosi yoki serverga ulanib bo'lmadi.";
-            }
-
-            const typing = document.getElementById('aiTypingBubble');
-            if (typing) typing.remove();
-
-            const aiBubble = document.createElement('div');
-            aiBubble.style.cssText = 'background:rgba(0,210,255,0.08); border:1px solid rgba(0,210,255,0.25); border-radius:14px; padding:12px 14px; color:#fff; align-self:flex-start; max-width:88%; line-height:1.5; font-size:0.85rem;';
-            aiBubble.innerHTML = responseHtml;
-            history.appendChild(aiBubble);
-            history.scrollTop = history.scrollHeight;
-        };
-    </script>
     <script src="tizim_foydalanuvchilari.js" type="module"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Premium Buhgalter: trend grafiklari -->
@@ -3219,7 +3125,102 @@
 
                             <hr style="margin-top:40px; border:none; border-top:1px solid #ddd;">
                             <p style="font-size:11px; color:#999; text-align:center;">AKFA Control Systems | Avtomatik hisobot | ${new Date().toLocaleString()}</p>
-                        </body></html>
+                        
+    <!-- ============ Buxgalteriya AI Assistant (Faqat Buxgalter uchun) ============ -->
+    <div id="aiFloatingBtn" onclick="window.toggleRomixAiDrawer()" style="display:none; position:fixed; bottom:30px; right:30px; width:65px; height:65px; background:linear-gradient(135deg, #00d2ff, #3a7bd5); border-radius:50%; box-shadow:0 10px 30px rgba(0,210,255,0.4); align-items:center; justify-content:center; font-size:2rem; cursor:pointer; z-index:9000; transition:all 0.3s ease;" onmouseover="this.style.transform='scale(1.1) rotate(10deg)'" onmouseout="this.style.transform='scale(1) rotate(0deg)'" title="Romix AI Yordamchi">
+        🤖
+        <span style="position:absolute; top:-10px; right:-10px; background:#ff4d4f; color:#fff; font-size:0.7rem; font-weight:800; padding:4px 8px; border-radius:20px; border:2px solid #111;">Buxgalter AI</span>
+    </div>
+    <div id="aiChatDrawer" style="position:fixed; top:0; right:-400px; width:380px; height:100vh; background:rgba(15,15,15,0.95); backdrop-filter:blur(20px); border-left:1px solid rgba(255,255,255,0.1); z-index:9999; transition:right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display:flex; flex-direction:column; box-shadow:-10px 0 40px rgba(0,0,0,0.5);">
+        <div style="padding:20px; border-bottom:1px solid rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:space-between; background:rgba(0,210,255,0.05);">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div style="width:40px; height:40px; background:linear-gradient(135deg, #00d2ff, #3a7bd5); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.2rem; box-shadow:0 0 15px rgba(0,210,255,0.3);">🤖</div>
+                <div>
+                    <span style="font-weight:800; color:#fff; font-size:0.95rem; display:block;">Buxgalteriya AI</span>
+                    <span style="font-size:0.75rem; color:#00ff88; font-weight:600; display:flex; align-items:center; gap:4px;"><span style="display:inline-block; width:6px; height:6px; background:#00ff88; border-radius:50%; box-shadow:0 0 8px #00ff88;"></span>Online</span>
+                </div>
+            </div>
+            <button onclick="window.toggleRomixAiDrawer()" style="background:rgba(255,255,255,0.1); border:none; width:32px; height:32px; border-radius:50%; color:#fff; cursor:pointer; font-size:1.1rem; display:flex; align-items:center; justify-content:center;">✕</button>
+        </div>
+        <div id="aiChatHistory" style="flex:1; padding:15px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; font-size:0.85rem;">
+            <div style="background:rgba(0,210,255,0.08); border:1px solid rgba(0,210,255,0.25); border-radius:14px; padding:12px 14px; color:#fff; align-self:flex-start; max-width:88%; line-height:1.5;">
+                👋 Assalomu alaykum! Men <strong>Romix Buxgalteriya AI</strong> yordamchisiman. Moliya va xarajatlar bo'yicha yordam beraman!
+            </div>
+        </div>
+        <div style="padding:15px; border-top:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); display:flex; gap:10px;">
+            <input type="text" id="aiInputText" placeholder="Savol yoki buyruq yozing..." style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); border-radius:12px; padding:8px 12px; color:#fff; font-size:0.85rem; outline:none;" onkeydown="if(event.key==='Enter') window.submitAiMessage('/api/buxgalter-ai-chat', 'buxgalter_user')">
+            <button onclick="window.submitAiMessage('/api/buxgalter-ai-chat', 'buxgalter_user')" style="background:#00d2ff; color:#000; border:none; padding:8px 14px; border-radius:12px; font-weight:800; font-size:0.85rem; cursor:pointer;">🚀</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        const u = JSON.parse(localStorage.getItem('currentUser') || 'null');
+        if (u && u.role === 'buxgalter') {
+            const btn = document.getElementById('aiFloatingBtn');
+            if (btn) btn.style.display = 'flex';
+        }
+
+        // 🤖 ROMIX AI ASSISTANT ENGINE
+        window.toggleRomixAiDrawer = function() {
+            const drawer = document.getElementById('aiChatDrawer');
+            if (!drawer) return;
+            drawer.style.right = (drawer.style.right === '0px') ? '-400px' : '0px';
+        };
+
+        window.submitAiMessage = async function(endpoint, chatId) {
+            const input = document.getElementById('aiInputText');
+            const history = document.getElementById('aiChatHistory');
+            if (!input || !history) return;
+
+            const text = input.value.trim();
+            if (!text) return;
+
+            const userBubble = document.createElement('div');
+            userBubble.style.cssText = 'background:rgba(0,210,255,0.18); border:1px solid rgba(0,210,255,0.3); border-radius:14px; padding:10px 14px; color:#fff; align-self:flex-end; max-width:85%; font-weight:600; line-height:1.4;';
+            userBubble.textContent = text;
+            history.appendChild(userBubble);
+            input.value = '';
+
+            const typingBubble = document.createElement('div');
+            typingBubble.id = 'aiTypingBubble';
+            typingBubble.style.cssText = 'background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:14px; padding:10px 14px; color:rgba(255,255,255,0.6); align-self:flex-start; font-size:0.8rem; font-style:italic;';
+            typingBubble.textContent = "🤖 Romix AI o'ylamoqda...";
+            history.appendChild(typingBubble);
+            history.scrollTop = history.scrollHeight;
+
+            let responseHtml = "⚠️ Xatolik yuz berdi.";
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'chat', text, chatId })
+                });
+                const data = await res.json();
+                if (data.ok && data.text) {
+                    let txt = data.text;
+                    txt = txt.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    txt = txt.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                    txt = txt.replace(/\n/g, '<br>');
+                    responseHtml = txt;
+                } else if (data.error) {
+                    responseHtml = "⚠️ Xato: " + data.error;
+                }
+            } catch (e) {
+                responseHtml = "⚠️ Tarmoq xatosi yoki serverga ulanib bo'lmadi.";
+            }
+
+            const typing = document.getElementById('aiTypingBubble');
+            if (typing) typing.remove();
+
+            const aiBubble = document.createElement('div');
+            aiBubble.style.cssText = 'background:rgba(0,210,255,0.08); border:1px solid rgba(0,210,255,0.25); border-radius:14px; padding:12px 14px; color:#fff; align-self:flex-start; max-width:88%; line-height:1.5; font-size:0.85rem;';
+            aiBubble.innerHTML = responseHtml;
+            history.appendChild(aiBubble);
+            history.scrollTop = history.scrollHeight;
+        };
+    </script>
+</body></html>
                     `;
 
                     const blob = new Blob(['\ufeff' + htmlContent], { type: 'application/msword' });
@@ -3740,5 +3741,100 @@
             </div>
         </div>
     </div>
+
+    <!-- ============ Buxgalteriya AI Assistant (Faqat Buxgalter uchun) ============ -->
+    <div id="aiFloatingBtn" onclick="window.toggleRomixAiDrawer()" style="display:none; position:fixed; bottom:30px; right:30px; width:65px; height:65px; background:linear-gradient(135deg, #00d2ff, #3a7bd5); border-radius:50%; box-shadow:0 10px 30px rgba(0,210,255,0.4); align-items:center; justify-content:center; font-size:2rem; cursor:pointer; z-index:9000; transition:all 0.3s ease;" onmouseover="this.style.transform='scale(1.1) rotate(10deg)'" onmouseout="this.style.transform='scale(1) rotate(0deg)'" title="Romix AI Yordamchi">
+        🤖
+        <span style="position:absolute; top:-10px; right:-10px; background:#ff4d4f; color:#fff; font-size:0.7rem; font-weight:800; padding:4px 8px; border-radius:20px; border:2px solid #111;">Buxgalter AI</span>
+    </div>
+    <div id="aiChatDrawer" style="position:fixed; top:0; right:-400px; width:380px; height:100vh; background:rgba(15,15,15,0.95); backdrop-filter:blur(20px); border-left:1px solid rgba(255,255,255,0.1); z-index:9999; transition:right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display:flex; flex-direction:column; box-shadow:-10px 0 40px rgba(0,0,0,0.5);">
+        <div style="padding:20px; border-bottom:1px solid rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:space-between; background:rgba(0,210,255,0.05);">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div style="width:40px; height:40px; background:linear-gradient(135deg, #00d2ff, #3a7bd5); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.2rem; box-shadow:0 0 15px rgba(0,210,255,0.3);">🤖</div>
+                <div>
+                    <span style="font-weight:800; color:#fff; font-size:0.95rem; display:block;">Buxgalteriya AI</span>
+                    <span style="font-size:0.75rem; color:#00ff88; font-weight:600; display:flex; align-items:center; gap:4px;"><span style="display:inline-block; width:6px; height:6px; background:#00ff88; border-radius:50%; box-shadow:0 0 8px #00ff88;"></span>Online</span>
+                </div>
+            </div>
+            <button onclick="window.toggleRomixAiDrawer()" style="background:rgba(255,255,255,0.1); border:none; width:32px; height:32px; border-radius:50%; color:#fff; cursor:pointer; font-size:1.1rem; display:flex; align-items:center; justify-content:center;">✕</button>
+        </div>
+        <div id="aiChatHistory" style="flex:1; padding:15px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; font-size:0.85rem;">
+            <div style="background:rgba(0,210,255,0.08); border:1px solid rgba(0,210,255,0.25); border-radius:14px; padding:12px 14px; color:#fff; align-self:flex-start; max-width:88%; line-height:1.5;">
+                👋 Assalomu alaykum! Men <strong>Romix Buxgalteriya AI</strong> yordamchisiman. Moliya va xarajatlar bo'yicha yordam beraman!
+            </div>
+        </div>
+        <div style="padding:15px; border-top:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); display:flex; gap:10px;">
+            <input type="text" id="aiInputText" placeholder="Savol yoki buyruq yozing..." style="flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.15); border-radius:12px; padding:8px 12px; color:#fff; font-size:0.85rem; outline:none;" onkeydown="if(event.key==='Enter') window.submitAiMessage('/api/buxgalter-ai-chat', 'buxgalter_user')">
+            <button onclick="window.submitAiMessage('/api/buxgalter-ai-chat', 'buxgalter_user')" style="background:#00d2ff; color:#000; border:none; padding:8px 14px; border-radius:12px; font-weight:800; font-size:0.85rem; cursor:pointer;">🚀</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        const u = JSON.parse(localStorage.getItem('currentUser') || 'null');
+        if (u && u.role === 'buxgalter') {
+            const btn = document.getElementById('aiFloatingBtn');
+            if (btn) btn.style.display = 'flex';
+        }
+
+        // 🤖 ROMIX AI ASSISTANT ENGINE
+        window.toggleRomixAiDrawer = function() {
+            const drawer = document.getElementById('aiChatDrawer');
+            if (!drawer) return;
+            drawer.style.right = (drawer.style.right === '0px') ? '-400px' : '0px';
+        };
+
+        window.submitAiMessage = async function(endpoint, chatId) {
+            const input = document.getElementById('aiInputText');
+            const history = document.getElementById('aiChatHistory');
+            if (!input || !history) return;
+
+            const text = input.value.trim();
+            if (!text) return;
+
+            const userBubble = document.createElement('div');
+            userBubble.style.cssText = 'background:rgba(0,210,255,0.18); border:1px solid rgba(0,210,255,0.3); border-radius:14px; padding:10px 14px; color:#fff; align-self:flex-end; max-width:85%; font-weight:600; line-height:1.4;';
+            userBubble.textContent = text;
+            history.appendChild(userBubble);
+            input.value = '';
+
+            const typingBubble = document.createElement('div');
+            typingBubble.id = 'aiTypingBubble';
+            typingBubble.style.cssText = 'background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:14px; padding:10px 14px; color:rgba(255,255,255,0.6); align-self:flex-start; font-size:0.8rem; font-style:italic;';
+            typingBubble.textContent = "🤖 Romix AI o'ylamoqda...";
+            history.appendChild(typingBubble);
+            history.scrollTop = history.scrollHeight;
+
+            let responseHtml = "⚠️ Xatolik yuz berdi.";
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'chat', text, chatId })
+                });
+                const data = await res.json();
+                if (data.ok && data.text) {
+                    let txt = data.text;
+                    txt = txt.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    txt = txt.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                    txt = txt.replace(/\n/g, '<br>');
+                    responseHtml = txt;
+                } else if (data.error) {
+                    responseHtml = "⚠️ Xato: " + data.error;
+                }
+            } catch (e) {
+                responseHtml = "⚠️ Tarmoq xatosi yoki serverga ulanib bo'lmadi.";
+            }
+
+            const typing = document.getElementById('aiTypingBubble');
+            if (typing) typing.remove();
+
+            const aiBubble = document.createElement('div');
+            aiBubble.style.cssText = 'background:rgba(0,210,255,0.08); border:1px solid rgba(0,210,255,0.25); border-radius:14px; padding:12px 14px; color:#fff; align-self:flex-start; max-width:88%; line-height:1.5; font-size:0.85rem;';
+            aiBubble.innerHTML = responseHtml;
+            history.appendChild(aiBubble);
+            history.scrollTop = history.scrollHeight;
+        };
+    </script>
 </body>
 </html>
