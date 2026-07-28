@@ -618,17 +618,19 @@ export async function mahsulotTarixi(query) {
     return { mahsulot: p.product_name, qoldiq: p.stock_quantity, tarix };
 }
 
-// ── Murojaat yaratish (faqat Ombor AI uchun) ──
+// ── Murojaat yaratish (Barcha AI lar uchun) ──
 export async function insertMurojaat(data) {
+    const senderName = data.yuboruvchi || "AI Yordamchi";
+    const employeeId = senderName.toLowerCase().replace(/\s+/g, '-');
     const rec = {
-        employee_id: "ombor-ai",
+        employee_id: employeeId,
         requested_data: {
             id: 'req-' + Date.now(),
             type: data.turi || "AI Murojaat",
             priority: data.muhimligi || "medium",
             title: data.sarlavha || "Noma'lum murojaat",
             description: data.izoh || "",
-            sender: "Ombor AI",
+            sender: senderName,
             status: "pending",
             created_at: new Date().toISOString()
         },

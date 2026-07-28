@@ -40,7 +40,7 @@ async function execOmborTool(name, args, chatId) {
         case "mahsulot_tarixi":
             return await db.mahsulotTarixi(args.qidiruv);
         case "murojaat_qoldirish":
-            return await db.insertMurojaat(args);
+            return await db.insertMurojaat({ ...args, yuboruvchi: "Ombor AI" });
         case "reja_saqlash":
             await stSet("ombor_plan_" + chatId, args.reja_matni);
             return { natija: "Reja muvaffaqiyatli saqlandi." };

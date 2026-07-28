@@ -1283,7 +1283,67 @@
 
         </div>
     </div>
+    
+    <script>
+        // 🤖 ROMIX AI ASSISTANT ENGINE
+        window.toggleRomixAiDrawer = function() {
+            const drawer = document.getElementById('aiChatDrawer');
+            if (!drawer) return;
+            drawer.style.right = (drawer.style.right === '0px') ? '-400px' : '0px';
+        };
 
+        window.submitAiMessage = async function(endpoint, chatId) {
+            const input = document.getElementById('aiInputText');
+            const history = document.getElementById('aiChatHistory');
+            if (!input || !history) return;
+
+            const text = input.value.trim();
+            if (!text) return;
+
+            const userBubble = document.createElement('div');
+            userBubble.style.cssText = 'background:rgba(0,210,255,0.18); border:1px solid rgba(0,210,255,0.3); border-radius:14px; padding:10px 14px; color:#fff; align-self:flex-end; max-width:85%; font-weight:600; line-height:1.4;';
+            userBubble.textContent = text;
+            history.appendChild(userBubble);
+            input.value = '';
+
+            const typingBubble = document.createElement('div');
+            typingBubble.id = 'aiTypingBubble';
+            typingBubble.style.cssText = 'background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:14px; padding:10px 14px; color:rgba(255,255,255,0.6); align-self:flex-start; font-size:0.8rem; font-style:italic;';
+            typingBubble.textContent = "🤖 Romix AI o'ylamoqda...";
+            history.appendChild(typingBubble);
+            history.scrollTop = history.scrollHeight;
+
+            let responseHtml = "⚠️ Xatolik yuz berdi.";
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'chat', text, chatId })
+                });
+                const data = await res.json();
+                if (data.ok && data.text) {
+                    let txt = data.text;
+                    txt = txt.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    txt = txt.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                    txt = txt.replace(/\n/g, '<br>');
+                    responseHtml = txt;
+                } else if (data.error) {
+                    responseHtml = "⚠️ Xato: " + data.error;
+                }
+            } catch (e) {
+                responseHtml = "⚠️ Tarmoq xatosi yoki serverga ulanib bo'lmadi.";
+            }
+
+            const typing = document.getElementById('aiTypingBubble');
+            if (typing) typing.remove();
+
+            const aiBubble = document.createElement('div');
+            aiBubble.style.cssText = 'background:rgba(0,210,255,0.08); border:1px solid rgba(0,210,255,0.25); border-radius:14px; padding:12px 14px; color:#fff; align-self:flex-start; max-width:88%; line-height:1.5; font-size:0.85rem;';
+            aiBubble.innerHTML = responseHtml;
+            history.appendChild(aiBubble);
+            history.scrollTop = history.scrollHeight;
+        };
+    </script>
     <script type="module" src="/src/projects/romix/xodimlar/hr.js"></script>
 
     <!-- 📊 PREMIUM KITCHEN REPORT MODAL -->
