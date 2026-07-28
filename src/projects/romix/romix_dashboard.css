@@ -1045,7 +1045,7 @@
 
 /* --- blok 2 --- */
 body.buxgalter-only-view .sidebar-slim .nav-icon[data-section] { display: none !important; }
-        body.buxgalter-only-view .nav-link-item[data-tab]:not([data-tab="buhgalter"]) { display: none !important; }
+        body.buxgalter-only-view .executive-tabs { display: none !important; }
         body.buxgalter-only-view .admin-section:not(#section-buhgalter) { display: none !important; }
         body.buxgalter-only-view #section-buhgalter.admin-section { display: block !important; }
 
