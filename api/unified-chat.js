@@ -5,8 +5,20 @@ const ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON
 // Romix Kotibasi (desktop) shu orqali "xodimlar bo'limlarda AI'dan nima so'rashyapti"
 // deb hisobot bera oladi. Best-effort: log yozilmasa ham haqiqiy javob foydalanuvchiga
 // to'siqsiz yetib boradi (await qilinadi, lekin xatosi javobni to'xtatmaydi).
-async function logAiQuery(dept, body, payload) {
+function parseBody(raw) {
+    // Bo'lim handlerlari (masalan _ombor-ai-chat.js) req.body ba'zan xom JSON-string
+    // bo'lib kelishini kutib, o'zi parse qiladi — shu bir xil himoya shu yerda ham kerak,
+    // aks holda body xom string bo'lib qolsa, loglash sezilmasdan ishlamay qoladi.
+    try {
+        return typeof raw === 'string' ? JSON.parse(raw) : (raw || {});
+    } catch (e) {
+        return {};
+    }
+}
+
+async function logAiQuery(dept, rawBody, payload) {
     if (!SUPABASE_URL || !ANON_KEY) return;
+    const body = parseBody(rawBody);
     if (!body || body.action !== 'chat' || !body.text) return;
     try {
         await fetch(`${SUPABASE_URL}/rest/v1/ai_query_log`, {
