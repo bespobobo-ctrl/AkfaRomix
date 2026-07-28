@@ -3709,35 +3709,35 @@
                 label.textContent = 'HR AI';
                 title.textContent = 'HR AI Asistenti';
                 welcome.innerHTML = '👋 Assalomu alaykum! Men <strong>Romix HR AI</strong> yordamchisiman. Xodimlar va davomat bo\'yicha menga savol berishingiz mumkin!';
-                window.romixAiState.endpoint = '/api/hr-ai-chat';
+                window.romixAiState.endpoint = '/api/unified-chat?dept=hr';
                 window.romixAiState.chatId = 'hr_user';
             } 
             else if (tabName === 'sotuv') {
                 label.textContent = 'Sotuv AI';
                 title.textContent = 'Sotuv AI Asistenti';
                 welcome.innerHTML = '👋 Assalomu alaykum! Men <strong>Romix Sotuv AI</strong> yordamchisiman. Buyurtmalar va savdo bo\'yicha menga savol berishingiz mumkin!';
-                window.romixAiState.endpoint = '/api/sotuv-ai-chat';
+                window.romixAiState.endpoint = '/api/unified-chat?dept=sotuv';
                 window.romixAiState.chatId = 'sotuv_user';
             }
             else if (tabName === 'ishlab_chiqarish' || tabName === 'tayyor_mahsulot') {
                 label.textContent = 'Zavod AI';
                 title.textContent = 'Ishlab Chiqarish AI';
                 welcome.innerHTML = '👋 Assalomu alaykum! Men <strong>Romix Zavod AI</strong> yordamchisiman. Ishlab chiqarish bo\'yicha menga savol berishingiz mumkin!';
-                window.romixAiState.endpoint = '/api/ishlab-chiqarish-ai-chat';
+                window.romixAiState.endpoint = '/api/unified-chat?dept=ishlab';
                 window.romixAiState.chatId = 'zavod_user';
             }
             else if (tabName === 'buhgalter' || tabName === 'buxgalter') {
                 label.textContent = 'Buxgalter AI';
                 title.textContent = 'Buxgalteriya AI';
                 welcome.innerHTML = '👋 Assalomu alaykum! Men <strong>Romix Buxgalteriya AI</strong> yordamchisiman. Moliya va xarajatlar bo\'yicha yordam beraman!';
-                window.romixAiState.endpoint = '/api/buxgalter-ai-chat';
+                window.romixAiState.endpoint = '/api/unified-chat?dept=buxgalter';
                 window.romixAiState.chatId = 'buxgalter_user';
             }
             else if (tabName === 'ombor') {
                 label.textContent = 'Ombor AI';
                 title.textContent = 'Ombor AI Asistenti';
                 welcome.innerHTML = '👋 Assalomu alaykum! Men <strong>Romix Ombor AI</strong> yordamchisiman. Ombor va qoldiqlar haqida so\'rang!';
-                window.romixAiState.endpoint = '/api/ombor-ai-chat';
+                window.romixAiState.endpoint = '/api/unified-chat?dept=ombor';
                 window.romixAiState.chatId = 'ombor_user';
             }
         }
