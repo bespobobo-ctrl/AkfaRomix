@@ -545,7 +545,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const h = hMM / 1000; // metrga aylantirish (hisob uchun)
             const w = wMM / 1000;
             const qty = parseInt(document.getElementById('itemQty').value) || 1;
-
             if (qty <= 0) return alert('Miqdorni to\'g\'ri kiriting!');
 
             let sizeText = '';
@@ -556,7 +555,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (type === 'rom' || type === 'rom_fortochka' || type === 'eshik') {
                 if (hMM <= 0 || wMM <= 0) return alert('Eni va bo\'yini kiriting!');
                 sizeText = `${wMM} x ${hMM} mm`;
-                calcVal = h * w * qty; // total area in sq.m
+                
+                const vDiv = parseInt(document.getElementById('itemVDiv')?.value) || 0;
+                const hDiv = parseInt(document.getElementById('itemHDiv')?.value) || 0;
+                const perimeter = 2 * (h + w);
+                const impostLen = (vDiv * h) + (hDiv * w);
+                const perUnitMeters = (perimeter + impostLen) * 1.10; // 10% zaxira
+                
+                calcVal = perUnitMeters * qty; // total linear meters
                 subtotal = (calcVal * itemPrice) + (PRODUCTION_COST * qty); // material cost + base assembly fee
             } else if (type === 'padakonnik') {
                 if (wMM <= 0) return alert('Uzunlikni kiriting!');
