@@ -1,24 +1,75 @@
 import { supabase } from '@/core/supabase.js';
 
+// ── Login/logout/onlayn kuzatuvi (user_sessions jadvali) ──
+// database/2026-07-28_ai_query_log_and_session_tracking.sql orqali qo'shiladi.
+// Migratsiya hali ishga tushirilmagan bo'lsa insert/update xato qaytaradi — bu funksiyalar
+// har doim try/catch bilan o'ralgan, shuning uchun login/logout ishlashiga ta'sir qilmaydi.
+const HEARTBEAT_INTERVAL_MS = 60_000;
+let heartbeatTimer = null;
+
+function stopHeartbeat() {
+    if (heartbeatTimer) clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+}
+
+function startHeartbeat(sessionId) {
+    stopHeartbeat();
+    heartbeatTimer = setInterval(async () => {
+        try {
+            await supabase.from('user_sessions').update({ last_seen: new Date().toISOString() }).eq('id', sessionId);
+        } catch (e) { /* tarmoq uzilishi — keyingi urinishda davom etadi */ }
+    }, HEARTBEAT_INTERVAL_MS);
+}
+
+// Har bir muvaffaqiyatli login uchun chaqiriladi (hardcoded operator loginlari ham,
+// chunki kundalik haqiqiy loginlarning aksariyati aynan shu tarmoqlardan o'tadi —
+// faqat Supabase system_users/employees orqali kirganlarni yozish user_sessions'ni
+// deyarli bo'sh qoldirar edi).
+async function logSession(userData) {
+    try {
+        const { data, error } = await supabase
+            .from('user_sessions')
+            .insert({ user_id: String(userData.id), user_name: userData.full_name || userData.username, user_role: userData.role })
+            .select('id')
+            .single();
+        if (error) throw error;
+        if (data && data.id) {
+            localStorage.setItem('currentSessionId', data.id);
+            startHeartbeat(data.id);
+        }
+    } catch (e) {
+        console.warn('Session log yozishda xato (loginga ta\'sir qilmaydi):', e);
+    }
+}
+
+// Sahifa yangilansa yoki yangi tab ochilsa login() qayta chaqirilmaydi — shuning uchun
+// sessiya allaqachon ochiq bo'lsa, modul yuklanganda heartbeatni qayta ishga tushiramiz.
+if (typeof localStorage !== 'undefined') {
+    const existingSessionId = localStorage.getItem('currentSessionId');
+    if (existingSessionId) startHeartbeat(existingSessionId);
+}
+
 export const authService = {
     async login(username, password) {
         // 0. Check Auto Clapak Manager (Hardcoded)
         if (username.toUpperCase().replace(/\s+/g, '') === 'AC1' && password === '123') {
             const userData = { id: 'AC1', username: 'AC1', role: 'ac_manager', full_name: 'Ishlab Chiqarish Boshlig\'i', password };
             localStorage.setItem('currentUser', JSON.stringify(userData));
+            await logSession(userData);
             return userData;
         }
 
         // 0.1 Check Stanok Operators
         if ((username === '7007' && password === '1234') || (username === '8008' && password === '1234')) {
-            const userData = { 
-                id: username, 
-                username: username, 
-                role: 'stanok', 
-                full_name: username === '7007' ? 'Jaloliddin R.' : 'Sardorbek M.' 
+            const userData = {
+                id: username,
+                username: username,
+                role: 'stanok',
+                full_name: username === '7007' ? 'Jaloliddin R.' : 'Sardorbek M.'
             };
             localStorage.setItem('currentUser', JSON.stringify(userData));
             localStorage.setItem('stanok_session', JSON.stringify({ id: username, name: userData.full_name }));
+            await logSession(userData);
             return userData;
         }
 
@@ -32,6 +83,7 @@ export const authService = {
             };
             localStorage.setItem('currentUser', JSON.stringify(userData));
             localStorage.setItem('kraska_session', JSON.stringify({ id: userData.id, username: username, role: 'kraska', name: userData.full_name }));
+            await logSession(userData);
             return userData;
         }
 
@@ -45,6 +97,7 @@ export const authService = {
             };
             localStorage.setItem('currentUser', JSON.stringify(userData));
             localStorage.setItem('qadoqlash_session', JSON.stringify({ id: 'Q1', username: 'Qadoqlovchi 1', role: 'qadoqlash', name: 'Qadoqlovchi 1' }));
+            await logSession(userData);
             return userData;
         }
 
@@ -68,6 +121,7 @@ export const authService = {
                 password
             };
             localStorage.setItem('currentUser', JSON.stringify(userData));
+            await logSession(userData);
             return userData;
         }
 
@@ -86,6 +140,7 @@ export const authService = {
                 password: effectivePassword
             };
             localStorage.setItem('currentUser', JSON.stringify(userData));
+            await logSession(userData);
             return userData;
         }
 
@@ -109,6 +164,7 @@ export const authService = {
                     password
                 };
                 localStorage.setItem('currentUser', JSON.stringify(userData));
+                await logSession(userData);
                 return userData;
             }
         } catch (dbError) {
@@ -135,6 +191,7 @@ export const authService = {
                     password: effectivePassword
                 };
                 localStorage.setItem('currentUser', JSON.stringify(userData));
+                await logSession(userData);
                 return userData;
             }
         } catch (dbError) {
@@ -145,7 +202,15 @@ export const authService = {
     },
 
     logout() {
+        const sessionId = localStorage.getItem('currentSessionId');
+        if (sessionId) {
+            const now = new Date().toISOString();
+            supabase.from('user_sessions').update({ logout_at: now, last_seen: now }).eq('id', sessionId)
+                .then(() => {}, (e) => console.warn('Logout log yozishda xato:', e));
+        }
+        stopHeartbeat();
         localStorage.removeItem('currentUser');
+        localStorage.removeItem('currentSessionId');
         window.location.href = '/index.html';
     },
 

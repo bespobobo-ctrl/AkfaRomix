@@ -669,11 +669,13 @@
             history.scrollTop = history.scrollHeight;
 
             let responseHtml = "⚠️ Xatolik yuz berdi.";
+            let currentUser = {};
+            try { currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}') || {}; } catch (e) {}
             try {
                 const res = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'chat', text, chatId })
+                    body: JSON.stringify({ action: 'chat', text, chatId, userId: currentUser.id, userName: currentUser.full_name || currentUser.username, userRole: currentUser.role })
                 });
                 const data = await res.json();
                 if (data.ok && data.text) {

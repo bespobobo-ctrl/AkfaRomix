@@ -4099,18 +4099,22 @@ window.submitAiMessage = async function() {
 
     let responseHtml = "⚠️ Xatolik yuz berdi.";
     try {
+        const user = authService.getCurrentUser() || {};
         const res = await fetch('/api/ombor-ai-chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'chat', text, chatId: 'ombor_user' })
+            // userId/userName/userRole — bo'lim AI'lari orqali qilingan suhbatlarni markazlashtirilgan
+            // ai_query_log jadvaliga yozish uchun (api/unified-chat.js orqali), chatId eski/ombor_user
+            // bilan orqaga moslik uchun saqlanadi.
+            body: JSON.stringify({ action: 'chat', text, chatId: 'ombor_user', userId: user.id, userName: user.full_name || user.username, userRole: user.role })
         });
         const data = await res.json();
         if (data.ok && data.text) {
             // Simple markdown parser
             let txt = data.text;
-            txt = txt.replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>');
-            txt = txt.replace(/\\*(.*?)\\*/g, '<em>$1</em>');
-            txt = txt.replace(/\\n/g, '<br>');
+            txt = txt.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            txt = txt.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            txt = txt.replace(/\n/g, '<br>');
             responseHtml = txt;
         } else if (data.error) {
             responseHtml = "⚠️ Xato: " + data.error;
@@ -4127,7 +4131,7 @@ window.submitAiMessage = async function() {
     aiBubble.innerHTML = responseHtml;
     history.appendChild(aiBubble);
     history.scrollTop = history.scrollHeight;
-    
+
     // Auto-refresh requests grid just in case a new request was added
     if (window.loadRequests) {
         window.loadRequests();
