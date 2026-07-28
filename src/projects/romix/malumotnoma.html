@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akfa Romix — To'liq Qo'llanma</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+        :root {
+            --brand-green: #007c52;
+            --brand-dark: #0a1628;
+            --accent-blue: #2196F3;
+            --accent-gold: #FFB300;
+            --accent-red: #EF4444;
+            --text-primary: #1a1a2e;
+            --text-secondary: #4a5568;
+            --bg-light: #f8fafc;
+            --border-color: #e2e8f0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--text-primary);
+            background: #fff;
+            line-height: 1.7;
+            font-size: 11pt;
+        }
+
+        /* ============ PRINT ============ */
+        @media print {
+            body { background: #fff; font-size: 10pt; }
+            .page { page-break-after: always; box-shadow: none !important; margin: 0 !important; padding: 50px 60px !important; border: none !important; max-width: 100% !important; }
+            .page:last-child { page-break-after: avoid; }
+            .no-print { display: none !important; }
+            .cover-page { padding: 0 !important; }
+        }
+
+        /* ============ PAGE ============ */
+        .page {
+            max-width: 210mm;
+            margin: 30px auto;
+            padding: 60px 70px;
+            background: #fff;
+            box-shadow: 0 4px 40px rgba(0,0,0,0.08);
+            border: 1px solid var(--border-color);
+            position: relative;
+            min-height: 280mm;
+        }
+
+        .page::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 6px; height: 100%;
+            background: linear-gradient(180deg, var(--brand-green), #00bfa5);
+            border-radius: 3px 0 0 3px;
+        }
+
+        /* ============ COVER ============ */
+        .cover-page {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            min-height: 280mm;
+        }
+        .cover-page::before { display: none; }
+
+        .cover-bg {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, var(--brand-dark) 0%, #162447 50%, var(--brand-green) 100%);
+            z-index: 0;
+        }
+        .cover-bg::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at 30% 50%, rgba(0,124,82,0.3) 0%, transparent 60%),
+                        radial-gradient(circle at 80% 30%, rgba(33,150,243,0.2) 0%, transparent 50%);
+        }
+
+        .cover-content {
+            position: relative;
+            z-index: 1;
+            color: #fff;
+        }
+
+        .cover-logo {
+            font-size: 64px;
+            font-weight: 900;
+            letter-spacing: -2px;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #fff 30%, #00e5a0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .cover-sub {
+            font-size: 18px;
+            font-weight: 300;
+            letter-spacing: 8px;
+            text-transform: uppercase;
+            opacity: 0.7;
+            margin-bottom: 50px;
+        }
+
+        .cover-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            line-height: 1.3;
+        }
+
+        .cover-desc {
+            font-size: 14px;
+            font-weight: 300;
+            max-width: 480px;
+            margin: 0 auto 50px;
+            opacity: 0.8;
+        }
+
+        .cover-meta {
+            font-size: 11px;
+            opacity: 0.5;
+            letter-spacing: 2px;
+        }
+
+        .cover-badge {
+            display: inline-block;
+            padding: 8px 28px;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 40px;
+        }
+
+        /* ============ HEADERS ============ */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--brand-green);
+            padding-bottom: 12px;
+            margin-bottom: 35px;
+        }
+        .page-header-logo {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--brand-green);
+            letter-spacing: -0.5px;
+        }
+        .page-header-section {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* ============ SECTION TITLES ============ */
+        .section-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px; height: 48px;
+            border-radius: 14px;
+            font-size: 22px;
+            margin-bottom: 16px;
+        }
+        .icon-green  { background: rgba(0,124,82,0.1); }
+        .icon-blue   { background: rgba(33,150,243,0.1); }
+        .icon-gold   { background: rgba(255,179,0,0.1); }
+        .icon-red    { background: rgba(239,68,68,0.1); }
+        .icon-purple { background: rgba(156,39,176,0.1); }
+
+        h1 {
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--brand-dark);
+            margin-bottom: 6px;
+            letter-spacing: -0.5px;
+        }
+        h1 .accent { color: var(--brand-green); }
+
+        .section-subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 400;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--brand-dark);
+            margin: 28px 0 12px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        h3 {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--brand-green);
+            margin: 18px 0 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        p, li {
+            color: var(--text-secondary);
+            font-size: 11pt;
+            margin-bottom: 6px;
+        }
+
+        ul { padding-left: 20px; margin-bottom: 12px; }
+        li { margin-bottom: 5px; }
+        li strong { color: var(--text-primary); }
+
+        /* ============ CARDS ============ */
+        .panel-card {
+            background: var(--bg-light);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin-bottom: 16px;
+            border-left: 4px solid var(--brand-green);
+        }
+
+        .panel-card.blue   { border-left-color: var(--accent-blue); }
+        .panel-card.gold   { border-left-color: var(--accent-gold); }
+        .panel-card.red    { border-left-color: var(--accent-red); }
+        .panel-card.purple { border-left-color: #9C27B0; }
+
+        .panel-card-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-card p {
+            font-size: 10.5pt;
+            margin-bottom: 4px;
+        }
+
+        /* ============ INFO BOX ============ */
+        .info-box {
+            background: rgba(0,124,82,0.06);
+            border: 1px solid rgba(0,124,82,0.15);
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin: 20px 0;
+            font-size: 10.5pt;
+        }
+        .info-box.warn {
+            background: rgba(239,68,68,0.05);
+            border-color: rgba(239,68,68,0.15);
+        }
+        .info-box strong { color: var(--brand-green); }
+        .info-box.warn strong { color: var(--accent-red); }
+
+        /* ============ TABLE ============ */
+        .role-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 10pt;
+        }
+        .role-table th {
+            background: var(--brand-dark);
+            color: #fff;
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .role-table th:first-child { border-radius: 8px 0 0 0; }
+        .role-table th:last-child  { border-radius: 0 8px 0 0; }
+        .role-table td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+        .role-table tr:nth-child(even) td { background: var(--bg-light); }
+        .role-table .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 9px;
+            font-weight: 700;
+        }
+        .badge-green  { background: rgba(0,124,82,0.1); color: var(--brand-green); }
+        .badge-blue   { background: rgba(33,150,243,0.1); color: var(--accent-blue); }
+        .badge-gold   { background: rgba(255,179,0,0.15); color: #E65100; }
+        .badge-red    { background: rgba(239,68,68,0.1); color: var(--accent-red); }
+
+        /* ============ FOOTER ============ */
+        .page-footer {
+            position: absolute;
+            bottom: 40px; left: 70px; right: 70px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+            color: #aaa;
+            border-top: 1px solid var(--border-color);
+            padding-top: 10px;
+        }
+
+        /* ============ PRINT BTN ============ */
+        .print-bar {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 999;
+        }
+        .print-btn {
+            background: linear-gradient(135deg, var(--brand-green), #00bfa5);
+            color: #fff;
+            border: none;
+            padding: 16px 36px;
+            border-radius: 50px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 8px 30px rgba(0,124,82,0.4);
+            transition: transform 0.2s;
+        }
+        .print-btn:hover { transform: translateY(-3px); }
+    </style>
+</head>
+<body>
+
+<!-- ==================== MUQOVA ==================== -->
+<div class="page cover-page">
+    <div class="cover-bg"></div>
+    <div class="cover-content">
+        <div class="cover-logo">AKFA ROMIX</div>
+        <div class="cover-sub">ERP TIZIMI</div>
+        <div class="cover-badge">MAXFIY HUJJAT</div>
+        <div class="cover-title">Tizim Foydalanish <br>Qo'llanmasi</div>
+        <div class="cover-desc">Ushbu hujjat korxonaning barcha bo'limlari — Sotuv, Ombor, Ishlab chiqarish, Buxgalteriya, Kadrlar va Sun'iy Intellekt tarmog'ining batafsil ishlatish yo'riqnomasidir.</div>
+        <div class="cover-meta">VERSIYA 2.0 &nbsp; · &nbsp; IYUL 2026 &nbsp; · &nbsp; FAQAT XIZMAT FOYDALANISHI UCHUN</div>
+    </div>
+</div>
+
+<!-- ==================== MUNDARIJA ==================== -->
+<div class="page">
+    <div class="page-header">
+        <div class="page-header-logo">AKFA ROMIX</div>
+        <div class="page-header-section">Mundarija</div>
+    </div>
+
+    <div class="section-icon icon-green">📋</div>
+    <h1>Mundarija</h1>
+    <p class="section-subtitle">Ushbu hujjatdagi barcha bo'limlar ro'yxati</p>
+
+    <table class="role-table">
+        <thead>
+            <tr><th>#</th><th>Bo'lim nomi</th><th>Sahifa</th><th>Kim uchun</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>1</td><td><strong>Kirish va Rollar Tizimi</strong></td><td>3</td><td><span class="badge badge-green">Barchaga</span></td></tr>
+            <tr><td>2</td><td><strong>Admin (Rahbar) Paneli</strong></td><td>4</td><td><span class="badge badge-red">Admin</span></td></tr>
+            <tr><td>3</td><td><strong>Sotuv Bo'limi</strong></td><td>5-6</td><td><span class="badge badge-blue">Sotuvchi</span></td></tr>
+            <tr><td>4</td><td><strong>Ombor Bo'limi</strong></td><td>7-8</td><td><span class="badge badge-gold">Omborchi</span></td></tr>
+            <tr><td>5</td><td><strong>Ishlab Chiqarish & Skaner</strong></td><td>9</td><td><span class="badge badge-green">Usta</span></td></tr>
+            <tr><td>6</td><td><strong>Buxgalteriya (Moliya)</strong></td><td>10</td><td><span class="badge badge-gold">Buxgalter</span></td></tr>
+            <tr><td>7</td><td><strong>Kadrlar (HR) va Ko'rgazma</strong></td><td>11</td><td><span class="badge badge-blue">HR Menejer</span></td></tr>
+            <tr><td>8</td><td><strong>AI Yordamchilar va Boss Chat</strong></td><td>12</td><td><span class="badge badge-green">Barchaga</span></td></tr>
+        </tbody>
+    </table>
+
+    <div class="info-box">
+        <strong>📌 Eslatma:</strong> Har bir xodim faqat o'ziga tegishli bo'limni o'qishi kifoya. Admin (Rahbar) barcha bo'limlarni batafsil tushunishi tavsiya etiladi.
+    </div>
+
+    <div class="page-footer">
+        <span>Akfa Romix ERP Tizimi · Qo'llanma v2.0</span>
+        <span>Sahifa 2</span>
+    </div>
+</div>
+
+<!-- ==================== KIRISH VA ROLLAR ==================== -->
+<div class="page">
+    <div class="page-header">
+        <div class="page-header-logo">AKFA ROMIX</div>
+        <div class="page-header-section">Kirish va Rollar Tizimi</div>
+    </div>
+
+    <div class="section-icon icon-green">🔐</div>
+    <h1>Kirish va <span class="accent">Rollar Tizimi</span></h1>
+    <p class="section-subtitle">Tizimga qanday kiriladi va qaysi rol nima ko'ra oladi</p>
+
+    <p>Akfa Romix tizimiga har bir xodim o'zining shaxsiy logini va paroli orqali kiradi. Tizim serverda JWT (JSON Web Token) asosida autentifikatsiya qiladi. Bu degani parollar brauzerda yashirinmas, barcha tekshiruvlar xavfsiz serverda amalga oshiriladi.</p>
+
+    <h2>Rollar Jadvali</h2>
+    <table class="role-table">
+        <thead>
+            <tr><th>Rol</th><th>Ko'ra oladigan bo'limlar</th><th>Asosiy huquqi</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Admin (Rahbar)</strong></td>
+                <td>Barcha bo'limlar</td>
+                <td>Barchani kuzatish, xodimlar huquqini boshqarish, moliyani nazorat qilish</td>
+            </tr>
+            <tr>
+                <td><strong>Sotuvchi</strong></td>
+                <td>Sotuv paneli</td>
+                <td>Buyurtma qabul qilish, narx hisoblash, shartnoma chiqarish</td>
+            </tr>
+            <tr>
+                <td><strong>Omborchi</strong></td>
+                <td>Ombor paneli</td>
+                <td>Tovar kirim/chiqim, qoldiq nazorati</td>
+            </tr>
+            <tr>
+                <td><strong>Buxgalter</strong></td>
+                <td>Moliya + Ombor narxlari</td>
+                <td>Narx belgilash, kassa boshqaruvi, oylik hisoblash</td>
+            </tr>
+            <tr>
+                <td><strong>Sex Ustasi</strong></td>
+                <td>Ishlab chiqarish + Skaner</td>
+                <td>Buyurtmalarni yasash, bosqichlarni yangilash</td>
+            </tr>
+            <tr>
+                <td><strong>HR Menejer</strong></td>
+                <td>Kadrlar paneli</td>
+                <td>Xodimlar qo'shish/o'chirish, davomat</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="info-box warn">
+        <strong>⚠️ Muhim:</strong> Xodim ishdan bo'shagach, HR menejer uning tokenini darhol o'chirishi shart. Aks holda sobiq xodim uyidan turib ham ma'lumotlarga kirib qolishi mumkin.
+    </div>
+
+    <div class="page-footer">
+        <span>Akfa Romix ERP Tizimi · Qo'llanma v2.0</span>
+        <span>Sahifa 3</span>
+    </div>
+</div>
+
+<!-- ==================== ADMIN ==================== -->
+<div class="page">
+    <div class="page-header">
+        <div class="page-header-logo">AKFA ROMIX</div>
+        <div class="page-header-section">Admin (Rahbar) Paneli</div>
+    </div>
+
+    <div class="section-icon icon-red">👑</div>
+    <h1>Admin <span class="accent">(Rahbar) Paneli</span></h1>
+    <p class="section-subtitle">Bosh direktorning markazlashgan nazorat tizimi</p>
+
+    <p>Admin paneli — zavodning raqamli yuragi. Rahbar bu panel orqali har bir bo'limni, har bir xodimni va barcha moliyaviy oqimlarni bir ekranda ko'rib turadi. Admin hech narsani o'zi hisoblamaydi — tizim unga tayyor, chiroyli grafiklar shaklida barchasini chiqaradi.</p>
+
+    <div class="panel-card">
+        <div class="panel-card-title">📊 Asosiy Ko'rsatkichlar Paneli (Dashboard Overview)</div>
+        <p><strong>Vazifasi:</strong> Zavodning bugungi, shu oydagi va yillik faoliyatini raqamlarda ko'rsatish.</p>
+        <p><strong>Nimani ko'rsatadi:</strong> Sotuv hajmi, ombordagi jami tovar qiymati, kassadagi naqd va pul ko'chirish bo'yicha tushumlar, qarzlar. Rahbar bir qarashdayoq biznes foydaga ishlayaptimi yoki zarargami shuni bilib oladi.</p>
+    </div>
+
+    <div class="panel-card blue">
+        <div class="panel-card-title">🏢 Bo'limlarni Kuzatish (Department Monitoring)</div>
+        <p><strong>Vazifasi:</strong> Sotuv, Ombor, Ishlab chiqarish va HR bo'limlari ichida nimalar bo'layotganini qisqacha ko'rsatish.</p>
+        <p><strong>Qanday ishlaydi:</strong> Admin istalgan bo'lim ustiga bosib, xuddi o'sha bo'limning xodimi kabi dasturiga kirib ketishi mumkin. U Super-User (barchani ko'ruvchi) sifatida xatolar va kechikishlarni aniqlaydi.</p>
+    </div>
+
+    <div class="panel-card gold">
+        <div class="panel-card-title">💰 Moliyaviy Xulosa (Financial Summary)</div>
+        <p><strong>Vazifasi:</strong> Kompaniyaning chuqurlashtirilgan moliyaviy holati — Tushumlar va Xarajatlar balansi, Debitor/Kreditor qarzlar.</p>
+        <p><strong>Qanday ishlaydi:</strong> Kassa to'g'ri yuritilayotganini va omborchi tovarlarni qancha summada qabul qilganini nazorat qiladi. Hamma pul oqimlari avtomatik hisoblanadi.</p>
+    </div>
+
+    <div class="panel-card purple">
+        <div class="panel-card-title">🤖 Boss Chat va AI Tahlilchisi</div>
+        <p><strong>Vazifasi:</strong> Markaziy AI orqali savol-javob va xodimlardan kelgan xabarlarni qabul qilish.</p>
+        <p><strong>Qanday ishlaydi:</strong> "O'tgan oy eng ko'p qaysi usta ishladi?" yoki "Profildan qancha qoldi?" degan savollarga AI raqamli javob qaytaradi. Xodimlar yuborgan muhim xabarlar bevosita shu oynaga va Telegramga keladi.</p>
+    </div>
+
+    <div class="info-box">
+        <strong>🔑 Maxsus huquq:</strong> Admin tizimda ko'ra yoki bajara olmaydigan hech narsa yo'q. U istalgan xodimning tokenini (ruxsatini) o'chirib qo'ya oladi.
+    </div>
+
+    <div class="page-footer">
+        <span>Akfa Romix ERP Tizimi · Qo'llanma v2.0</span>
+        <span>Sahifa 4</span>
+    </div>
+</div>
+
+<!-- ==================== SOTUV (1) ==================== -->
+<div class="page">
+    <div class="page-header">
+        <div class="page-header-logo">AKFA ROMIX</div>
+        <div class="page-header-section">Sotuv Bo'limi · 1/2</div>
+    </div>
+
+    <div class="section-icon icon-blue">🛒</div>
+    <h1>Sotuv <span class="accent">Bo'limi</span></h1>
+    <p class="section-subtitle">Mijozlar bilan ishlash, buyurtma qabul qilish va narxlash tizimi</p>
+
+    <p>Sotuv bo'limi — korxonaning "Yuzi" va daromad manbai. Bu yerda mijoz bilan muloqot, chizmalar chizish va shartnomalar shakllantiriladi. Sotuvchining xatosi butun zavod ishidagi xatoga olib kelishi mumkin, shuning uchun bu tizim to'liq raqamlashtirilgan himoyalarga ega.</p>
+
+    <div class="panel-card">
+        <div class="panel-card-title">📐 1. Buyurtma Qabul Qilish Paneli (Dashboard)</div>
+        <p><strong>Vazifasi:</strong> Mijoz talab qilgan rom yoki eshikni kompyuterda "yasab ko'rsatish" va uning narxini chiqarish.</p>
+        <p><strong>Ichida nimalar bor:</strong></p>
+        <ul>
+            <li><strong>2D/3D Dizayner:</strong> Oynaning eni va bo'yi kiritiladi. Ichki to'siqlar (Impost) joylashtiriladi. Natija 3D formatda ekranda aylantirib ko'rsatiladi (Three.js texnologiyasi).</li>
+            <li><strong>Material (Profil) Tanlash:</strong> Mijozga yoqqan brend, seriya va rang tanlanadi. Masalan: <em>"AKFA 6500 Penta Antrasit"</em>.</li>
+            <li><strong>Savat (Basket):</strong> Barcha qo'shilgan romlar, aksessuarlar va xizmatlar shu yerda yig'ilib, jami summa chiqadi.</li>
+        </ul>
+        <p><strong>Orqafonda nima bo'ladi:</strong> Profil tanlanganda dastur Ombordagi narxlarni va material qoldig'ini tekshiradi. Oynaga ketadigan Kosa (Rama), Qanot (Stvorka), Shtapik qismlarini millimetrigacha aniq hisoblab chiqadi. Omborda metr yetishmasa — buyurtma to'xtatiladi!</p>
+    </div>
+
+    <div class="panel-card blue">
+        <div class="panel-card-title">📋 2. Buyurtmalar Doskasi (Orders Kanban View)</div>
+        <p><strong>Vazifasi:</strong> Mijozdan olingan buyurtmalarning jarayonini vizual kuzatish.</p>
+        <p><strong>Ichida nimalar bor:</strong> Kartochkalar (ustunlar) — <em>Muzokara → O'lchov → Zaklad kutilyapti → Ishlab chiqarishga berildi</em>.</p>
+        <p><strong>Nimaga javob beradi:</strong> Sotuvchi har bir buyurtmani sichqoncha bilan sudrab bir holatdan ikkinchisiga o'tkazadi. Qaysi mijoz bilan ish chala qolganini eslatib turadi.</p>
+    </div>
+
+    <div class="page-footer">
+        <span>Akfa Romix ERP Tizimi · Qo'llanma v2.0</span>
+        <span>Sahifa 5</span>
+    </div>
+</div>
+
+<!-- ==================== SOTUV (2) ==================== -->
+<div class="page">
+    <div class="page-header">
+        <div class="page-header-logo">AKFA ROMIX</div>
+        <div class="page-header-section">Sotuv Bo'limi · 2/2</div>
+    </div>
+
+    <div class="panel-card gold">
+        <div class="panel-card-title">💳 3. Kassa va To'lovlar Paneli (Payments View)</div>
+        <p><strong>Vazifasi:</strong> Mijozlardan keladigan pullarni (Zaklad, to'liq to'lov, qarz) hisobga olish.</p>
+        <p><strong>Nimaga javob beradi:</strong> Qaysi mijoz qancha to'lov qildi, naqd yoki karta orqali to'ladimi — barchasi yozib boriladi. Agar qarz qolsa, qizil rangda ko'rsatiladi. To'lov turlari: <em>Naqd pul, Karta (Terminal), Pul ko'chirish</em>.</p>
+    </div>
+
+    <div class="panel-card red">
+        <div class="panel-card-title">📄 4. Hujjatlar Paneli (Shartnoma va Kesim PDF)</div>
+        <p><strong>Vazifasi:</strong> 1-klik orqali rasmiy va sex hujjatlarini tayyorlash.</p>
+        <p><strong>Ichida nimalar bor:</strong></p>
+        <ul>
+            <li><strong>Shartnoma PDF:</strong> Mijoz uchun yuridik hujjat — summa, deraza chizmalari, shartlar.</li>
+            <li><strong>Kesim (Rezka) PDF:</strong> Sex ustasi uchun eng muhim chizma. 6 metrlik profil qayeridan kesilsa eng kam chiqit chiqishini FFD (Bin Packing) algoritmi yordamida hisoblaydi. 45° va 90° arra zazorlari inobatga olinadi.</li>
+        </ul>
+    </div>
+
+    <div class="panel-card purple">
+        <div class="panel-card-title">🤖 5. Sotuv AI Yordamchisi (Sales AI)</div>
+        <p><strong>Vazifasi:</strong> Sotuvchiga sun'iy intellekt yordamida maslahat berish.</p>
+        <p><strong>Nimaga javob beradi:</strong> "Mijozga narxni qanday tushuntirsam?", "Chegirma hisoblab ber", "Eng ko'p sotilgan oyna qaysi?" kabi savollarga tizim tahliliy javob qaytaradi. Rahbar bilan to'g'ridan-to'g'ri bog'lanish uchun ham shu chatdan foydalanish mumkin.</p>
+    </div>
+
+    <div class="info-box">
+        <strong>🛡 Xavfsizlik himoyasi:</strong> Sotuvchi ombordagi narxlarni yoki qoldiqlarni o'zgartira olmaydi — u faqat ko'radi. Narxlarni faqat Buxgalter o'zgartira oladi.
+    </div>
+
+    <div class="page-footer">
+        <span>Akfa Romix ERP Tizimi · Qo'llanma v2.0</span>
+        <span>Sahifa 6</span>
+    </div>
+</div>
+
+<!-- ==================== OMBOR (1) ==================== -->
+<div class="page">
+    <div class="page-header">
+        <div class="page-header-logo">AKFA ROMIX</div>
+        <div class="page-header-section">Ombor Bo'limi · 1/2</div>
+    </div>
+
+    <div class="section-icon icon-gold">📦</div>
+    <h1>Ombor <span class="accent">(Warehouse) Bo'limi</span></h1>
+    <p class="section-subtitle">Korxonaning moddiy boyliklari kirim-chiqim nazorati</p>
+
+    <p>Ombor tarmog'i — butun zavod ishini ta'minlab turuvchi tayanch baza. Bu yerdagi ma'lumotlarsiz Sotuv narx chiqara olmaydi va Ishlab chiqarish rom yasay olmaydi. Barcha materiallarning kirimi va chiqimi shu yerda qayd qilinadi.</p>
+
+    <div class="panel-card">
+        <div class="panel-card-title">📊 1. Ombor Holati Paneli (Inventory View)</div>
+        <p><strong>Vazifasi:</strong> Zavoddagi barcha tovar va xom-ashyolarni real vaqtda ko'rsatish.</p>
+        <p><strong>Toifalar:</strong></p>
+        <ul>
+            <li><strong>Profillar:</strong> Kosa (Rama), Qanot (Stvorka), O'rta (Impost), Shtapik — alohida-alohida qoldiq hisobi.</li>
+            <li><strong>Oynaklar:</strong> Shisha va derazabop oynalar.</li>
+            <li><strong>Aksessuarlar:</strong> Tutqich, qulf, petlya, rezina va boshqalar.</li>
+        </ul>
+        <p><strong>Muhim:</strong> Omborchi mahsulot qabul qilganda miqdorni (Metr yoki Dona) kiritadi. <strong>Buxgalter narx belgilaydi.</strong> Agar shu yerda profil qoldig'i NOLga tushsa, Sotuv panelida sotish avtomatik bloklanadi va Rahbarga Telegramga "Profil tugadi!" degan xabar ketadi.</p>
+    </div>
+
+    <div class="panel-card blue">
+        <div class="panel-card-title">📑 2. Olingan Buyurtmalar Paneli (Orders View)</div>
+        <p><strong>Vazifasi:</strong> Sotuvchilar sotgan buyurtmalar asosida ombordan nimalar chiqishi kerakligini ko'rsatish.</p>
+        <p><strong>Nimaga javob beradi:</strong> Omborchi bu yerga kirib "Bugun tushgan 10 ta derazaga jami qancha profil tayyorlab berish kerak?" degan savolga aniq ro'yxat (Nakladnoy) ni ko'radi. Mahsulot sexga berilgach tasdiq tugmasini bosadi va zaxira dasturdan yechiladi.</p>
+    </div>
+
+    <div class="page-footer">
+        <span>Akfa Romix ERP Tizimi · Qo'llanma v2.0</span>
+        <span>Sahifa 7</span>
+    </div>
+</div>
+
+<!-- ==================== OMBOR (2) ==================== -->
+<div class="page">
+    <div class="page-header">
+        <div class="page-header-logo">AKFA ROMIX</div>
+        <div class="page-header-section">Ombor Bo'limi · 2/2</div>
+    </div>
+
+    <div class="panel-card gold">
+        <div class="panel-card-title">📨 3. Murojaatlar va So'rovlar (Requests Panel)</div>
+        <p><strong>Vazifasi:</strong> Sex ustalarining omborchiga murojaatlarini qabul qilish.</p>
+        <p><strong>Qanday ishlaydi:</strong> Ish jarayonida ustaning profili sinib qolsa yoki qo'shimcha material kerak bo'lsa, usta talabnoma (Zaevka) yuboradi. Bu Omborchining panelida paydo bo'ladi. Omborchi tasdiqlasa — material ombordan chiqariladi va hujjatlar tarixiga tushadi.</p>
+    </div>
+
+    <div class="panel-card red">
+        <div class="panel-card-title">🕐 4. Hujjatlar Tarixi (History Panel)</div>
+        <p><strong>Vazifasi:</strong> O'tmishdagi barcha harakatlarni kuzatish va tekshirish.</p>
+        <p><strong>Nimaga javob beradi:</strong> Qachon, kim tomonidan, qanday mahsulot omborga kirim qilingani yoki qaysi buyurtma uchun chiqim qilingani shu yerda qayd qilinadi. Bu paneldagi ma'lumotlar <strong>o'chirib bo'lmaydi</strong> — bu yo'qotishlar (Nedostacha) ni topish uchun eng muhim dalillar manbai.</p>
+    </div>
+
+    <div class="panel-card purple">
+        <div class="panel-card-title">🤖 5. Ombor AI Yordamchisi (Warehouse AI)</div>
+        <p><strong>Vazifasi:</strong> Ombordagi statistikani tezkor tahlil qilish.</p>
+        <p><strong>Misol savollar:</strong> "Ohirgi haftada eng ko'p ishlatilgan material qaysi?", "Ombordagi barcha profillar jami qancha so'mlik kapital?", "Qaysi profil eng tez tugab qoladi?". AI ombor bazasini o'rganib aniq raqamli javob qaytaradi.</p>
+    </div>
+
+    <div class="info-box">
+        <strong>🔗 Boshqa bo'limlar bilan aloqasi:</strong> Omborchi narx qo'yishi mumkin emas (buni faqat Buxgalter qiladi). Lekin omborchi kiritgan qoldiq raqamlari bevosita Sotuv panelida aks etadi va buyurtmalarni bloklashi yoki ruxsat berishi mumkin.
+    </div>
+
+    <div class="page-footer">
+        <span>Akfa Romix ERP Tizimi · Qo'llanma v2.0</span>
+        <span>Sahifa 8</span>
+    </div>
+</div>
+
+<!-- ==================== ISHLAB CHIQARISH ==================== -->
+<div class="page">
+    <div class="page-header">
+        <div class="page-header-logo">AKFA ROMIX</div>
+        <div class="page-header-section">Ishlab Chiqarish & Skaner</div>
+    </div>
+
+    <div class="section-icon icon-green">🏭</div>
+    <h1>Ishlab Chiqarish <span class="accent">va Skaner</span></h1>
+    <p class="section-subtitle">Zavod ichidagi jarayonni raqamli boshqarish</p>
+
+    <div class="panel-card">
+        <div class="panel-card-title">🔄 1. Zakazlar Jarayoni Doskasi (Pipeline / Kanban)</div>
+        <p><strong>Vazifasi:</strong> Hozirgi vaqtda sexda qaysi buyurtmalar qaysi bosqichda ekanligini vizual tarzda ko'rsatish.</p>
+        <p><strong>Bosqichlar:</strong></p>
+        <ul>
+            <li><strong>Kutish (Yangi)</strong> — Sotuvdan kelgan, ombordan profil olingan yangi ish.</li>
+            <li><strong>Kesish (Rezka)</strong> — Profillar 45°/90° burchakda kesilmoqda.</li>
+            <li><strong>Yig'ish (Sbornaya)</strong> — Ramalar birlashtirilmoqda.</li>
+            <li><strong>Oyna qadash</strong> — Shisha va furnitura o'rnatilmoqda.</li>
+            <li><strong>Tayyor (Sklad)</strong> — Mijozga olib ketish uchun topshirilgan.</li>
+        </ul>
+        <p>Boshqaruvchi ustunlardagi kartochkalarni sichqoncha bilan keyingi bosqichga o'tkazadi. Har safar bosqich o'zgarganda tizim Sotuvchiga va Mijozga xabar yuborish imkoniga ega.</p>
+    </div>
+
+    <div class="panel-card blue">
+        <div class="panel-card-title">📱 2. Skaner (Scanner) Ilovasi</div>
+        <p><strong>Vazifasi:</strong> Mobil telefondan foydalanib buyurtma holatini tezkor yangilash. Kompyuterga borish shart emas!</p>
+        <p><strong>Qanday ishlaydi:</strong> "Kesim (Rezka) PDF" qog'ozidagi QR-kodni usta telefon kamerasi bilan skaner qiladi. Shu soniyaning o'zida buyurtma avtomatik ravishda "Kesish" → "Yig'ish" bosqichiga o'tadi. Buni Rahbar va Sotuvchi ham real vaqtda ko'radi.</p>
+    </div>
+
+    <div class="panel-card gold">
+        <div class="panel-card-title">📐 3. Mahsulot Kalkulyatsiyasi (Recipes & Templates)</div>
+        <p><strong>Vazifasi:</strong> Tez-tez yasaladigan standart oyna/eshik modellari uchun andoza (shablon) yaratish va saqlash.</p>
+    </div>
+
+    <div class="panel-card purple">
+        <div class="panel-card-title">👷 4. Brigadalar (Brigades)</div>
+        <p><strong>Vazifasi:</strong> Ustalarni jamoalarga bo'lish va ish hajmini qayd etish. Qaysi brigada qancha rom yasadi — maosh hisoblash uchun asos.</p>
+    </div>
+
+    <div class="page-footer">
+        <span>Akfa Romix ERP Tizimi · Qo'llanma v2.0</span>
+        <span>Sahifa 9</span>
+    </div>
+</div>
+
+<!-- ==================== BUXGALTERIYA ==================== -->
+<div class="page">
+    <div class="page-header">
+        <div class="page-header-logo">AKFA ROMIX</div>
+        <div class="page-header-section">Buxgalteriya (Moliya)</div>
+    </div>
+
+    <div class="section-icon icon-gold">💰</div>
+    <h1>Buxgalteriya <span class="accent">(Moliya) Bo'limi</span></h1>
+    <p class="section-subtitle">Narxlash, kassa boshqaruvi va xodimlar maoshi</p>
+
+    <p>Buxgalteriya tarmog'i — zavodning qon tomiri. Buxgalter hech qachon deraza chizmaydi yoki rom kesmaydi. U faqat <strong>Raqamlar, Narxlar, Oyliklar va Kassa</strong> bilan ishlaydi.</p>
+
+    <div class="panel-card">
+        <div class="panel-card-title">💲 1. Narxlash Paneli (Pricing & Cost Management)</div>
+        <p><strong>Joylashuvi:</strong> Ombor modulining ichida.</p>
+        <p><strong>Vazifasi:</strong> Har bir profil va aksessuar uchun alohida-alohida narx belgilash.</p>
+        <p><strong>Misol:</strong> Akfa 6500 Kosa — 385,900 so'm/metr, Akfa 6500 Qanot — 434,800 so'm/metr.</p>
+        <p><strong>Nima uchun muhim:</strong> Aynan shu yerda qo'yilgan narxlar Sotuv oynasiga avtomatik o'tadi. Buxgalter narxni o'zgartirsa, butun zavodda narx o'zgaradi.</p>
+    </div>
+
+    <div class="panel-card blue">
+        <div class="panel-card-title">🧾 2. Kassa va To'lovlar (Payments & Cash Flow)</div>
+        <p><strong>Joylashuvi:</strong> Sotuv modulining ichida.</p>
+        <p><strong>Vazifasi:</strong> Qaysi mijoz qancha to'lov qilgani va kimning qarzi borligi (Debitor qarzlar) ni nazorat qilish.</p>
+        <p><strong>Qanday ishlaydi:</strong> Naqd pul, Karta (Terminal) yoki Pul ko'chirish bo'yicha alohida hisobot chiqaradi.</p>
+    </div>
+
+    <div class="panel-card gold">
+        <div class="panel-card-title">💼 3. Xodimlar Maoshi (Payroll)</div>
+        <p><strong>Joylashuvi:</strong> HR / Buxgalteriya kesishmasida.</p>
+        <p><strong>Vazifasi:</strong> Ustalarga "Ishbay" (yasagan metriga qarab) yoki kunlik oylik hisoblash. Dastur qaysi usta qaysi buyurtmani qachon tugatganini bilgani uchun, oylik xatosiz hisoblanadi.</p>
+    </div>
+
+    <div class="panel-card purple">
+        <div class="panel-card-title">🤖 4. Moliya AI Yordamchisi</div>
+        <p><strong>Vazifasi:</strong> "Bu oyda qancha qarzni yig'ib oldik?", "Eng katta xarajat nima bo'ldi?" degan savollarga tahliliy hisobot tayyorlash.</p>
+    </div>
+
+    <div class="info-box warn">
+        <strong>⚠️ Cheklov:</strong> Buxgalter profillarni o'chira olmaydi (buni faqat Omborchi qiladi) va deraza dizayni bilan ishlamaydi. Uning vazifasi — mavjud operatsiyalarni moliyaviy tasdiqlash.
+    </div>
+
+    <div class="page-footer">
+        <span>Akfa Romix ERP Tizimi · Qo'llanma v2.0</span>
+        <span>Sahifa 10</span>
+    </div>
+</div>
+
+<!-- ==================== HR & KORGAZMA ==================== -->
+<div class="page">
+    <div class="page-header">
+        <div class="page-header-logo">AKFA ROMIX</div>
+        <div class="page-header-section">Kadrlar (HR) va Ko'rgazma</div>
+    </div>
+
+    <div class="section-icon icon-purple">👥</div>
+    <h1>Kadrlar (HR) <span class="accent">va Ko'rgazma</span></h1>
+    <p class="section-subtitle">Xodimlar boshqaruvi va mijozlarga vizual taqdimot</p>
+
+    <h2>Kadrlar (HR) Bo'limi</h2>
+
+    <div class="panel-card">
+        <div class="panel-card-title">👤 1. Tizim Foydalanuvchilari (Staff & Roles)</div>
+        <p><strong>Vazifasi:</strong> Xodimlarga tizimda huquq berish — yangi akkaunt ochish yoki bloklash.</p>
+        <p><strong>Rollar:</strong> Sotuvchi (faqat Savdo ko'radi), Omborchi (faqat Ombor), Sex Ustasi (faqat Ishlab chiqarish). Har birining ko'rish va o'zgartirish huquqlari bir-biridan qat'iy ajratilgan.</p>
+        <p><strong>Token tizimi:</strong> Yangi xodimga maxsus kalit (token) generatsiya qilinadi. Xodim ishdan bo'shagach kalit o'chiriladi — u qaytib kira olmaydi.</p>
+    </div>
+
+    <div class="panel-card blue">
+        <div class="panel-card-title">📅 2. Davomat va Kunlik Hisobotlar</div>
+        <p><strong>Vazifasi:</strong> Kim ishga keldi va kun davomida nima ish bajardi — nazorat qilish.</p>
+        <p><strong>Qanday ishlaydi:</strong> Har bir xodim ish kunining oxirida qisqa hisobot jo'natadi. Bu ma'lumotlar oylik (KPI) hisoblash uchun Buxgalterga uzatiladi.</p>
+    </div>
+
+    <div class="panel-card purple">
+        <div class="panel-card-title">🤖 3. HR AI Yordamchisi</div>
+        <p><strong>Vazifasi:</strong> "O'tgan oy eng kam sotuv qilgan xodim kim?", "Hozir ishga kelmagan xodimlar?" kabi savollarga javob beradi.</p>
+    </div>
+
+    <h2 style="margin-top: 30px;">Ko'rgazma (Showroom) Zali</h2>
+
+    <div class="panel-card gold">
+        <div class="panel-card-title">🖼 Vizual Katalog Interfeysi</div>
+        <p><strong>Vazifasi:</strong> Front-ofis (mijozlar kutish zali) dagi katta ekran yoki planshetlar uchun maxsus katalog.</p>
+        <p><strong>Qanday ishlaydi:</strong> Bu panelda narxlar va xodimlar ma'lumotlari yashiringan. Mijoz katta va yorqin interfeysda 3D derazani o'z qo'li bilan aylantirib, ranglarini o'zgartirib, materiallar haqida ma'lumot o'qiydi. Savdoni rag'batlantiruvchi vizual taqdimot.</p>
+    </div>
+
+    <div class="page-footer">
+        <span>Akfa Romix ERP Tizimi · Qo'llanma v2.0</span>
+        <span>Sahifa 11</span>
+    </div>
+</div>
+
+<!-- ==================== AI & BOSS CHAT ==================== -->
+<div class="page">
+    <div class="page-header">
+        <div class="page-header-logo">AKFA ROMIX</div>
+        <div class="page-header-section">AI Yordamchilar va Boss Chat</div>
+    </div>
+
+    <div class="section-icon icon-blue">🧠</div>
+    <h1>Sun'iy Intellekt <span class="accent">va Boss Chat</span></h1>
+    <p class="section-subtitle">Tizimning eng innovatsion qismi — Markazlashmagan AI va Rahbar aloqasi</p>
+
+    <h2>Markazlashmagan AI Yordamchilar (Decentralized AI)</h2>
+    <p>Tizimda bitta umumiy AI emas, balki har bir bo'limning <strong>o'z mutaxassis boti</strong> bor. Google Gemini AI negizida ishlaydi.</p>
+
+    <table class="role-table">
+        <thead>
+            <tr><th>AI nomi</th><th>Ixtisosligi</th><th>Misol savol</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>Sotuv AI</strong></td><td>Mijozlar, chegirmalar, eng ko'p sotilgan mahsulotlar</td><td>"Bu oy eng ko'p sotilgan oyna turi?"</td></tr>
+            <tr><td><strong>Ombor AI</strong></td><td>Zaxiralar, material tahlili, tovar aylanmasi</td><td>"Qaysi profil eng tez tugab qoladi?"</td></tr>
+            <tr><td><strong>Buxgalter AI</strong></td><td>Tushumlar, xarajatlar, qarzlar tahlili</td><td>"O'tgan oy eng katta xarajat nima edi?"</td></tr>
+            <tr><td><strong>HR AI</strong></td><td>Xodimlar unumdorligi, davomat</td><td>"Eng kam sotuv qilgan xodim kim?"</td></tr>
+            <tr><td><strong>Ishlab chiqarish AI</strong></td><td>Sex statistikasi, xatoliklar tahlili</td><td>"Rezka xatoligi eng ko'p qaysi seriyada?"</td></tr>
+        </tbody>
+    </table>
+
+    <div class="info-box">
+        <strong>🔒 Maxfiylik qoidasi:</strong> Har bir AI faqat o'z bo'limi ma'lumotlarini ko'radi. Sotuv AI hech qachon xodimlar oyligini, Buxgalter AI esa mijozlar shaxsiy ma'lumotlarini bilmaydi. Bu 100% Data Governance (ma'lumotlar maxfiyligi) prinsiplariga mos keladi.
+    </div>
+
+    <h2>Boss Chat (Telegram Integratsiyasi)</h2>
+
+    <div class="panel-card">
+        <div class="panel-card-title">📲 Rahbar bilan Real Vaqt Aloqasi</div>
+        <p><strong>Texnologiya:</strong> Telegraf (Telegram Bot API) orqali qurilgan.</p>
+        <p><strong>Qanday ishlaydi:</strong></p>
+        <ul>
+            <li><strong>Xodim → Rahbar:</strong> Xodim dastur ichidagi chatdan yozganida, xabar to'g'ridan-to'g'ri rahbarning shaxsiy Telegram raqamiga boradi.</li>
+            <li><strong>Rahbar → Xodim:</strong> Rahbar Telegramdan javob yozganda, xodimning kompyuteridagi chat oynasida o'sha zahoti paydo bo'ladi.</li>
+            <li><strong>AI → Rahbar:</strong> AI yordamchilari ham muhim ogohlantirishlarni (masalan: "Omborda profil tugadi!") Telegramga avtomatik signal sifatida yubora oladi.</li>
+        </ul>
+    </div>
+
+    <div class="info-box">
+        <strong>📌 Yakuniy xulosa:</strong> Akfa Romix tizimi — oddiy o'lchov va sotuv jurnali emas, balki zamonaviy sun'iy intellekt, 3D vizualizatsiya va qat'iy moliya-ombor integratsiyasiga ega bo'lgan <strong>to'liq avtomatlashtirilgan raqamli ERP</strong> (Enterprise Resource Planning) tizimidir.
+    </div>
+
+    <div class="page-footer">
+        <span>Akfa Romix ERP Tizimi · Qo'llanma v2.0 · © 2026</span>
+        <span>Sahifa 12</span>
+    </div>
+</div>
+
+<!-- ==================== PRINT BUTTON ==================== -->
+<div class="print-bar no-print">
+    <button class="print-btn" onclick="window.print()">🖨️ PDF sifatida saqlash (Ctrl+P)</button>
+</div>
+
+</body>
+</html>
