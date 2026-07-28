@@ -5,6 +5,12 @@ import { LayoutService } from '@/components/LayoutService.js';
 import { ROLES, ATTENDANCE_STATUS } from '@/constants';
 import { attachSalaries, updateEmployeeSalary } from '@/core/employeesSecure.js';
 
+window.escapeHtml = function(text) {
+    if (!text) return '';
+    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+    return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
+};
+
 const EMPLOYEE_COLUMNS_NO_SALARY = 'id, full_name, first_name, last_name, role, status, created_at, birth_year, avatar_url, department, joined_year, experience, phone';
 
 let employeesData = [];
@@ -333,21 +339,21 @@ function renderStaffList(data) {
         tr.innerHTML = `
             <td style="padding: 16px 20px;">
                 <div style="display:flex; align-items:center; gap:15px;">
-                    <img src="${emp.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(emp.full_name)}" 
+                    <img src="${escapeHtml(emp.avatar_url) || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(emp.full_name)}" 
                          style="width:42px; height:42px; border-radius:14px; object-fit:cover; border:1px solid rgba(255,255,255,0.1); flex-shrink:0;">
                     <div>
-                        <div style="font-weight:700; font-size:0.9rem; color:#fff; line-height:1.2;">${emp.full_name}</div>
-                        <div style="font-size:0.65rem; color:var(--text-s); margin-top:3px; opacity:0.5;">ID: ${emp.id.substring(0, 8).toUpperCase()}</div>
+                        <div style="font-weight:700; font-size:0.9rem; color:#fff; line-height:1.2;">${escapeHtml(emp.full_name)}</div>
+                        <div style="font-size:0.65rem; color:var(--text-s); margin-top:3px; opacity:0.5;">ID: ${escapeHtml(emp.id).substring(0, 8).toUpperCase()}</div>
                     </div>
                 </div>
             </td>
-            <td style="padding: 16px 20px; font-size:0.8rem; font-weight:600; color:var(--text-p);">${emp.role || 'Xodim'}</td>
+            <td style="padding: 16px 20px; font-size:0.8rem; font-weight:600; color:var(--text-p);">${escapeHtml(emp.role || 'Xodim')}</td>
             <td style="padding: 16px 20px;">
                 <span style="font-size:0.65rem; color:var(--accent); font-weight:700; text-transform:uppercase; background:rgba(0,255,136,0.05); padding:4px 10px; border-radius:8px;">
-                    ${emp.department || emp.dept || 'Ofis'}
+                    ${escapeHtml(emp.department || emp.dept || 'Ofis')}
                 </span>
             </td>
-            <td style="padding: 16px 20px; font-size:0.8rem; color:var(--text-s); font-family:monospace;">${emp.phone || '---'}</td>
+            <td style="padding: 16px 20px; font-size:0.8rem; color:var(--text-s); font-family:monospace;">${escapeHtml(emp.phone || '---')}</td>
             <td style="padding: 16px 20px;">
                 <div style="display:inline-flex; align-items:center; gap:8px; background:${status.glow}; color:${status.color}; padding:6px 14px; border-radius:12px; font-size:0.7rem; font-weight:800; border:1px solid ${status.color}22;">
                     <span style="width:6px; height:6px; border-radius:50%; background:${status.color}; box-shadow:0 0 8px ${status.color}"></span>
@@ -356,7 +362,7 @@ function renderStaffList(data) {
                 ${inT ? `<div style="font-size:0.68rem; color:var(--text-s); margin-top:6px; font-family:monospace; letter-spacing:0.5px;">🕐 ${inT}${outT ? ' → ' + outT : ''}</div>` : ''}
             </td>
             <td style="padding: 16px 20px; text-align:right;">
-                <button onclick="window.viewDetails('${emp.id}')" 
+                <button onclick="window.viewDetails('${escapeHtml(emp.id)}')" 
                         style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:#fff; width:36px; height:36px; border-radius:12px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition:0.3s;"
                         onmouseover="this.style.background='var(--accent)'; this.style.color='#000'; this.style.transform='translateX(3px)'"
                         onmouseout="this.style.background='rgba(255,255,255,0.03)'; this.style.color='#fff'; this.style.transform='none'">
@@ -1511,23 +1517,23 @@ async function loadProfileRequests() {
         const changes = req.requested_data;
         let details = '';
         for (let key in changes) {
-            details += `<div style="font-size:0.7rem; color:var(--text-s); margin-bottom:5px;"><b>${key}:</b> <span style="color:var(--accent)">${changes[key]}</span></div>`;
+            details += `<div style="font-size:0.7rem; color:var(--text-s); margin-bottom:5px;"><b>${escapeHtml(key)}:</b> <span style="color:var(--accent)">${escapeHtml(changes[key])}</span></div>`;
         }
 
         return `
             <tr>
                 <td style="padding:15px;">
                     <div style="display:flex; align-items:center; gap:12px;">
-                        <img src="${emp.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(emp.full_name)}" style="width:40px; height:40px; border-radius:12px;">
-                        <div style="font-weight:700;">${emp.full_name}</div>
+                        <img src="${escapeHtml(emp.avatar_url) || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(emp.full_name)}" style="width:40px; height:40px; border-radius:12px;">
+                        <div style="font-weight:700;">${escapeHtml(emp.full_name)}</div>
                     </div>
                 </td>
                 <td style="padding:15px;">${details}</td>
                 <td style="padding:15px; font-size:0.75rem; color:var(--text-s);">${new Date(req.created_at).toLocaleString()}</td>
                 <td style="padding:15px; text-align:right;">
                     <div style="display:inline-flex; gap:10px;">
-                        <button onclick="approveProfileRequest('${req.id}')" style="background:#00ff8822; color:#00ff88; border:1px solid #00ff8844; padding:8px 15px; border-radius:10px; font-weight:900; font-size:0.65rem; cursor:pointer;">TASDIQLASH</button>
-                        <button onclick="rejectProfileRequest('${req.id}')" style="background:#ff4d4f22; color:#ff4d4f; border:1px solid #ff4d4f44; padding:8px 15px; border-radius:10px; font-weight:900; font-size:0.65rem; cursor:pointer;">RAD ETISH</button>
+                        <button onclick="approveProfileRequest('${escapeHtml(req.id)}')" style="background:#00ff8822; color:#00ff88; border:1px solid #00ff8844; padding:8px 15px; border-radius:10px; font-weight:900; font-size:0.65rem; cursor:pointer;">TASDIQLASH</button>
+                        <button onclick="rejectProfileRequest('${escapeHtml(req.id)}')" style="background:#ff4d4f22; color:#ff4d4f; border:1px solid #ff4d4f44; padding:8px 15px; border-radius:10px; font-weight:900; font-size:0.65rem; cursor:pointer;">RAD ETISH</button>
                     </div>
                 </td>
             </tr>
@@ -1649,10 +1655,10 @@ window.renderAnalyticsBoard = async function () {
         tr.innerHTML = `
             <td style="padding:15px; border-radius:0;">
                 <div style="display:flex; align-items:center; gap:12px;">
-                    <img src="${emp.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(emp.full_name)}" style="width:35px; height:35px; border-radius:10px; object-fit:cover;">
+                    <img src="${escapeHtml(emp.avatar_url) || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(emp.full_name)}" style="width:35px; height:35px; border-radius:10px; object-fit:cover;">
                     <div>
-                        <div style="font-weight:700; font-size:0.8rem;">${emp.full_name}</div>
-                        <div style="font-size:0.6rem; color:var(--text-s);">${emp.department || 'Ofis'}</div>
+                        <div style="font-weight:700; font-size:0.8rem;">${escapeHtml(emp.full_name)}</div>
+                        <div style="font-size:0.6rem; color:var(--text-s);">${escapeHtml(emp.department || 'Ofis')}</div>
                     </div>
                 </div>
             </td>

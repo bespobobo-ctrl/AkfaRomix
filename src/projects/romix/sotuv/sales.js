@@ -1,6 +1,6 @@
 import { supabase } from '@/core/supabase.js';
 import { createViewer } from './window3d.js';
-import { generateCuttingPdf } from './cuttingPdf.js';
+import { generateCuttingPdf, derivePieces } from './cuttingPdf.js';
 import { createDesigner } from './designer2d.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -130,38 +130,75 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            // Har bir ombor mahsulotini qulay formatga keltirish
-            const omborProfillar = data.map(p => {
+            const familyMap = {};
+            const accessories = [];
+            
+            data.forEach(p => {
+                if (p.category !== 'Profil') {
+                    accessories.push({
+                        id: `ombor-${p.id}`,
+                        name: p.product_name,
+                        price: parseFloat(p.price) || 0,
+                        unit: p.unit || 'dona',
+                        stock: Math.round(Number(p.stock_quantity) || 0),
+                        label: `${p.product_name} [${parseFloat(p.price).toLocaleString()} so'm, Qoldiq: ${Math.round(Number(p.stock_quantity))}]`
+                    });
+                    return;
+                }
+                
                 const meta = p.metadata || {};
                 const brend  = (meta.brend  || '').trim();
                 const seriya = (meta.seriya || '').trim();
                 const rangi  = (meta.rangi  || '').trim();
-                const uzunlik = meta.uzunligi ? `${meta.uzunligi}mm` : '';
-                const qty  = Math.round(Number(p.stock_quantity) || 0);
-                const unit = p.unit || 'm';
-                const price = parseFloat(p.price) || 0;
-
-                // Ko'rsatma nomi: "AKFA 60 — Oq [Omborda: 72 m]"
-                let displayName = [brend, seriya, uzunlik].filter(Boolean).join(' ');
-                if (rangi) displayName += ` — ${rangi}`;
-                displayName = displayName || p.product_name;
-
-                return {
-                    id: `ombor-${p.id}`,
-                    name: displayName,
-                    fullName: p.product_name,
-                    price, unit, stock: qty,
-                    brend, seriya, rangi,
-                    label: `${displayName} [Omborda: ${qty.toLocaleString('uz-UZ')} ${unit}]`
+                const element = (meta.element || '').trim().toLowerCase();
+                
+                const familyKey = [brend, seriya, rangi].filter(Boolean).join(' | ');
+                if (!familyKey) return; 
+                
+                if (!familyMap[familyKey]) {
+                    familyMap[familyKey] = {
+                        id: familyKey,
+                        name: familyKey,
+                        brend, seriya, rangi,
+                        elements: {}
+                    };
+                }
+                // element names might be "kosa", "o'rta", "qanot", "shtapik"
+                let elKey = 'other';
+                if (element.includes('kosa') || element.includes('rama')) elKey = 'rama';
+                else if (element.includes('o\'rta') || element.includes('impost')) elKey = 'impost';
+                else if (element.includes('qanot') || element.includes('stvorka')) elKey = 'stvorka';
+                else if (element.includes('shtapik')) elKey = 'shtapik';
+                
+                familyMap[familyKey].elements[elKey] = {
+                    id: p.id,
+                    product_name: p.product_name,
+                    price: parseFloat(p.price) || 0,
+                    stock: Math.round(Number(p.stock_quantity) || 0)
                 };
             });
 
-            window._omborProfillar = omborProfillar;
+            const groupedFamilies = Object.values(familyMap);
+            window._omborFamilies = groupedFamilies;
 
-            // Profil type-lari uchun bir xil ro'yxat (rom, rom_fortochka, eshik)
-            AVAILABLE_MATERIALS.rom = omborProfillar;
-            AVAILABLE_MATERIALS.rom_fortochka = omborProfillar;
-            AVAILABLE_MATERIALS.eshik = omborProfillar;
+            const familyOptions = groupedFamilies.map(f => ({
+                id: f.name,
+                name: f.name,
+                brend: f.brend, seriya: f.seriya, rangi: f.rangi,
+                label: f.name,
+                isFamily: true
+            }));
+
+            window._omborProfillar = familyOptions;
+
+            AVAILABLE_MATERIALS.rom = familyOptions;
+            AVAILABLE_MATERIALS.rom_fortochka = familyOptions;
+            AVAILABLE_MATERIALS.eshik = familyOptions;
+            
+            if (accessories.length > 0) {
+                AVAILABLE_MATERIALS.aksesuar_rom = accessories;
+                AVAILABLE_MATERIALS.aksesuar_eshik = accessories;
+            }
 
             // --- 3 ta kaskad Tom Select filtrlarini ishga tushirish ---
             if (window.TomSelect && document.getElementById('pfBrand')) {
@@ -534,8 +571,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Add Item to Basket
     const addItemBtn = document.getElementById('addItemBtn');
-    if (addItemBtn) {
-        addItemBtn.onclick = () => {
+    if (addItemBtn) addItemBtn.onclick = () => {
             const type = itemTypeSel.value;
             const matOpt = itemMaterialSel.options[itemMaterialSel.selectedIndex];
             if (!matOpt) return alert('Material tanlang!');
@@ -545,28 +581,94 @@ document.addEventListener('DOMContentLoaded', async () => {
             const h = hMM / 1000; // metrga aylantirish (hisob uchun)
             const w = wMM / 1000;
             const qty = parseInt(document.getElementById('itemQty').value) || 1;
-
-            if (qty <= 0) return alert('Miqdorni to\'g\'ri kiriting!');
+            if (qty <= 0) return alert('Miqdorni to\\'g\\'ri kiriting!');
 
             let sizeText = '';
             let calcVal = 0; // area or length
             let itemPrice = parseFloat(matOpt.dataset.price) || 0;
             let subtotal = 0;
+            
+            const familyName = matOpt.value;
+            const family = (window._omborFamilies || []).find(f => f.name === familyName);
 
             if (type === 'rom' || type === 'rom_fortochka' || type === 'eshik') {
-                if (hMM <= 0 || wMM <= 0) return alert('Eni va bo\'yini kiriting!');
+                if (!family) return alert('Bunday profil oilasi topilmadi!');
+                if (hMM <= 0 || wMM <= 0) return alert('Eni va bo\\'yini kiriting!');
                 sizeText = `${wMM} x ${hMM} mm`;
-                calcVal = h * w * qty; // total area in sq.m
-                subtotal = (calcVal * itemPrice) + (PRODUCTION_COST * qty); // material cost + base assembly fee
+                
+                const vDiv = parseInt(document.getElementById('itemVDiv')?.value) || 0;
+                const hDiv = parseInt(document.getElementById('itemHDiv')?.value) || 0;
+                const stv = parseInt(document.getElementById('itemStvorka')?.value) || 0;
+                
+                // PDF kesim funksiyasidan foydalanib barcha profillar uzunligini aniq hisoblash
+                const tempItem = {
+                    type: type,
+                    materialName: matOpt.dataset.name,
+                    width: w,
+                    height: h,
+                    quantity: qty,
+                    vDiv: vDiv,
+                    hDiv: hDiv,
+                    stvorka: stv,
+                    design: _designer ? _designer.getModel() : null
+                };
+                
+                const exactGroups = derivePieces([tempItem]);
+                let totalExactMeters = 0;
+                let calculatedSubtotal = 0;
+                const errors = [];
+                
+                for (let matKey in exactGroups) {
+                    const parts = matKey.split(' · ');
+                    const roleStr = (parts[1] || '').toLowerCase();
+                    let role = 'other';
+                    if (roleStr === 'rama') role = 'rama';
+                    else if (roleStr === 'impost') role = 'impost';
+                    else if (roleStr === 'stvorka') role = 'stvorka';
+                    else if (roleStr === 'shtapik') role = 'shtapik';
+                    
+                    let roleMeters = 0;
+                    exactGroups[matKey].forEach(p => {
+                        roleMeters += (p.len * p.qty) / 1000;
+                    });
+                    
+                    roleMeters = roleMeters * 1.10; // 10% zapas
+                    totalExactMeters += roleMeters;
+                    
+                    const familyEl = family.elements[role];
+                    if (!familyEl) {
+                        errors.push(`- ${matKey} omborda yo'q! (Kiritilmagan)`);
+                    } else if (familyEl.stock < roleMeters) {
+                        errors.push(`- ${matKey} yetishmaydi (Bazada: ${familyEl.stock} m, Kerak: ${roleMeters.toFixed(1)} m)`);
+                    } else {
+                        calculatedSubtotal += (roleMeters * familyEl.price);
+                    }
+                }
+                
+                if (errors.length > 0) {
+                    return alert("ZAXIRA YETISHMOVCHILIGI:\\n" + errors.join("\\n"));
+                }
+                
+                calcVal = totalExactMeters;
+                subtotal = calculatedSubtotal + (PRODUCTION_COST * qty); 
+                itemPrice = calcVal > 0 ? Math.round(calculatedSubtotal / calcVal) : 0;
             } else if (type === 'padakonnik') {
                 if (wMM <= 0) return alert('Uzunlikni kiriting!');
                 sizeText = `${wMM} mm`;
                 calcVal = w * qty; // total length
                 subtotal = calcVal * itemPrice;
+                const stock = parseFloat(matOpt.dataset.stock) || 0;
+                if (stock < calcVal) {
+                    return alert(`ZAXIRA YETISHMOVCHILIGI:\\n- ${matOpt.dataset.name} yetishmaydi (Bazada: ${stock} m, Kerak: ${calcVal.toFixed(1)} m)`);
+                }
             } else {
                 sizeText = '---';
                 calcVal = qty; // piece count
                 subtotal = qty * itemPrice;
+                const stock = parseFloat(matOpt.dataset.stock) || 0;
+                if (stock < calcVal) {
+                    return alert(`ZAXIRA YETISHMOVCHILIGI:\\n- ${matOpt.dataset.name} yetishmaydi (Bazada: ${stock}, Kerak: ${calcVal})`);
+                }
             }
 
             const item = {
